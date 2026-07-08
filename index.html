@@ -17,10 +17,10 @@
   <aside class="sidebar" aria-label="Navigation principale">
     <div class="brand"><img src="assets/img/logo-meayt-color.png" alt="Me&YouToo"><span class="studio-pill">Studio</span></div>
     <nav class="nav">
-      <a href="index.html" data-nav><span>⌂</span>Accueil</a>
-      <a href="mes-campagnes.html" data-nav><span>▣</span>Mes campagnes</a>
-      <a href="bibliotheque.html" data-nav><span>▤</span>Bibliothèque</a>
-      <a href="ressources.html" data-nav><span>◇</span>Ressources</a>
+      <a href="index.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/></svg></span>Accueil</a>
+      <a href="mes-campagnes.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/></svg></span>Mes campagnes</a>
+      <a href="bibliotheque.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M8 8v8M16 8v8"/></svg></span>Bibliothèque</a>
+      <a href="ressources.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/></svg></span>Ressources</a>
     </nav>
     <div class="sidebar-footer">
       <div class="help-card"><strong>Besoin d’inspiration&nbsp;?</strong><p>Découvrez tous les sujets de sensibilisation disponibles.</p><a class="button button-primary" href="bibliotheque.html">Explorer la bibliothèque</a></div>
@@ -31,18 +31,19 @@
   <main class="main" id="contenu">
     <div class="topbar">
       <div><p class="eyebrow">Accueil</p><h1 class="page-title">Bonjour Carole 👋</h1><p class="lead">Pilotez vos campagnes de sensibilisation et découvrez de nouveaux sujets à explorer avec vos collaborateurs.</p></div>
-      <div class="top-actions"><button class="icon-button" aria-label="Rechercher">⌕</button><button class="icon-button" aria-label="Notifications">🔔</button><a class="button button-primary" href="bibliotheque.html">Nouvelle campagne</a></div>
+      <div class="top-illustration" aria-hidden="true"><img src="assets/img/illus-dashboard.svg" alt=""></div>
+      <div class="top-actions"><button class="icon-button" aria-label="Rechercher"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg></button><button class="icon-button" aria-label="Notifications"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button><a class="button button-primary" href="bibliotheque.html">Nouvelle campagne</a></div>
     </div>
     <section class="stats-grid" aria-label="Indicateurs principaux">
-      <article class="stat-card"><div class="stat-icon">☷</div><p class="stat-label">Campagnes actives</p><p class="stat-value">3</p><p class="stat-note">En cours de diffusion</p></article>
-      <article class="stat-card"><div class="stat-icon">↻</div><p class="stat-label">En préparation</p><p class="stat-value">2</p><p class="stat-note">À finaliser</p></article>
-      <article class="stat-card"><div class="stat-icon">↗</div><p class="stat-label">Passations réalisées</p><p class="stat-value">4&nbsp;286</p><p class="stat-note">Sur les 12 derniers mois</p></article>
-      <article class="stat-card"><div class="stat-icon">●</div><p class="stat-label">Passations restantes</p><p class="stat-value">7&nbsp;352</p><p class="stat-note">Crédits disponibles</p></article>
+      <article class="stat-card"><div class="stat-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 19c.8-4 4-6 6-6s5.2 2 6 6"/><circle cx="17" cy="9" r="2"/><path d="M15 14c2 .3 4 2 5 5"/></svg></div><p class="stat-label">Campagnes actives</p><p class="stat-value">3</p><p class="stat-note">En cours de diffusion</p></article>
+      <article class="stat-card"><div class="stat-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/></svg></div><p class="stat-label">En préparation</p><p class="stat-value">2</p><p class="stat-note">À finaliser</p></article>
+      <article class="stat-card"><div class="stat-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5M12 16V8M16 16v-8"/></svg></div><p class="stat-label">Passations réalisées</p><p class="stat-value">4&nbsp;286</p><p class="stat-note">Sur les 12 derniers mois</p></article>
+      <article class="stat-card"><div class="stat-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7h18v12H3z"/><path d="M16 12h5"/><path d="M6 7V5h12v2"/></svg></div><p class="stat-label">Passations restantes</p><p class="stat-value">7&nbsp;352</p><p class="stat-note">Crédits disponibles</p></article>
     </section>
     <section aria-labelledby="campagnes-title">
       <div class="section-head"><div><h2 class="section-title" id="campagnes-title">Mes campagnes récentes</h2><p class="section-desc">Suivez les campagnes lancées, en préparation ou terminées.</p></div><a class="button button-ghost" href="mes-campagnes.html">Voir toutes</a></div>
       <div class="campaign-grid">
-        <article class="card campaign-card"><span class="badge badge-success">En cours</span><h3>Management inclusif</h3><p>Lancée le 12 mai 2025</p><div class="progress" aria-label="65 % de participation"><span style="width:65%"></span></div><p><strong>1&nbsp;245</strong> répondants · 65&nbsp;%</p></article>
+        <article class="card campaign-card with-cover"><img class="campaign-cover" src="assets/img/illus-management.svg" alt=""><div class="campaign-content"><span class="badge badge-success">En cours</span><h3>Management inclusif</h3><p>Lancée le 12 mai 2025</p><div class="progress" aria-label="65 % de participation"><span style="width:65%"></span></div><p><strong>1&nbsp;245</strong> répondants · 65&nbsp;%</p></div></article>
         <article class="card campaign-card"><span class="badge badge-muted">Terminée</span><h3>Sexisme au travail</h3><p>Terminée le 18 avril 2025</p><p><strong>1&nbsp;832</strong> répondants</p><a class="button button-secondary" href="campagne-detail.html">Voir résultats</a></article>
         <article class="card campaign-card"><span class="badge badge-warning">En préparation</span><h3>Handicap</h3><p>Brouillon mis à jour le 8 juin 2025</p><a class="button button-secondary" href="composer.html">Continuer</a></article>
       </div>
@@ -50,21 +51,21 @@
     <section aria-labelledby="explore-title">
       <div class="section-head"><div><h2 class="section-title" id="explore-title">Un nouveau sujet à explorer</h2><p class="section-desc">Incitez vos équipes à progresser sur de nouvelles thématiques D&I.</p></div></div>
       <div class="topic-strip">
-        <div class="topic-cta"><strong>Découvrir plus de sujets</strong><span>Chaque campagne est composée à partir de situations conçues par nos experts.</span><a class="button button-primary" href="bibliotheque.html">Explorer</a></div>
-        <a class="topic-mini" href="theme-management.html"><div class="topic-icon">⌕</div><strong>Diversité des origines</strong><span>42 situations</span></a>
-        <a class="topic-mini" href="theme-management.html"><div class="topic-icon">♡</div><strong>LGBT+</strong><span>38 situations</span></a>
-        <a class="topic-mini" href="theme-management.html"><div class="topic-icon">◎</div><strong>Diversité religieuse</strong><span>35 situations</span></a>
-        <a class="topic-mini" href="theme-management.html"><div class="topic-icon">👥</div><strong>Intergénérationnel</strong><span>28 situations</span></a>
+        <div class="topic-cta hero-cta"><strong>Découvrir plus de sujets</strong><span>Chaque campagne est composée à partir de situations conçues par nos experts.</span><a class="button button-primary" href="bibliotheque.html">Explorer</a></div>
+        <a class="topic-mini" href="theme-management.html"><div class="topic-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg></div><strong>Diversité des origines</strong><span>42 situations</span></a>
+        <a class="topic-mini" href="theme-management.html"><div class="topic-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M22 12h-4M12 22v-4M2 12h4"/></svg></div><strong>LGBT+</strong><span>38 situations</span></a>
+        <a class="topic-mini" href="theme-management.html"><div class="topic-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></div><strong>Diversité religieuse</strong><span>35 situations</span></a>
+        <a class="topic-mini" href="theme-management.html"><div class="topic-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 19c.8-4 4-6 6-6s5.2 2 6 6"/><circle cx="17" cy="9" r="2"/><path d="M15 14c2 .3 4 2 5 5"/></svg></div><strong>Intergénérationnel</strong><span>28 situations</span></a>
         <a class="topic-cta" href="bibliotheque.html"><strong>Voir tous les sujets</strong><span>Explorer la bibliothèque Me&YouToo.</span><span aria-hidden="true">→</span></a>
       </div>
     </section>
     <section class="footer-flow" aria-label="Boucle d’usage du Studio">
-      <div class="flow-item"><div class="flow-icon">1</div><div><strong>Découvrir</strong><span>Explorer les sujets D&I.</span></div></div>
-      <div class="flow-item"><div class="flow-icon">2</div><div><strong>Composer</strong><span>Sélectionner les situations.</span></div></div>
-      <div class="flow-item"><div class="flow-icon">3</div><div><strong>Lancer</strong><span>Diffuser la campagne.</span></div></div>
-      <div class="flow-item"><div class="flow-icon">4</div><div><strong>Mesurer</strong><span>Accéder aux résultats.</span></div></div>
-      <div class="flow-item"><div class="flow-icon">5</div><div><strong>Piloter</strong><span>Tirer des enseignements.</span></div></div>
-      <div class="flow-item"><div class="flow-icon">6</div><div><strong>Recommencer</strong><span>Lancer un nouveau sujet.</span></div></div>
+      <div class="flow-item"><div class="flow-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg></div><div><strong>Découvrir</strong><span>Explorer les sujets D&I.</span></div></div>
+      <div class="flow-item"><div class="flow-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/></svg></div><div><strong>Composer</strong><span>Sélectionner les situations.</span></div></div>
+      <div class="flow-item"><div class="flow-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M14 4c3 1 5 3 6 6l-6 6-6-6z"/><path d="M8 14l-4 2 2-4M14 16l-2 4 4-2"/></svg></div><div><strong>Lancer</strong><span>Diffuser la campagne.</span></div></div>
+      <div class="flow-item"><div class="flow-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5M12 16V8M16 16v-8"/></svg></div><div><strong>Mesurer</strong><span>Accéder aux résultats.</span></div></div>
+      <div class="flow-item"><div class="flow-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M22 12h-4M12 22v-4M2 12h4"/></svg></div><div><strong>Piloter</strong><span>Tirer des enseignements.</span></div></div>
+      <div class="flow-item"><div class="flow-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg></div><div><strong>Recommencer</strong><span>Lancer un nouveau sujet.</span></div></div>
     </section>
   </main>
 </div>
