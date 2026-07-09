@@ -20,3 +20,9 @@ Front HTML/CSS/JS statique pour tester la direction graphique du Studio Me&YouTo
 - Typographie Asap.
 - Jaune utilisé en fond/accent uniquement, pas en texte principal.
 - Pages SaaS en `noindex,nofollow` pour le staging.
+
+
+## V4
+- Ajout de `account.html` pour le compte client.
+- Ajout de `packs.html` pour sélectionner un pack de passations à commander.
+- Navigation mise à jour avec Passations et Mon compte.

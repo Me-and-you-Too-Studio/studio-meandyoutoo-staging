@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://studio.meandyoutoo.app/</loc></url>
+  <url><loc>https://studio.meandyoutoo.app/mes-campagnes.html</loc></url>
   <url><loc>https://studio.meandyoutoo.app/bibliotheque.html</loc></url>
+  <url><loc>https://studio.meandyoutoo.app/theme-management.html</loc></url>
+  <url><loc>https://studio.meandyoutoo.app/composer.html</loc></url>
+  <url><loc>https://studio.meandyoutoo.app/campagne-detail.html</loc></url>
   <url><loc>https://studio.meandyoutoo.app/ressources.html</loc></url>
+  <url><loc>https://studio.meandyoutoo.app/packs.html</loc></url>
+  <url><loc>https://studio.meandyoutoo.app/account.html</loc></url>
 </urlset>
