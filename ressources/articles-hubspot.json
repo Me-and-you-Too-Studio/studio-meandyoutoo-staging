@@ -1,12 +1,10 @@
 [
-  {
-    "thematique": "Management inclusif",
-    "titre": "Ressource HubSpot à relier",
-    "url": "https://www.meandyoutoo.app/"
-  },
-  {
-    "thematique": "Sexisme au travail",
-    "titre": "Ressource HubSpot à relier",
-    "url": "https://www.meandyoutoo.app/"
-  }
+  { "thematique": "Management inclusif", "titre": "Ressource HubSpot à relier", "url": "https://www.meandyoutoo.app/" },
+  { "thematique": "Handicap", "titre": "Ressource HubSpot à relier", "url": "https://www.meandyoutoo.app/" },
+  { "thematique": "Sexisme au travail", "titre": "Ressource HubSpot à relier", "url": "https://www.meandyoutoo.app/" },
+  { "thematique": "Diversité des origines", "titre": "Ressource HubSpot à relier", "url": "https://www.meandyoutoo.app/" },
+  { "thematique": "LGBT+", "titre": "Ressource HubSpot à relier", "url": "https://www.meandyoutoo.app/" },
+  { "thematique": "Diversité religieuse et convictions", "titre": "Ressource HubSpot à relier", "url": "https://www.meandyoutoo.app/" },
+  { "thematique": "Intergénérationnel", "titre": "Ressource HubSpot à relier", "url": "https://www.meandyoutoo.app/" },
+  { "thematique": "Collaborateur inclusif", "titre": "Ressource HubSpot à relier", "url": "https://www.meandyoutoo.app/" }
 ]

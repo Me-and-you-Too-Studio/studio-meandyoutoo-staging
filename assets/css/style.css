@@ -141,8 +141,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .topics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
 .topic-card{overflow:hidden;display:flex;flex-direction:column;transition:transform .18s ease,box-shadow .18s ease}
 .topic-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
-.topic-illustration{height:150px;background:linear-gradient(150deg,var(--green-blue-soft),#fff);display:grid;place-items:center;overflow:hidden}
-.topic-illustration img{width:100%;height:100%;object-fit:cover}
+.topic-illustration{aspect-ratio:1/1;height:auto;background:linear-gradient(150deg,var(--green-blue-soft),#fff);display:grid;place-items:center;overflow:hidden;padding:18px}
+.topic-illustration img{width:100%;height:100%;object-fit:contain}
 .topic-card:nth-child(3n+2) .topic-illustration{background:linear-gradient(150deg,var(--sunny-yellow-soft),#fff)}
 .topic-card:nth-child(3n) .topic-illustration{background:linear-gradient(150deg,var(--royal-blue-soft),#fff)}
 .topic-body{padding:20px;display:flex;flex-direction:column;gap:10px;flex:1}
