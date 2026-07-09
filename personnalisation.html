@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personnaliser les profils — Studio Me&YouToo</title>
+<meta name="description" content="Personnalisez les contenus de restitution de votre campagne, sans toucher à la méthodologie Me&YouToo.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="assets/img/brand/favicon.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+<header class="mobile-header">
+  <img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo Studio">
+  <button class="icon-button" aria-label="Ouvrir le menu" aria-expanded="false"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+</header>
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Navigation principale">
+    <div class="brand"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo"><span class="studio-pill">Studio</span></div>
+    <nav class="nav">
+      <a href="index.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/></svg></span>Accueil</a>
+      <a href="mes-campagnes.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/></svg></span>Mes campagnes</a>
+      <a href="bibliotheque.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M8 8v8M16 8v8"/></svg></span>Bibliothèque</a>
+      <a href="ressources.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/></svg></span>Ressources</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="help-card"><strong>Besoin d'aide&nbsp;?</strong><p>Une question sur la personnalisation&nbsp;?</p><a class="button button-primary" href="ressources.html">Contacter Me&YouToo</a></div>
+      <a href="packs.html" class="nav-link">Commander des passations</a>
+      <a href="account.html" class="nav-link">Mon compte</a>
+      <div class="profile"><div class="avatar">C</div><div><strong>Carole Michelon</strong><small>Me&YouToo SAS</small></div></div>
+    </div>
+  </aside>
+  <main class="main" id="contenu">
+    <div class="topbar compact-topbar">
+      <div>
+        <p class="eyebrow"><a href="theme-management.html">Management inclusif</a></p>
+        <h1 class="page-title">Personnaliser les profils</h1>
+        <p class="lead">Adaptez les contenus de restitution à votre organisation. La méthodologie et le scoring restent gérés par Me&YouToo.</p>
+      </div>
+    </div>
+
+    <nav class="steps" aria-label="Étapes de composition">
+      <span class="step"><span class="step-num">1</span>Choisir</span>
+      <span class="step"><span class="step-num">2</span>Composer</span>
+      <span class="step" aria-current="step"><span class="step-num">3</span>Personnaliser</span>
+      <span class="step"><span class="step-num">4</span>Paramétrer</span>
+      <span class="step"><span class="step-num">5</span>Transmettre</span>
+    </nav>
+
+    <section class="hero-panel" style="margin-bottom:22px;background:var(--royal-blue-soft);border-color:#d7e0f2">
+      <div class="meta-row" style="margin-bottom:10px"><span class="badge badge-muted">🔒 Méthodologie Me&YouToo</span></div>
+      <h2 class="section-title">Ce que vous ne pouvez pas modifier</h2>
+      <p class="section-desc">Le calcul des scores, les seuils de profils et les règles méthodologiques restent sous le contrôle exclusif des experts Me&YouToo. Cette garantie assure la fiabilité et la comparabilité des résultats entre toutes les campagnes.</p>
+    </section>
+
+    <div class="section-head">
+      <div><h2 class="section-title">Contenus personnalisables</h2><p class="section-desc">Adaptez le titre et le résumé affichés à vos collaborateurs pour chaque profil de restitution.</p></div>
+    </div>
+
+    <section class="table-card" style="padding:0;margin-bottom:20px">
+      <div style="padding:22px;border-bottom:1px solid var(--line)">
+        <span class="badge badge-info" style="margin-bottom:10px;display:inline-flex">Profil 1 / 4</span>
+        <fieldset style="border:0;padding:0;margin:0">
+          <legend class="visually-hidden" style="position:absolute;left:-9999px">Profil « Manager attentif »</legend>
+          <div class="field">
+            <label for="titre-1">Titre du profil affiché au répondant</label>
+            <input id="titre-1" type="text" value="Manager attentif">
+            <span class="hint">Le libellé interne Me&YouToo reste « Profil A · sensibilité forte » (non visible du répondant).</span>
+          </div>
+          <div class="field">
+            <label for="resume-1">Résumé du profil</label>
+            <textarea id="resume-1" rows="3">Vous portez une attention naturelle à l'équité dans vos décisions managériales. Continuez à expliciter vos choix pour renforcer encore la confiance de votre équipe.</textarea>
+          </div>
+        </fieldset>
+      </div>
+      <div style="padding:22px">
+        <span class="badge badge-info" style="margin-bottom:10px;display:inline-flex">Profil 2 / 4</span>
+        <div class="field">
+          <label for="titre-2">Titre du profil affiché au répondant</label>
+          <input id="titre-2" type="text" value="Manager en progression">
+        </div>
+        <div class="field">
+          <label for="resume-2">Résumé du profil</label>
+          <textarea id="resume-2" rows="3">Certaines situations révèlent une marge de progression dans la prise en compte des points de vue de votre équipe. Nos ressources associées peuvent vous accompagner.</textarea>
+        </div>
+      </div>
+    </section>
+
+    <div class="top-actions" style="justify-content:flex-end">
+      <a class="button button-ghost" href="composer.html">← Étape précédente</a>
+      <a class="button button-primary" href="parametrage.html">Étape suivante · Paramétrer</a>
+    </div>
+  </main>
+</div>
+<nav class="bottom-nav" aria-label="Navigation mobile">
+  <a href="index.html" data-nav>Accueil</a>
+  <a href="mes-campagnes.html" data-nav>Campagnes</a>
+  <a href="bibliotheque.html" data-nav>Bibliothèque</a>
+  <a href="packs.html" data-nav>Passations</a>
+</nav>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

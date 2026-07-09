@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paramétrer la campagne — Studio Me&YouToo</title>
+<meta name="description" content="Paramétrez les dates, la population et la diffusion de votre campagne de sensibilisation.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="assets/img/brand/favicon.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+<header class="mobile-header">
+  <img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo Studio">
+  <button class="icon-button" aria-label="Ouvrir le menu" aria-expanded="false"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+</header>
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Navigation principale">
+    <div class="brand"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo"><span class="studio-pill">Studio</span></div>
+    <nav class="nav">
+      <a href="index.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/></svg></span>Accueil</a>
+      <a href="mes-campagnes.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/></svg></span>Mes campagnes</a>
+      <a href="bibliotheque.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M8 8v8M16 8v8"/></svg></span>Bibliothèque</a>
+      <a href="ressources.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/></svg></span>Ressources</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="help-card"><strong>Besoin d'aide&nbsp;?</strong><p>Une question sur le paramétrage&nbsp;?</p><a class="button button-primary" href="ressources.html">Contacter Me&YouToo</a></div>
+      <a href="packs.html" class="nav-link">Commander des passations</a>
+      <a href="account.html" class="nav-link">Mon compte</a>
+      <div class="profile"><div class="avatar">C</div><div><strong>Carole Michelon</strong><small>Me&YouToo SAS</small></div></div>
+    </div>
+  </aside>
+  <main class="main" id="contenu">
+    <div class="topbar compact-topbar">
+      <div>
+        <p class="eyebrow"><a href="theme-management.html">Management inclusif</a></p>
+        <h1 class="page-title">Paramétrer la campagne</h1>
+        <p class="lead">Renseignez les informations nécessaires à la diffusion auprès de vos collaborateurs.</p>
+      </div>
+    </div>
+
+    <nav class="steps" aria-label="Étapes de composition">
+      <span class="step"><span class="step-num">1</span>Choisir</span>
+      <span class="step"><span class="step-num">2</span>Composer</span>
+      <span class="step"><span class="step-num">3</span>Personnaliser</span>
+      <span class="step" aria-current="step"><span class="step-num">4</span>Paramétrer</span>
+      <span class="step"><span class="step-num">5</span>Transmettre</span>
+    </nav>
+
+    <form class="card" style="padding:28px" novalidate>
+      <fieldset>
+        <legend>Informations générales</legend>
+        <div class="field">
+          <label for="nom-campagne">Nom de la campagne</label>
+          <input id="nom-campagne" type="text" required value="Management inclusif — Direction commerciale">
+        </div>
+        <div class="field">
+          <label for="intro">Message d'introduction affiché aux répondants</label>
+          <textarea id="intro" rows="3">Cette campagne s'inscrit dans notre démarche D&I. Vos réponses sont anonymes et permettent de faire progresser nos pratiques managériales.</textarea>
+        </div>
+        <div class="field">
+          <label for="signature">Signature de fin de message</label>
+          <input id="signature" type="text" value="La Direction des Ressources Humaines">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Dates de diffusion</legend>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="field"><label for="date-debut">Date de lancement</label><input id="date-debut" type="date" value="2025-07-14"></div>
+          <div class="field"><label for="date-fin">Date de clôture</label><input id="date-fin" type="date" value="2025-08-14"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Population &amp; critères sociodémographiques</legend>
+        <div class="field">
+          <label for="population">Population ciblée</label>
+          <input id="population" type="text" value="Managers — Direction commerciale (≈ 180 collaborateurs)">
+        </div>
+        <div class="field">
+          <label for="criteres">Critères sociodémographiques à recueillir</label>
+          <select id="criteres" multiple size="4" style="min-height:auto;padding:8px">
+            <option selected>Genre</option>
+            <option selected>Tranche d'âge</option>
+            <option>Ancienneté</option>
+            <option>Site / entité</option>
+          </select>
+          <span class="hint">Recommandation d'anonymat : un croisement de critères n'est affiché que s'il concerne au moins 10 répondants, afin de garantir l'anonymat des réponses.</span>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Branding</legend>
+        <div class="field">
+          <label for="logo">Logo affiché aux répondants</label>
+          <input id="logo" type="file" accept="image/*">
+          <span class="hint">Format recommandé : PNG transparent, 400×400px minimum.</span>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Volume de passations</legend>
+        <div class="field">
+          <label for="volume">Nombre de passations à réserver pour cette campagne</label>
+          <input id="volume" type="number" min="1" value="200">
+          <span class="hint">Vous disposez de 7 352 passations restantes sur votre compte. <a href="packs.html">Commander un pack supplémentaire</a>.</span>
+        </div>
+      </fieldset>
+
+      <div class="top-actions" style="justify-content:flex-end">
+        <a class="button button-ghost" href="personnalisation.html">← Étape précédente</a>
+        <a class="button button-primary" href="validation.html">Étape suivante · Vérifier</a>
+      </div>
+    </form>
+  </main>
+</div>
+<nav class="bottom-nav" aria-label="Navigation mobile">
+  <a href="index.html" data-nav>Accueil</a>
+  <a href="mes-campagnes.html" data-nav>Campagnes</a>
+  <a href="bibliotheque.html" data-nav>Bibliothèque</a>
+  <a href="packs.html" data-nav>Passations</a>
+</nav>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
