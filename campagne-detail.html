@@ -20,11 +20,16 @@
   <main class="main" id="contenu">
     <div class="topbar compact-topbar">
       <div>
-        <p class="eyebrow"><a href="mes-campagnes.html">Mes campagnes</a> · En cours</p>
+        <p class="eyebrow"><a href="mes-campagnes.html">Mes campagnes</a></p>
+        <div class="badge-row">
+          <span class="badge badge-success">En cours</span>
+          <span class="badge badge-danger"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Fin proche</span>
+          <span class="tag-chip">Management</span>
+        </div>
         <h1 class="page-title">Management inclusif</h1>
         <p class="lead">Suivez la diffusion, téléchargez le kit de communication et accédez aux résultats collectifs anonymes.</p>
       </div>
-      <div class="top-actions"><a class="button button-primary" href="kit-communication.html">Kit de communication</a></div>
+      <div class="top-actions"><a class="button button-primary" href="kit-communication.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10v4a1 1 0 0 0 1 1h2l5 4V5L6 9H4a1 1 0 0 0-1 1Z"/><path d="M16 9a3 3 0 0 1 0 6"/></svg>Kit de communication</a></div>
     </div>
 
     <section class="stats-grid" aria-label="Suivi de la campagne">
@@ -42,29 +47,40 @@
       <a class="button button-primary" href="https://resultats.meandyoutoo.app/campagnes/management-inclusif-dc" target="_blank" rel="noopener">Voir les résultats ↗</a>
     </section>
 
-    <section class="card" id="kit" style="padding:26px" aria-labelledby="kit-title">
-      <div style="display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap">
-        <div>
-          <h2 class="section-title" id="kit-title">Kit de communication</h2>
-          <p class="section-desc">Lien de diffusion, QR code, messages prêts à l'emploi et visuels livrés pour communiquer sur votre campagne.</p>
-        </div>
-        <a class="button button-secondary" href="kit-communication.html">Ouvrir le kit de communication →</a>
-      </div>
-    </section>
-
     <section class="card" style="padding:26px" aria-labelledby="actions-title">
       <h2 class="section-title" id="actions-title">Actions sur la campagne</h2>
       <p class="section-desc" style="margin-bottom:18px">Consultez le contenu diffusé, dupliquez cette campagne pour un autre périmètre, ou reprogrammez-la.</p>
       <div class="action-bar">
-        <a class="button button-secondary" href="theme-management.html">Voir le contenu</a>
-        <a class="button button-secondary" href="kit-communication.html">Kit de communication</a>
-        <button class="button button-ghost" type="button">Dupliquer la campagne</button>
-        <button class="button button-ghost" type="button">Reprogrammer</button>
+        <button class="button button-primary" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/><path d="M12 14v3l2 1"/></svg>
+          Reprogrammer
+        </button>
+        <a class="button button-secondary" href="theme-management.html">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          Voir le contenu
+        </a>
+        <a class="button button-tonal" href="kit-communication.html">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10v4a1 1 0 0 0 1 1h2l5 4V5L6 9H4a1 1 0 0 0-1 1Z"/><path d="M16 9a3 3 0 0 1 0 6"/></svg>
+          Kit de communication
+        </a>
+        <button class="button button-secondary" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="4" width="12" height="12" rx="2"/><path d="M9 16v2a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V11a2 2 0 0 0-2-2h-2"/></svg>
+          Dupliquer la campagne
+        </button>
         <div class="action-more">
-          <button class="button button-ghost" type="button" data-action-toggle aria-haspopup="true" aria-expanded="false">Autres actions ▾</button>
+          <button class="button button-secondary" type="button" data-action-toggle aria-haspopup="true" aria-expanded="false">
+            Autres actions
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
           <div class="action-more-panel" role="menu" aria-label="Autres actions">
-            <button class="button button-ghost" type="button" role="menuitem">Enregistrer comme modèle</button>
-            <button class="button button-ghost" type="button" role="menuitem">Archiver</button>
+            <button class="button button-ghost" type="button" role="menuitem">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4Z"/></svg>
+              Enregistrer comme modèle
+            </button>
+            <button class="button button-ghost" type="button" role="menuitem">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+              Archiver
+            </button>
           </div>
         </div>
       </div>

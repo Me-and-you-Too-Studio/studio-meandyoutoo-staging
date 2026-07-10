@@ -325,6 +325,16 @@ legend{font-weight:800;color:var(--royal-blue);padding:0 6px}
 .action-more-panel{display:none;position:absolute;top:calc(100% + 8px);right:0;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);padding:8px;min-width:230px;z-index:10}
 .action-more-panel.on{display:grid;gap:4px}
 .action-more-panel .button{width:100%;justify-content:flex-start}
+.action-more button svg{width:15px;height:15px}
+
+/* Icônes dans boutons et badges, tags thématiques, bouton tonal (variante douce) */
+.button svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.15;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.button-tonal{background:var(--green-blue-soft);color:var(--green-blue-dark);border-color:transparent}
+.button-tonal:hover{background:#bfe3e6}
+.badge svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.6;flex:0 0 auto}
+.badge-danger{background:var(--danger-soft);color:var(--danger)}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.tag-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface-soft);color:var(--royal-blue);border-radius:999px;padding:5px 12px;font-size:.76rem;font-weight:700}
 
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:none;grid-template-columns:repeat(4,1fr);padding:8px 6px env(safe-area-inset-bottom);box-shadow:0 -10px 25px rgba(39,58,100,.08)}
 .bottom-nav a{display:grid;place-items:center;gap:4px;font-size:.72rem;font-weight:800;color:var(--muted)}
