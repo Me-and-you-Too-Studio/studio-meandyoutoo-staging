@@ -83,12 +83,12 @@
           </div>
           <div class="field">
             <label for="fCollaborateurs">Collaborateurs concernés</label>
-            <input id="fCollaborateurs" name="nombre_collaborateurs" type="number" min="1" inputmode="numeric">
+            <input id="fCollaborateurs" name="nombre_de_collaborateurs_concernes" type="number" min="1" inputmode="numeric">
           </div>
 
           <div class="field field-full">
             <label for="fMessage">Message ou besoins spécifiques</label>
-            <textarea id="fMessage" name="message_commande" rows="4"></textarea>
+            <textarea id="fMessage" name="message_ou_besoins_specifiques" rows="4"></textarea>
             <p class="hint">Sujet visé, date de lancement souhaitée, périmètre… tout ce qui nous aide à préparer votre commande.</p>
           </div>
         </div>
@@ -157,14 +157,13 @@
   updateRecap();
 
   /* --- Envoi du formulaire ---
-     Ce formulaire est prêt à être branché sur un formulaire HubSpot natif (Forms API v3) :
-     remplacez HUBSPOT_FORM_GUID ci-dessous par le GUID du formulaire créé côté HubSpot,
-     avec des propriétés de contact correspondant aux "name" des champs de ce formulaire
-     (firstname, lastname, email, company, phone, pack_souhaite, nombre_collaborateurs, message_commande).
-     Tant que le GUID n'est pas renseigné, le formulaire affiche un message d'erreur avec
-     un repli par email pour ne pas perdre de demande. */
+     Branché sur le formulaire HubSpot natif "Commande de pack de passations – Studio Me&YouToo"
+     (portail 139575435, région eu1). Les "name" des champs correspondent aux propriétés de
+     contact créées dans HubSpot (firstname, lastname, email, company, phone, pack_souhaite,
+     nombre_de_collaborateurs_concernes, message_ou_besoins_specifiques). En cas d'échec réseau,
+     un repli par email s'affiche pour ne pas perdre de demande. */
   var HUBSPOT_PORTAL_ID = "139575435";
-  var HUBSPOT_FORM_GUID = ""; // ⟵ à compléter une fois le formulaire créé dans HubSpot
+  var HUBSPOT_FORM_GUID = "d11563ef-c7d3-4ae1-90d4-e104857e6f59";
   var FALLBACK_EMAIL = "commandes@meandyoutoo.app";
 
   var form = document.getElementById('orderForm');
@@ -183,7 +182,7 @@
       return;
     }
 
-    var fields = ['pack_souhaite','firstname','lastname','email','phone','company','nombre_collaborateurs','message_commande'].map(function(name){
+    var fields = ['pack_souhaite','firstname','lastname','email','phone','company','nombre_de_collaborateurs_concernes','message_ou_besoins_specifiques'].map(function(name){
       var el = form.elements[name];
       return { name: name, value: el ? el.value : '' };
     }).filter(function(f){ return f.value !== ''; });
@@ -198,7 +197,7 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Envoi…';
 
-    fetch('https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID, {
+    fetch('https://api-eu1.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fields: fields, context: { pageUri: location.href, pageName: document.title } })
