@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Commander un pack de passations — Studio Me&YouToo</title>
+<meta name="description" content="Finalisez votre demande de commande de pack de passations.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="assets/img/brand/favicon.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+<header class="mobile-header">
+  <img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo Studio">
+  <button class="icon-button" aria-label="Ouvrir le menu" aria-expanded="false" data-menu-toggle><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+</header>
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Navigation principale" id="sidebar-root" data-help-title="Une question sur votre commande&nbsp;?" data-help-text="Notre équipe vous répond sous 24h ouvrées." data-help-href="ressources.html" data-help-cta="Contacter Me&YouToo"></aside>
+  <main class="main" id="contenu">
+    <div class="topbar compact-topbar">
+      <div>
+        <p class="eyebrow"><a href="packs.html">Commander des passations</a></p>
+        <h1 class="page-title">Votre demande de commande</h1>
+        <p class="lead">Vérifiez le pack sélectionné, complétez vos coordonnées : notre équipe valide votre commande sous 24h ouvrées.</p>
+      </div>
+    </div>
+
+    <section class="card order-recap" aria-labelledby="recap-title">
+      <div class="order-recap-info">
+        <h2 class="section-title" id="recap-title" style="margin-bottom:4px">Pack sélectionné</h2>
+        <p id="recapName">—</p>
+        <p id="recapVolume">—</p>
+      </div>
+      <div class="order-recap-price">
+        <strong id="recapPrice">—</strong>
+        <span id="recapUnit">&nbsp;</span>
+      </div>
+    </section>
+
+    <section class="card" style="padding:26px;max-width:760px" aria-labelledby="form-title">
+      <h2 class="section-title" id="form-title" style="margin-bottom:4px">Vos coordonnées</h2>
+      <p class="section-desc" style="margin-bottom:20px">Champs obligatoires marqués d'un *.</p>
+
+      <div id="formError" class="form-error" hidden role="alert">
+        <span class="icon">⚠️</span>
+        <div><strong>Envoi impossible</strong><span id="formErrorText">Une erreur est survenue. Réessayez ou contactez-nous directement.</span></div>
+      </div>
+
+      <div id="formSuccess" class="form-success" hidden role="status">
+        <span class="icon">✅</span>
+        <div><strong>Demande envoyée</strong><span>Merci&nbsp;! Notre équipe revient vers vous sous 24h ouvrées pour valider votre commande.</span></div>
+      </div>
+
+      <form id="orderForm" novalidate>
+        <div class="form-grid">
+          <div class="field field-full">
+            <label for="fPack">Pack souhaité *</label>
+            <select id="fPack" name="pack_souhaite" required></select>
+          </div>
+
+          <div class="field">
+            <label for="fPrenom">Prénom *</label>
+            <input id="fPrenom" name="firstname" type="text" required autocomplete="given-name">
+          </div>
+          <div class="field">
+            <label for="fNom">Nom *</label>
+            <input id="fNom" name="lastname" type="text" required autocomplete="family-name">
+          </div>
+
+          <div class="field">
+            <label for="fEmail">Email professionnel *</label>
+            <input id="fEmail" name="email" type="email" required autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="fTelephone">Téléphone</label>
+            <input id="fTelephone" name="phone" type="tel" autocomplete="tel">
+          </div>
+
+          <div class="field">
+            <label for="fSociete">Société *</label>
+            <input id="fSociete" name="company" type="text" required autocomplete="organization">
+          </div>
+          <div class="field">
+            <label for="fCollaborateurs">Collaborateurs concernés</label>
+            <input id="fCollaborateurs" name="nombre_collaborateurs" type="number" min="1" inputmode="numeric">
+          </div>
+
+          <div class="field field-full">
+            <label for="fMessage">Message ou besoins spécifiques</label>
+            <textarea id="fMessage" name="message_commande" rows="4"></textarea>
+            <p class="hint">Sujet visé, date de lancement souhaitée, périmètre… tout ce qui nous aide à préparer votre commande.</p>
+          </div>
+        </div>
+
+        <div class="consent-row">
+          <input id="fConsent" type="checkbox" required>
+          <label for="fConsent">J'accepte que Me&YouToo utilise ces informations pour traiter ma demande de commande, conformément à la <a href="#">politique de confidentialité</a>. *</label>
+        </div>
+
+        <button class="button button-primary" type="submit" id="submitBtn">Envoyer ma demande</button>
+        <p class="form-note">Cette demande ne déclenche pas de facturation immédiate : elle est transmise à notre équipe pour validation et établissement du bon de commande.</p>
+      </form>
+    </section>
+  </main>
+</div>
+<nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
+<script src="assets/js/app.js"></script>
+<script>
+(function(){
+  var PACKS = [
+    { name:"Découverte", volume:50, price:250, unit:"5,00 € / passation" },
+    { name:"Mini équipe", volume:100, price:450, unit:"4,50 € / passation" },
+    { name:"Test", volume:200, price:700, unit:"3,50 € / passation" },
+    { name:"Populaire", volume:500, price:1500, unit:"3,00 € / passation" },
+    { name:"Multi-BU", volume:700, price:1900, unit:"2,71 € / passation" },
+    { name:"Entreprise", volume:1200, price:3000, unit:"2,50 € / passation" },
+    { name:"Grand déploiement", volume:1500, price:3500, unit:"2,33 € / passation" },
+    { name:"Organisation étendue", volume:1700, price:3800, unit:"2,24 € / passation" },
+    { name:"Groupe", volume:2000, price:4000, unit:"2,00 € / passation" },
+    { name:"Groupe +", volume:2500, price:4800, unit:"1,92 € / passation" },
+    { name:"Déploiement large", volume:3000, price:5400, unit:"1,80 € / passation" },
+    { name:"Large volume", volume:4000, price:6600, unit:"1,65 € / passation" },
+    { name:"Très grand compte", volume:5000, price:7500, unit:"1,50 € / passation" },
+    { name:"Très large diffusion", volume:7000, price:9100, unit:"1,30 € / passation" },
+    { name:"Usage intensif", volume:"illimite", price:"sur-devis", unit:"Sur devis" }
+  ];
+
+  var params = new URLSearchParams(location.search);
+  var select = document.getElementById('fPack');
+  PACKS.forEach(function(p){
+    var opt = document.createElement('option');
+    opt.value = p.name;
+    opt.textContent = p.name + (typeof p.volume === 'number' ? ' — ' + p.volume.toLocaleString('fr-FR') + ' passations' : ' — volume illimité');
+    select.appendChild(opt);
+  });
+
+  var requested = params.get('pack');
+  if (requested && PACKS.some(function(p){ return p.name === requested; })) {
+    select.value = requested;
+  } else {
+    select.selectedIndex = 3; // Populaire par défaut
+  }
+
+  function updateRecap(){
+    var p = PACKS.filter(function(x){ return x.name === select.value; })[0] || PACKS[0];
+    document.getElementById('recapName').textContent = p.name;
+    document.getElementById('recapVolume').textContent = typeof p.volume === 'number'
+      ? p.volume.toLocaleString('fr-FR') + ' passations'
+      : 'Volume illimité — sur devis';
+    document.getElementById('recapPrice').textContent = typeof p.price === 'number'
+      ? p.price.toLocaleString('fr-FR') + ' € HT'
+      : 'Sur devis';
+    document.getElementById('recapUnit').textContent = p.unit;
+  }
+  select.addEventListener('change', updateRecap);
+  updateRecap();
+
+  /* --- Envoi du formulaire ---
+     Ce formulaire est prêt à être branché sur un formulaire HubSpot natif (Forms API v3) :
+     remplacez HUBSPOT_FORM_GUID ci-dessous par le GUID du formulaire créé côté HubSpot,
+     avec des propriétés de contact correspondant aux "name" des champs de ce formulaire
+     (firstname, lastname, email, company, phone, pack_souhaite, nombre_collaborateurs, message_commande).
+     Tant que le GUID n'est pas renseigné, le formulaire affiche un message d'erreur avec
+     un repli par email pour ne pas perdre de demande. */
+  var HUBSPOT_PORTAL_ID = "139575435";
+  var HUBSPOT_FORM_GUID = ""; // ⟵ à compléter une fois le formulaire créé dans HubSpot
+  var FALLBACK_EMAIL = "commandes@meandyoutoo.app";
+
+  var form = document.getElementById('orderForm');
+  var errorBox = document.getElementById('formError');
+  var errorText = document.getElementById('formErrorText');
+  var successBox = document.getElementById('formSuccess');
+  var submitBtn = document.getElementById('submitBtn');
+
+  form.addEventListener('submit', function(evt){
+    evt.preventDefault();
+    errorBox.hidden = true;
+    successBox.hidden = true;
+
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    var fields = ['pack_souhaite','firstname','lastname','email','phone','company','nombre_collaborateurs','message_commande'].map(function(name){
+      var el = form.elements[name];
+      return { name: name, value: el ? el.value : '' };
+    }).filter(function(f){ return f.value !== ''; });
+
+    if (!HUBSPOT_FORM_GUID) {
+      errorText.textContent = "La connexion au formulaire n'est pas encore activée. Écrivez-nous directement à " + FALLBACK_EMAIL + " en précisant le pack « " + select.value + " », votre société et vos coordonnées — nous traitons votre demande sous 24h.";
+      errorBox.hidden = false;
+      errorBox.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Envoi…';
+
+    fetch('https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: fields, context: { pageUri: location.href, pageName: document.title } })
+    }).then(function(res){
+      if (!res.ok) throw new Error('HubSpot submission failed: ' + res.status);
+      successBox.hidden = false;
+      successBox.scrollIntoView({ behavior:'smooth', block:'center' });
+      form.reset();
+      select.selectedIndex = 3;
+      updateRecap();
+    }).catch(function(){
+      errorText.textContent = "Une erreur est survenue lors de l'envoi. Écrivez-nous à " + FALLBACK_EMAIL + " en attendant, nous traitons votre demande manuellement.";
+      errorBox.hidden = false;
+    }).finally(function(){
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Envoyer ma demande';
+    });
+  });
+})();
+</script>
+</body>
+</html>
