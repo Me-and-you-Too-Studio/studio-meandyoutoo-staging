@@ -24,7 +24,7 @@
         <h1 class="page-title">Management inclusif</h1>
         <p class="lead">Suivez la diffusion, téléchargez le kit de communication et accédez aux résultats collectifs anonymes.</p>
       </div>
-      <div class="top-actions"><a class="button button-secondary" href="#kit">Kit de communication</a></div>
+      <div class="top-actions"><a class="button button-primary" href="kit-communication.html">Kit de communication</a></div>
     </div>
 
     <section class="stats-grid" aria-label="Suivi de la campagne">
@@ -43,36 +43,32 @@
     </section>
 
     <section class="card" id="kit" style="padding:26px" aria-labelledby="kit-title">
-      <h2 class="section-title" id="kit-title">Kit de communication</h2>
-      <p class="section-desc" style="margin-bottom:18px">De quoi annoncer et relancer votre campagne auprès de vos collaborateurs.</p>
-      <div class="account-grid">
-        <div class="card account-card">
-          <p class="eyebrow">Lien de diffusion</p>
-          <p style="word-break:break-all;color:var(--muted);font-size:.9rem">https://campagnes.meandyoutoo.app/mi-direction-commerciale</p>
-          <button class="button button-secondary" type="button" style="margin-top:12px">Copier le lien</button>
+      <div style="display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap">
+        <div>
+          <h2 class="section-title" id="kit-title">Kit de communication</h2>
+          <p class="section-desc">Lien de diffusion, QR code, messages prêts à l'emploi et visuels livrés pour communiquer sur votre campagne.</p>
         </div>
-        <div class="card account-card">
-          <p class="eyebrow">QR code</p>
-          <p style="color:var(--muted);font-size:.9rem">À diffuser sur vos supports internes (affiches, intranet, newsletter).</p>
-          <button class="button button-secondary" type="button" style="margin-top:12px">Télécharger le QR code</button>
-        </div>
-        <div class="card account-card">
-          <p class="eyebrow">Messages prêts à l'emploi</p>
-          <p style="color:var(--muted);font-size:.9rem">Email de lancement, message de relance à mi-parcours, message de remerciement.</p>
-          <button class="button button-secondary" type="button" style="margin-top:12px">Copier les messages</button>
-        </div>
-        <div class="card account-card">
-          <p class="eyebrow">Visuels &amp; affiches</p>
-          <p style="color:var(--muted);font-size:.9rem">Affiches et bannières à l'identité de votre campagne.</p>
-          <button class="button button-secondary" type="button" style="margin-top:12px">Télécharger les visuels</button>
-        </div>
+        <a class="button button-secondary" href="kit-communication.html">Ouvrir le kit de communication →</a>
       </div>
     </section>
 
-    <div class="top-actions" style="justify-content:flex-end;margin-top:24px">
-      <button class="button button-ghost" type="button">Reprogrammer</button>
-      <button class="button button-ghost" type="button">Archiver</button>
-    </div>
+    <section class="card" style="padding:26px" aria-labelledby="actions-title">
+      <h2 class="section-title" id="actions-title">Actions sur la campagne</h2>
+      <p class="section-desc" style="margin-bottom:18px">Consultez le contenu diffusé, dupliquez cette campagne pour un autre périmètre, ou reprogrammez-la.</p>
+      <div class="action-bar">
+        <a class="button button-secondary" href="theme-management.html">Voir le contenu</a>
+        <a class="button button-secondary" href="kit-communication.html">Kit de communication</a>
+        <button class="button button-ghost" type="button">Dupliquer la campagne</button>
+        <button class="button button-ghost" type="button">Reprogrammer</button>
+        <div class="action-more">
+          <button class="button button-ghost" type="button" data-action-toggle aria-haspopup="true" aria-expanded="false">Autres actions ▾</button>
+          <div class="action-more-panel" role="menu" aria-label="Autres actions">
+            <button class="button button-ghost" type="button" role="menuitem">Enregistrer comme modèle</button>
+            <button class="button button-ghost" type="button" role="menuitem">Archiver</button>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>

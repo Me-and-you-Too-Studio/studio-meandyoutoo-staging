@@ -75,7 +75,44 @@
     });
   }
 
+  /* Menus « Autres actions » (campagne-detail.html, cartes de mes-campagnes.html…)
+     Un seul comportement partagé : bouton [data-action-toggle] + panneau .action-more-panel
+     dans un conteneur .action-more. Un seul menu ouvert à la fois, fermeture au clic extérieur
+     ou à la touche Échap. */
+  function setupActionMenus(){
+    var toggles = document.querySelectorAll('[data-action-toggle]');
+    if (!toggles.length) return;
+
+    function closeAll(except){
+      document.querySelectorAll('.action-more-panel.on').forEach(function(panel){
+        if (panel === except) return;
+        panel.classList.remove('on');
+        var btn = panel.parentElement && panel.parentElement.querySelector('[data-action-toggle]');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    toggles.forEach(function(toggle){
+      toggle.addEventListener('click', function(evt){
+        evt.stopPropagation();
+        var wrap = toggle.closest('.action-more');
+        var panel = wrap ? wrap.querySelector('.action-more-panel') : null;
+        if (!panel) return;
+        var willOpen = !panel.classList.contains('on');
+        closeAll(willOpen ? panel : null);
+        panel.classList.toggle('on', willOpen);
+        toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      });
+    });
+
+    document.addEventListener('click', function(){ closeAll(); });
+    document.addEventListener('keydown', function(evt){
+      if (evt.key === 'Escape') closeAll();
+    });
+  }
+
   renderSidebar();
   renderBottomNav();
   setupMobileToggle();
+  setupActionMenus();
 })();

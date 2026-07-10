@@ -27,6 +27,21 @@
       <div class="top-actions"><a class="button button-primary" href="bibliotheque.html">Nouvelle campagne</a></div>
     </div>
 
+    <section class="alert-strip" aria-label="Points d'attention">
+      <div class="alert-card tone-danger">
+        <span class="alert-icon" aria-hidden="true">⏰</span>
+        <div><strong>1 campagne se termine bientôt</strong><span>Management inclusif clôture le 12/06/2025 — pensez à la relance finale.</span></div>
+      </div>
+      <div class="alert-card tone-info">
+        <span class="alert-icon" aria-hidden="true">📤</span>
+        <div><strong>2 campagnes transmises</strong><span>En attente de publication ou de lancement par Me&YouToo.</span></div>
+      </div>
+      <div class="alert-card tone-success">
+        <span class="alert-icon" aria-hidden="true">📊</span>
+        <div><strong>2 résultats disponibles</strong><span>Consultez les résultats collectifs de vos campagnes terminées.</span></div>
+      </div>
+    </section>
+
     <section aria-labelledby="active-title" style="margin-bottom:8px">
       <div class="section-head" style="margin-top:0">
         <div><h2 class="section-title" id="active-title">En cours &amp; à suivre de près</h2><p class="section-desc">Les campagnes qui demandent une action ou un suivi rapproché.</p></div>
@@ -35,24 +50,55 @@
         <article class="card campaign-card with-cover">
           <img class="campaign-cover" src="assets/img/illustrations/theme-management.png" alt="">
           <div class="campaign-content">
-            <span class="badge badge-success">En cours</span>
+            <span class="badge badge-success">En cours · fin proche</span>
             <h3>Management inclusif</h3>
             <p>12/05/2025 – 12/06/2025 · 1 245 répondants</p>
             <div class="progress" aria-label="65 % de participation"><span style="width:65%"></span></div>
-            <a class="button button-secondary" href="campagne-detail.html">Suivre la campagne</a>
+            <div class="action-bar" style="margin-top:12px">
+              <a class="button button-secondary" href="campagne-detail.html">Suivre la campagne</a>
+              <a class="button button-secondary" href="kit-communication.html">Kit de com</a>
+              <div class="action-more">
+                <button class="button button-ghost" type="button" data-action-toggle aria-haspopup="true" aria-expanded="false" aria-label="Autres actions — Management inclusif">⋯</button>
+                <div class="action-more-panel" role="menu" aria-label="Autres actions — Management inclusif">
+                  <button class="button button-ghost" type="button" role="menuitem">Dupliquer la campagne</button>
+                  <button class="button button-ghost" type="button" role="menuitem">Enregistrer comme modèle</button>
+                  <button class="button button-ghost" type="button" role="menuitem">Archiver</button>
+                </div>
+              </div>
+            </div>
           </div>
         </article>
         <article class="card campaign-card">
           <span class="badge badge-warning">Configuration transmise</span>
           <h3>Handicap</h3>
           <p>Transmise le 8 juin 2025 · en attente de publication Me&YouToo</p>
-          <a class="button button-secondary" href="campagne-detail.html">Voir le contenu</a>
+          <div class="action-bar" style="margin-top:12px">
+            <a class="button button-secondary" href="campagne-detail.html">Voir le contenu</a>
+            <div class="action-more">
+              <button class="button button-ghost" type="button" data-action-toggle aria-haspopup="true" aria-expanded="false" aria-label="Autres actions — Handicap">⋯</button>
+              <div class="action-more-panel" role="menu" aria-label="Autres actions — Handicap">
+                <button class="button button-ghost" type="button" role="menuitem">Dupliquer la campagne</button>
+                <button class="button button-ghost" type="button" role="menuitem">Enregistrer comme modèle</button>
+                <button class="button button-ghost" type="button" role="menuitem">Archiver</button>
+              </div>
+            </div>
+          </div>
         </article>
         <article class="card campaign-card">
           <span class="badge badge-info">Programmée</span>
           <h3>Diversité religieuse</h3>
           <p>Diffusion prévue le 1ᵉʳ juillet 2025</p>
-          <a class="button button-secondary" href="campagne-detail.html">Reprogrammer</a>
+          <div class="action-bar" style="margin-top:12px">
+            <a class="button button-secondary" href="campagne-detail.html">Reprogrammer</a>
+            <div class="action-more">
+              <button class="button button-ghost" type="button" data-action-toggle aria-haspopup="true" aria-expanded="false" aria-label="Autres actions — Diversité religieuse">⋯</button>
+              <div class="action-more-panel" role="menu" aria-label="Autres actions — Diversité religieuse">
+                <button class="button button-ghost" type="button" role="menuitem">Dupliquer la campagne</button>
+                <button class="button button-ghost" type="button" role="menuitem">Enregistrer comme modèle</button>
+                <button class="button button-ghost" type="button" role="menuitem">Archiver</button>
+              </div>
+            </div>
+          </div>
         </article>
       </div>
     </section>
@@ -61,21 +107,76 @@
       <div class="section-head" style="padding:16px 16px 0;margin:0">
         <div><h2 class="section-title" id="list-title">Toutes les campagnes</h2><p class="section-desc">Historique complet, quel que soit le statut.</p></div>
       </div>
-      <table class="data-table">
+
+      <div style="padding:0 16px">
+        <div class="status-filters" role="group" aria-label="Filtrer par statut">
+          <button class="status-pill" type="button" data-filter="toutes" aria-pressed="true">Toutes <span class="count">8</span></button>
+          <button class="status-pill" type="button" data-filter="fin-proche" aria-pressed="false">Fin proche <span class="count">1</span></button>
+          <button class="status-pill" type="button" data-filter="preparation" aria-pressed="false">En préparation <span class="count">2</span></button>
+          <button class="status-pill" type="button" data-filter="transmis" aria-pressed="false">Transmis <span class="count">2</span></button>
+          <button class="status-pill" type="button" data-filter="en-cours" aria-pressed="false">En cours <span class="count">1</span></button>
+          <button class="status-pill" type="button" data-filter="resultats" aria-pressed="false">Résultats disponibles <span class="count">2</span></button>
+          <button class="status-pill" type="button" data-filter="terminees" aria-pressed="false">Terminées <span class="count">3</span></button>
+        </div>
+        <label class="search-field">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" id="campaignSearch" placeholder="Rechercher une campagne ou une thématique…" aria-label="Rechercher une campagne">
+        </label>
+      </div>
+
+      <table class="data-table" id="campaignsTable">
         <thead><tr><th>Campagne</th><th>Thématique</th><th>Statut</th><th>Période</th><th>Passations</th><th>Dernière modif.</th><th>Actions</th></tr></thead>
         <tbody>
-          <tr><td><strong>Management inclusif</strong></td><td>Management</td><td><span class="badge badge-success">En cours</span></td><td>12/05/2025 – 12/06/2025</td><td>1 245</td><td>09/07/2025</td><td><a class="button button-secondary" href="campagne-detail.html">Suivre</a></td></tr>
-          <tr><td><strong>Handicap</strong></td><td>Inclusion</td><td><span class="badge badge-warning">Configuration transmise</span></td><td>À définir</td><td>—</td><td>08/06/2025</td><td><a class="button button-secondary" href="campagne-detail.html">Voir le contenu</a></td></tr>
-          <tr><td><strong>Diversité religieuse</strong></td><td>Convictions</td><td><span class="badge badge-info">Programmée</span></td><td>01/07/2025 – 01/08/2025</td><td>—</td><td>02/06/2025</td><td><a class="button button-secondary" href="campagne-detail.html">Reprogrammer</a></td></tr>
-          <tr><td><strong>Diversité des origines</strong></td><td>Diversité</td><td><span class="badge badge-warning">En préparation</span></td><td>À définir</td><td>—</td><td>28/05/2025</td><td><a class="button button-secondary" href="composer.html">Continuer</a></td></tr>
-          <tr><td><strong>Sexisme au travail</strong></td><td>Égalité</td><td><span class="badge badge-muted">Terminée</span></td><td>18/03/2025 – 18/04/2025</td><td>1 832</td><td>18/04/2025</td><td><a class="button button-secondary" href="campagne-detail.html">Résultats</a></td></tr>
-          <tr><td><strong>LGBT+</strong></td><td>Inclusion</td><td><span class="badge badge-muted">Archivée</span></td><td>12/12/2024 – 12/01/2025</td><td>398</td><td>12/01/2025</td><td><button class="button button-secondary" type="button">Reprogrammer</button></td></tr>
+          <tr data-tags="en-cours fin-proche"><td><strong>Management inclusif</strong></td><td>Management</td><td><span class="badge badge-success">En cours</span></td><td>12/05/2025 – 12/06/2025</td><td>1 245</td><td>09/07/2025</td><td><a class="button button-secondary" href="campagne-detail.html">Suivre</a></td></tr>
+          <tr data-tags="transmis"><td><strong>Handicap</strong></td><td>Inclusion</td><td><span class="badge badge-warning">Configuration transmise</span></td><td>À définir</td><td>—</td><td>08/06/2025</td><td><a class="button button-secondary" href="campagne-detail.html">Voir le contenu</a></td></tr>
+          <tr data-tags="transmis"><td><strong>Diversité religieuse</strong></td><td>Convictions</td><td><span class="badge badge-info">Programmée</span></td><td>01/07/2025 – 01/08/2025</td><td>—</td><td>02/06/2025</td><td><a class="button button-secondary" href="campagne-detail.html">Reprogrammer</a></td></tr>
+          <tr data-tags="preparation"><td><strong>Diversité des origines</strong></td><td>Diversité</td><td><span class="badge badge-warning">En préparation</span></td><td>À définir</td><td>—</td><td>28/05/2025</td><td><a class="button button-secondary" href="composer.html">Continuer</a></td></tr>
+          <tr data-tags="preparation"><td><strong>Intergénérationnel</strong></td><td>Générations</td><td><span class="badge badge-warning">En préparation</span></td><td>À définir</td><td>—</td><td>30/06/2025</td><td><a class="button button-secondary" href="composer.html">Continuer</a></td></tr>
+          <tr data-tags="resultats terminees"><td><strong>Sexisme au travail</strong></td><td>Égalité</td><td><span class="badge badge-muted">Terminée</span></td><td>18/03/2025 – 18/04/2025</td><td>1 832</td><td>18/04/2025</td><td><a class="button button-secondary" href="campagne-detail.html">Résultats</a></td></tr>
+          <tr data-tags="resultats terminees"><td><strong>Collaborateur inclusif</strong></td><td>Comportements</td><td><span class="badge badge-muted">Terminée</span></td><td>02/02/2025 – 02/03/2025</td><td>612</td><td>02/03/2025</td><td><a class="button button-secondary" href="campagne-detail.html">Résultats</a></td></tr>
+          <tr data-tags="terminees"><td><strong>LGBT+</strong></td><td>Inclusion</td><td><span class="badge badge-muted">Archivée</span></td><td>12/12/2024 – 12/01/2025</td><td>398</td><td>12/01/2025</td><td><button class="button button-secondary" type="button">Reprogrammer</button></td></tr>
         </tbody>
       </table>
+      <p id="noResults" class="section-desc" style="display:none;padding:0 16px 20px">Aucune campagne ne correspond à ce filtre.</p>
     </section>
   </main>
 </div>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/app.js"></script>
+<script>
+(function(){
+  var pills = document.querySelectorAll('.status-pill');
+  var rows = document.querySelectorAll('#campaignsTable tbody tr');
+  var search = document.getElementById('campaignSearch');
+  var noResults = document.getElementById('noResults');
+  var activeFilter = 'toutes';
+
+  function applyFilters(){
+    var query = (search.value || '').trim().toLowerCase();
+    var visibleCount = 0;
+    rows.forEach(function(row){
+      var tags = (row.getAttribute('data-tags') || '').split(' ');
+      var matchesFilter = activeFilter === 'toutes' || tags.indexOf(activeFilter) !== -1;
+      var matchesSearch = !query || row.textContent.toLowerCase().indexOf(query) !== -1;
+      var show = matchesFilter && matchesSearch;
+      row.style.display = show ? '' : 'none';
+      if (show) visibleCount++;
+    });
+    noResults.style.display = visibleCount === 0 ? '' : 'none';
+    document.getElementById('campaignsTable').style.display = visibleCount === 0 ? 'none' : '';
+  }
+
+  pills.forEach(function(pill){
+    pill.addEventListener('click', function(){
+      pills.forEach(function(p){ p.setAttribute('aria-pressed', 'false'); });
+      pill.setAttribute('aria-pressed', 'true');
+      activeFilter = pill.getAttribute('data-filter');
+      applyFilters();
+    });
+  });
+
+  search.addEventListener('input', applyFilters);
+})();
+</script>
 </body>
 </html>
