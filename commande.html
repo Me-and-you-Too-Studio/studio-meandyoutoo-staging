@@ -131,7 +131,9 @@
   PACKS.forEach(function(p){
     var opt = document.createElement('option');
     opt.value = p.name;
-    opt.textContent = p.name + (typeof p.volume === 'number' ? ' — ' + p.volume.toLocaleString('fr-FR') + ' passations' : ' — volume illimité');
+    opt.textContent = p.name + (typeof p.volume === 'number'
+      ? ' — ' + p.volume.toLocaleString('fr-FR') + ' passations — ' + p.price.toLocaleString('fr-FR') + ' € HT'
+      : ' — volume illimité — sur devis');
     select.appendChild(opt);
   });
 
