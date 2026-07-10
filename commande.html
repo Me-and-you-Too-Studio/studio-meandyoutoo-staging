@@ -22,15 +22,16 @@
       <div>
         <p class="eyebrow"><a href="packs.html">Commander des passations</a></p>
         <h1 class="page-title">Votre demande de commande</h1>
-        <p class="lead">Vérifiez le pack sélectionné, complétez vos coordonnées : notre équipe valide votre commande sous 24h ouvrées.</p>
+        <p class="lead">Vérifiez le pack sélectionné, complétez vos informations : notre équipe valide votre commande sous 24h ouvrées.</p>
       </div>
     </div>
 
-    <section class="card order-recap" aria-labelledby="recap-title">
+    <section class="card order-recap" id="orderRecap" aria-labelledby="recap-title">
+      <div class="order-recap-icon" id="recapIcon">📦</div>
       <div class="order-recap-info">
-        <h2 class="section-title" id="recap-title" style="margin-bottom:4px">Pack sélectionné</h2>
-        <p id="recapName">—</p>
-        <p id="recapVolume">—</p>
+        <p class="order-recap-eyebrow">Pack sélectionné</p>
+        <h2 class="section-title" id="recap-title" style="margin-bottom:2px"><span id="recapName">—</span></h2>
+        <p id="recapVolume" class="order-recap-volume">—</p>
       </div>
       <div class="order-recap-price">
         <strong id="recapPrice">—</strong>
@@ -39,8 +40,13 @@
     </section>
 
     <section class="card" style="padding:26px;max-width:760px" aria-labelledby="form-title">
-      <h2 class="section-title" id="form-title" style="margin-bottom:4px">Vos coordonnées</h2>
-      <p class="section-desc" style="margin-bottom:20px">Champs obligatoires marqués d'un *.</p>
+      <div class="form-header">
+        <div class="form-header-icon">📝</div>
+        <div>
+          <h2 class="section-title" id="form-title">Vos informations</h2>
+          <p class="section-desc">Champs obligatoires marqués d'un *.</p>
+        </div>
+      </div>
 
       <div id="formError" class="form-error" hidden role="alert">
         <span class="icon">⚠️</span>
@@ -53,12 +59,16 @@
       </div>
 
       <form id="orderForm" novalidate>
+        <h3 class="form-subhead">🎯 Votre pack</h3>
         <div class="form-grid">
           <div class="field field-full">
             <label for="fPack">Pack souhaité *</label>
             <select id="fPack" name="pack_souhaite" required></select>
           </div>
+        </div>
 
+        <h3 class="form-subhead">👤 Contact</h3>
+        <div class="form-grid">
           <div class="field">
             <label for="fPrenom">Prénom *</label>
             <input id="fPrenom" name="firstname" type="text" required autocomplete="given-name">
@@ -73,21 +83,27 @@
             <input id="fEmail" name="email" type="email" required autocomplete="email">
           </div>
           <div class="field">
-            <label for="fTelephone">Téléphone</label>
+            <label for="fTelephone">Téléphone <span class="tag-chip tag-chip-sm">optionnel</span></label>
             <input id="fTelephone" name="phone" type="tel" autocomplete="tel">
           </div>
+        </div>
 
+        <h3 class="form-subhead">🏢 Entreprise</h3>
+        <div class="form-grid">
           <div class="field">
             <label for="fSociete">Société *</label>
             <input id="fSociete" name="company" type="text" required autocomplete="organization">
           </div>
           <div class="field">
-            <label for="fCollaborateurs">Collaborateurs concernés</label>
+            <label for="fCollaborateurs">Collaborateurs concernés <span class="tag-chip tag-chip-sm">optionnel</span></label>
             <input id="fCollaborateurs" name="nombre_de_collaborateurs_concernes" type="number" min="1" inputmode="numeric">
           </div>
+        </div>
 
+        <h3 class="form-subhead">💬 Votre besoin</h3>
+        <div class="form-grid">
           <div class="field field-full">
-            <label for="fMessage">Message ou besoins spécifiques</label>
+            <label for="fMessage">Message ou besoins spécifiques <span class="tag-chip tag-chip-sm">optionnel</span></label>
             <textarea id="fMessage" name="message_ou_besoins_specifiques" rows="4"></textarea>
             <p class="hint">Sujet visé, date de lancement souhaitée, périmètre… tout ce qui nous aide à préparer votre commande.</p>
           </div>
@@ -98,7 +114,7 @@
           <label for="fConsent">J'accepte que Me&YouToo utilise ces informations pour traiter ma demande de commande, conformément à la <a href="#">politique de confidentialité</a>. *</label>
         </div>
 
-        <button class="button button-primary" type="submit" id="submitBtn">Envoyer ma demande</button>
+        <button class="button button-primary" type="submit" id="submitBtn">🚀 Envoyer ma demande</button>
         <p class="form-note">Cette demande ne déclenche pas de facturation immédiate : elle est transmise à notre équipe pour validation et établissement du bon de commande.</p>
       </form>
     </section>
@@ -144,6 +160,8 @@
     select.selectedIndex = 3; // Populaire par défaut
   }
 
+  var recapEl = document.getElementById('orderRecap');
+  var recapIcon = document.getElementById('recapIcon');
   function updateRecap(){
     var p = PACKS.filter(function(x){ return x.name === select.value; })[0] || PACKS[0];
     document.getElementById('recapName').textContent = p.name;
@@ -154,6 +172,12 @@
       ? p.price.toLocaleString('fr-FR') + ' € HT'
       : 'Sur devis';
     document.getElementById('recapUnit').textContent = p.unit;
+
+    recapEl.classList.remove('tone-popular', 'tone-enterprise', 'tone-unlimited');
+    if (p.name === 'Usage intensif') { recapEl.classList.add('tone-unlimited'); recapIcon.textContent = '♾️'; }
+    else if (p.name === 'Entreprise') { recapEl.classList.add('tone-enterprise'); recapIcon.textContent = '🏢'; }
+    else if (p.name === 'Populaire') { recapEl.classList.add('tone-popular'); recapIcon.textContent = '⭐'; }
+    else { recapIcon.textContent = '📦'; }
   }
   select.addEventListener('change', updateRecap);
   updateRecap();
@@ -215,10 +239,4 @@
       errorBox.hidden = false;
     }).finally(function(){
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Envoyer ma demande';
-    });
-  });
-})();
-</script>
-</body>
-</html>
+      submitBtn.textC
