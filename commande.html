@@ -139,7 +139,7 @@
     { name:"Large volume", volume:4000, price:6600, unit:"1,65 € / passation" },
     { name:"Très grand compte", volume:5000, price:7500, unit:"1,50 € / passation" },
     { name:"Très large diffusion", volume:7000, price:9100, unit:"1,30 € / passation" },
-    { name:"Usage intensif", volume:"illimite", price:"sur-devis", unit:"Sur devis" }
+    { name:"Usage intensif", volume:"illimite", price:15000, unit:"Sur devis" }
   ];
 
   var params = new URLSearchParams(location.search);
@@ -147,9 +147,9 @@
   PACKS.forEach(function(p){
     var opt = document.createElement('option');
     opt.value = p.name;
-    opt.textContent = p.name + (typeof p.volume === 'number'
-      ? ' — ' + p.volume.toLocaleString('fr-FR') + ' passations — ' + p.price.toLocaleString('fr-FR') + ' € HT'
-      : ' — volume illimité — sur devis');
+    opt.textContent = p.name + ' — ' +
+      (typeof p.volume === 'number' ? p.volume.toLocaleString('fr-FR') + ' passations' : 'volume illimité') +
+      ' — ' + (typeof p.price === 'number' ? p.price.toLocaleString('fr-FR') + ' € HT' : 'sur devis');
     select.appendChild(opt);
   });
 
