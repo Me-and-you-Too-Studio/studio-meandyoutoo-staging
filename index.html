@@ -14,24 +14,10 @@
 <a class="skip-link" href="#contenu">Aller au contenu</a>
 <header class="mobile-header">
   <img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo Studio">
-  <button class="icon-button" aria-label="Ouvrir le menu" aria-expanded="false"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <button class="icon-button" aria-label="Ouvrir le menu" aria-expanded="false" data-menu-toggle><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
 </header>
 <div class="app-shell">
-  <aside class="sidebar" aria-label="Navigation principale">
-    <div class="brand"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo"><span class="studio-pill">Studio</span></div>
-    <nav class="nav">
-      <a href="index.html" data-nav aria-current="page"><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/></svg></span>Accueil</a>
-      <a href="mes-campagnes.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/></svg></span>Mes campagnes</a>
-      <a href="bibliotheque.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M8 8v8M16 8v8"/></svg></span>Bibliothèque</a>
-      <a href="ressources.html" data-nav><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/></svg></span>Ressources</a>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="help-card"><strong>Besoin d'inspiration&nbsp;?</strong><p>Découvrez tous les sujets de sensibilisation disponibles.</p><a class="button button-primary" href="bibliotheque.html">Explorer la bibliothèque</a></div>
-      <a href="packs.html" class="nav-link">Commander des passations</a>
-      <a href="account.html" class="nav-link">Mon compte</a>
-      <div class="profile"><div class="avatar">C</div><div><strong>Carole Michelon</strong><small>Me&YouToo SAS</small></div></div>
-    </div>
-  </aside>
+  <aside class="sidebar" aria-label="Navigation principale" id="sidebar-root" data-help-title="Besoin d'inspiration&nbsp;?" data-help-text="Découvrez tous les sujets de sensibilisation disponibles." data-help-href="bibliotheque.html" data-help-cta="Explorer la bibliothèque"></aside>
   <main class="main" id="contenu">
     <div class="topbar">
       <div>
@@ -79,7 +65,7 @@
             <h3>Management inclusif</h3>
             <p>Lancée le 12 mai 2025</p>
             <div class="progress" aria-label="65 % de participation"><span style="width:65%"></span></div>
-            <p><strong>1&nbsp;245</strong> passations · 65&nbsp;%</p>
+            <p><strong>1&nbsp;245</strong> répondants · 65&nbsp;%</p>
             <a class="button button-secondary" href="campagne-detail.html">Suivre la campagne</a>
           </div>
         </article>
@@ -87,7 +73,7 @@
           <span class="badge badge-muted">Terminée</span>
           <h3>Sexisme au travail</h3>
           <p>Terminée le 18 avril 2025</p>
-          <p><strong>1&nbsp;832</strong> passations</p>
+          <p><strong>1&nbsp;832</strong> répondants</p>
           <a class="button button-secondary" href="campagne-detail.html">Voir résultats</a>
         </article>
         <article class="card campaign-card">
@@ -109,15 +95,15 @@
           <a class="button button-primary" href="bibliotheque.html">Explorer</a>
         </div>
         <a class="topic-mini" href="theme-origines.html">
-          <div class="topic-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg></div>
+          <div class="topic-icon"><img src="assets/img/illustrations/theme-origines.png" alt=""></div>
           <strong>Diversité des origines</strong><span>52 situations</span>
         </a>
         <a class="topic-mini" href="theme-lgbt.html">
-          <div class="topic-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M22 12h-4M12 22v-4M2 12h4"/></svg></div>
+          <div class="topic-icon"><img src="assets/img/illustrations/theme-lgbt.png" alt=""></div>
           <strong>LGBT+</strong><span>38 situations</span>
         </a>
         <a class="topic-mini" href="theme-intergenerationnel.html">
-          <div class="topic-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></div>
+          <div class="topic-icon"><img src="assets/img/illustrations/theme-intergenerationnel.png" alt=""></div>
           <strong>Intergénérationnel</strong><span>28 situations</span>
         </a>
         <a class="topic-cta" href="bibliotheque.html"><strong>Voir tous les sujets</strong><span>Explorer la bibliothèque Me&YouToo.</span><span aria-hidden="true">→</span></a>
@@ -134,12 +120,7 @@
     </section>
   </main>
 </div>
-<nav class="bottom-nav" aria-label="Navigation mobile">
-  <a href="index.html" data-nav aria-current="page">Accueil</a>
-  <a href="mes-campagnes.html" data-nav>Campagnes</a>
-  <a href="bibliotheque.html" data-nav>Bibliothèque</a>
-  <a href="packs.html" data-nav>Passations</a>
-</nav>
+<nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/app.js"></script>
 </body>
 </html>
