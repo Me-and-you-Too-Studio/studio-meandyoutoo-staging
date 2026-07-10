@@ -16,7 +16,7 @@
   <button class="icon-button" aria-label="Ouvrir le menu" aria-expanded="false" data-menu-toggle><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
 </header>
 <div class="app-shell">
-  <aside class="sidebar" aria-label="Navigation principale" id="sidebar-root" data-help-title="Une question sur votre commande&nbsp;?" data-help-text="Notre équipe vous répond sous 24h ouvrées." data-help-href="ressources.html" data-help-cta="Contacter Me&YouToo"></aside>
+  <aside class="sidebar" aria-label="Navigation principale" id="sidebar-root" data-help-title="Une question sur votre commande&nbsp;?" data-help-text="Notre équipe vous répond sous 24h ouvrées." data-help-href="contact.html" data-help-cta="Contacter Me&YouToo"></aside>
   <main class="main" id="contenu">
     <div class="topbar compact-topbar">
       <div>
@@ -208,7 +208,14 @@
       return;
     }
 
+    function hubspotPackValue(p){
+      return p.name + ' (' + (typeof p.volume === 'number' ? p.volume : 'illimité') + ')';
+    }
     var fields = ['pack_souhaite','firstname','lastname','email','phone','company','nombre_de_collaborateurs_concernes','message_ou_besoins_specifiques'].map(function(name){
+      if (name === 'pack_souhaite') {
+        var pSel = PACKS.filter(function(x){ return x.name === select.value; })[0];
+        return { name: name, value: pSel ? hubspotPackValue(pSel) : select.value };
+      }
       var el = form.elements[name];
       return { name: name, value: el ? el.value : '' };
     }).filter(function(f){ return f.value !== ''; });
