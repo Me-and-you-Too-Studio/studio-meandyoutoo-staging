@@ -166,9 +166,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .topic-cta strong{color:var(--royal-blue);font-size:1.02rem}
 .topic-cta span{color:var(--muted);font-size:.88rem;margin-top:4px;display:block}
 
-.campaign-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.campaign-card{padding:20px;display:grid;grid-template-columns:6px minmax(0,1fr);gap:16px;align-items:start}
-.campaign-card.with-cover{grid-template-columns:6px 110px minmax(0,1fr)}
+.campaign-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
+.campaign-card{padding:20px;display:flex;flex-direction:column;gap:10px;align-items:flex-start;min-width:0;height:100%}
+.campaign-card.with-cover{display:grid;grid-template-columns:110px minmax(0,1fr);gap:18px;align-items:stretch}
+.campaign-card:not(.with-cover)>h3,.campaign-card:not(.with-cover)>p{width:100%}
+.campaign-card:not(.with-cover)>.button,.campaign-card:not(.with-cover)>.action-bar{margin-top:auto}
+.campaign-card h3{overflow-wrap:anywhere}
 .card-bar{width:6px;border-radius:999px;background:#cbd5e1;align-self:stretch;min-height:100%}
 .card-bar.tone-success{background:var(--success)}
 .card-bar.tone-warning{background:var(--sunny-yellow)}
@@ -371,6 +374,7 @@ legend{font-weight:800;color:var(--royal-blue);padding:0 6px}
   .top-illustration{display:none}
   .top-actions{margin-top:16px}
   .stats-grid,.campaign-grid,.topics-grid,.footer-flow,.topic-strip,.packs-grid,.account-grid,.rules-grid{grid-template-columns:1fr}
+  .campaign-card.with-cover{grid-template-columns:90px minmax(0,1fr)}
   .pack-hero{display:block}
   .info-list div{grid-template-columns:1fr}
   .pack-chip-grid{grid-template-columns:repeat(2,1fr)}
