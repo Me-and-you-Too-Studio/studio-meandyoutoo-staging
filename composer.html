@@ -18,12 +18,13 @@
 <div class="app-shell">
   <aside class="sidebar" aria-label="Navigation principale" id="sidebar-root" data-help-title="Besoin d'aide&nbsp;?" data-help-text="Une question sur une situation ou un chapitre&nbsp;?" data-help-href="contact.html" data-help-cta="Contacter Me&YouToo"></aside>
   <main class="main" id="contenu">
-    <div class="topbar compact-topbar">
+    <div class="topbar compact-topbar composer-topbar">
       <div>
         <p class="eyebrow"><a href="theme-management.html">Management inclusif</a></p>
         <h1 class="page-title">Composer votre campagne</h1>
-        <p class="lead">Sélectionnez, remplacez ou personnalisez les situations pour construire une campagne adaptée à votre organisation.</p>
+        <p class="lead">Parcourez chaque chapitre, sélectionnez vos situations et consultez les réponses ainsi que leurs scores méthodologiques.</p>
       </div>
+      <button class="button button-secondary composer-preview" type="button">▶ Tester l’aperçu répondant</button>
     </div>
 
     <nav class="steps" aria-label="Étapes de composition">
@@ -34,70 +35,62 @@
       <span class="step"><span class="step-num">5</span>Transmettre</span>
     </nav>
 
-    <section class="composer">
-      <aside class="composer-side card">
-        <h2 class="section-title">Management inclusif</h2>
-        <p class="section-desc">4 chapitres retenus · 32 situations</p>
-        <div class="progress" aria-label="72 % de sélection dans ce chapitre"><span style="width:72%"></span></div>
-        <p><strong>18 / 32</strong> situations sélectionnées</p>
-        <ul class="clean-list" style="margin:16px 0;padding-left:1.1rem;color:var(--muted)">
-          <li>Équité dans les décisions — 5/6</li>
-          <li>Reconnaissance et valorisation — 4/9</li>
-          <li>Communication et feedback — 6/11</li>
-          <li>Délégation et autonomie — 3/6</li>
-        </ul>
-        <a class="button button-secondary" href="personnalisation.html">Voir le récapitulatif</a>
+    <div class="composer-help" role="note">
+      <span aria-hidden="true">💡</span>
+      <p><strong>Les réponses et les scores sont visibles pour vous aider à choisir les situations.</strong> Le score 2 correspond à la réponse la plus inclusive. Les scores restent verrouillés et ne peuvent être modifiés.</p>
+    </div>
+
+    <section class="composer composer-editor">
+      <aside class="composer-side card" aria-label="Chapitres de la campagne">
+        <div class="composer-side-head">
+          <p class="eyebrow">Votre autodiagnostic</p>
+          <h2 class="section-title">Management inclusif</h2>
+          <p class="section-desc" id="campaign-summary">4 chapitres · 24 situations</p>
+        </div>
+        <div class="progress" aria-label="Progression de la sélection"><span id="selection-progress" style="width:75%"></span></div>
+        <p class="composer-selection-total"><strong id="selected-total">18</strong> / <span id="situations-total">24</span> situations sélectionnées</p>
+        <div class="chapter-nav" id="chapter-nav" role="tablist" aria-label="Choisir un chapitre"></div>
+        <a class="button button-secondary composer-recap" href="personnalisation.html">Voir le récapitulatif</a>
       </aside>
 
       <div class="composer-main card">
-        <h2 class="section-title">Chapitre 1 · Équité dans les décisions</h2>
-        <p class="section-desc">6 situations recommandées · vous pouvez en désélectionner, remplacer ou modifier le texte.</p>
-        <div class="situation-list" style="margin-top:16px">
-          <article class="situation">
-            <span class="drag" aria-hidden="true">⋮⋮</span>
-            <div><p><strong>Prendre en compte tous les points de vue lors d'un arbitrage</strong></p><small>Situation Me&YouToo · Équité &amp; décisions</small></div>
-            <button class="button button-secondary" type="button">Modifier le texte</button>
-          </article>
-          <article class="situation">
-            <span class="drag" aria-hidden="true">⋮⋮</span>
-            <div><p><strong>Répartir équitablement les responsabilités dans une équipe</strong></p><small>Situation Me&YouToo · Équité &amp; décisions</small></div>
-            <button class="button button-secondary" type="button">Remplacer</button>
-          </article>
-          <article class="situation custom">
-            <span class="drag" aria-hidden="true">⋮⋮</span>
-            <div><p><strong>Dans notre organisation, les opportunités de développement ne sont pas toujours communiquées de façon équitable.</strong></p><small>Modifiée par vous · pourra être revue par Me&YouToo pour la bibliothèque</small></div>
-            <button class="button button-secondary" type="button">Modifier</button>
-          </article>
-          <article class="situation">
-            <span class="drag" aria-hidden="true">⋮⋮</span>
-            <div><p><strong>Justifier une décision d'attribution de mission auprès de l'équipe</strong></p><small>Situation Me&YouToo · Équité &amp; décisions</small></div>
-            <button class="button button-secondary" type="button">Remplacer</button>
-          </article>
+        <div class="composer-chapter-head">
+          <div>
+            <p class="chapter-kicker" id="chapter-kicker">Chapitre 1</p>
+            <h2 class="section-title" id="chapter-title">Équité dans les décisions</h2>
+            <p class="section-desc" id="chapter-description"></p>
+          </div>
+          <span class="chapter-count" id="chapter-count">5 / 6 sélectionnées</span>
         </div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px">
-          <button class="button button-secondary" type="button">Remplacer une situation</button>
-          <button class="button button-primary" type="button">Ajouter une situation depuis la bibliothèque</button>
+        <div class="situation-list" id="situation-list"></div>
+        <div class="composer-library-actions">
+          <button class="button button-secondary" type="button" id="replace-situation">⇄ Remplacer une situation</button>
+          <button class="button button-primary" type="button" id="open-library">＋ Ajouter depuis la bibliothèque</button>
         </div>
       </div>
 
       <aside class="composer-aside">
         <div class="aside-box">
-          <h3>Aperçu répondant</h3>
-          <p>Testez l'expérience telle que vos collaborateurs la verront, avec des résultats simulés.</p>
-          <button class="button button-secondary" type="button">Tester mon parcours</button>
+          <h3>Durée estimée</h3>
+          <p><strong id="estimated-duration">8 à 10 minutes</strong><br><span id="duration-detail">18 situations sélectionnées</span></p>
+        </div>
+        <div class="aside-box composer-method-box">
+          <h3>Scoring Me&YouToo</h3>
+          <p>Les réponses et leurs scores sont visibles. Ils sont définis par Me&YouToo et restent non modifiables.</p>
+          <div class="score-legend">
+            <span><b class="score-dot score-0">0</b> Réflexe peu inclusif</span>
+            <span><b class="score-dot score-1">1</b> Réflexe intermédiaire</span>
+            <span><b class="score-dot score-2">2</b> Réflexe inclusif</span>
+          </div>
         </div>
         <div class="aside-box">
-          <h3>Durée estimée</h3>
-          <p>8 à 10 minutes · 24 situations sélectionnées au total</p>
-        </div>
-        <div class="aside-box" style="background:var(--royal-blue-soft)">
-          <h3>Ce que vous ne modifiez pas</h3>
-          <p>Le scoring et les règles méthodologiques restent sous le contrôle des experts Me&YouToo.</p>
+          <h3>Besoin d’un ajustement&nbsp;?</h3>
+          <p>Vous pouvez modifier le texte d’une situation ou la remplacer. Les réponses et le scoring restent protégés.</p>
         </div>
       </aside>
     </section>
 
-    <div class="top-actions" style="justify-content:flex-end;margin-top:24px">
+    <div class="top-actions composer-bottom-actions">
       <a class="button button-ghost" href="theme-management.html">← Revenir au thème</a>
       <a class="button button-primary" href="personnalisation.html">Étape suivante · Personnaliser</a>
     </div>
@@ -105,5 +98,6 @@
 </div>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/app.js"></script>
+<script src="assets/js/composer.js"></script>
 </body>
 </html>
