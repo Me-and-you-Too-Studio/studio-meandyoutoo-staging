@@ -67,11 +67,11 @@
           <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="4" width="12" height="12" rx="2"/><path d="M9 16v2a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V11a2 2 0 0 0-2-2h-2"/></svg>
           Dupliquer la campagne
         </button>
-        <div class="action-more">
-          <button class="button button-secondary" type="button" data-action-toggle aria-haspopup="true" aria-expanded="false">
-            Autres actions
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
-          </button>
+        <details class="action-more">
+          <summary class="button button-ghost">
+            Voir +
+            <svg class="action-more-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </summary>
           <div class="action-more-panel" role="menu" aria-label="Autres actions">
             <button class="button button-ghost" type="button" role="menuitem">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4Z"/></svg>
@@ -82,7 +82,7 @@
               Archiver
             </button>
           </div>
-        </div>
+        </details>
       </div>
     </section>
   </main>
