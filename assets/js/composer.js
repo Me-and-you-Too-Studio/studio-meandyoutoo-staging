@@ -2,7 +2,24 @@
   const params = new URLSearchParams(location.search);
   const themeSlug = params.get('theme') || 'sexisme';
   const projectId = params.get('projectId') || '';
-  const API_BASE = window.STUDIO_API_BASE || localStorage.getItem('studio_api_base') || (location.hostname.includes('staging') || location.hostname === 'localhost' ? 'https://studio-meandyoutoo-api-staging.osc-fr1.scalingo.io' : 'https://studio-meandyoutoo-api.osc-fr1.scalingo.io');
+  function resolveApiBase() {
+    if (window.STUDIO_API_BASE) return String(window.STUDIO_API_BASE).replace(/\/$/, '');
+
+    const hostname = String(location.hostname || '').toLowerCase();
+    const pathname = String(location.pathname || '').toLowerCase();
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isStaging =
+      isLocal ||
+      hostname.includes('staging') ||
+      pathname.includes('/studio-meandyoutoo-staging/') ||
+      pathname.endsWith('/studio-meandyoutoo-staging');
+
+    return isStaging
+      ? 'https://studio-meandyoutoo-api-staging.osc-fr1.scalingo.io'
+      : 'https://studio-meandyoutoo-api.osc-fr1.scalingo.io';
+  }
+
+  const API_BASE = resolveApiBase();
   const state = { chapters: [], active: 0, project: null, library: [] };
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
