@@ -9,4 +9,18 @@
     return data.project;
   }
   window.StudioProject={projectId:projectId,theme:theme,query:query,link:link,createOrResume:createOrResume};
+
+  function bindStepLinks() {
+    const params = new URLSearchParams(location.search);
+    const theme = params.get('theme') || 'sexisme';
+    const projectId = params.get('projectId') || '';
+    document.querySelectorAll('[data-step-page]').forEach(link => {
+      const page = link.dataset.stepPage;
+      const q = new URLSearchParams({ theme });
+      if (projectId && page !== 'theme-sexisme.html') q.set('projectId', projectId);
+      link.href = `${page}?${q.toString()}`;
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindStepLinks);
+  else bindStepLinks();
 })();

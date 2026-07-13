@@ -4,7 +4,7 @@
   let baseTitle='';let socio=[];
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const stripHtml=v=>{const d=document.createElement('div');d.innerHTML=String(v||'').replace(/<br\s*\/?\s*>/gi,'\n').replace(/<\/p>/gi,'\n\n').replace(/<\/li>/gi,'\n');return (d.textContent||'').replace(/\n{3,}/g,'\n\n').trim();};
+  const stripHtml=v=>{let html=String(v||'');const start=html.indexOf('« Nous entendons');if(start>=0)html=html.slice(start);const d=document.createElement('div');d.innerHTML=html.replace(/<br\s*\/?\s*>/gi,'\n').replace(/<\/p>/gi,'\n\n').replace(/<\/li>/gi,'\n');return (d.textContent||'').replace(/\n{3,}/g,'\n\n').trim();};
   const iso=d=>{const x=new Date();x.setDate(x.getDate()+d);return x.toISOString().slice(0,10);};
   const defaultSocio=()=>[
     {q:'Quel est votre genre ?',opts:[{label:'Femme',n:0},{label:'Homme',n:0},{label:'Autre / Je ne souhaite pas répondre',n:0}]},
@@ -12,7 +12,7 @@
   ];
   function show(m){const a=$('param-alert');a.hidden=false;a.textContent=m;}
   function renderSocio(){
-    $('socio-list').innerHTML=socio.map((s,i)=>`<article class="socio-card"><div class="socio-card-head"><span class="socio-number">${i+1}</span><div class="field socio-question"><label>Donnée demandée</label><input data-socio-q="${i}" value="${esc(s.q)}"></div><button class="button button-danger-soft" type="button" data-socio-remove="${i}" ${socio.length<=1?'disabled':''}>Supprimer</button></div><div class="socio-options">${s.opts.map((o,j)=>`<div class="socio-option"><input data-opt-label="${i}:${j}" value="${esc(o.label)}" aria-label="Réponse possible"><input data-opt-n="${i}:${j}" type="number" min="0" value="${Number(o.n)||0}" aria-label="Effectif estimé"><button type="button" class="socio-option-remove" data-opt-remove="${i}:${j}" ${s.opts.length<=2?'disabled':''}>×</button></div>`).join('')}</div><button class="button button-ghost" type="button" data-opt-add="${i}">+ Ajouter une réponse</button></article>`).join('');
+    $('socio-list').innerHTML=socio.map((s,i)=>`<article class="socio-card"><div class="socio-card-head"><span class="socio-number"><small>Critère</small>${i+1}</span><div class="field socio-question"><label>Question posée aux répondants</label><input data-socio-q="${i}" value="${esc(s.q)}"></div><button class="button button-danger-soft" type="button" data-socio-remove="${i}" ${socio.length<=1?'disabled':''}>Supprimer</button></div><div class="socio-options-title"><span>Réponses proposées</span><span>Effectif estimé</span></div><div class="socio-options">${s.opts.map((o,j)=>`<div class="socio-option"><input data-opt-label="${i}:${j}" value="${esc(o.label)}" aria-label="Réponse possible"><input data-opt-n="${i}:${j}" type="number" min="0" value="${Number(o.n)||0}" aria-label="Effectif estimé"><button type="button" class="socio-option-remove" data-opt-remove="${i}:${j}" ${s.opts.length<=2?'disabled':''}>×</button></div>`).join('')}</div><button class="button button-ghost" type="button" data-opt-add="${i}">+ Ajouter une réponse</button></article>`).join('');
     bindSocio();updateVigilance();
   }
   function bindSocio(){
