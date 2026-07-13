@@ -59,7 +59,7 @@
 
   function render(){const ch=state.chapters[state.active];if(!ch)return;$('chapter-kicker').textContent=`Chapitre ${state.active+1}`;$('chapter-title').textContent=ch.title;$('chapter-desc').textContent=ch.locked?(ch.lock_reason||'Cette partie méthodologique est obligatoire et non modifiable.'):`${ch.situations.length} situations retenues · consultez les réponses et scores avant de modifier votre sélection.`;$('library-button').hidden=Boolean(ch.locked);$('situation-list').innerHTML=ch.situations.map(situationHtml).join('');renderNav();bindSituations();}
 
-  async function ensureProject(){if(projectId)return;const project=await window.StudioProject.createOrResume(themeSlug);projectId=String(project.id);location.replace(`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`);throw new Error('redirect');}
+  async function ensureProject(){if(projectId)return;const project=await window.StudioProject.createNew(themeSlug);projectId=String(project.id);location.replace(`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`);throw new Error('redirect');}
   async function load(){try{await ensureProject();const data=await api(`/api/projects/${projectId}/composer`);state.project=data.project;state.chapters=data.chapters;$('catalog-title').textContent=data.project.theme_title;await saveStep('composer');render();}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
 
   $('library-button').onclick=()=>openLibrary('add');

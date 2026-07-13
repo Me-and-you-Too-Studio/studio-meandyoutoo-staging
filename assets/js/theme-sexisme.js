@@ -5,7 +5,7 @@
       link.setAttribute('aria-busy','true');
       var old=link.textContent;link.textContent='Ouverture du brouillon…';
       try{
-        var project=await window.StudioProject.createOrResume('sexisme');
+        var project=await window.StudioProject.createNew('sexisme');
         location.href='composer.html?theme=sexisme&projectId='+encodeURIComponent(project.id);
       }catch(error){
         alert(error.message);link.textContent=old;link.removeAttribute('aria-busy');
