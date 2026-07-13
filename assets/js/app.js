@@ -3,7 +3,13 @@
    les pages HTML ne contiennent qu'un conteneur vide (#sidebar-root / #bottom-nav-root)
    que ce script remplit au chargement, comme un header/menu partagé. */
 (function(){
+  if (!localStorage.getItem('studio_token') && location.pathname.split('/').pop() !== 'login.html') {
+    location.href='login.html';
+    return;
+  }
   var CURRENT = location.pathname.split('/').pop() || 'index.html';
+  var CURRENT_USER = null;
+  try { CURRENT_USER = JSON.parse(localStorage.getItem('studio_user') || 'null'); } catch (e) {}
 
   var NAV_MAIN = [
     { href: 'index.html', label: 'Accueil', icon: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/>' },
@@ -11,6 +17,10 @@
     { href: 'bibliotheque.html', label: 'Bibliothèque', icon: '<path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M8 8v8M16 8v8"/>' },
     { href: 'ressources.html', label: 'Ressources', icon: '<path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/>' }
   ];
+
+  if (CURRENT_USER && CURRENT_USER.role === 'admin') {
+    NAV_MAIN.push({ href: 'admin.html', label: 'Cockpit clients', icon: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h4M7 16h7"/>' });
+  }
 
   var NAV_SECONDARY = [
     { href: 'packs.html', label: 'Commander des passations', icon: '<path d="M3 7h18v12H3z"/><path d="M16 12h5"/><path d="M6 7V5h12v2"/>' },
@@ -50,7 +60,7 @@
       '<div class="sidebar-footer">' +
         '<div class="help-card"><strong>Besoin d’aide&nbsp;?</strong><p>Une question sur votre campagne, vos contenus ou le fonctionnement du Studio&nbsp;?</p><a class="button button-primary" href="contact.html">Contacter Me&YouToo</a></div>' +
         '<nav class="nav nav-secondary" aria-label="Compte et passations">' + NAV_SECONDARY.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
-        '<div class="profile"><div class="avatar">C</div><div class="profile-copy"><strong>Carole Michelon</strong><small>Me&YouToo SAS</small></div></div>' +
+        '<div class="profile"><div class="avatar">' + ((CURRENT_USER && (CURRENT_USER.firstName || CURRENT_USER.email)) ? String(CURRENT_USER.firstName || CURRENT_USER.email).charAt(0).toUpperCase() : 'C') + '</div><div class="profile-copy"><strong>' + (CURRENT_USER ? ((CURRENT_USER.firstName || '') + ' ' + (CURRENT_USER.lastName || '')).trim() || CURRENT_USER.email : 'Compte') + '</strong><small>' + (CURRENT_USER ? (CURRENT_USER.organizationName || (CURRENT_USER.role === 'admin' ? 'Administration' : 'Client')) : '') + '</small><button class="sidebar-logout" type="button" data-logout>Se déconnecter</button></div></div>' +
       '</div>';
   }
 
@@ -139,6 +149,13 @@
   }
 
   renderSidebar();
+  var logoutButton = document.querySelector('[data-logout]');
+  if (logoutButton) logoutButton.addEventListener('click', function(){
+    localStorage.removeItem('studio_token');
+    localStorage.removeItem('studio_user');
+    localStorage.removeItem('studio_organization_id');
+    location.href='login.html';
+  });
   renderBottomNav();
   setupMobileToggle();
   setupSidebarCollapse();
