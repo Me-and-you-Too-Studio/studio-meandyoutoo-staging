@@ -31,24 +31,26 @@
   function navLink(item, withIcon){
     var current = item.href === CURRENT ? ' aria-current="page"' : '';
     var iconHtml = withIcon ? '<span>' + svg(item.icon) + '</span>' : '';
-    return '<a href="' + item.href + '" data-nav' + current + '>' + iconHtml + item.label + '</a>';
+    var labelAttrs = withIcon ? ' aria-label="' + item.label + '" title="' + item.label + '"' : '';
+    return '<a href="' + item.href + '" data-nav' + current + labelAttrs + '>' + iconHtml + item.label + '</a>';
   }
 
   function renderSidebar(){
     var root = document.getElementById('sidebar-root');
     if (!root) return;
-    var helpTitle = root.getAttribute('data-help-title') || "Besoin d'aide&nbsp;?";
-    var helpText = root.getAttribute('data-help-text') || '';
-    var helpHref = root.getAttribute('data-help-href') || 'ressources.html';
-    var helpCta = root.getAttribute('data-help-cta') || 'Contacter Me&YouToo';
 
     root.innerHTML =
-      '<div class="brand"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo"><span class="studio-pill">Studio</span></div>' +
+      '<div class="sidebar-head">' +
+        '<div class="brand"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo"><span class="studio-pill">Studio</span></div>' +
+        '<button class="sidebar-collapse" type="button" data-sidebar-collapse aria-label="Réduire le menu" aria-expanded="true" title="Réduire le menu">' +
+          '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>' +
+        '</button>' +
+      '</div>' +
       '<nav class="nav">' + NAV_MAIN.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
       '<div class="sidebar-footer">' +
-        '<div class="help-card"><strong>' + helpTitle + '</strong><p>' + helpText + '</p><a class="button button-primary" href="' + helpHref + '">' + helpCta + '</a></div>' +
+        '<div class="help-card"><strong>Besoin d’aide&nbsp;?</strong><p>Une question sur votre campagne, vos contenus ou le fonctionnement du Studio&nbsp;?</p><a class="button button-primary" href="contact.html">Contacter Me&YouToo</a></div>' +
         '<nav class="nav nav-secondary" aria-label="Compte et passations">' + NAV_SECONDARY.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
-        '<div class="profile"><div class="avatar">C</div><div><strong>Carole Michelon</strong><small>Me&YouToo SAS</small></div></div>' +
+        '<div class="profile"><div class="avatar">C</div><div class="profile-copy"><strong>Carole Michelon</strong><small>Me&YouToo SAS</small></div></div>' +
       '</div>';
   }
 
@@ -75,6 +77,46 @@
     });
   }
 
+  function setupSidebarCollapse(){
+    var button = document.querySelector('[data-sidebar-collapse]');
+    if (!button) return;
+
+    var storageKey = 'studioSidebarCollapsed';
+    var media = window.matchMedia('(max-width: 820px)');
+
+    function apply(collapsed){
+      if (media.matches) {
+        document.body.classList.remove('sidebar-collapsed');
+        button.setAttribute('aria-expanded', 'true');
+        button.setAttribute('aria-label', 'Réduire le menu');
+        button.setAttribute('title', 'Réduire le menu');
+        return;
+      }
+      document.body.classList.toggle('sidebar-collapsed', collapsed);
+      button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      button.setAttribute('aria-label', collapsed ? 'Déployer le menu' : 'Réduire le menu');
+      button.setAttribute('title', collapsed ? 'Déployer le menu' : 'Réduire le menu');
+    }
+
+    var collapsed = false;
+    try {
+      collapsed = localStorage.getItem(storageKey) === '1';
+    } catch (e) {}
+    apply(collapsed);
+
+    button.addEventListener('click', function(){
+      var next = !document.body.classList.contains('sidebar-collapsed');
+      apply(next);
+      try {
+        localStorage.setItem(storageKey, next ? '1' : '0');
+      } catch (e) {}
+    });
+
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', function(){ apply(document.body.classList.contains('sidebar-collapsed')); });
+    }
+  }
+
   /* Menus « Autres actions » : <details>/<summary> natif (campagne-detail.html,
      cartes de mes-campagnes.html…). Un seul menu ouvert à la fois : on ferme les
      autres <details class="action-more"> quand l'un d'eux s'ouvre. */
@@ -99,5 +141,6 @@
   renderSidebar();
   renderBottomNav();
   setupMobileToggle();
+  setupSidebarCollapse();
   setupActionMenus();
 })();

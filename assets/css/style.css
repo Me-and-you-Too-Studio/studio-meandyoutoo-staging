@@ -508,3 +508,121 @@ legend{font-weight:800;color:var(--royal-blue);padding:0 6px}
 .socio-question{margin:0}.socio-options-title{display:grid;grid-template-columns:minmax(0,1fr) 150px 34px;gap:10px;margin:14px 0 7px;padding:0 2px;color:var(--muted);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em}.socio-options-title span:nth-child(2){text-align:center}
 .socio-options{display:grid;gap:2px}.socio-option{display:grid;grid-template-columns:minmax(0,1fr) 150px 34px;gap:10px;align-items:center;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:6px 2px}.socio-options .socio-option:last-child{border-bottom:0}.socio-option input{border:1px solid transparent;background:transparent;border-radius:10px;padding:9px 11px;min-height:40px;transition:background .15s ease,border-color .15s ease}.socio-option input:hover{background:var(--surface-soft)}.socio-option input:focus{background:#fff;border-color:var(--green-blue);box-shadow:var(--focus)}.socio-option input[type=number]{text-align:center;font-weight:700}.socio-option-remove{border:0;background:transparent;color:var(--muted);width:30px;height:30px;border-radius:8px;font-size:1.05rem;line-height:1;cursor:pointer}.socio-option-remove:hover:not(:disabled){background:var(--danger-soft);color:var(--danger)}.socio-option-remove:disabled{opacity:.3;cursor:not-allowed}
 @media(max-width:760px){.socio-card-head{grid-template-columns:54px 1fr}.socio-card-head .button{grid-column:1/-1}.socio-options-title{display:none}.socio-option{grid-template-columns:1fr 100px 34px}}
+
+/* ==========================================================================
+   SIDEBAR CENTRALISÉE ET RÉTRACTABLE
+   Le contenu du menu et du bloc d’aide est généré uniquement par app.js.
+   ========================================================================== */
+.app-shell{
+  transition:grid-template-columns .2s ease;
+}
+.sidebar{
+  transition:width .2s ease,padding .2s ease;
+  overflow:hidden;
+}
+.sidebar-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+.sidebar-head .brand{
+  min-width:0;
+}
+.sidebar-collapse{
+  width:38px;
+  height:38px;
+  flex:0 0 38px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+  color:var(--royal-blue);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+.sidebar-collapse:hover{
+  background:var(--royal-blue-tint);
+}
+.sidebar-collapse svg{
+  width:18px;
+  height:18px;
+  stroke:currentColor;
+  fill:none;
+  stroke-width:2.2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  transition:transform .2s ease;
+}
+body.sidebar-collapsed .app-shell{
+  grid-template-columns:92px minmax(0,1fr);
+}
+body.sidebar-collapsed .sidebar{
+  padding:20px 14px;
+}
+body.sidebar-collapsed .sidebar-head{
+  display:grid;
+  justify-items:center;
+}
+body.sidebar-collapsed .sidebar-collapse svg{
+  transform:rotate(180deg);
+}
+body.sidebar-collapsed .brand{
+  align-items:center;
+  margin-bottom:14px;
+}
+body.sidebar-collapsed .brand img{
+  width:54px;
+}
+body.sidebar-collapsed .studio-pill,
+body.sidebar-collapsed .nav a:not([aria-label])::after,
+body.sidebar-collapsed .nav a{
+  font-size:0;
+}
+body.sidebar-collapsed .nav a{
+  justify-content:center;
+  gap:0;
+  padding:10px;
+}
+body.sidebar-collapsed .nav a span{
+  width:34px;
+  height:34px;
+}
+body.sidebar-collapsed .help-card{
+  display:none;
+}
+body.sidebar-collapsed .nav-secondary{
+  padding-top:8px;
+}
+body.sidebar-collapsed .profile{
+  justify-content:center;
+  padding-top:12px;
+}
+body.sidebar-collapsed .profile-copy{
+  display:none;
+}
+body.sidebar-collapsed .avatar{
+  width:36px;
+  height:36px;
+}
+body.sidebar-collapsed .main{
+  padding-left:10px;
+  padding-right:10px;
+}
+@media (min-width:821px){
+  body.sidebar-collapsed .nav a{
+    position:relative;
+  }
+  body.sidebar-collapsed .nav a:hover::after,
+  body.sidebar-collapsed .nav a:focus-visible::after{
+    content:attr(aria-label);
+  }
+}
+@media (max-width:820px){
+  .sidebar-collapse{
+    display:none;
+  }
+  body.sidebar-collapsed .app-shell{
+    display:block;
+  }
+}
