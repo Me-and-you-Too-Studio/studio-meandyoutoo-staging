@@ -27,6 +27,8 @@
       <div class="top-actions"><a class="button button-primary" href="bibliotheque.html">Nouvelle campagne</a></div>
     </div>
 
+    <section aria-labelledby="draft-title" class="drafts-section"><div class="section-head" style="margin-top:0"><div><h2 class="section-title" id="draft-title">Brouillons et configurations</h2><p class="section-desc">Les campagnes sont enregistrées en base dès leur création. Reprenez-les à l’étape où vous vous êtes arrêté·e.</p></div></div><div id="draft-campaigns-root" class="draft-campaigns-grid"><p>Chargement des brouillons…</p></div></section>
+
     <section class="alert-strip" aria-label="Points d'attention">
       <div class="alert-card tone-danger">
         <span class="alert-icon" aria-hidden="true">⏰</span>
@@ -143,6 +145,9 @@
 </div>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/app.js"></script>
+<script src="assets/js/api.js?v=20260713-2"></script>
+<script src="assets/js/project-context.js?v=20260713-2"></script>
+<script src="assets/js/mes-campagnes.js?v=20260713-2"></script>
 <script>
 (function(){
   var pills = document.querySelectorAll('.status-pill');
