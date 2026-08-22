@@ -11,6 +11,125 @@
   var CURRENT_USER = null;
   try { CURRENT_USER = JSON.parse(localStorage.getItem('studio_user') || 'null'); } catch (e) {}
 
+  function setupSharedModal(){
+    var dialog = document.createElement('dialog');
+    dialog.className = 'studio-modal';
+    dialog.setAttribute('aria-labelledby', 'studio-modal-title');
+    dialog.setAttribute('aria-describedby', 'studio-modal-message');
+    dialog.innerHTML =
+      '<div class="studio-modal-shell">' +
+        '<button class="studio-modal-close" type="button" aria-label="Fermer la fenêtre" data-modal-close>×</button>' +
+        '<div class="studio-modal-icon" data-modal-icon aria-hidden="true"></div>' +
+        '<div class="studio-modal-copy">' +
+          '<p class="eyebrow" data-modal-eyebrow>Studio Me&amp;YouToo</p>' +
+          '<h2 id="studio-modal-title" data-modal-title></h2>' +
+          '<p id="studio-modal-message" class="studio-modal-message" data-modal-message></p>' +
+          '<div class="studio-modal-field" data-modal-field hidden>' +
+            '<label for="studio-modal-input" data-modal-label></label>' +
+            '<textarea id="studio-modal-input" rows="7" data-modal-input></textarea>' +
+            '<small class="studio-modal-field-error" data-modal-field-error hidden></small>' +
+          '</div>' +
+        '</div>' +
+        '<div class="studio-modal-actions">' +
+          '<button class="button button-ghost" type="button" data-modal-cancel>Annuler</button>' +
+          '<button class="button button-primary" type="button" data-modal-confirm>Confirmer</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(dialog);
+
+    var title = dialog.querySelector('[data-modal-title]');
+    var eyebrow = dialog.querySelector('[data-modal-eyebrow]');
+    var message = dialog.querySelector('[data-modal-message]');
+    var field = dialog.querySelector('[data-modal-field]');
+    var label = dialog.querySelector('[data-modal-label]');
+    var input = dialog.querySelector('[data-modal-input]');
+    var fieldError = dialog.querySelector('[data-modal-field-error]');
+    var cancelButton = dialog.querySelector('[data-modal-cancel]');
+    var confirmButton = dialog.querySelector('[data-modal-confirm]');
+    var closeButton = dialog.querySelector('[data-modal-close]');
+    var resolveCurrent = null;
+    var currentOptions = null;
+    var previouslyFocused = null;
+
+    function finish(confirmed){
+      if(!resolveCurrent)return;
+      var resolver = resolveCurrent;
+      var result = confirmed ? { confirmed:true, value:field.hidden ? null : input.value.trim() } : { confirmed:false, value:null };
+      resolveCurrent = null;
+      currentOptions = null;
+      document.body.classList.remove('studio-modal-open');
+      if(dialog.open)dialog.close();
+      if(previouslyFocused&&typeof previouslyFocused.focus==='function')previouslyFocused.focus();
+      resolver(result);
+    }
+
+    function validateAndFinish(){
+      if(!field.hidden&&currentOptions&&currentOptions.required&&input.value.trim()===''){
+        fieldError.textContent=currentOptions.requiredMessage||'Ce champ doit être renseigné.';
+        fieldError.hidden=false;
+        input.setAttribute('aria-invalid','true');
+        input.focus();
+        return;
+      }
+      finish(true);
+    }
+
+    cancelButton.addEventListener('click',function(){finish(false);});
+    closeButton.addEventListener('click',function(){finish(false);});
+    confirmButton.addEventListener('click',validateAndFinish);
+    input.addEventListener('input',function(){fieldError.hidden=true;input.removeAttribute('aria-invalid');});
+    dialog.addEventListener('cancel',function(event){event.preventDefault();finish(false);});
+    dialog.addEventListener('click',function(event){if(event.target===dialog)finish(false);});
+
+    function open(options){
+      options=options||{};
+      if(resolveCurrent)finish(false);
+      previouslyFocused=document.activeElement;
+      currentOptions=options;
+      dialog.dataset.type=options.type||'info';
+      eyebrow.textContent=options.eyebrow||'Studio Me&YouToo';
+      title.textContent=options.title||'Information';
+      message.textContent=options.message||'';
+      message.hidden=!options.message;
+      cancelButton.textContent=options.cancelLabel||'Annuler';
+      cancelButton.hidden=options.showCancel===false;
+      confirmButton.textContent=options.confirmLabel||'Confirmer';
+      confirmButton.className='button '+((options.type==='danger'||options.type==='error')?'studio-modal-danger':'button-primary');
+      field.hidden=!options.input;
+      fieldError.hidden=true;
+      input.removeAttribute('aria-invalid');
+      if(options.input){
+        label.textContent=options.inputLabel||'Votre texte';
+        input.value=options.value||'';
+        input.placeholder=options.placeholder||'';
+      }
+      document.body.classList.add('studio-modal-open');
+      dialog.showModal();
+      setTimeout(function(){(options.input?input:confirmButton).focus();},0);
+      return new Promise(function(resolve){resolveCurrent=resolve;});
+    }
+
+    window.StudioModal={
+      open:open,
+      alert:async function(options){
+        if(typeof options==='string')options={message:options};
+        var result=await open({...options,showCancel:false,confirmLabel:options.confirmLabel||'Fermer'});
+        return result.confirmed;
+      },
+      confirm:async function(options){
+        if(typeof options==='string')options={message:options};
+        var result=await open({...options,showCancel:true});
+        return result.confirmed;
+      },
+      prompt:async function(options){
+        var result=await open({...options,showCancel:true,input:true});
+        return result.confirmed?result.value:null;
+      }
+    };
+  }
+
+  setupSharedModal();
+
   var NAV_MAIN = [
     { href: 'index.html', label: 'Accueil', icon: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/>' },
     { href: 'mes-campagnes.html', label: 'Mes campagnes', icon: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/>' },

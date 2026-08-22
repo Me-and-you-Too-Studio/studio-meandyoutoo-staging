@@ -8,7 +8,7 @@
         var project=await window.StudioProject.createNew('sexisme');
         location.href='composer.html?theme=sexisme&projectId='+encodeURIComponent(project.id);
       }catch(error){
-        alert(error.message);link.textContent=old;link.removeAttribute('aria-busy');
+        await window.StudioModal.alert({eyebrow:'Création du brouillon',title:'Impossible d’ouvrir la campagne',message:error.message,type:'error',confirmLabel:'Fermer'});link.textContent=old;link.removeAttribute('aria-busy');
       }
     });
   });

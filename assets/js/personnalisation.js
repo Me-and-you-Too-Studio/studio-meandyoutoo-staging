@@ -15,6 +15,6 @@
       bind();const q=`?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;document.getElementById('back-link').href='composer.html'+q;document.getElementById('next-link').href='parametrage.html'+q;
     }catch(e){const a=document.getElementById('profiles-alert');a.hidden=false;a.textContent=e.message;}
   }
-  function bind(){document.querySelectorAll('[data-profile-title],[data-profile-summary],[data-profile-content]').forEach(el=>el.addEventListener('change',async()=>{const id=el.dataset.profileTitle||el.dataset.profileSummary||el.dataset.profileContent;const key=el.dataset.profileTitle?'title':el.dataset.profileSummary?'summary':'content';try{await api(`/api/projects/${projectId}/profiles/${id}`,{method:'PATCH',body:JSON.stringify({[key]:el.value})});}catch(e){alert(e.message);}}));}
+  function bind(){document.querySelectorAll('[data-profile-title],[data-profile-summary],[data-profile-content]').forEach(el=>el.addEventListener('change',async()=>{const id=el.dataset.profileTitle||el.dataset.profileSummary||el.dataset.profileContent;const key=el.dataset.profileTitle?'title':el.dataset.profileSummary?'summary':'content';try{await api(`/api/projects/${projectId}/profiles/${id}`,{method:'PATCH',body:JSON.stringify({[key]:el.value})});}catch(e){await window.StudioModal.alert({eyebrow:'Enregistrement du profil',title:'Modification non enregistrée',message:e.message,type:'error',confirmLabel:'J’ai compris'});}}));}
   load();
 })();
