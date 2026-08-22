@@ -101,7 +101,7 @@
       document.getElementById('active-campaigns-count').textContent=number(data.summary&&data.summary.active_campaigns);
       document.getElementById('draft-campaigns-count').textContent=number(data.summary&&data.summary.draft_campaigns);
       document.getElementById('used-passations-count').textContent=number(data.organization&&data.organization.passations_used);
-      document.getElementById('remaining-passations-count').textContent=number(data.organization&&data.organization.passations_remaining);
+      document.getElementById('remaining-passations-count').textContent=data.organization&&data.organization.pack_unlimited?'Illimité':number(data.organization&&data.organization.passations_remaining);
       if(data.organization&&data.organization.pack_expires_at){
         document.getElementById('remaining-passations-note').textContent='Disponibles jusqu’au '+dateFr(data.organization.pack_expires_at)+' · commander';
       }

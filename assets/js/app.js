@@ -267,6 +267,20 @@
     });
   }
 
+  function setupNotifications(){
+    if(!window.StudioAPI||!StudioAPI.token())return;
+    var shell=document.createElement('div');shell.className='studio-notifications';shell.innerHTML='<button class="notification-bell" type="button" aria-label="Ouvrir les notifications" aria-expanded="false">🔔<span class="notification-count" hidden>0</span></button><section class="notification-panel" hidden><header><div><strong>Notifications</strong><span data-notification-subtitle>Aucune nouveauté</span></div><button type="button" class="notification-read-all">Tout marquer comme lu</button></header><div class="notification-list"><p class="notification-empty">Chargement…</p></div></section>';document.body.appendChild(shell);
+    var bell=shell.querySelector('.notification-bell'),count=shell.querySelector('.notification-count'),panel=shell.querySelector('.notification-panel'),list=shell.querySelector('.notification-list'),subtitle=shell.querySelector('[data-notification-subtitle]');
+    var escape=function(value){return String(value||'').replace(/[&<>"']/g,function(char){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];});};
+    var date=function(value){return value?new Date(value).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'';};
+    async function load(){try{var data=await StudioAPI.request('/api/notifications');count.textContent=data.unread||0;count.hidden=!data.unread;subtitle.textContent=data.unread?(data.unread+' non lue'+(data.unread>1?'s':'')):'Aucune nouveauté';list.innerHTML=(data.notifications||[]).map(function(item){return'<button type="button" class="notification-item '+(item.read_at?'':'unread')+'" data-notification-id="'+item.id+'" data-notification-url="'+escape(item.action_url||'')+'"><span class="notification-item-icon">'+(String(item.type).includes('approved')?'✅':String(item.type).includes('rejected')?'⚠️':'🎟️')+'</span><span><strong>'+escape(item.title)+'</strong><small>'+escape(item.message)+'</small><time>'+escape(date(item.created_at))+'</time></span></button>';}).join('')||'<p class="notification-empty">Aucune notification pour le moment.</p>';bindItems();}catch(error){list.innerHTML='<p class="notification-empty">Notifications indisponibles.</p>';}}
+    function bindItems(){list.querySelectorAll('[data-notification-id]').forEach(function(item){item.onclick=async function(){try{await StudioAPI.request('/api/notifications/'+item.dataset.notificationId+'/read',{method:'PATCH',body:'{}'});}catch(error){}var url=item.dataset.notificationUrl;if(url)location.href=url;else load();};});}
+    bell.onclick=function(){panel.hidden=!panel.hidden;bell.setAttribute('aria-expanded',panel.hidden?'false':'true');if(!panel.hidden)load();};
+    shell.querySelector('.notification-read-all').onclick=async function(){try{await StudioAPI.request('/api/notifications/read-all',{method:'PATCH',body:'{}'});load();}catch(error){}};
+    document.addEventListener('click',function(event){if(!panel.hidden&&!shell.contains(event.target)){panel.hidden=true;bell.setAttribute('aria-expanded','false');}});
+    window.addEventListener('studio:pack-requested',load);load();setInterval(load,60000);
+  }
+
   renderSidebar();
   var logoutButton = document.querySelector('[data-logout]');
   if (logoutButton) logoutButton.addEventListener('click', function(){
@@ -279,4 +293,5 @@
   setupMobileToggle();
   setupSidebarCollapse();
   setupActionMenus();
+  setTimeout(setupNotifications,0);
 })();
