@@ -742,3 +742,49 @@ body.studio-modal-open{overflow:hidden}
 .anonymity-live-alert.warning{border:1px solid #efd18b;background:#fff8e7;color:#805a08}
 @media(max-width:1050px){.inline-pack-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){.parameter-grid>.field{display:block}.parameter-grid>.field>label{display:block;min-height:0}.parameter-grid>.field>input{width:100%}.respondent-volume-card{max-width:none}.inline-pack-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.socio-option,.socio-sub-option{grid-template-columns:minmax(0,1fr) 120px 34px}.socio-option-hint{width:120px}.inline-packs-head{flex-direction:column}.inline-packs-close{position:absolute;right:28px}}
+
+/* Paramétrage — cartes packs alignées sur l'expérience Into The Shift */
+.inline-packs{margin:16px 0 0;padding:22px;border:1px solid #c6e0e8;border-radius:22px;background:#fbfdfe;box-shadow:none}
+.inline-packs-head{margin-bottom:18px;padding:0 2px}
+.inline-packs-head strong{font-size:1.08rem;color:#18375d}
+.inline-packs-head span{max-width:980px;font-size:.9rem;line-height:1.5;color:#536786}
+.inline-packs-head small{display:block;margin-top:6px;color:#75839b;font-size:.75rem}
+.inline-packs-close{flex:0 0 auto;background:#eef4f7;color:#496079}
+.inline-pack-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:11px}
+.inline-pack-grid a{align-items:flex-start;justify-content:center;min-height:132px;padding:18px 13px;border:1px solid #d7e0eb;border-radius:18px;background:#fff;text-align:left;box-shadow:0 7px 15px rgba(24,55,93,.045)}
+.inline-pack-grid a:hover,.inline-pack-grid a:focus-visible{transform:translateY(-2px);border-color:#5db8c5;box-shadow:0 10px 20px rgba(24,55,93,.09)}
+.inline-pack-grid strong{font-size:1.42rem;line-height:1;color:#18375d}
+.inline-pack-grid em{margin:7px 0 6px;color:#007883;font-size:.9rem;line-height:1}
+.inline-pack-grid span{color:#8b98ae;font-size:.69rem;font-weight:900;line-height:1.2;text-transform:uppercase}
+.inline-pack-grid b{position:static;display:inline-flex;margin:0 0 11px;padding:4px 9px;border:1px solid #ecbc42;border-radius:999px;background:#fff;color:#9b6b00;font-size:.61rem}
+.inline-pack-grid a.popular{border:1px solid #f1b72a;background:linear-gradient(135deg,#fff9df,#ffefb4)}
+.inline-pack-grid a.popular strong,.inline-pack-grid a.popular em{color:#9a6300}
+.inline-pack-grid a.enterprise{border:1px solid #72c1d3;background:linear-gradient(135deg,#f0fbfd,#dff4f8)}
+.inline-pack-grid a.enterprise b{border-color:#72c1d3;background:#fff;color:#18375d}
+.inline-pack-grid a.unlimited{border:1px solid #0b6176;background:linear-gradient(145deg,#24416d,#007883);box-shadow:none}
+.inline-pack-grid a.unlimited strong{font-size:1.38rem}
+.inline-pack-grid a.unlimited strong,.inline-pack-grid a.unlimited em,.inline-pack-grid a.unlimited span{color:#fff}
+
+/* Solde du pack : carte colorée, sans double encart ni ombre superflue */
+.passation-credit-card{position:relative;isolation:isolate;overflow:hidden;grid-template-columns:minmax(0,1fr) auto;gap:22px;margin-top:14px;padding:24px;border:1px solid rgba(255,255,255,.24);border-radius:24px;background:linear-gradient(145deg,#236b8c 0%,#087c87 70%,#007783 100%);box-shadow:none}
+.passation-credit-card::before,.passation-credit-card::after{content:'';position:absolute;z-index:-1;border-radius:50%;background:rgba(255,255,255,.09)}
+.passation-credit-card::before{width:260px;height:260px;left:-90px;top:-150px}
+.passation-credit-card::after{width:230px;height:230px;right:-80px;top:-115px}
+.passation-credit-card>div{display:flex;min-width:0;flex-direction:column}
+.passation-credit-card h3{order:1;margin:0 0 12px;font-size:1.35rem}
+.passation-credit-card h3::before{content:'🎟️  MON PACK DE PASSATIONS';display:block;margin-bottom:5px;color:rgba(255,255,255,.78);font-size:.72rem;font-weight:900;letter-spacing:.05em}
+.passation-credit-card .credit-stats{order:2;display:grid;grid-template-columns:repeat(4,minmax(105px,1fr));gap:10px;margin:0 0 14px}
+.passation-credit-card .credit-stat{position:relative;min-width:0;padding:15px 12px;border:1px solid rgba(255,255,255,.28);border-radius:16px;background:rgba(255,255,255,.13);text-align:center}
+.passation-credit-card .credit-stat strong{font-size:1.5rem;color:#fff}
+.passation-credit-card .credit-stat span{font-size:.66rem;font-weight:900;text-transform:uppercase}
+.passation-credit-card .credit-stat:nth-child(1) span::before{content:'🎟️ '}
+.passation-credit-card .credit-stat:nth-child(2) span::before{content:'✅ '}
+.passation-credit-card .credit-stat:nth-child(3) span::before{content:'🚀 '}
+.passation-credit-card .credit-stat:nth-child(4) span::before{content:'🎯 '}
+.passation-credit-card p{order:3;margin:0 0 10px;padding:12px 15px;border-radius:14px;background:#fff;color:#18375d;font-weight:800}
+.passation-credit-card .credit-status{order:4;margin:0;padding:12px 15px;border-radius:14px;background:#fff;color:#18375d}
+.passation-credit-card.warn .credit-status{background:#fff2d7;color:#8c5b00}
+.passation-credit-card .button{position:relative;z-index:1;align-self:center;border:0;background:#ffca43;color:#18375d;box-shadow:none}
+.passation-credit-card .button:hover{background:#ffd768;transform:translateY(-1px)}
+@media(max-width:1100px){.inline-pack-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.passation-credit-card .credit-stats{grid-template-columns:repeat(2,minmax(105px,1fr))}}
+@media(max-width:760px){.inline-packs{padding:16px}.inline-pack-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.inline-pack-grid a{min-height:120px}.passation-credit-card{grid-template-columns:1fr;padding:18px}.passation-credit-card .button{justify-self:stretch;width:100%}}
