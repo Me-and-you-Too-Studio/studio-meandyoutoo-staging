@@ -22,7 +22,7 @@
     <div class="topbar">
       <div>
         <p class="eyebrow">Accueil</p>
-        <h1 class="page-title">Bonjour Carole 👋</h1>
+        <h1 class="page-title">Bonjour <span id="dashboard-first-name">—</span> 👋</h1>
         <p class="lead">Pilotez vos campagnes de sensibilisation et découvrez de nouveaux sujets à explorer avec vos collaborateurs.</p>
       </div>
       <div class="top-illustration" aria-hidden="true"><img src="assets/img/illustrations/dashboard.png" alt=""></div>
@@ -36,19 +36,19 @@
     <section class="stats-grid" aria-label="Indicateurs principaux">
       <article class="stat-card">
         <div class="stat-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 19c.8-4 4-6 6-6s5.2 2 6 6"/><circle cx="17" cy="9" r="2"/><path d="M15 14c2 .3 4 2 5 5"/></svg></div>
-        <p class="stat-label">Campagnes actives</p><p class="stat-value">3</p><p class="stat-note">En cours de diffusion</p>
+        <p class="stat-label">Campagnes actives</p><p class="stat-value" id="active-campaigns-count">—</p><p class="stat-note">Transmises, programmées ou en cours</p>
       </article>
       <article class="stat-card">
         <div class="stat-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/></svg></div>
-        <p class="stat-label">Campagnes en préparation</p><p class="stat-value">2</p><p class="stat-note">À finaliser</p>
+        <p class="stat-label">Campagnes en préparation</p><p class="stat-value" id="draft-campaigns-count">—</p><p class="stat-note">Brouillons à finaliser</p>
       </article>
       <article class="stat-card">
         <div class="stat-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5M12 16V8M16 16v-8"/></svg></div>
-        <p class="stat-label">Passations réalisées</p><p class="stat-value">4&nbsp;286</p><p class="stat-note">Sur les 12 derniers mois</p>
+        <p class="stat-label">Passations utilisées</p><p class="stat-value" id="used-passations-count">—</p><p class="stat-note">Décomptées de votre pack</p>
       </article>
       <a class="stat-card stat-link" href="packs.html">
         <div class="stat-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7h18v12H3z"/><path d="M16 12h5"/><path d="M6 7V5h12v2"/></svg></div>
-        <p class="stat-label">Passations restantes</p><p class="stat-value">7&nbsp;352</p><p class="stat-note">Crédits disponibles · commander</p>
+        <p class="stat-label">Passations restantes</p><p class="stat-value" id="remaining-passations-count">—</p><p class="stat-note" id="remaining-passations-note">Crédits disponibles · commander</p>
       </a>
     </section>
 
@@ -57,31 +57,8 @@
         <div><h2 class="section-title" id="campagnes-title">Mes campagnes récentes</h2><p class="section-desc">Suivez les campagnes lancées, en préparation ou terminées.</p></div>
         <a class="button button-ghost" href="mes-campagnes.html">Voir toutes</a>
       </div>
-      <div class="campaign-grid">
-        <article class="card campaign-card with-cover">
-          <img class="campaign-cover" src="assets/img/illustrations/theme-management.png" alt="">
-          <div class="campaign-content">
-            <span class="badge badge-success">En cours</span>
-            <h3>Management inclusif</h3>
-            <p>Lancée le 12 mai 2025</p>
-            <div class="progress" aria-label="65 % de participation"><span style="width:65%"></span></div>
-            <p><strong>1&nbsp;245</strong> passations · 65&nbsp;%</p>
-            <a class="button button-secondary" href="campagne-detail.html">Suivre la campagne</a>
-          </div>
-        </article>
-        <article class="card campaign-card">
-          <span class="badge badge-muted">Terminée</span>
-          <h3>Sexisme au travail</h3>
-          <p>Terminée le 18 avril 2025</p>
-          <p><strong>1&nbsp;832</strong> passations</p>
-          <a class="button button-secondary" href="campagne-detail.html">Voir résultats</a>
-        </article>
-        <article class="card campaign-card">
-          <span class="badge badge-warning">En préparation</span>
-          <h3>Handicap</h3>
-          <p>Brouillon mis à jour le 8 juin 2025</p>
-          <a class="button button-secondary" href="composer.html">Continuer</a>
-        </article>
+      <div class="campaign-grid" id="dashboard-recent-campaigns" aria-live="polite">
+        <div class="card empty-drafts"><p>Chargement de vos campagnes…</p></div>
       </div>
     </section>
 
@@ -89,24 +66,11 @@
       <div class="section-head">
         <div><h2 class="section-title" id="explore-title">Un nouveau sujet à explorer</h2><p class="section-desc">Incitez vos équipes à progresser sur de nouvelles thématiques D&I.</p></div>
       </div>
-      <div class="topic-strip">
+      <div class="topic-strip" id="dashboard-topics" aria-live="polite">
         <div class="topic-cta hero-cta">
           <div><strong>Découvrir plus de sujets</strong><span>Chaque campagne est composée à partir de situations conçues par nos experts.</span></div>
           <a class="button button-primary" href="bibliotheque.html">Explorer</a>
         </div>
-        <a class="topic-mini" href="theme-origines.html">
-          <div class="topic-icon"><img src="assets/img/illustrations/theme-origines.png" alt=""></div>
-          <strong>Diversité des origines</strong><span>52 situations</span>
-        </a>
-        <a class="topic-mini" href="theme-lgbt.html">
-          <div class="topic-icon"><img src="assets/img/illustrations/theme-lgbt.png" alt=""></div>
-          <strong>LGBT+</strong><span>38 situations</span>
-        </a>
-        <a class="topic-mini" href="theme-intergenerationnel.html">
-          <div class="topic-icon"><img src="assets/img/illustrations/theme-intergenerationnel.png" alt=""></div>
-          <strong>Intergénérationnel</strong><span>28 situations</span>
-        </a>
-        <a class="topic-cta" href="bibliotheque.html"><strong>Voir tous les sujets</strong><span>Explorer la bibliothèque Me&YouToo.</span><span aria-hidden="true">→</span></a>
       </div>
     </section>
 
@@ -121,6 +85,8 @@
   </main>
 </div>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
+<script src="assets/js/api.js"></script>
 <script src="assets/js/app.js"></script>
+<script src="assets/js/index.js"></script>
 </body>
 </html>
