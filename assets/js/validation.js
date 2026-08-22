@@ -6,7 +6,8 @@
     try{
       if(!projectId){location.href='mes-campagnes.html';return;}
       const [d,quotaData]=await Promise.all([api(`/api/projects/${projectId}/composer`),api('/api/me/organization-quota').catch(()=>({organization:null}))]),project=d.project,chapters=d.chapters||[],quota=quotaData.organization;
-      $('validation-theme').textContent=project.theme_title;$('validation-campaign').textContent=project.campaign_name||project.title;$('validation-dates').textContent=`${date(project.launch_date)} – ${date(project.close_date)}`;$('validation-title').textContent=project.respondent_title||'—';$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').textContent=(project.sociodemo||[]).map(x=>x.q).join(', ')||'Aucune';
+      const socioLabels=(project.sociodemo||[]).flatMap(item=>[item.q,...(item.opts||[]).filter(option=>option.subcriterion).map(option=>`${option.subcriterion.q} (si « ${option.label} »)`)]);
+      $('validation-theme').textContent=project.theme_title;$('validation-campaign').textContent=project.campaign_name||project.title;$('validation-dates').textContent=`${date(project.launch_date)} – ${date(project.close_date)}`;$('validation-title').textContent=project.respondent_title||'—';$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').textContent=socioLabels.join(', ')||'Aucune';
       const need=Number(project.estimated_respondents)||0,remaining=quota?Number(quota.passations_remaining)||0:0;
       $('validation-credit-needed').textContent=need?need.toLocaleString('fr-FR'):'—';
       $('validation-credit-remaining').textContent=quota?remaining.toLocaleString('fr-FR'):'À confirmer';

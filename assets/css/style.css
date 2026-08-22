@@ -674,3 +674,19 @@ body.studio-modal-open{overflow:hidden}
 .admin-custom-credit[hidden]{display:none}
 .admin-custom-credit label{font-size:.78rem;color:var(--royal-blue);font-weight:800}
 .admin-custom-credit input{width:100%;margin-top:6px}
+
+/* Paramétrage : sous-critères socio-démographiques conditionnels (niveau 2) */
+.socio-option-block{border-bottom:1px solid var(--line)}
+.socio-option-block>.socio-option{border-bottom:0}
+.socio-add-sub{margin:0 0 8px 12px;border:0;background:transparent;color:var(--royal-blue);font-size:.78rem;font-weight:800;cursor:pointer}
+.socio-add-sub:hover{text-decoration:underline}
+.socio-subcriterion{margin:4px 8px 14px 28px;padding:14px 16px;border:1px solid #cfe0ef;border-left:4px solid var(--royal-blue);border-radius:14px;background:#f5f9fd}
+.socio-sub-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.socio-level-badge{display:inline-flex;padding:5px 9px;border-radius:999px;background:var(--royal-blue-soft);color:var(--royal-blue);font-size:.72rem;font-weight:900}
+.socio-sub-remove{border:0;background:transparent;color:var(--danger);font-weight:800;cursor:pointer}
+.socio-subcriterion .field{margin-bottom:10px}
+.socio-sub-options{display:grid;gap:5px}
+.socio-sub-option{display:grid;grid-template-columns:minmax(0,1fr) 150px 34px;gap:10px;align-items:center}
+.socio-sub-option input{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 11px;min-height:40px}
+.socio-sub-option input[type=number]{text-align:center;font-weight:700}
+@media(max-width:760px){.socio-option,.socio-sub-option{grid-template-columns:1fr 100px 34px}.socio-subcriterion{margin-left:6px}.socio-sub-head{align-items:flex-start;flex-direction:column}}
