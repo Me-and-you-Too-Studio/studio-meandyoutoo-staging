@@ -844,3 +844,43 @@ body.sidebar-collapsed .interface-badge,body.sidebar-collapsed .interface-switch
 .notification-item-check{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;margin-top:4px;border:1.5px solid #bfd0dc;border-radius:9px;background:#fff;color:#007883;font-family:inherit;font-size:15px;font-weight:950;cursor:pointer}.notification-item-check:hover{border-color:#007883;background:#f0f8f7}.notification-item.treated .notification-item-check{border-color:#007883;background:#007883;color:#fff}
 .notification-empty{margin:0;padding:28px 16px;text-align:center;color:#718497;font-size:13px;line-height:1.45}
 @media(max-width:760px){.studio-notifications{right:66px;top:10px}.notification-bell{width:42px;height:42px}.notification-panel{right:8px;top:62px}}
+
+/* Menu latéral compact : cette règle reste en fin de fichier pour ne pas être
+   annulée par les styles généraux déclarés après la structure de la sidebar. */
+@media (min-width:821px) and (max-height:1050px){
+  .sidebar{padding:15px 16px}
+  .brand{gap:4px;margin-bottom:12px}
+  .brand img{width:102px}
+  .studio-pill{padding:3px 8px;font-size:.6rem}
+  .interface-badge{margin:0 0 7px;padding:5px 9px;font-size:.65rem}
+  .nav{gap:2px}
+  .nav a{gap:10px;padding:8px 11px;font-size:.88rem}
+  .nav a span{width:23px;height:23px}
+  .nav a svg{width:16px;height:16px}
+  .sidebar-footer{gap:8px}
+  .help-card{padding:11px 12px;border-radius:14px}
+  .help-card strong{font-size:.86rem}
+  .help-card p{margin-bottom:8px;font-size:.77rem;line-height:1.35}
+  .help-card .button{min-height:38px;padding:8px 11px;font-size:.82rem}
+  .nav-secondary{padding-top:7px;margin-top:0}
+  .profile{gap:9px;padding-top:10px}
+  .avatar{width:34px;height:34px}
+  .profile-copy strong{font-size:.84rem}
+  .profile small,.sidebar-logout{font-size:.7rem}
+  .interface-switch{padding:8px 10px;font-size:.72rem}
+  .admin-help-card{padding:11px}
+  .admin-help-card p{font-size:.72rem}
+}
+
+@media (min-width:821px) and (max-height:900px){
+  .sidebar{padding-top:11px;padding-bottom:11px}
+  .brand{margin-bottom:8px}
+  .brand img{width:94px}
+  .nav a{padding-top:6px;padding-bottom:6px}
+  .help-card{padding:9px 11px}
+  .help-card p{margin-bottom:6px;line-height:1.25}
+  .help-card .button{min-height:34px;padding-top:6px;padding-bottom:6px}
+  .sidebar-footer{gap:5px}
+  .nav-secondary{padding-top:5px}
+  .profile{padding-top:7px}
+}
