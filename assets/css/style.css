@@ -519,7 +519,8 @@ legend{font-weight:800;color:var(--royal-blue);padding:0 6px}
 }
 .sidebar{
   transition:width .2s ease,padding .2s ease;
-  overflow:hidden;
+  overflow-x:hidden;
+  overflow-y:auto;
 }
 .sidebar-head{
   display:flex;
