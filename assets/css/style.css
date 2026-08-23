@@ -57,7 +57,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
 .app-shell{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:100vh;max-width:1680px;margin:0 auto;padding:16px;gap:16px}
 .mobile-header{display:none}
-.sidebar{position:sticky;top:16px;height:calc(100vh - 32px);background:rgba(255,255,255,.97);border:1px solid var(--line);border-radius:var(--radius-lg);padding:24px 18px;box-shadow:var(--shadow-md);display:flex;flex-direction:column}
+.sidebar{position:sticky;top:16px;height:calc(100vh - 32px);background:rgba(255,255,255,.97);border:1px solid var(--line);border-radius:var(--radius-lg);padding:24px 18px;box-shadow:var(--shadow-md);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#c6d8e2 transparent}
+.sidebar::-webkit-scrollbar{width:7px}.sidebar::-webkit-scrollbar-track{background:transparent}.sidebar::-webkit-scrollbar-thumb{border-radius:999px;background:#c6d8e2}.sidebar::-webkit-scrollbar-thumb:hover{background:#9fbcca}
 .brand{display:flex;flex-direction:column;gap:6px;margin-bottom:28px}
 .brand img{width:124px}
 .studio-pill{align-self:flex-start;background:var(--royal-blue);color:#fff;font-weight:800;letter-spacing:.1em;font-size:.66rem;padding:4px 9px;border-radius:999px;text-transform:uppercase}
