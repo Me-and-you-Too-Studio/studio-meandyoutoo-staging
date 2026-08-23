@@ -10,6 +10,15 @@
   var CURRENT = location.pathname.split('/').pop() || 'index.html';
   var CURRENT_USER = null;
   try { CURRENT_USER = JSON.parse(localStorage.getItem('studio_user') || 'null'); } catch (e) {}
+  var IS_ADMIN = Boolean(CURRENT_USER && CURRENT_USER.role === 'admin');
+  var INTERFACE_MODE = IS_ADMIN && sessionStorage.getItem('studio_interface_mode') !== 'client' ? 'admin' : 'client';
+  if (IS_ADMIN && CURRENT === 'admin.html') {
+    INTERFACE_MODE = 'admin';
+    sessionStorage.setItem('studio_interface_mode', 'admin');
+  } else if (IS_ADMIN && INTERFACE_MODE === 'admin') {
+    location.href = 'admin.html';
+    return;
+  }
 
   function setupSharedModal(){
     var dialog = document.createElement('dialog');
@@ -137,9 +146,9 @@
     { href: 'ressources.html', label: 'Ressources', icon: '<path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/>' }
   ];
 
-  if (CURRENT_USER && CURRENT_USER.role === 'admin') {
-    NAV_MAIN.push({ href: 'admin.html', label: 'Cockpit clients', icon: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h4M7 16h7"/>' });
-  }
+  var NAV_ADMIN = [
+    { href: 'admin.html', label: 'Cockpit clients', icon: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h4M7 16h7"/>' }
+  ];
 
   var NAV_SECONDARY = [
     { href: 'packs.html', label: 'Commander des passations', icon: '<path d="M3 7h18v12H3z"/><path d="M16 12h5"/><path d="M6 7V5h12v2"/>' },
@@ -168,6 +177,12 @@
     var root = document.getElementById('sidebar-root');
     if (!root) return;
 
+    var adminInterface = IS_ADMIN && INTERFACE_MODE === 'admin';
+    var mainNavigation = adminInterface ? NAV_ADMIN : NAV_MAIN;
+    var secondaryNavigation = adminInterface ? [] : NAV_SECONDARY;
+    var roleLabel = adminInterface ? 'Administratrice' : 'Espace client';
+    var switchButton = IS_ADMIN ? '<button class="interface-switch" type="button" data-interface-switch="' + (adminInterface ? 'client' : 'admin') + '">' + (adminInterface ? 'Voir mon espace client' : 'Revenir à l’administration') + '</button>' : '';
+    root.classList.toggle('sidebar-admin', adminInterface);
     root.innerHTML =
       '<div class="sidebar-head">' +
         '<div class="brand"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo"><span class="studio-pill">Studio</span></div>' +
@@ -175,11 +190,13 @@
           '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>' +
         '</button>' +
       '</div>' +
-      '<nav class="nav">' + NAV_MAIN.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
+      '<div class="interface-badge ' + (adminInterface ? 'interface-badge-admin' : 'interface-badge-client') + '">' + roleLabel + '</div>' +
+      '<nav class="nav">' + mainNavigation.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
       '<div class="sidebar-footer">' +
-        '<div class="help-card"><strong>Besoin d’aide&nbsp;?</strong><p>Une question sur votre campagne, vos contenus ou le fonctionnement du Studio&nbsp;?</p><a class="button button-primary" href="contact.html">Contacter Me&YouToo</a></div>' +
-        '<nav class="nav nav-secondary" aria-label="Compte et passations">' + NAV_SECONDARY.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
-        '<div class="profile"><div class="avatar">' + ((CURRENT_USER && (CURRENT_USER.firstName || CURRENT_USER.email)) ? String(CURRENT_USER.firstName || CURRENT_USER.email).charAt(0).toUpperCase() : 'C') + '</div><div class="profile-copy"><strong>' + (CURRENT_USER ? ((CURRENT_USER.firstName || '') + ' ' + (CURRENT_USER.lastName || '')).trim() || CURRENT_USER.email : 'Compte') + '</strong><small>' + (CURRENT_USER ? (CURRENT_USER.organizationName || (CURRENT_USER.role === 'admin' ? 'Administration' : 'Client')) : '') + '</small><button class="sidebar-logout" type="button" data-logout>Se déconnecter</button></div></div>' +
+        (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><strong>Besoin d’aide&nbsp;?</strong><p>Une question sur votre campagne, vos contenus ou le fonctionnement du Studio&nbsp;?</p><a class="button button-primary" href="contact.html">Contacter Me&YouToo</a></div>') +
+        (secondaryNavigation.length ? '<nav class="nav nav-secondary" aria-label="Compte et passations">' + secondaryNavigation.map(function(i){ return navLink(i, true); }).join('') + '</nav>' : '') +
+        switchButton +
+        '<div class="profile"><div class="avatar">' + ((CURRENT_USER && (CURRENT_USER.firstName || CURRENT_USER.email)) ? String(CURRENT_USER.firstName || CURRENT_USER.email).charAt(0).toUpperCase() : 'C') + '</div><div class="profile-copy"><strong>' + (CURRENT_USER ? ((CURRENT_USER.firstName || '') + ' ' + (CURRENT_USER.lastName || '')).trim() || CURRENT_USER.email : 'Compte') + '</strong><small>' + roleLabel + ' · ' + (CURRENT_USER ? (CURRENT_USER.organizationName || 'Me&YouToo') : '') + '</small><button class="sidebar-logout" type="button" data-logout>Se déconnecter</button></div></div>' +
       '</div>';
   }
 
@@ -273,21 +290,29 @@
     var bell=shell.querySelector('.notification-bell'),count=shell.querySelector('.notification-count'),panel=shell.querySelector('.notification-panel'),list=shell.querySelector('.notification-list'),subtitle=shell.querySelector('[data-notification-subtitle]');
     var escape=function(value){return String(value||'').replace(/[&<>"']/g,function(char){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];});};
     var date=function(value){return value?new Date(value).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'';};
-    async function load(){try{var data=await StudioAPI.request('/api/notifications');count.textContent=data.unread>9?'9+':(data.unread||0);count.hidden=!data.unread;subtitle.textContent=data.unread?(data.unread+' non lue'+(data.unread>1?'s':'')):'Aucune nouveauté';list.innerHTML=(data.notifications||[]).map(function(item){var read=Boolean(item.read_at);return'<article class="notification-item '+(read?'treated':'unread')+'" data-notification-id="'+item.id+'" data-notification-url="'+escape(item.action_url||'')+'"><span class="notification-item-icon">'+(String(item.type).includes('approved')?'✅':String(item.type).includes('rejected')?'⚠️':'🎟️')+'</span><button type="button" class="notification-item-main"><strong>'+escape(item.title)+'</strong><small>'+escape(item.message)+'</small><time>'+escape(date(item.created_at))+'</time></button><button type="button" class="notification-item-check" aria-label="'+(read?'Notification traitée':'Marquer comme lue')+'">'+(read?'✓':'')+'</button></article>';}).join('')||'<p class="notification-empty">Aucune notification pour le moment.</p>';bindItems();}catch(error){list.innerHTML='<p class="notification-empty">Notifications indisponibles.</p>';}}
-    function mark(item,navigate){return StudioAPI.request('/api/notifications/'+item.dataset.notificationId+'/read',{method:'PATCH',body:'{}'}).catch(function(){}).then(function(){var url=item.dataset.notificationUrl;if(navigate&&url)location.href=url;else load();});}
+    var notificationAudience=IS_ADMIN?(INTERFACE_MODE==='client'?'client':'admin'):'client';
+    async function load(){try{var data=await StudioAPI.request('/api/notifications?audience='+notificationAudience);count.textContent=data.unread>9?'9+':(data.unread||0);count.hidden=!data.unread;subtitle.textContent=data.unread?(data.unread+' non lue'+(data.unread>1?'s':'')):'Aucune nouveauté';list.innerHTML=(data.notifications||[]).map(function(item){var read=Boolean(item.read_at);return'<article class="notification-item '+(read?'treated':'unread')+'" data-notification-id="'+item.id+'" data-notification-url="'+escape(item.action_url||'')+'"><span class="notification-item-icon">'+(String(item.type).includes('approved')?'✅':String(item.type).includes('rejected')?'⚠️':'🎟️')+'</span><button type="button" class="notification-item-main"><strong>'+escape(item.title)+'</strong><small>'+escape(item.message)+'</small><time>'+escape(date(item.created_at))+'</time></button><button type="button" class="notification-item-check" aria-label="'+(read?'Notification traitée':'Marquer comme lue')+'">'+(read?'✓':'')+'</button></article>';}).join('')||'<p class="notification-empty">Aucune notification pour le moment.</p>';bindItems();}catch(error){list.innerHTML='<p class="notification-empty">Notifications indisponibles.</p>';}}
+    function mark(item,navigate){return StudioAPI.request('/api/notifications/'+item.dataset.notificationId+'/read?audience='+notificationAudience,{method:'PATCH',body:'{}'}).catch(function(){}).then(function(){var url=item.dataset.notificationUrl;if(navigate&&url)location.href=url;else load();});}
     function bindItems(){list.querySelectorAll('[data-notification-id]').forEach(function(item){item.querySelector('.notification-item-main').onclick=function(){mark(item,true);};item.querySelector('.notification-item-check').onclick=function(){mark(item,false);};});}
     bell.onclick=function(){panel.hidden=!panel.hidden;bell.setAttribute('aria-expanded',panel.hidden?'false':'true');if(!panel.hidden)load();};
-    shell.querySelector('.notification-read-all').onclick=async function(){try{await StudioAPI.request('/api/notifications/read-all',{method:'PATCH',body:'{}'});load();}catch(error){}};
+    shell.querySelector('.notification-read-all').onclick=async function(){try{await StudioAPI.request('/api/notifications/read-all?audience='+notificationAudience,{method:'PATCH',body:'{}'});load();}catch(error){}};
     document.addEventListener('click',function(event){if(!panel.hidden&&!shell.contains(event.target)){panel.hidden=true;bell.setAttribute('aria-expanded','false');}});
     window.addEventListener('studio:pack-requested',load);load();setInterval(load,60000);
   }
 
   renderSidebar();
+  var interfaceButton = document.querySelector('[data-interface-switch]');
+  if (interfaceButton) interfaceButton.addEventListener('click', function(){
+    var next = interfaceButton.dataset.interfaceSwitch;
+    StudioAPI.setInterfaceMode(next);
+    location.href = next === 'admin' ? 'admin.html' : 'index.html';
+  });
   var logoutButton = document.querySelector('[data-logout]');
   if (logoutButton) logoutButton.addEventListener('click', function(){
     localStorage.removeItem('studio_token');
     localStorage.removeItem('studio_user');
     localStorage.removeItem('studio_organization_id');
+    sessionStorage.removeItem('studio_interface_mode');
     location.href='login.html';
   });
   renderBottomNav();

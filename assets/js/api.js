@@ -37,6 +37,17 @@
     var current=user();
     return current&&current.organizationId?current.organizationId:(localStorage.getItem('studio_organization_id')||'');
   }
+  function interfaceMode(){
+    var current=user();
+    if(!current||current.role!=='admin')return 'client';
+    return sessionStorage.getItem('studio_interface_mode')==='client'?'client':'admin';
+  }
+  function setInterfaceMode(mode){
+    var current=user();
+    var next=current&&current.role==='admin'&&mode==='client'?'client':'admin';
+    sessionStorage.setItem('studio_interface_mode',next);
+    return next;
+  }
   async function login(email,password){
     var data=await request('/api/auth/login',{method:'POST',body:JSON.stringify({email:email,password:password})});
     saveSession(data);return data;
@@ -47,6 +58,6 @@
     if(requiredRole&&current.role!==requiredRole){location.href='index.html';return false;}
     return true;
   }
-  function logout(){clearSession();location.href='login.html';}
-  window.StudioAPI={base:resolveApiBase,request:request,organizationId:organizationId,token:token,user:user,login:login,logout:logout,requireAuth:requireAuth};
+  function logout(){clearSession();sessionStorage.removeItem('studio_interface_mode');location.href='login.html';}
+  window.StudioAPI={base:resolveApiBase,request:request,organizationId:organizationId,token:token,user:user,login:login,logout:logout,requireAuth:requireAuth,interfaceMode:interfaceMode,setInterfaceMode:setInterfaceMode};
 })();
