@@ -59,6 +59,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .mobile-header{display:none}
 .sidebar{position:sticky;top:16px;height:calc(100vh - 32px);background:rgba(255,255,255,.97);border:1px solid var(--line);border-radius:var(--radius-lg);padding:24px 18px;box-shadow:var(--shadow-md);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#c6d8e2 transparent}
 .sidebar::-webkit-scrollbar{width:7px}.sidebar::-webkit-scrollbar-track{background:transparent}.sidebar::-webkit-scrollbar-thumb{border-radius:999px;background:#c6d8e2}.sidebar::-webkit-scrollbar-thumb:hover{background:#9fbcca}
+@media (min-width:821px) and (max-height:1050px){
+  .sidebar{padding:15px 16px}
+  .brand{gap:4px;margin-bottom:12px}.brand img{width:102px}.studio-pill{padding:3px 8px;font-size:.6rem}
+  .interface-badge{margin:0 0 7px;padding:5px 9px;font-size:.65rem}
+  .nav{gap:2px}.nav a{gap:10px;padding:8px 11px;font-size:.88rem}.nav a span{width:23px;height:23px}.nav a svg{width:16px;height:16px}
+  .sidebar-footer{gap:8px}.help-card{padding:11px 12px;border-radius:14px}.help-card strong{font-size:.86rem}.help-card p{margin-bottom:8px;font-size:.77rem;line-height:1.35}.help-card .button{min-height:38px;padding:8px 11px;font-size:.82rem}
+  .nav-secondary{padding-top:7px;margin-top:0}.profile{gap:9px;padding-top:10px}.avatar{width:34px;height:34px}.profile-copy strong{font-size:.84rem}.profile small,.sidebar-logout{font-size:.7rem}
+  .interface-switch{padding:8px 10px;font-size:.72rem}.admin-help-card{padding:11px}.admin-help-card p{font-size:.72rem}
+}
 .brand{display:flex;flex-direction:column;gap:6px;margin-bottom:28px}
 .brand img{width:124px}
 .studio-pill{align-self:flex-start;background:var(--royal-blue);color:#fff;font-weight:800;letter-spacing:.1em;font-size:.66rem;padding:4px 9px;border-radius:999px;text-transform:uppercase}
