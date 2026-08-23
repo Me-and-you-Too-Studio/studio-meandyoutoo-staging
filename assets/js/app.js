@@ -300,6 +300,12 @@
     window.addEventListener('studio:pack-requested',load);load();setInterval(load,60000);
   }
 
+  function trackProductActivity(){
+    if(!window.StudioAPI||!StudioAPI.token())return;
+    var params=new URLSearchParams(location.search),projectId=params.get('projectId')||params.get('id')||localStorage.getItem('studio_current_project_id')||null;
+    StudioAPI.request('/api/me/activity',{method:'POST',body:JSON.stringify({page:CURRENT,eventType:'page_view',projectId:/^\d+$/.test(String(projectId||''))?Number(projectId):null})}).catch(function(){});
+  }
+
   renderSidebar();
   var interfaceButton = document.querySelector('[data-interface-switch]');
   if (interfaceButton) interfaceButton.addEventListener('click', function(){
@@ -319,5 +325,6 @@
   setupMobileToggle();
   setupSidebarCollapse();
   setupActionMenus();
+  setTimeout(trackProductActivity,0);
   setTimeout(setupNotifications,0);
 })();
