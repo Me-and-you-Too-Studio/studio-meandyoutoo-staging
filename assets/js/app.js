@@ -178,8 +178,7 @@
     if (!root) return;
 
     var adminInterface = IS_ADMIN && INTERFACE_MODE === 'admin';
-    var mainNavigation = adminInterface ? NAV_ADMIN : NAV_MAIN;
-    var secondaryNavigation = adminInterface ? [] : NAV_SECONDARY;
+    var mainNavigation = adminInterface ? NAV_ADMIN : NAV_MAIN.concat(NAV_SECONDARY);
     var roleLabel = adminInterface ? 'Administratrice' : 'Espace client';
     var switchButton = IS_ADMIN ? '<button class="interface-switch" type="button" data-interface-switch="' + (adminInterface ? 'client' : 'admin') + '">' + (adminInterface ? 'Voir mon espace client' : 'Revenir à l’administration') + '</button>' : '';
     root.classList.toggle('sidebar-admin', adminInterface);
@@ -197,7 +196,6 @@
       '<nav class="nav">' + mainNavigation.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
       '<div class="sidebar-footer">' +
         (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><strong>Besoin d’aide&nbsp;?</strong><p>Une question sur votre campagne, vos contenus ou le fonctionnement du Studio&nbsp;?</p><a class="button button-primary" href="contact.html">Contacter Me&YouToo</a></div>') +
-        (secondaryNavigation.length ? '<nav class="nav nav-secondary" aria-label="Compte et passations">' + secondaryNavigation.map(function(i){ return navLink(i, true); }).join('') + '</nav>' : '') +
         switchButton +
         '<div class="profile"><div class="avatar">' + ((CURRENT_USER && (CURRENT_USER.firstName || CURRENT_USER.email)) ? String(CURRENT_USER.firstName || CURRENT_USER.email).charAt(0).toUpperCase() : 'C') + '</div><div class="profile-copy"><strong>' + (CURRENT_USER ? ((CURRENT_USER.firstName || '') + ' ' + (CURRENT_USER.lastName || '')).trim() || CURRENT_USER.email : 'Compte') + '</strong><small>' + roleLabel + ' · ' + (CURRENT_USER ? (CURRENT_USER.organizationName || 'Me&YouToo') : '') + '</small><button class="sidebar-logout" type="button" data-logout>Se déconnecter</button></div></div>' +
       '</div>';
@@ -304,10 +302,10 @@
     async function load(){try{var data=await StudioAPI.request('/api/notifications?audience='+notificationAudience);var unread=Number(data.unread)||0;count.textContent=unread>99?'99+':unread;count.hidden=!unread;shell.classList.toggle('has-unread',Boolean(unread));subtitle.textContent=unread?(unread+' non lue'+(unread>1?'s':'')):'Tout est à jour';list.innerHTML=(data.notifications||[]).map(function(item){var read=Boolean(item.read_at);return'<article class="notification-item '+(read?'treated':'unread')+'" data-notification-id="'+item.id+'" data-notification-url="'+escape(item.action_url||'')+'"><span class="notification-item-icon">'+(String(item.type).includes('approved')?'✅':String(item.type).includes('rejected')?'⚠️':'🎟️')+'</span><button type="button" class="notification-item-main"><strong>'+escape(item.title)+'</strong><small>'+escape(item.message)+'</small><time>'+escape(date(item.created_at))+'</time></button><button type="button" class="notification-item-check" aria-label="'+(read?'Notification traitée':'Marquer comme lue')+'">'+(read?'✓':'')+'</button></article>';}).join('')||'<p class="notification-empty">Aucune notification pour le moment.</p>';bindItems();}catch(error){list.innerHTML='<p class="notification-empty">Notifications indisponibles.</p>';}}
     function mark(item,navigate){return StudioAPI.request('/api/notifications/'+item.dataset.notificationId+'/read?audience='+notificationAudience,{method:'PATCH',body:'{}'}).catch(function(){}).then(function(){var url=item.dataset.notificationUrl;if(navigate&&url)location.href=url;else load();});}
     function bindItems(){list.querySelectorAll('[data-notification-id]').forEach(function(item){item.querySelector('.notification-item-main').onclick=function(){mark(item,true);};item.querySelector('.notification-item-check').onclick=function(){mark(item,false);};});}
-    bell.onclick=function(){panel.hidden=!panel.hidden;bell.setAttribute('aria-expanded',panel.hidden?'false':'true');if(!panel.hidden)load();};
+    bell.onclick=function(){panel.hidden=!panel.hidden;bell.setAttribute('aria-expanded',panel.hidden?'false':'true');document.body.classList.toggle('notification-panel-open',!panel.hidden);if(!panel.hidden)load();};
     shell.querySelector('.notification-read-all').onclick=async function(){try{await StudioAPI.request('/api/notifications/read-all?audience='+notificationAudience,{method:'PATCH',body:'{}'});load();}catch(error){}};
-    document.addEventListener('click',function(event){if(!panel.hidden&&!shell.contains(event.target)){panel.hidden=true;bell.setAttribute('aria-expanded','false');}});
-    document.addEventListener('keydown',function(event){if(event.key==='Escape'&&!panel.hidden){panel.hidden=true;bell.setAttribute('aria-expanded','false');bell.focus();}});
+    document.addEventListener('click',function(event){if(!panel.hidden&&!shell.contains(event.target)){panel.hidden=true;bell.setAttribute('aria-expanded','false');document.body.classList.remove('notification-panel-open');}});
+    document.addEventListener('keydown',function(event){if(event.key==='Escape'&&!panel.hidden){panel.hidden=true;bell.setAttribute('aria-expanded','false');document.body.classList.remove('notification-panel-open');bell.focus();}});
     window.addEventListener('studio:pack-requested',load);load();setInterval(load,60000);
   }
 
