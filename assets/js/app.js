@@ -287,8 +287,13 @@
     });
   }
 
-  function setupNotifications(){
-    if(!window.StudioAPI||!StudioAPI.token()||document.querySelector('.studio-notifications'))return;
+  function setupNotifications(attempt){
+    attempt=attempt||0;
+    if(document.querySelector('.studio-notifications'))return;
+    if(!window.StudioAPI||!StudioAPI.token()){
+      if(attempt<20)setTimeout(function(){setupNotifications(attempt+1);},100);
+      return;
+    }
     var root=document.getElementById('notification-root');
     if(!root)return;
     var shell=document.createElement('div');shell.className='studio-notifications '+(root.classList.contains('sidebar-notification-root')?'notification-placement-sidebar':'notification-placement-admin');shell.innerHTML='<button class="notification-bell" type="button" aria-label="Ouvrir les notifications" aria-haspopup="dialog" aria-expanded="false"><svg class="notification-bell-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" hidden>0</span></button><section class="notification-panel" role="dialog" aria-label="Centre de notifications" hidden><header><div><strong>Notifications</strong><span data-notification-subtitle>Aucune nouveauté</span></div><button type="button" class="notification-read-all">Tout marquer comme lu</button></header><div class="notification-list"><p class="notification-empty">Chargement…</p></div></section>';root.appendChild(shell);
@@ -313,7 +318,7 @@
   }
 
   renderSidebar();
-  setupNotifications();
+  setupNotifications(0);
   var interfaceButton = document.querySelector('[data-interface-switch]');
   if (interfaceButton) interfaceButton.addEventListener('click', function(){
     var next = interfaceButton.dataset.interfaceSwitch;
