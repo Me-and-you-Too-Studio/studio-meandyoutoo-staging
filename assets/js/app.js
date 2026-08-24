@@ -286,7 +286,7 @@
 
   function setupNotifications(){
     if(!window.StudioAPI||!StudioAPI.token()||document.querySelector('.studio-notifications'))return;
-    var shell=document.createElement('div');shell.className='studio-notifications';shell.innerHTML='<button class="notification-bell" type="button" aria-label="Ouvrir les notifications" aria-haspopup="dialog" aria-expanded="false"><svg class="notification-bell-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-bell-label">Notifications</span><span class="notification-count" hidden>0</span></button><section class="notification-panel" role="dialog" aria-label="Centre de notifications" hidden><header><div><strong>Notifications</strong><span data-notification-subtitle>Aucune nouveauté</span></div><button type="button" class="notification-read-all">Tout marquer comme lu</button></header><div class="notification-list"><p class="notification-empty">Chargement…</p></div></section>';document.body.appendChild(shell);
+    var shell=document.createElement('div');shell.className='studio-notifications';shell.innerHTML='<button class="notification-bell" type="button" aria-label="Ouvrir les notifications" aria-haspopup="dialog" aria-expanded="false"><svg class="notification-bell-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" hidden>0</span></button><section class="notification-panel" role="dialog" aria-label="Centre de notifications" hidden><header><div><strong>Notifications</strong><span data-notification-subtitle>Aucune nouveauté</span></div><button type="button" class="notification-read-all">Tout marquer comme lu</button></header><div class="notification-list"><p class="notification-empty">Chargement…</p></div></section>';document.body.appendChild(shell);
     var bell=shell.querySelector('.notification-bell'),count=shell.querySelector('.notification-count'),panel=shell.querySelector('.notification-panel'),list=shell.querySelector('.notification-list'),subtitle=shell.querySelector('[data-notification-subtitle]');
     var escape=function(value){return String(value||'').replace(/[&<>"']/g,function(char){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];});};
     var date=function(value){if(!value)return'';var parsed=new Date(value);return Number.isNaN(parsed.getTime())?'Date indisponible':parsed.toLocaleString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});};
@@ -300,6 +300,9 @@
     document.addEventListener('keydown',function(event){if(event.key==='Escape'&&!panel.hidden){panel.hidden=true;bell.setAttribute('aria-expanded','false');bell.focus();}});
     window.addEventListener('studio:pack-requested',load);load();setInterval(load,60000);
   }
+
+  /* La cloche démarre indépendamment des menus propres à chaque page. */
+  setTimeout(setupNotifications,0);
 
   function trackProductActivity(){
     if(!window.StudioAPI||!StudioAPI.token())return;
@@ -327,5 +330,4 @@
   setupSidebarCollapse();
   setupActionMenus();
   setTimeout(trackProductActivity,0);
-  setTimeout(setupNotifications,0);
 })();
