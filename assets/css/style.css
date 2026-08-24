@@ -897,6 +897,11 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
   .brand img{width:88px}
   .studio-pill{padding:2px 7px;font-size:.56rem}
   .interface-badge{margin-bottom:4px;padding:4px 8px;font-size:.6rem}
+  .sidebar-interface-row{margin:0 0 4px}
+  .sidebar-interface-row .interface-badge{margin:0}
+  .sidebar-notification-root .notification-bell{width:34px;height:34px}
+  .sidebar-notification-root .notification-bell-icon{width:18px;height:18px}
+  .sidebar-notification-root .notification-count{right:-6px;top:-6px;min-width:20px;height:20px;padding:0 4px;font-size:10px}
   .nav{gap:0}
   .nav a{gap:8px;padding:5px 9px;font-size:.82rem;line-height:1.15}
   .nav a span{width:21px;height:21px}
