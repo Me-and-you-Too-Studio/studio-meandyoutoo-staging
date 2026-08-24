@@ -832,7 +832,10 @@ body.sidebar-collapsed .interface-badge,body.sidebar-collapsed .interface-switch
 @media(max-width:760px){.admin-pack-request-head{display:block}}
 
 /* Centre de notifications — expérience harmonisée avec Into The Shift */
-.studio-notifications{position:fixed;z-index:10050;right:24px;top:18px;display:flex;align-items:center;font-family:Asap,Arial,sans-serif}
+.sidebar-interface-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 12px}
+.sidebar-interface-row .interface-badge{margin:0}
+.sidebar-notification-root,.admin-notification-root{display:flex;align-items:center;justify-content:center}
+.studio-notifications{position:relative;z-index:10050;display:flex;align-items:center;font-family:Asap,Arial,sans-serif}
 .notification-bell{position:relative;display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;padding:0;border:1px solid #c8d9e3;border-radius:50%;background:#fff;color:#0d4c72;box-shadow:0 8px 24px rgba(13,76,114,.2);cursor:pointer;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
 .notification-bell:hover,.notification-bell[aria-expanded="true"]{border-color:#0d4c72;background:#f7fbfd;box-shadow:0 10px 28px rgba(13,76,114,.26);transform:translateY(-1px)}
 .notification-bell:focus-visible{outline:3px solid #ffca43;outline-offset:3px}
@@ -841,7 +844,9 @@ body.sidebar-collapsed .interface-badge,body.sidebar-collapsed .interface-switch
 @keyframes notification-ring{0%,100%{transform:rotate(0)}25%{transform:rotate(12deg)}50%{transform:rotate(-10deg)}75%{transform:rotate(6deg)}}
 .notification-count{position:absolute;right:-6px;top:-7px;display:inline-flex;align-items:center;justify-content:center;min-width:23px;height:23px;padding:0 5px;border:2px solid #fff;border-radius:999px;background:#e5484d;color:#fff;font-size:11px;font-weight:950;line-height:1;box-shadow:0 3px 8px rgba(13,76,114,.2)}
 .notification-count[hidden]{display:none}
-.notification-panel{position:fixed;right:24px;top:80px;width:min(400px,calc(100vw - 28px));max-height:calc(100vh - 98px);overflow:hidden;border:1px solid #d8e0ea;border-radius:20px;background:#fff;box-shadow:0 22px 60px rgba(15,30,55,.28);color:#18375d}
+.notification-panel{position:fixed;width:min(400px,calc(100vw - 28px));max-height:calc(100vh - 98px);overflow:hidden;border:1px solid #d8e0ea;border-radius:20px;background:#fff;box-shadow:0 22px 60px rgba(15,30,55,.28);color:#18375d}
+.notification-placement-sidebar .notification-panel{left:258px;right:auto;top:78px}
+.notification-placement-admin .notification-panel{right:24px;top:92px}
 .notification-panel[hidden]{display:none}
 .notification-panel header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border-bottom:1px solid #edf2f6;background:#f8fbfd}
 .notification-panel header strong{font-size:15px;color:#18375d}.notification-panel header span{margin-top:2px;color:#718497;font-size:12px}
@@ -854,7 +859,10 @@ body.sidebar-collapsed .interface-badge,body.sidebar-collapsed .interface-switch
 .notification-item-main strong{display:block;margin:0 0 3px;color:#18375d;font-size:13px;line-height:1.25}.notification-item-main small{display:-webkit-box;overflow:hidden;margin:0;color:#60758a;font-size:12px;line-height:1.35;-webkit-box-orient:vertical;-webkit-line-clamp:2}.notification-item-main time{display:block;margin-top:4px;color:#94a3b8;font-size:11px;font-weight:800}
 .notification-item-check{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;margin-top:4px;border:1.5px solid #bfd0dc;border-radius:9px;background:#fff;color:#007883;font-family:inherit;font-size:15px;font-weight:950;cursor:pointer}.notification-item-check:hover{border-color:#007883;background:#f0f8f7}.notification-item.treated .notification-item-check{border-color:#007883;background:#007883;color:#fff}
 .notification-empty{margin:0;padding:28px 16px;text-align:center;color:#718497;font-size:13px;line-height:1.45}
-@media(max-width:760px){.studio-notifications{right:66px;top:9px}.notification-bell{width:44px;height:44px}.notification-bell-icon{width:21px;height:21px}.notification-count{right:-7px;top:-7px;min-width:22px;height:22px}.notification-panel{right:8px;top:61px;width:calc(100vw - 16px);max-height:calc(100vh - 70px)}}
+body.sidebar-collapsed .notification-placement-sidebar .notification-panel{left:88px}
+body.sidebar-collapsed .sidebar-interface-row{justify-content:center}
+body.sidebar-collapsed .sidebar-notification-root{display:flex}
+@media(max-width:760px){.sidebar-interface-row{padding-right:4px}.notification-bell{width:42px;height:42px}.notification-bell-icon{width:21px;height:21px}.notification-count{right:-7px;top:-7px;min-width:22px;height:22px}.notification-placement-sidebar .notification-panel,.notification-placement-admin .notification-panel{left:auto;right:8px;top:61px;width:calc(100vw - 16px);max-height:calc(100vh - 70px)}}
 
 /* Menu latéral compact : cette règle reste en fin de fichier pour ne pas être
    annulée par les styles généraux déclarés après la structure de la sidebar. */

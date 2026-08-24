@@ -190,7 +190,10 @@
           '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>' +
         '</button>' +
       '</div>' +
-      '<div class="interface-badge ' + (adminInterface ? 'interface-badge-admin' : 'interface-badge-client') + '">' + roleLabel + '</div>' +
+      '<div class="sidebar-interface-row">' +
+        '<div class="interface-badge ' + (adminInterface ? 'interface-badge-admin' : 'interface-badge-client') + '">' + roleLabel + '</div>' +
+        (adminInterface ? '' : '<div id="notification-root" class="sidebar-notification-root" aria-label="Notifications"></div>') +
+      '</div>' +
       '<nav class="nav">' + mainNavigation.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
       '<div class="sidebar-footer">' +
         (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><strong>Besoin d’aide&nbsp;?</strong><p>Une question sur votre campagne, vos contenus ou le fonctionnement du Studio&nbsp;?</p><a class="button button-primary" href="contact.html">Contacter Me&YouToo</a></div>') +
@@ -286,7 +289,9 @@
 
   function setupNotifications(){
     if(!window.StudioAPI||!StudioAPI.token()||document.querySelector('.studio-notifications'))return;
-    var shell=document.createElement('div');shell.className='studio-notifications';shell.innerHTML='<button class="notification-bell" type="button" aria-label="Ouvrir les notifications" aria-haspopup="dialog" aria-expanded="false"><svg class="notification-bell-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" hidden>0</span></button><section class="notification-panel" role="dialog" aria-label="Centre de notifications" hidden><header><div><strong>Notifications</strong><span data-notification-subtitle>Aucune nouveauté</span></div><button type="button" class="notification-read-all">Tout marquer comme lu</button></header><div class="notification-list"><p class="notification-empty">Chargement…</p></div></section>';document.body.appendChild(shell);
+    var root=document.getElementById('notification-root');
+    if(!root)return;
+    var shell=document.createElement('div');shell.className='studio-notifications '+(root.classList.contains('sidebar-notification-root')?'notification-placement-sidebar':'notification-placement-admin');shell.innerHTML='<button class="notification-bell" type="button" aria-label="Ouvrir les notifications" aria-haspopup="dialog" aria-expanded="false"><svg class="notification-bell-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" hidden>0</span></button><section class="notification-panel" role="dialog" aria-label="Centre de notifications" hidden><header><div><strong>Notifications</strong><span data-notification-subtitle>Aucune nouveauté</span></div><button type="button" class="notification-read-all">Tout marquer comme lu</button></header><div class="notification-list"><p class="notification-empty">Chargement…</p></div></section>';root.appendChild(shell);
     var bell=shell.querySelector('.notification-bell'),count=shell.querySelector('.notification-count'),panel=shell.querySelector('.notification-panel'),list=shell.querySelector('.notification-list'),subtitle=shell.querySelector('[data-notification-subtitle]');
     var escape=function(value){return String(value||'').replace(/[&<>"']/g,function(char){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];});};
     var date=function(value){if(!value)return'';var parsed=new Date(value);return Number.isNaN(parsed.getTime())?'Date indisponible':parsed.toLocaleString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});};
@@ -301,9 +306,6 @@
     window.addEventListener('studio:pack-requested',load);load();setInterval(load,60000);
   }
 
-  /* La cloche démarre indépendamment des menus propres à chaque page. */
-  setTimeout(setupNotifications,0);
-
   function trackProductActivity(){
     if(!window.StudioAPI||!StudioAPI.token())return;
     var params=new URLSearchParams(location.search),projectId=params.get('projectId')||params.get('id')||localStorage.getItem('studio_current_project_id')||null;
@@ -311,6 +313,7 @@
   }
 
   renderSidebar();
+  setupNotifications();
   var interfaceButton = document.querySelector('[data-interface-switch]');
   if (interfaceButton) interfaceButton.addEventListener('click', function(){
     var next = interfaceButton.dataset.interfaceSwitch;
