@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="canonical" href="https://studio.meandyoutoo.app/packs.html">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20260824-navigation-popup-8">
+<link rel="stylesheet" href="assets/css/style.css?v=20260825-packs-real-balance-1">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -25,7 +25,12 @@
         <h1 class="page-title">Demander un pack de passations</h1>
         <p class="lead">Un crédit = une passation. Choisissez un volume adapté à votre prochaine campagne de sensibilisation.</p>
       </div>
-      <div class="credit-balance" aria-label="Passations disponibles"><strong>7&nbsp;352</strong><span>passations disponibles · validité 12 mois</span></div>
+      <div class="credit-balance credit-balance-live" id="pack-credit-balance" aria-label="Passations disponibles">
+        <span class="credit-balance-label">Votre solde actuel</span>
+        <strong id="pack-balance-value">—</strong>
+        <span id="pack-balance-detail">Chargement des crédits…</span>
+        <div class="credit-balance-mini-progress" aria-hidden="true"><i id="pack-balance-bar"></i></div>
+      </div>
     </div>
 
     <section class="pack-hero card" aria-labelledby="pack-intro-title">
@@ -74,6 +79,6 @@
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20260822-1"></script>
 <script src="assets/js/app.js?v=20260824-navigation-popup-8"></script>
-<script src="assets/js/pack-requests.js?v=20260822-1"></script>
+<script src="assets/js/pack-requests.js?v=20260825-packs-real-balance-1"></script>
 </body>
 </html>

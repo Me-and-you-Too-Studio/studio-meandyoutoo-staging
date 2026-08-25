@@ -285,6 +285,14 @@ legend{font-weight:800;color:var(--royal-blue);padding:0 6px}
 .credit-balance{background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px 20px;box-shadow:var(--shadow-md);min-width:220px}
 .credit-balance strong{display:block;font-size:1.9rem;color:var(--green-blue-dark);line-height:1}
 .credit-balance span{display:block;color:var(--muted);font-weight:700;margin-top:4px;font-size:.86rem}
+.credit-balance-live{position:relative;overflow:hidden;min-width:290px;padding:18px 20px 16px;background:linear-gradient(145deg,#fff,#eef9f7);border-color:#cce8e2}
+.credit-balance-live::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:#0d8791}
+.credit-balance-live .credit-balance-label{margin:0 0 8px;color:#0d8791;font-size:.7rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.credit-balance-live strong{font-size:2.25rem;color:#243b69}
+.credit-balance-live[data-level="warning"]::before{background:#e3a91b}.credit-balance-live[data-level="danger"]::before{background:#d94e52}
+.credit-balance-mini-progress{height:7px;margin-top:12px;overflow:hidden;border-radius:999px;background:#dfe9e8}
+.credit-balance-mini-progress i{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#0d8791,#56b59a);transition:width .7s ease}
+.pack-chip-cta[aria-disabled="true"]{pointer-events:none;opacity:.45;filter:grayscale(.3)}
 
 .pack-hero{padding:26px;display:flex;align-items:center;justify-content:space-between;gap:22px;margin-bottom:20px;background:linear-gradient(135deg,#fff,var(--green-blue-soft))}
 .pack-hero h2{font-size:1.3rem;margin-bottom:6px}
@@ -854,6 +862,7 @@ body.studio-modal-open{overflow:hidden}
 /* Demandes de packs */
 .pack-request-status{margin:14px 0 0;padding:12px 14px;border-radius:12px;background:#eef6f8;color:#18375d;font-weight:800}
 .pack-request-status:empty,.pack-request-status[hidden]{display:none}.pack-request-status.success{background:#eaf8f1;color:#216b4a}.pack-request-status.error{background:#fff1f1;color:#9a2929}
+.pack-request-status.pending{border:1px solid #f1d58a;background:#fff8df;color:#805f08}
 .pack-pending-note{order:5;margin-top:10px;padding:12px 15px;border:1px solid rgba(255,255,255,.3);border-radius:14px;background:rgba(255,202,67,.95);color:#18375d}
 .admin-pack-request{margin:16px 0;padding:16px;border:1px solid #f0c65a;border-radius:16px;background:#fff8df}
 .admin-pack-request-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.admin-pack-request h3{margin:0 0 5px;color:#18375d}.admin-pack-request p{margin:3px 0;color:#536786}.admin-pack-request-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.admin-pack-request-meta span{padding:5px 9px;border-radius:999px;background:#fff;color:#18375d;font-size:.76rem;font-weight:800}
