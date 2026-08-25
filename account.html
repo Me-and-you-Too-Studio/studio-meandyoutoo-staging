@@ -31,38 +31,32 @@
     <section class="account-grid" aria-label="Informations du compte">
       <article class="card account-card">
         <p class="eyebrow">Informations personnelles</p>
-        <h2>Carole Michelon</h2>
+        <h2 id="account-name">Chargement…</h2>
         <dl class="info-list">
-          <div><dt>Fonction</dt><dd>Référente D&I</dd></div>
-          <div><dt>Email</dt><dd>carole@meandyoutoo.app</dd></div>
-          <div><dt>Téléphone</dt><dd>—</dd></div>
+          <div><dt>Fonction</dt><dd id="account-job">—</dd></div>
+          <div><dt>Email</dt><dd id="account-email">—</dd></div>
+          <div><dt>Téléphone</dt><dd id="account-phone">—</dd></div>
         </dl>
-        <button class="button button-secondary" type="button">Modifier mes informations</button>
+        <button class="button button-secondary" id="edit-profile" type="button">Modifier mes informations</button>
       </article>
 
       <article class="card account-card">
         <p class="eyebrow">Organisation</p>
-        <h2>Me&YouToo SAS</h2>
+        <h2 id="organization-name">Chargement…</h2>
         <dl class="info-list">
           <div><dt>Offre</dt><dd>Studio D&I — accès client</dd></div>
-          <div><dt>Utilisateurs actifs</dt><dd>4 accès</dd></div>
-          <div><dt>Depuis</dt><dd>Janvier 2024</dd></div>
+          <div><dt>Utilisateurs actifs</dt><dd id="organization-users-count">—</dd></div>
+          <div><dt>Depuis</dt><dd id="organization-since">—</dd></div>
         </dl>
-        <ul class="clean-list" style="margin:14px 0">
-          <li>Carole Michelon — administratrice</li>
-          <li>Inès Dauvergne — administratrice</li>
-          <li>Soraya Khadir — contributrice</li>
-          <li>Équipe RH — consultation</li>
-        </ul>
-        <button class="button button-secondary" type="button">Gérer les accès</button>
+        <ul class="clean-list" id="organization-users" style="margin:14px 0"><li>Chargement…</li></ul>
       </article>
 
       <article class="card account-card">
         <p class="eyebrow">Crédits &amp; passations</p>
-        <h2>7&nbsp;352 passations restantes</h2>
-        <p class="section-desc">Sur un total de 12 500 passations commandées depuis janvier 2024.</p>
-        <div class="progress large" aria-label="41 % des crédits utilisés"><span style="width:41%"></span></div>
-        <p class="section-desc">Validité du pack en cours : jusqu'au 14/03/2026.</p>
+        <h2 id="credits-remaining">Chargement…</h2>
+        <p class="section-desc" id="credits-total"></p>
+        <div class="progress large" id="credits-progress" aria-label="Utilisation des crédits"><span style="width:0"></span></div>
+        <p class="section-desc" id="credits-expiry"></p>
         <a class="button button-primary" href="packs.html">Commander un pack</a>
       </article>
 
@@ -70,7 +64,7 @@
         <p class="eyebrow">Sécurité</p>
         <h2>Accès sécurisé</h2>
         <p class="section-desc">Les campagnes et résultats restent accessibles uniquement aux personnes autorisées de votre organisation. Les résultats détaillés sont disponibles via l'interface externe dédiée.</p>
-        <button class="button button-secondary" type="button">Modifier le mot de passe</button>
+        <a class="button button-secondary" href="forgot-password.html">Modifier le mot de passe</a>
       </article>
     </section>
 
@@ -78,17 +72,15 @@
       <h2 class="section-title" id="history-title" style="padding:18px 18px 0">Historique des packs commandés</h2>
       <table class="data-table">
         <thead><tr><th>Date</th><th>Pack</th><th>Volume</th><th>Montant HT</th><th>Statut</th></tr></thead>
-        <tbody>
-          <tr><td>14/03/2025</td><td>Déploiement PME</td><td>500</td><td>1 500 €</td><td><span class="badge badge-success">Actif</span></td></tr>
-          <tr><td>02/09/2024</td><td>Groupe +</td><td>2 500</td><td>4 800 €</td><td><span class="badge badge-muted">Consommé</span></td></tr>
-          <tr><td>10/01/2024</td><td>Entreprise</td><td>1 200</td><td>3 000 €</td><td><span class="badge badge-muted">Consommé</span></td></tr>
-        </tbody>
+        <tbody id="packs-history"><tr><td colspan="5">Chargement…</td></tr></tbody>
       </table>
     </section>
+    <p class="composer-alert" id="account-alert" hidden></p>
   </main>
 </div>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20260713-2"></script>
 <script src="assets/js/app.js?v=20260824-navigation-popup-8"></script>
+<script src="assets/js/account.js?v=20260825-real-data-1"></script>
 </body>
 </html>
