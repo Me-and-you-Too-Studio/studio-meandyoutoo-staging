@@ -244,6 +244,33 @@ legend{font-weight:800;color:var(--royal-blue);padding:0 6px}
 .account-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 .account-card{padding:24px}
 .account-card h2{margin:.25rem 0 .5rem;font-size:1.2rem}
+.account-page .topbar{background:linear-gradient(135deg,#fff 20%,#edf8fa 100%);border:1px solid #dcebf0}
+.account-page .account-grid{gap:20px}
+.account-page .account-card{position:relative;overflow:hidden;padding:26px;border:1px solid transparent;box-shadow:0 14px 32px rgba(13,76,114,.08)}
+.account-page .account-card::before{content:"";position:absolute;inset:0 auto 0 0;width:6px;background:var(--account-accent)}
+.account-page .account-card-profile{--account-accent:#0d8791;background:linear-gradient(145deg,#fff 35%,#eaf8f8)}
+.account-page .account-card-organization{--account-accent:#eb6366;background:linear-gradient(145deg,#fff 35%,#fff1f1)}
+.account-page .account-card-credits{--account-accent:#f2b824;background:linear-gradient(145deg,#fff 35%,#fff8df)}
+.account-page .account-card-security{--account-accent:#5669a9;background:linear-gradient(145deg,#fff 35%,#f0f2fb)}
+.account-card-heading{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.account-card-heading .eyebrow{margin:0;color:var(--account-accent)}
+.account-card-icon,.account-history-icon{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;border-radius:15px;background:var(--account-accent);color:#fff;box-shadow:0 8px 18px color-mix(in srgb,var(--account-accent) 25%,transparent)}
+.account-card-icon svg,.account-history-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.account-page .account-card h2{margin:0 0 12px;color:#243b69;font-size:1.55rem}
+.account-page .info-list{border-top:1px solid rgba(36,59,105,.1)}
+.account-page .info-list>div{padding:12px 0;border-color:rgba(36,59,105,.1)}
+.account-page .clean-list li{margin:6px 0;padding:9px 11px;border-radius:10px;background:rgba(255,255,255,.72);color:#536786}
+.account-card-credits #credits-remaining{font-size:1.75rem}
+.account-card-credits .progress{height:12px;background:rgba(255,255,255,.8);box-shadow:inset 0 0 0 1px rgba(242,184,36,.18)}
+.account-card-credits .progress span{background:linear-gradient(90deg,#0d8791,#f2b824)}
+.account-page .account-card .button{margin-top:8px}
+.account-history{margin-top:24px;overflow:hidden;border:1px solid #dfe8ef;box-shadow:0 14px 32px rgba(13,76,114,.07)}
+.account-history-heading{display:flex;align-items:center;gap:13px;padding:20px 22px;background:linear-gradient(135deg,#edf8fa,#fff)}
+.account-history-heading .eyebrow{margin:0 0 3px;color:#0d8791}
+.account-history-heading .section-title{margin:0;color:#243b69}
+.account-history-icon{--account-accent:#0d8791}
+.account-history .data-table thead{background:#f4f8fb}
+.account-history .data-table tbody tr:hover{background:#fbf7ea}
 .credit-balance{background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px 20px;box-shadow:var(--shadow-md);min-width:220px}
 .credit-balance strong{display:block;font-size:1.9rem;color:var(--green-blue-dark);line-height:1}
 .credit-balance span{display:block;color:var(--muted);font-weight:700;margin-top:4px;font-size:.86rem}
