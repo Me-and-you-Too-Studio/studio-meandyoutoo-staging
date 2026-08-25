@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="canonical" href="https://studio.meandyoutoo.app/account.html">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20260824-navigation-popup-8">
+<link rel="stylesheet" href="assets/css/style.css?v=20260825-account-design-1">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -18,7 +18,7 @@
 </header>
 <div class="app-shell">
   <aside class="sidebar" aria-label="Navigation principale" id="sidebar-root" data-help-title="Besoin d'inspiration&nbsp;?" data-help-text="Découvrez tous les sujets de sensibilisation disponibles." data-help-href="bibliotheque.html" data-help-cta="Explorer la bibliothèque"></aside>
-  <main class="main" id="contenu">
+  <main class="main account-page" id="contenu">
     <div class="topbar compact-topbar">
       <div>
         <p class="eyebrow">Compte</p>
@@ -29,8 +29,8 @@
     </div>
 
     <section class="account-grid" aria-label="Informations du compte">
-      <article class="card account-card">
-        <p class="eyebrow">Informations personnelles</p>
+      <article class="card account-card account-card-profile">
+        <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></span><p class="eyebrow">Informations personnelles</p></div>
         <h2 id="account-name">Chargement…</h2>
         <dl class="info-list">
           <div><dt>Fonction</dt><dd id="account-job">—</dd></div>
@@ -40,8 +40,8 @@
         <button class="button button-secondary" id="edit-profile" type="button">Modifier mes informations</button>
       </article>
 
-      <article class="card account-card">
-        <p class="eyebrow">Organisation</p>
+      <article class="card account-card account-card-organization">
+        <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21V7l8-4 8 4v14"/><path d="M8 11h2M14 11h2M8 15h2M14 15h2M10 21v-3h4v3"/></svg></span><p class="eyebrow">Organisation</p></div>
         <h2 id="organization-name">Chargement…</h2>
         <dl class="info-list">
           <div><dt>Offre</dt><dd>Studio D&I — accès client</dd></div>
@@ -51,8 +51,8 @@
         <ul class="clean-list" id="organization-users" style="margin:14px 0"><li>Chargement…</li></ul>
       </article>
 
-      <article class="card account-card">
-        <p class="eyebrow">Crédits &amp; passations</p>
+      <article class="card account-card account-card-credits">
+        <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 12h5M7 10h5M7 14h3"/></svg></span><p class="eyebrow">Crédits &amp; passations</p></div>
         <h2 id="credits-remaining">Chargement…</h2>
         <p class="section-desc" id="credits-total"></p>
         <div class="progress large" id="credits-progress" aria-label="Utilisation des crédits"><span style="width:0"></span></div>
@@ -60,16 +60,16 @@
         <a class="button button-primary" href="packs.html">Commander un pack</a>
       </article>
 
-      <article class="card account-card">
-        <p class="eyebrow">Sécurité</p>
+      <article class="card account-card account-card-security">
+        <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.8 2.9 8.2 7 10 4.1-1.8 7-5.2 7-10V6z"/><path d="m9 12 2 2 4-5"/></svg></span><p class="eyebrow">Sécurité</p></div>
         <h2>Accès sécurisé</h2>
         <p class="section-desc">Les campagnes et résultats restent accessibles uniquement aux personnes autorisées de votre organisation. Les résultats détaillés sont disponibles via l'interface externe dédiée.</p>
         <a class="button button-secondary" href="forgot-password.html">Modifier le mot de passe</a>
       </article>
     </section>
 
-    <section class="table-card" style="margin-top:24px" aria-labelledby="history-title">
-      <h2 class="section-title" id="history-title" style="padding:18px 18px 0">Historique des packs commandés</h2>
+    <section class="table-card account-history" aria-labelledby="history-title">
+      <div class="account-history-heading"><span class="account-history-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span><div><p class="eyebrow">Suivi des commandes</p><h2 class="section-title" id="history-title">Historique des packs commandés</h2></div></div>
       <table class="data-table">
         <thead><tr><th>Date</th><th>Pack</th><th>Volume</th><th>Montant HT</th><th>Statut</th></tr></thead>
         <tbody id="packs-history"><tr><td colspan="5">Chargement…</td></tr></tbody>
