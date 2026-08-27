@@ -1004,3 +1004,43 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
 .composer-inline-field{display:grid;gap:6px}.composer-inline-field label{font-size:.8rem;font-weight:800;color:var(--navy)}.composer-inline-situation,.composer-inline-answer{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--navy);font:inherit;line-height:1.45;padding:10px 12px;resize:vertical;transition:border-color .15s ease,box-shadow .15s ease}.composer-inline-situation{font-weight:700;font-size:1rem;min-height:78px}.composer-inline-answer{min-height:58px}.composer-inline-situation:focus,.composer-inline-answer:focus{outline:0;border-color:var(--royal-blue);box-shadow:0 0 0 3px rgba(44,83,173,.12)}.composer-answer .composer-inline-answer{grid-column:1/2}.composer-inline-help{margin:10px 0 0;font-size:.8rem;color:var(--muted)}.composer-situation.is-locked .composer-toggle{margin-top:12px}
 
 .socio-examples-visible{margin:16px 0;padding:16px;border:1px solid #d9e6ed;border-radius:16px;background:#f8fbfd}.socio-examples-visible>strong{display:block;color:#0d4c72}.socio-examples-visible>span{display:block;margin:4px 0 12px;color:#60758a;font-size:.85rem}.socio-example-buttons{display:flex;flex-wrap:wrap;gap:8px}.socio-example-buttons button{padding:9px 12px;border:1px solid #c9dce6;border-radius:999px;background:#fff;color:#0d4c72;font-weight:700;cursor:pointer}
+
+
+/* Paramétrage — critères standardisés verrouillés (Genre / Âge) */
+.socio-card-locked{
+  background:#f4f6f8;
+  border-color:#d7dee5;
+  border-left-color:#a8b4bf;
+  box-shadow:none;
+}
+.socio-card-locked .socio-question input[readonly],
+.socio-card-locked .locked-field input[readonly]{
+  background:#e7ebef !important;
+  border-color:#d2d9e0 !important;
+  color:#52606d !important;
+  cursor:not-allowed;
+  box-shadow:none !important;
+}
+.socio-card-locked .socio-question input[readonly]:hover,
+.socio-card-locked .locked-field input[readonly]:hover{background:#e7ebef !important}
+.socio-lock-badge,.socio-required-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  margin-left:8px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#e1e6ea;
+  color:#52606d;
+  font-size:.68rem;
+  font-weight:900;
+  vertical-align:middle;
+}
+.socio-required-badge{margin:4px 0 0;background:#dfe5e9;color:#42515e;white-space:nowrap}
+.socio-lock-help{display:block;margin-top:7px;color:#687784;font-size:.79rem;font-weight:700;line-height:1.35}
+.socio-card-locked .socio-answer-field>span{color:#75838f}
+.socio-option-spacer{display:block;width:30px;height:30px}
+.socio-option-remove-visible{background:#fff;border:1px solid #d5dce2;color:#687784}
+.socio-option-remove-visible:hover{background:var(--danger-soft);border-color:#f1b9b4;color:var(--danger)}
+.socio-card-age .socio-lock-help{font-weight:800}
+@media(max-width:760px){.socio-required-badge{grid-column:1/-1;justify-self:start}}
