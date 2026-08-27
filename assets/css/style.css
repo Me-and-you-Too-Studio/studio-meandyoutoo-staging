@@ -1113,3 +1113,25 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
 .composer-save-status.is-error{background:#fde8e5;color:#a3322a}
 .composer-save-check{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:#2e9b55;color:#fff;font-size:.68rem}
 .composer-save-status.is-saving .composer-save-check,.composer-save-status.is-error .composer-save-check{display:none}
+
+/* Bibliothèque — séparation visuelle des réponses */
+.composer-drawer .composer-library-linked-item details{
+  margin:12px 0 16px;
+}
+.composer-drawer .composer-library-linked-item .composer-answer{
+  margin:0 0 10px;
+  padding:12px 14px;
+  border:1px solid #dfe7ed;
+  border-radius:12px;
+  background:#fff;
+}
+.composer-drawer .composer-library-linked-item .composer-answer:last-child{
+  margin-bottom:0;
+}
+.composer-drawer .composer-library-linked-item .composer-answers,
+.composer-drawer .composer-library-linked-item details > div{
+  gap:10px;
+}
+.composer-drawer .composer-library-linked-item summary{
+  margin-bottom:12px;
+}
