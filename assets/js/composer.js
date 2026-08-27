@@ -35,7 +35,31 @@
     const rules=chapterSituationRules(ch),count=ch?.situations?.length||0;
     return {rules,count,below:rules.min!=null&&count<rules.min,atMax:rules.max!=null&&count>=rules.max,above:rules.max!=null&&count>rules.max};
   }
-  function answerHtml(a, editable=false){return `<div class="composer-answer ${a.is_best?'is-best':''}">${editable?`<textarea class="composer-inline-answer" data-answer-input="${esc(a.id)}" rows="2" aria-label="Modifier cette réponse">${esc(a.content)}</textarea>`:`<span class="composer-answer-text">${esc(a.content)}</span>`}<span class="composer-score">Score ${Number(a.score).toLocaleString('fr-FR')}</span>${a.is_best?`<span class="composer-best">${bestAnswerLabel()}</span>`:''}</div>`;}
+  function wordDiffHtml(original,current){
+    const a=String(original||'').split(/(\s+|[.,;:!?'"()«»–—-])/).filter(Boolean),b=String(current||'').split(/(\s+|[.,;:!?'"()«»–—-])/).filter(Boolean);
+    const n=a.length,m=b.length,dp=Array.from({length:n+1},()=>Array(m+1).fill(0));
+    for(let i=n-1;i>=0;i--)for(let k=m-1;k>=0;k--)dp[i][k]=a[i]===b[k]?dp[i+1][k+1]+1:Math.max(dp[i+1][k],dp[i][k+1]);
+    let i=0,k=0,out='';
+    while(i<n||k<m){
+      if(i<n&&k<m&&a[i]===b[k]){out+=esc(a[i]);i++;k++;}
+      else if(k<m&&(i===n||dp[i][k+1]>=dp[i+1]?.[k])){out+=`<ins>${esc(b[k])}</ins>`;k++;}
+      else if(i<n){out+=`<del>${esc(a[i])}</del>`;i++;}
+    }
+    return out;
+  }
+  function diffBlock(original,current,label){
+    if(String(original||'')===String(current||''))return '';
+    return `<div class="composer-diff"><div class="composer-diff-label">${esc(label)}</div><div class="composer-diff-text">${wordDiffHtml(original,current)}</div></div>`;
+  }
+  function answerHtml(a, editable=false, originalContent=''){
+    const changed=editable&&String(originalContent||'')!==String(a.content||'');
+    return `<div class="composer-answer ${a.is_best?'is-best':''} ${changed?'is-customized':''}">
+      ${editable?`<textarea class="composer-inline-answer" data-answer-input="${esc(a.id)}" data-original-answer="${esc(originalContent||a.content)}" rows="2" aria-label="Modifier cette réponse">${esc(a.content)}</textarea>`:`<span class="composer-answer-text">${esc(a.content)}</span>`}
+      <span class="composer-score">Score ${Number(a.score).toLocaleString('fr-FR')}</span>
+      ${a.is_best?`<span class="composer-best">${bestAnswerLabel()}</span>`:''}
+      ${changed?diffBlock(originalContent,a.content,'Modifications par rapport à la réponse Me&YouToo'):''}
+    </div>`;
+  }
 
   function linkedSituationLabel(s,index,situations){
     const group=s?.metadata?.link_group;if(!group)return '';
@@ -49,13 +73,47 @@
     const stereotypes=themeSlug==='sexisme'&&canonical(ch.slug||ch.title).includes('stereotype');
     const locked=Boolean(ch.locked||s.locked||stereotypes);
     const linkedLabel=linkedSituationLabel(s,index,ch.situations);
-    const situationText=locked?`<h3>${esc(s.content)}</h3>`:`<div class="composer-inline-field"><div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Texte de la mise en situation</label><span class="composer-context-tag">Contextualisation uniquement</span></div><textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation" data-situation-input="${esc(s.id)}" rows="3">${esc(s.content)}</textarea><small class="composer-field-guidance">Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel. Si le sens ne convient pas, utilisez « Remplacer » et choisissez une autre situation dans la bibliothèque.</small></div>`;
-    return `<article class="composer-situation ${locked?'is-locked':''}" data-situation-card="${esc(s.id)}"><div class="composer-situation-head">${locked?'<span class="composer-lock-chip">🔒 Contenu méthodologique obligatoire</span>':`<span class="composer-position-chip">Situation ${index+1}</span>`}<span class="composer-origin">Situation Me&YouToo</span></div>${linkedLabel?`<div class="composer-linked-chip">🔗 ${esc(linkedLabel)}</div>`:''}${situationText}<button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="${locked?'false':'true'}">${locked?'Voir les réponses et les scores':'Réponses et scores'} <span>⌄</span></button><div class="composer-answers" id="answers-${esc(s.id)}" ${locked?'hidden':''}>${(s.answers||[]).map(a=>answerHtml(a,!locked)).join('')}</div>${!locked?`<div class="composer-inline-help composer-context-help"><strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span></div><div class="composer-actions"><button class="button button-primary" type="button" data-save="${esc(s.id)}">Enregistrer les modifications</button><button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer</button><button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button></div>`:''}</article>`;
+    const originalText=s.original_content||s.content||'';
+    const customized=Boolean(s.has_customization||String(originalText)!==String(s.content||'')||(s.answers||[]).some(a=>{const o=(s.original_answers||[]).find(x=>String(x.id)===String(a.id));return o&&String(o.content)!==String(a.content);}));
+    const originTag=s.from_library?'<span class="composer-library-choice-tag">✓ Choisie dans la bibliothèque</span>':'';
+    const situationText=locked
+      ?`<h3>${esc(s.content)}</h3>`
+      :`<div class="composer-inline-field">
+          <div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Texte de la mise en situation</label><span class="composer-context-tag">Contextualisation uniquement</span></div>
+          <textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation ${String(originalText)!==String(s.content||'')?'is-customized':''}" data-situation-input="${esc(s.id)}" data-original-situation="${esc(originalText)}" rows="3">${esc(s.content)}</textarea>
+          ${diffBlock(originalText,s.content,'Modifications par rapport à la situation Me&YouToo')}
+          <small class="composer-field-guidance">Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel. Si le sens ne convient pas, utilisez « Remplacer » et choisissez une autre situation dans la bibliothèque.</small>
+        </div>`;
+    const answerRows=(s.answers||[]).map(a=>{const original=(s.original_answers||[]).find(o=>String(o.id)===String(a.id));return answerHtml(a,!locked,original?.content||a.content);}).join('');
+    return `<article class="composer-situation ${locked?'is-locked':''} ${customized?'has-customization':''}" data-situation-card="${esc(s.id)}">
+      <div class="composer-situation-head">
+        <div class="composer-situation-tags">${locked?'<span class="composer-lock-chip">🔒 Contenu méthodologique obligatoire</span>':`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':''}</div>
+        <span class="composer-origin">Situation Me&YouToo</span>
+      </div>
+      ${linkedLabel?`<div class="composer-linked-chip">🔗 ${esc(linkedLabel)}</div>`:''}
+      ${situationText}
+      <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="${locked?'false':'true'}"><span data-toggle-label>${locked?'Voir les réponses et les scores':'Masquer les réponses et les scores'}</span> <span aria-hidden="true">⌄</span></button>
+      <div class="composer-answers" id="answers-${esc(s.id)}" ${locked?'hidden':''}>${answerRows}</div>
+      ${!locked?`<div class="composer-inline-help composer-context-help"><strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span></div>
+      <div class="composer-actions">
+        <button class="button button-primary" type="button" data-save="${esc(s.id)}">Enregistrer les modifications</button>
+        ${customized?`<button class="button button-ghost" type="button" data-reset="${esc(s.id)}">↶ Annuler mes modifications</button>`:''}
+        <button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer</button>
+        <button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button>
+      </div>`:''}
+    </article>`;
   }
 
   function bindSituations(){
-    document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{const box=$(`answers-${b.dataset.toggle}`);const open=box.hidden;box.hidden=!open;b.setAttribute('aria-expanded',String(open));b.childNodes[0].textContent=open?'Masquer les réponses et les scores ':'Voir les réponses et les scores ';});
+    document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{
+      const box=$(`answers-${b.dataset.toggle}`),label=b.querySelector('[data-toggle-label]');
+      if(!box)return;
+      box.hidden=!box.hidden;
+      b.setAttribute('aria-expanded',String(!box.hidden));
+      if(label)label.textContent=box.hidden?'Voir les réponses et les scores':'Masquer les réponses et les scores';
+    });
     document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>saveInlineSituation(b.dataset.save));
+    document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=()=>resetSituationCustomization(b.dataset.reset));
     document.querySelectorAll('[data-replace]').forEach(b=>b.onclick=()=>openLibrary('replace',b.dataset.replace));
     document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removeSituation(b.dataset.remove));
   }
@@ -75,11 +133,28 @@
     if(button){button.disabled=true;button.textContent='Enregistrement…';}
     try{
       await api(`/api/projects/${projectId}/situations/${id}`,{method:'PATCH',body:JSON.stringify({customContent:situationText,customAnswers:answers})});
-      s.content=situationText;
-      s.answers=(s.answers||[]).map(answer=>({...answer,content:answers.find(item=>String(item.id)===String(answer.id))?.content||answer.content}));
-      if(button){button.textContent='✓ Enregistré';setTimeout(()=>{if(document.body.contains(button)){button.disabled=false;button.textContent='Enregistrer les modifications';}},1200);}
-      showMessage('La mise en situation et les réponses ont été enregistrées. Les scores restent inchangés.','success');
+      const refreshed=await api(`/api/projects/${projectId}/composer`);
+      state.project=refreshed.project;state.chapters=refreshed.chapters;render();
+      showMessage('La mise en situation et les réponses ont été enregistrées. Les différences avec la version Me&YouToo sont maintenant signalées.','success');
     }catch(e){if(button){button.disabled=false;button.textContent='Enregistrer les modifications';}showMessage(e.message);}
+  }
+  async function resetSituationCustomization(id){
+    const s=findSituation(id);if(!s)return;
+    const confirmed=await window.StudioModal.confirm({
+      eyebrow:'Personnalisation',
+      title:'Revenir à la version Me&YouToo ?',
+      message:'Le texte de la mise en situation et les réponses retrouveront leur formulation d’origine. Le choix de cette situation dans votre diagnostic sera conservé.',
+      type:'warning',
+      cancelLabel:'Conserver mes modifications',
+      confirmLabel:'Revenir à l’original'
+    });
+    if(!confirmed)return;
+    try{
+      await api(`/api/projects/${projectId}/situations/${id}`,{method:'PATCH',body:JSON.stringify({resetCustomizations:true})});
+      const refreshed=await api(`/api/projects/${projectId}/composer`);
+      state.project=refreshed.project;state.chapters=refreshed.chapters;render();
+      showMessage('La formulation Me&YouToo d’origine a été restaurée.','success');
+    }catch(e){showMessage(e.message);}
   }
   async function removeSituation(id){const ch=state.chapters[state.active],s=findSituation(id),linked=Boolean(s&&s.metadata&&s.metadata.link_group);const confirmed=await window.StudioModal.confirm({eyebrow:'Composition du diagnostic',title:linked?'Supprimer ces situations liées ?':'Supprimer cette situation ?',message:linked?'Cette situation fonctionne avec une autre mise en situation. Les deux seront retirées ensemble de ce chapitre. Cette action concerne uniquement ce brouillon.':'Cette mise en situation sera retirée de ce chapitre. Elle restera disponible dans le référentiel Me&YouToo.',type:'danger',cancelLabel:'Conserver',confirmLabel:linked?'Supprimer les situations':'Supprimer la situation'});if(!confirmed)return;try{const data=await api(`/api/projects/${projectId}/situations/${id}`,{method:'DELETE'});const deleted=new Set((data.deletedIds||[id]).map(String));ch.situations=ch.situations.filter(s=>!deleted.has(String(s.id)));render();showMessage(data.linked?'Les situations liées ont été supprimées ensemble.':'La situation a été supprimée du brouillon.','success');}catch(e){showMessage(e.message);}}
 
@@ -116,7 +191,7 @@
   async function addSituation(catalogSituationId){
     const ch=state.chapters[state.active],status=chapterCountStatus(ch);
     if(status.atMax){
-      showMessage(`Cette partie est limitée à ${status.rules.max} situations maximum.`);
+      showMessage(`Ce chapitre est limitée à ${status.rules.max} situations maximum.`);
       return;
     }
     try{
@@ -136,12 +211,12 @@
   function render(){
     const ch=state.chapters[state.active];if(!ch)return;
     const stereotypes=isStereotypesChapter(ch),status=chapterCountStatus(ch);
-    $('chapter-kicker').textContent=`Partie ${state.active+1} · Questions`;
+    $('chapter-kicker').textContent=`Chapitre ${state.active+1} · Questions`;
     $('chapter-title').textContent=ch.title;
     $('chapter-desc').textContent=ch.locked
-      ?(ch.lock_reason||'Cette partie méthodologique est obligatoire et non modifiable.')
+      ?(ch.lock_reason||'Ce chapitre méthodologique est obligatoire et non modifiable.')
       :status.rules.min!=null
-        ?`${status.count} situation${status.count>1?'s':''} retenue${status.count>1?'s':''} · ${status.rules.min} minimum et ${status.rules.max} maximum dans cette partie.`
+        ?`${status.count} situation${status.count>1?'s':''} retenue${status.count>1?'s':''} · ${status.rules.min} minimum et ${status.rules.max} maximum dans ce chapitre.`
         :`${status.count} situations retenues · consultez les réponses et scores avant de modifier votre sélection.`;
 
     const libraryButton=$('library-button');
@@ -154,7 +229,7 @@
 
     $('legal-scoring-note').hidden=!isLegalChapter(ch);
     $('situation-list').innerHTML=ch.situations.map(situationHtml).join('');
-    $('sticky-part-label').textContent=`Partie ${state.active+1}/${state.chapters.length} · ${ch.title}`;
+    $('sticky-part-label').textContent=`Chapitre ${state.active+1}/${state.chapters.length} · ${ch.title}`;
 
     const next=$('composer-next');
     if(next){
@@ -168,7 +243,7 @@
           const goLibrary=await window.StudioModal.confirm({
             eyebrow:'Composition du diagnostic',
             title:`Il vous faut ${status.rules.min} situations minimum`,
-            message:`Cette partie contient actuellement ${status.count} situation${status.count>1?'s':''}. Ajoutez-en ${status.rules.min-status.count} depuis la bibliothèque Me&YouToo avant de personnaliser les profils.`,
+            message:`Ce chapitre contient actuellement ${status.count} situation${status.count>1?'s':''}. Ajoutez-en ${status.rules.min-status.count} depuis la bibliothèque Me&YouToo avant de personnaliser les profils.`,
             type:'info',
             cancelLabel:'Rester ici',
             confirmLabel:'Piocher dans la bibliothèque'
@@ -178,7 +253,7 @@
           await window.StudioModal.confirm({
             eyebrow:'Composition du diagnostic',
             title:`Maximum de ${status.rules.max} situations`,
-            message:`Cette partie contient plus de ${status.rules.max} situations. Supprimez-en une avant de poursuivre.`,
+            message:`Ce chapitre contient plus de ${status.rules.max} situations. Supprimez-en une avant de poursuivre.`,
             type:'warning',
             cancelLabel:'Fermer',
             confirmLabel:'Compris'
@@ -198,7 +273,7 @@
       await window.StudioModal.confirm({
         eyebrow:'Composition du diagnostic',
         title:`Maximum de ${status.rules.max} situations atteint`,
-        message:`Vous avez déjà ${status.rules.max} situations dans cette partie. Supprimez-en une avant d’en ajouter une autre depuis la bibliothèque.`,
+        message:`Vous avez déjà ${status.rules.max} situations dans ce chapitre. Supprimez-en une avant d’en ajouter une autre depuis la bibliothèque.`,
         type:'warning',
         cancelLabel:'Fermer',
         confirmLabel:'Compris'

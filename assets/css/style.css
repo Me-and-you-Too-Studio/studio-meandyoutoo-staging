@@ -1072,3 +1072,35 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
 .creation-chapter-item.is-incomplete{border-color:#e7c875;background:#fffdf6}
 .creation-chapter-item.is-incomplete .creation-chapter-head strong{background:#fff2c8;color:#775b00}
 .creation-chapter-tabs button.is-disabled,#next-link.is-disabled{opacity:.45;filter:grayscale(.2);cursor:not-allowed}
+
+/* Composer — lisibilité des situations et réponses */
+.composer-situation-list{gap:22px}
+.composer-situation{
+  border:1px solid #cbdce7;
+  border-left:5px solid #0d8791;
+  border-radius:18px;
+  padding:20px;
+  background:#f8fbfd;
+  box-shadow:0 8px 24px rgba(19,54,82,.06);
+}
+.composer-situation.has-customization{border-left-color:#e9a91b;background:#fffdf8}
+.composer-situation.is-locked{border-left-color:#243b69;background:#f7f9fc}
+.composer-situation-head{margin-bottom:14px}
+.composer-situation-tags{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.composer-library-choice-tag,.composer-customized-tag{
+  display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:.72rem;font-weight:900
+}
+.composer-library-choice-tag{background:#e7f6f5;color:#08737a;border:1px solid #b9dfdc}
+.composer-customized-tag{background:#fff0c9;color:#7a5800;border:1px solid #efd07c}
+.composer-inline-field{padding:14px;border:1px solid #dce7ee;border-radius:14px;background:#fff}
+.composer-answers{margin-top:12px;padding:14px;border:1px solid #dce7ee;border-radius:14px;background:#fff}
+.composer-answers[hidden]{display:none!important}
+.composer-answer{background:#f8fafc}
+.composer-answer.is-customized{border-color:#efd07c;background:#fffdf7}
+.composer-toggle{display:inline-flex;align-items:center;gap:6px;margin:13px 0 0;padding:7px 0}
+.composer-diff{grid-column:1/-1;margin-top:7px;padding:9px 11px;border-radius:10px;background:#f7f8fa;border:1px solid #e4e8ec}
+.composer-diff-label{margin-bottom:5px;color:#65798a;font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.03em}
+.composer-diff-text{font-size:.82rem;line-height:1.5;color:#405468}
+.composer-diff ins{padding:1px 2px;border-radius:3px;background:#dff5e5;color:#176c35;text-decoration:none}
+.composer-diff del{padding:1px 2px;border-radius:3px;background:#fde4e1;color:#9e3028;text-decoration:line-through}
+.composer-inline-situation.is-customized,.composer-inline-answer.is-customized{border-color:#dfbd57;background:#fffef9}
