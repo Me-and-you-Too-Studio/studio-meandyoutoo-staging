@@ -57,7 +57,7 @@
       ${editable?`<textarea class="composer-inline-answer" data-answer-input="${esc(a.id)}" data-original-answer="${esc(originalContent||a.content)}" rows="2" aria-label="Modifier cette réponse">${esc(a.content)}</textarea>`:`<span class="composer-answer-text">${esc(a.content)}</span>`}
       <span class="composer-score">Score ${Number(a.score).toLocaleString('fr-FR')}</span>
       ${a.is_best?`<span class="composer-best">${bestAnswerLabel()}</span>`:''}
-      ${changed?diffBlock(originalContent,a.content,'Modifications par rapport à la réponse Me&YouToo'):''}
+      <div data-live-answer-diff="${esc(a.id)}">${changed?diffBlock(originalContent,a.content,'Modifications par rapport à la réponse Me&YouToo'):''}</div>
     </div>`;
   }
 
@@ -81,7 +81,7 @@
       :`<div class="composer-inline-field">
           <div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Texte de la mise en situation</label><span class="composer-context-tag">Contextualisation uniquement</span></div>
           <textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation ${String(originalText)!==String(s.content||'')?'is-customized':''}" data-situation-input="${esc(s.id)}" data-original-situation="${esc(originalText)}" rows="3">${esc(s.content)}</textarea>
-          ${diffBlock(originalText,s.content,'Modifications par rapport à la situation Me&YouToo')}
+          <div data-live-situation-diff>${diffBlock(originalText,s.content,'Modifications par rapport à la situation Me&YouToo')}</div>
           <small class="composer-field-guidance">Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel. Si le sens ne convient pas, utilisez « Remplacer » et choisissez une autre situation dans la bibliothèque.</small>
         </div>`;
     const answerRows=(s.answers||[]).map(a=>{const original=(s.original_answers||[]).find(o=>String(o.id)===String(a.id));return answerHtml(a,!locked,original?.content||a.content);}).join('');
@@ -140,6 +140,31 @@
   }
 
   function findSituation(id){return state.chapters.flatMap(ch=>ch.situations).find(s=>String(s.id)===String(id));}
+  function refreshLiveDiff(card,s,situationText,answers){
+    const situationOriginal=String(s.original_content||card.querySelector('[data-situation-input]')?.dataset.originalSituation||'');
+    const situationDiff=card.querySelector('[data-live-situation-diff]');
+    const situationInput=card.querySelector('[data-situation-input]');
+    const situationChanged=situationOriginal!==String(situationText||'');
+    if(situationDiff)situationDiff.innerHTML=situationChanged?diffBlock(situationOriginal,situationText,'Modifications par rapport à la situation Me&YouToo'):'';
+    if(situationInput)situationInput.classList.toggle('is-customized',situationChanged);
+
+    let anyChanged=situationChanged;
+    answers.forEach(item=>{
+      const input=card.querySelector(`[data-answer-input="${CSS.escape(String(item.id))}"]`);
+      if(!input)return;
+      const answerState=(s.answers||[]).find(a=>String(a.id)===String(item.id));
+      const originalState=(s.original_answers||[]).find(a=>String(a.id)===String(item.id));
+      const original=String(originalState?.content||input.dataset.originalAnswer||answerState?.content||'');
+      const changed=original!==String(item.content||'');
+      anyChanged=anyChanged||changed;
+      input.closest('.composer-answer')?.classList.toggle('is-customized',changed);
+      const diff=card.querySelector(`[data-live-answer-diff="${CSS.escape(String(item.id))}"]`);
+      if(diff)diff.innerHTML=changed?diffBlock(original,item.content,'Modifications par rapport à la réponse Me&YouToo'):'';
+    });
+    card.classList.toggle('has-customization',anyChanged);
+    return anyChanged;
+  }
+
   async function saveInlineSituation(id){
     if(!id)return;
     clearTimeout(autosaveTimers.get(String(id)));autosaveTimers.delete(String(id));
@@ -155,16 +180,18 @@
     try{
       const saved=await api(`/api/projects/${projectId}/situations/${id}`,{method:'PATCH',body:JSON.stringify({customContent:situationText,customAnswers:answers})});
       if(!saved?.situation)throw new Error('La sauvegarde n’a pas été confirmée par le serveur.');
+      const hasCustomization=refreshLiveDiff(card,s,situationText,answers);
       s.custom_content=saved.situation.custom_content;
       s.custom_answers=saved.situation.custom_answers;
       s.content=situationText;
       s.answers=(s.answers||[]).map(answer=>({...answer,content:answers.find(item=>String(item.id)===String(answer.id))?.content||answer.content}));
-      s.has_customization=true;
+      s.has_customization=hasCustomization;
       setSaveStatus(card,'is-saved','Enregistré');
-      card.classList.add('has-customization');
       const tags=card.querySelector('.composer-situation-tags');
-      if(tags&&!tags.querySelector('.composer-customized-tag'))tags.insertAdjacentHTML('beforeend','<span class="composer-customized-tag">✎ Personnalisée</span>');
-      if(!card.querySelector('[data-reset]')){
+      const customTag=tags?.querySelector('.composer-customized-tag');
+      if(hasCustomization&&!customTag)tags?.insertAdjacentHTML('beforeend','<span class="composer-customized-tag">✎ Personnalisée</span>');
+      if(!hasCustomization&&customTag)customTag.remove();
+      if(hasCustomization&&!card.querySelector('[data-reset]')){
         const actions=card.querySelector('.composer-actions');
         if(actions)actions.insertAdjacentHTML('afterbegin',`<button class="button button-ghost" type="button" data-reset="${esc(id)}">↶ Annuler mes modifications</button>`);
         const reset=card.querySelector('[data-reset]');if(reset)reset.onclick=()=>resetSituationCustomization(id);

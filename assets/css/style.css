@@ -1135,3 +1135,8 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
 .composer-drawer .composer-library-linked-item summary{
   margin-bottom:12px;
 }
+
+/* Composer — diff visible immédiatement après auto-enregistrement */
+[data-live-situation-diff] .composer-diff,
+[data-live-answer-diff] .composer-diff{animation:composerDiffReveal .18s ease-out}
+@keyframes composerDiffReveal{from{opacity:.35;transform:translateY(-2px)}to{opacity:1;transform:none}}
