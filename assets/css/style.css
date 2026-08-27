@@ -1002,3 +1002,15 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
 
 /* Composer — édition directe des mises en situation et réponses */
 .composer-inline-field{display:grid;gap:6px}.composer-inline-field label{font-size:.8rem;font-weight:800;color:var(--navy)}.composer-inline-situation,.composer-inline-answer{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--navy);font:inherit;line-height:1.45;padding:10px 12px;resize:vertical;transition:border-color .15s ease,box-shadow .15s ease}.composer-inline-situation{font-weight:700;font-size:1rem;min-height:78px}.composer-inline-answer{min-height:58px}.composer-inline-situation:focus,.composer-inline-answer:focus{outline:0;border-color:var(--royal-blue);box-shadow:0 0 0 3px rgba(44,83,173,.12)}.composer-answer .composer-inline-answer{grid-column:1/2}.composer-inline-help{margin:10px 0 0;font-size:.8rem;color:var(--muted)}.composer-situation.is-locked .composer-toggle{margin-top:12px}
+
+/* Paramétrage — critères benchmark Sexisme */
+.socio-card-standard{border-color:#bfd9e6;background:linear-gradient(180deg,#fbfeff,#f4f9fc)}
+.socio-benchmark-badge{display:inline-flex;margin-left:8px;padding:4px 8px;border-radius:999px;background:#e7f2f7;color:#0d4c72;font-size:.68rem;font-weight:800;vertical-align:middle}
+.socio-answer-field.locked input,.socio-card-standard .socio-question input[readonly]{background:#eef4f7;color:#526a78;cursor:not-allowed}
+.socio-option-lock{display:grid;place-items:center;width:34px;color:#718497}
+.socio-examples{margin-top:12px;padding:16px;border:1px solid #d9e6ed;border-radius:16px;background:#f8fbfd}
+.socio-examples strong{color:#0d4c72}
+.socio-examples p{margin:5px 0 12px;color:#60758a;font-size:.85rem}
+.socio-example-buttons{display:flex;flex-wrap:wrap;gap:8px}
+.socio-example-buttons button{padding:9px 12px;border:1px solid #c9dce6;border-radius:999px;background:#fff;color:#0d4c72;font:800 .78rem Asap,sans-serif;cursor:pointer}
+.socio-example-buttons button:hover{background:#eaf3f8}
