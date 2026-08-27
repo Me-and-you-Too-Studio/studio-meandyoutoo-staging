@@ -25,7 +25,7 @@
 
   function isLegalChapter(ch=state.chapters[state.active]){return canonical(ch?.slug||ch?.title).includes('harcelement')||canonical(ch?.slug||ch?.title).includes('agression sexuelle');}
   function bestAnswerLabel(){return isLegalChapter()?'Réponse correcte':'Réponse la plus appropriée';}
-  function answerHtml(a){return `<div class="composer-answer ${a.is_best?'is-best':''}"><span class="composer-answer-text">${esc(a.content)}</span><span class="composer-score">Score ${Number(a.score).toLocaleString('fr-FR')}</span>${a.is_best?`<span class="composer-best">${bestAnswerLabel()}</span>`:''}</div>`;}
+  function answerHtml(a, editable=false){return `<div class="composer-answer ${a.is_best?'is-best':''}">${editable?`<textarea class="composer-inline-answer" data-answer-input="${esc(a.id)}" rows="2" aria-label="Modifier cette réponse">${esc(a.content)}</textarea>`:`<span class="composer-answer-text">${esc(a.content)}</span>`}<span class="composer-score">Score ${Number(a.score).toLocaleString('fr-FR')}</span>${a.is_best?`<span class="composer-best">${bestAnswerLabel()}</span>`:''}</div>`;}
 
   function linkedSituationLabel(s,index,situations){
     const group=s?.metadata?.link_group;if(!group)return '';
@@ -35,30 +35,41 @@
   }
 
   function situationHtml(s,index){
-    const ch=state.chapters[state.active]; const stereotypes=themeSlug==='sexisme'&&canonical(ch.slug||ch.title).includes('stereotype');
+    const ch=state.chapters[state.active];
+    const stereotypes=themeSlug==='sexisme'&&canonical(ch.slug||ch.title).includes('stereotype');
     const locked=Boolean(ch.locked||s.locked||stereotypes);
     const linkedLabel=linkedSituationLabel(s,index,ch.situations);
-    return `<article class="composer-situation" data-situation-card="${esc(s.id)}"><div class="composer-situation-head">${locked?'<span class="composer-lock-chip">🔒 Contenu méthodologique obligatoire</span>':`<span class="composer-position-chip">Situation ${index+1}</span>`}<span class="composer-origin">Situation Me&YouToo</span></div>${linkedLabel?`<div class="composer-linked-chip">🔗 ${esc(linkedLabel)}</div>`:''}<h3>${esc(s.content)}</h3><button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="false">Voir les réponses et les scores <span>⌄</span></button><div class="composer-answers" id="answers-${esc(s.id)}" hidden>${(s.answers||[]).map(answerHtml).join('')}</div>${!locked?`<div class="composer-actions"><button class="button button-secondary" type="button" data-edit="${esc(s.id)}">Modifier la situation et les réponses</button><button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer</button><button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button></div>`:''}</article>`;
+    const situationText=locked?`<h3>${esc(s.content)}</h3>`:`<div class="composer-inline-field"><label for="situation-text-${esc(s.id)}">Texte de la mise en situation</label><textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation" data-situation-input="${esc(s.id)}" rows="3">${esc(s.content)}</textarea></div>`;
+    return `<article class="composer-situation ${locked?'is-locked':''}" data-situation-card="${esc(s.id)}"><div class="composer-situation-head">${locked?'<span class="composer-lock-chip">🔒 Contenu méthodologique obligatoire</span>':`<span class="composer-position-chip">Situation ${index+1}</span>`}<span class="composer-origin">Situation Me&YouToo</span></div>${linkedLabel?`<div class="composer-linked-chip">🔗 ${esc(linkedLabel)}</div>`:''}${situationText}<button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="${locked?'false':'true'}">${locked?'Voir les réponses et les scores':'Réponses et scores'} <span>⌄</span></button><div class="composer-answers" id="answers-${esc(s.id)}" ${locked?'hidden':''}>${(s.answers||[]).map(a=>answerHtml(a,!locked)).join('')}</div>${!locked?`<p class="composer-inline-help">Vous pouvez adapter les formulations. Les scores restent verrouillés par Me&YouToo.</p><div class="composer-actions"><button class="button button-primary" type="button" data-save="${esc(s.id)}">Enregistrer les modifications</button><button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer</button><button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button></div>`:''}</article>`;
   }
 
   function bindSituations(){
     document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{const box=$(`answers-${b.dataset.toggle}`);const open=box.hidden;box.hidden=!open;b.setAttribute('aria-expanded',String(open));b.childNodes[0].textContent=open?'Masquer les réponses et les scores ':'Voir les réponses et les scores ';});
-    document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editSituation(b.dataset.edit));
+    document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>saveInlineSituation(b.dataset.save));
     document.querySelectorAll('[data-replace]').forEach(b=>b.onclick=()=>openLibrary('replace',b.dataset.replace));
     document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removeSituation(b.dataset.remove));
   }
 
   function findSituation(id){return state.chapters.flatMap(ch=>ch.situations).find(s=>String(s.id)===String(id));}
-  async function editSituation(id){
-    const s=findSituation(id);if(!s)return;
-    const situationText=await window.StudioModal.prompt({eyebrow:'Personnalisation',title:'Modifier la mise en situation',message:'Adaptez le texte à votre contexte. Le scoring Me&YouToo reste inchangé.',inputLabel:'Texte de la situation',value:s.content,required:true,requiredMessage:'Le texte de la situation ne peut pas être vide.',confirmLabel:'Modifier les réponses'});if(situationText===null)return;
-    const answers=[];
-    for(let i=0;i<(s.answers||[]).length;i++){
-      const answer=s.answers[i];
-      const content=await window.StudioModal.prompt({eyebrow:`Personnalisation · Réponse ${i+1}/${s.answers.length}`,title:`Modifier la réponse ${i+1}`,message:'Vous pouvez reformuler la réponse. Son score et son statut méthodologique restent verrouillés.',inputLabel:`Texte de la réponse ${i+1}`,value:answer.content,required:true,requiredMessage:'Le texte de la réponse ne peut pas être vide.',confirmLabel:i===s.answers.length-1?'Enregistrer les modifications':'Réponse suivante'});if(content===null)return;
-      answers.push({id:answer.id,content});
-    }
-    try{await api(`/api/projects/${projectId}/situations/${id}`,{method:'PATCH',body:JSON.stringify({customContent:situationText,customAnswers:answers})});s.content=situationText;s.answers=(s.answers||[]).map(answer=>({...answer,content:answers.find(item=>String(item.id)===String(answer.id))?.content||answer.content}));render();showMessage('La situation et ses réponses ont été enregistrées. Les scores restent inchangés.','success');}catch(e){showMessage(e.message);}
+  async function saveInlineSituation(id){
+    const s=findSituation(id),card=document.querySelector(`[data-situation-card="${CSS.escape(String(id))}"]`);
+    if(!s||!card)return;
+    const situationInput=card.querySelector('[data-situation-input]');
+    const answerInputs=[...card.querySelectorAll('[data-answer-input]')];
+    const situationText=String(situationInput?.value||'').trim();
+    const answers=answerInputs.map(input=>({id:Number(input.dataset.answerInput),content:String(input.value||'').trim()}));
+    if(!situationText){showMessage('Le texte de la mise en situation ne peut pas être vide.');situationInput?.focus();return;}
+    const emptyAnswer=answerInputs.find(input=>!String(input.value||'').trim());
+    if(emptyAnswer){showMessage('Aucune réponse ne peut être vide.');emptyAnswer.focus();return;}
+    const button=card.querySelector('[data-save]');
+    if(button){button.disabled=true;button.textContent='Enregistrement…';}
+    try{
+      await api(`/api/projects/${projectId}/situations/${id}`,{method:'PATCH',body:JSON.stringify({customContent:situationText,customAnswers:answers})});
+      s.content=situationText;
+      s.answers=(s.answers||[]).map(answer=>({...answer,content:answers.find(item=>String(item.id)===String(answer.id))?.content||answer.content}));
+      if(button){button.textContent='✓ Enregistré';setTimeout(()=>{if(document.body.contains(button)){button.disabled=false;button.textContent='Enregistrer les modifications';}},1200);}
+      showMessage('La mise en situation et les réponses ont été enregistrées. Les scores restent inchangés.','success');
+    }catch(e){if(button){button.disabled=false;button.textContent='Enregistrer les modifications';}showMessage(e.message);}
   }
   async function removeSituation(id){const ch=state.chapters[state.active],s=findSituation(id),linked=Boolean(s&&s.metadata&&s.metadata.link_group);const confirmed=await window.StudioModal.confirm({eyebrow:'Composition du diagnostic',title:linked?'Supprimer ces situations liées ?':'Supprimer cette situation ?',message:linked?'Cette situation fonctionne avec une autre mise en situation. Les deux seront retirées ensemble de ce chapitre. Cette action concerne uniquement ce brouillon.':'Cette mise en situation sera retirée de ce chapitre. Elle restera disponible dans le référentiel Me&YouToo.',type:'danger',cancelLabel:'Conserver',confirmLabel:linked?'Supprimer les situations':'Supprimer la situation'});if(!confirmed)return;try{const data=await api(`/api/projects/${projectId}/situations/${id}`,{method:'DELETE'});const deleted=new Set((data.deletedIds||[id]).map(String));ch.situations=ch.situations.filter(s=>!deleted.has(String(s.id)));render();showMessage(data.linked?'Les situations liées ont été supprimées ensemble.':'La situation a été supprimée du brouillon.','success');}catch(e){showMessage(e.message);}}
 
