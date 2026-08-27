@@ -1157,3 +1157,7 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
 .composer-situation.is-locked{
   filter:saturate(.88);
 }
+
+/* Paramétrage — conditions de passage */
+#param-next.is-disabled{opacity:.48;filter:grayscale(.15);cursor:not-allowed}
+.optional-label{display:inline-flex;margin-left:6px;padding:3px 7px;border-radius:999px;background:#eef3f6;color:#6a7c89;font-size:.68rem;font-weight:800;vertical-align:middle}

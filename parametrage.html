@@ -6,7 +6,7 @@
 <title>Paramétrer la campagne — Studio Me&YouToo</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20260827-parametrage-locked-ui-1">
+<link rel="stylesheet" href="assets/css/style.css?v=20260827-required-intro-dates-2">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -87,8 +87,8 @@
 <p class="section-desc">Les passations sont mutualisées au niveau de votre entreprise. Vérifiez que votre solde couvre le nombre de répondants estimé pour cette campagne.</p>
 <div class="respondent-volume-card">
 <div class="field">
-<label for="nb-respondents">Nombre total de répondants estimé <span class="req">*</span></label>
-<input id="nb-respondents" type="number" min="1" required placeholder="Ex. 250">
+<label for="nb-respondents">Nombre total de répondants estimé <span class="optional-label">Facultatif</span></label>
+<input id="nb-respondents" type="number" min="1" placeholder="Ex. 250">
 <span class="hint">Ce nombre alimente automatiquement la valeur « Prévues ici » ci-dessous.</span>
 </div>
 </div>
@@ -154,7 +154,7 @@
 </div>
 <div class="top-actions" style="justify-content:flex-end">
 <a class="button button-ghost" id="param-back">← Étape précédente</a>
-<button class="button button-primary" type="submit">Enregistrer et vérifier</button>
+<button class="button button-primary" id="param-next" type="submit">Enregistrer et vérifier</button>
 </div>
 </form>
 </main>
@@ -167,7 +167,7 @@
 </script>
 <script src="assets/js/project-context.js?v=20260713-5">
 </script>
-<script src="assets/js/parametrage.js?v=20260827-parametrage-locked-ui-1">
+<script src="assets/js/parametrage.js?v=20260827-required-intro-dates-2">
 </script>
 <script src="assets/js/pack-requests.js?v=20260822-1"></script>
 </body>
