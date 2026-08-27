@@ -1048,3 +1048,15 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
 /* Composer — seuils minimum / maximum */
 #composer-next.is-disabled{opacity:.48;filter:grayscale(.15);cursor:not-allowed}
 #library-button.is-disabled{opacity:.48;filter:grayscale(.15);cursor:not-allowed}
+
+/* Composer — consignes de contextualisation */
+.composer-customization-guidance{display:flex;gap:16px;margin:0 0 18px;padding:18px 20px;border:1px solid #bfdbe8;border-left:5px solid #0d4c72;border-radius:16px;background:#f4f9fc;color:#263b49}
+.composer-customization-guidance-icon{flex:0 0 38px;width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#0d4c72;color:#fff;font-size:1.1rem;font-weight:800}
+.composer-customization-guidance strong{color:#0d4c72}.composer-customization-guidance p{margin:5px 0 0;line-height:1.48}
+.composer-library-guidance{margin-top:10px!important;padding:10px 12px;border-radius:10px;background:#fff;color:#334d5c;border:1px solid #d5e5ed}
+.composer-customization-validation{margin-top:10px!important;padding-top:10px;border-top:1px solid #d7e6ee;color:#0d4c72}
+.composer-editor-label-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.composer-context-tag{display:inline-flex;padding:4px 8px;border-radius:999px;background:#e7f2f7;color:#0d4c72;font-size:.72rem;font-weight:800}
+.composer-field-guidance{display:block;margin-top:6px;color:#65798a;font-size:.78rem;line-height:1.4}
+.composer-context-help{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:12px;background:#fff8e8;border:1px solid #f0dfad;color:#5b5140}
+.composer-context-help strong{color:#6d5a22}
