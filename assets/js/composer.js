@@ -92,11 +92,11 @@
       </div>
       ${linkedLabel?`<div class="composer-linked-chip">🔗 ${esc(linkedLabel)}</div>`:''}
       ${situationText}
-      <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="${locked?'false':'true'}"><span data-toggle-label>${locked?'Voir les réponses et les scores':'Masquer les réponses et les scores'}</span> <span aria-hidden="true">⌄</span></button>
-      <div class="composer-answers" id="answers-${esc(s.id)}" ${locked?'hidden':''}>${answerRows}</div>
+      <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="false"><span data-toggle-label>Voir les réponses et les scores</span> <span aria-hidden="true">⌄</span></button>
+      <div class="composer-answers" id="answers-${esc(s.id)}" hidden>${answerRows}</div>
       ${!locked?`<div class="composer-inline-help composer-context-help"><strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span></div>
+      <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${customized?'Enregistré':'Enregistrement automatique'}</span></span></div>
       <div class="composer-actions">
-        <button class="button button-primary" type="button" data-save="${esc(s.id)}">Enregistrer les modifications</button>
         ${customized?`<button class="button button-ghost" type="button" data-reset="${esc(s.id)}">↶ Annuler mes modifications</button>`:''}
         <button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer</button>
         <button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button>
@@ -104,6 +104,21 @@
     </article>`;
   }
 
+  const autosaveTimers=new Map();
+  function setSaveStatus(card,stateName,message){
+    const status=card?.querySelector('[data-save-status]'),text=status?.querySelector('[data-save-text]');
+    if(!status)return;
+    status.classList.remove('is-saving','is-saved','is-error');
+    status.classList.add(stateName);
+    if(text)text.textContent=message;
+  }
+  function scheduleAutosave(id){
+    const card=document.querySelector(`[data-situation-card="${CSS.escape(String(id))}"]`);
+    if(!card)return;
+    setSaveStatus(card,'is-saving','Modifications en attente…');
+    clearTimeout(autosaveTimers.get(String(id)));
+    autosaveTimers.set(String(id),setTimeout(()=>saveInlineSituation(id),800));
+  }
   function bindSituations(){
     document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{
       const box=$(`answers-${b.dataset.toggle}`),label=b.querySelector('[data-toggle-label]');
@@ -112,7 +127,13 @@
       b.setAttribute('aria-expanded',String(!box.hidden));
       if(label)label.textContent=box.hidden?'Voir les réponses et les scores':'Masquer les réponses et les scores';
     });
-    document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>saveInlineSituation(b.dataset.save));
+    document.querySelectorAll('[data-situation-input],[data-answer-input]').forEach(input=>{
+      input.addEventListener('input',()=>scheduleAutosave(input.closest('[data-situation-card]')?.dataset.situationCard));
+      input.addEventListener('blur',()=>{
+        const id=input.closest('[data-situation-card]')?.dataset.situationCard;
+        if(id&&autosaveTimers.has(String(id))){clearTimeout(autosaveTimers.get(String(id)));autosaveTimers.delete(String(id));saveInlineSituation(id);}
+      });
+    });
     document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=()=>resetSituationCustomization(b.dataset.reset));
     document.querySelectorAll('[data-replace]').forEach(b=>b.onclick=()=>openLibrary('replace',b.dataset.replace));
     document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removeSituation(b.dataset.remove));
@@ -120,24 +141,39 @@
 
   function findSituation(id){return state.chapters.flatMap(ch=>ch.situations).find(s=>String(s.id)===String(id));}
   async function saveInlineSituation(id){
+    if(!id)return;
+    clearTimeout(autosaveTimers.get(String(id)));autosaveTimers.delete(String(id));
     const s=findSituation(id),card=document.querySelector(`[data-situation-card="${CSS.escape(String(id))}"]`);
     if(!s||!card)return;
     const situationInput=card.querySelector('[data-situation-input]');
     const answerInputs=[...card.querySelectorAll('[data-answer-input]')];
     const situationText=String(situationInput?.value||'').trim();
     const answers=answerInputs.map(input=>({id:Number(input.dataset.answerInput),content:String(input.value||'').trim()}));
-    if(!situationText){showMessage('Le texte de la mise en situation ne peut pas être vide.');situationInput?.focus();return;}
-    const emptyAnswer=answerInputs.find(input=>!String(input.value||'').trim());
-    if(emptyAnswer){showMessage('Aucune réponse ne peut être vide.');emptyAnswer.focus();return;}
-    const button=card.querySelector('[data-save]');
-    if(button){button.disabled=true;button.textContent='Enregistrement…';}
+    if(!situationText){setSaveStatus(card,'is-error','Non enregistré · le texte ne peut pas être vide');return;}
+    if(answerInputs.some(input=>!String(input.value||'').trim())){setSaveStatus(card,'is-error','Non enregistré · une réponse est vide');return;}
+    setSaveStatus(card,'is-saving','Enregistrement…');
     try{
-      await api(`/api/projects/${projectId}/situations/${id}`,{method:'PATCH',body:JSON.stringify({customContent:situationText,customAnswers:answers})});
-      const refreshed=await api(`/api/projects/${projectId}/composer`);
-      state.project=refreshed.project;state.chapters=refreshed.chapters;render();
-      showMessage('La mise en situation et les réponses ont été enregistrées. Les différences avec la version Me&YouToo sont maintenant signalées.','success');
-    }catch(e){if(button){button.disabled=false;button.textContent='Enregistrer les modifications';}showMessage(e.message);}
+      const saved=await api(`/api/projects/${projectId}/situations/${id}`,{method:'PATCH',body:JSON.stringify({customContent:situationText,customAnswers:answers})});
+      if(!saved?.situation)throw new Error('La sauvegarde n’a pas été confirmée par le serveur.');
+      s.custom_content=saved.situation.custom_content;
+      s.custom_answers=saved.situation.custom_answers;
+      s.content=situationText;
+      s.answers=(s.answers||[]).map(answer=>({...answer,content:answers.find(item=>String(item.id)===String(answer.id))?.content||answer.content}));
+      s.has_customization=true;
+      setSaveStatus(card,'is-saved','Enregistré');
+      card.classList.add('has-customization');
+      const tags=card.querySelector('.composer-situation-tags');
+      if(tags&&!tags.querySelector('.composer-customized-tag'))tags.insertAdjacentHTML('beforeend','<span class="composer-customized-tag">✎ Personnalisée</span>');
+      if(!card.querySelector('[data-reset]')){
+        const actions=card.querySelector('.composer-actions');
+        if(actions)actions.insertAdjacentHTML('afterbegin',`<button class="button button-ghost" type="button" data-reset="${esc(id)}">↶ Annuler mes modifications</button>`);
+        const reset=card.querySelector('[data-reset]');if(reset)reset.onclick=()=>resetSituationCustomization(id);
+      }
+    }catch(e){
+      setSaveStatus(card,'is-error',`Non enregistré · ${e.message||'erreur serveur'}`);
+    }
   }
+
   async function resetSituationCustomization(id){
     const s=findSituation(id);if(!s)return;
     const confirmed=await window.StudioModal.confirm({
