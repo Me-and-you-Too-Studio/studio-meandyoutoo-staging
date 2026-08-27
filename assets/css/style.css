@@ -1060,3 +1060,15 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
 .composer-field-guidance{display:block;margin-top:6px;color:#65798a;font-size:.78rem;line-height:1.4}
 .composer-context-help{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:12px;background:#fff8e8;border:1px solid #f0dfad;color:#5b5140}
 .composer-context-help strong{color:#6d5a22}
+
+/* Bibliothèque — situations liées visibles ensemble */
+.composer-library-bundle{display:grid;grid-template-columns:70px 1fr;padding:0;overflow:hidden}
+.composer-library-bundle .composer-library-number{display:grid;place-items:center;background:#f2f5f9;font-size:1.25rem;font-weight:900;color:#243b69}
+.composer-library-bundle .composer-library-content{padding:16px}
+.composer-library-linked-item{padding:4px 0 14px}
+.composer-library-linked-item+.composer-library-linked-item{margin-top:8px;padding-top:14px;border-top:1px solid #dfe7ed}
+.composer-library-linked-title{margin-bottom:6px;color:#0d8791;font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+/* Profils — navigation verrouillée tant que la composition est incomplète */
+.creation-chapter-item.is-incomplete{border-color:#e7c875;background:#fffdf6}
+.creation-chapter-item.is-incomplete .creation-chapter-head strong{background:#fff2c8;color:#775b00}
+.creation-chapter-tabs button.is-disabled,#next-link.is-disabled{opacity:.45;filter:grayscale(.2);cursor:not-allowed}

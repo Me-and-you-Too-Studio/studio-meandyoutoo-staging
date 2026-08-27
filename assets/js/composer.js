@@ -91,7 +91,23 @@
       const existing=currentCatalogIds();
       state.library=(data.situations||[]).filter(s=>![String(s.id||''),String(s.source_id||''),String(s.metadata?.duplicate_of_source_id||''),canonical(s.content)].filter(Boolean).some(k=>existing.has(k)));
       $('library-title').textContent=mode==='replace'?`Remplacer une situation · ${ch.title}`:`Ajouter une situation · ${ch.title}`;
-      $('library-list').innerHTML=state.library.length?state.library.map((s,index)=>{const group=s.metadata?.link_group;const numbers=state.library.map((item,i)=>item.metadata?.link_group===group?i+1:null).filter(Boolean);const linked=group&&numbers.length>1?`Situations ${numbers.join(' et ')} liées · ajoutées ensemble`:group?'Situation liée · ajoutée avec sa situation associée':'Situation disponible';return `<article class="composer-library-card tone-${index%4+1}"><div class="composer-library-number">${String(index+1).padStart(2,'0')}</div><div class="composer-library-content"><div class="composer-library-label">${linked}</div><h3>${esc(s.content)}</h3><details><summary>Consulter les réponses et les scores</summary>${(s.answers||[]).map(answerHtml).join('')}</details><button class="button button-primary" type="button" data-library-pick="${esc(s.id)}">${mode==='replace'?'Remplacer par cette situation':'Ajouter au chapitre'}</button></div></article>`;}).join(''):'<div class="composer-library-empty"><strong>Aucune autre situation disponible</strong><p>Les situations déjà présentes dans ce chapitre ne sont pas proposées ici.</p></div>';
+
+      const seenGroups=new Set(),entries=[];
+      for(const s of state.library){
+        const group=s.metadata?.link_group||'';
+        if(group&&seenGroups.has(group))continue;
+        if(group)seenGroups.add(group);
+        const members=group&&Array.isArray(s.linked_situations)&&s.linked_situations.length?s.linked_situations:[s];
+        entries.push({primary:s,members});
+      }
+
+      $('library-list').innerHTML=entries.length?entries.map((entry,index)=>{
+        const linked=entry.members.length>1;
+        const label=linked?`${entry.members.length} situations liées · ${mode==='replace'?'remplacées':'ajoutées'} ensemble`:'Situation disponible';
+        const body=entry.members.map((m,mi)=>`<section class="composer-library-linked-item">${linked?`<div class="composer-library-linked-title">Situation ${mi+1}/${entry.members.length}</div>`:''}<h3>${esc(m.content)}</h3><details><summary>Consulter les réponses et les scores</summary>${(m.answers||[]).map(answerHtml).join('')}</details></section>`).join('');
+        return `<article class="composer-library-card composer-library-bundle tone-${index%4+1}"><div class="composer-library-number">${String(index+1).padStart(2,'0')}</div><div class="composer-library-content"><div class="composer-library-label">${label}</div>${body}<button class="button button-primary" type="button" data-library-pick="${esc(entry.primary.id)}">${mode==='replace'?(linked?`Remplacer par ces ${entry.members.length} situations`:'Remplacer par cette situation'):(linked?`Ajouter les ${entry.members.length} situations au chapitre`:'Ajouter au chapitre')}</button></div></article>`;
+      }).join(''):'<div class="composer-library-empty"><strong>Aucune autre situation disponible</strong><p>Les situations déjà présentes dans ce chapitre ne sont pas proposées ici.</p></div>';
+
       $('library-backdrop').hidden=false;$('library-drawer').classList.add('is-open');$('library-drawer').setAttribute('aria-hidden','false');
       document.querySelectorAll('[data-library-pick]').forEach(b=>b.onclick=()=>mode==='replace'?replaceSituation(replaceId,b.dataset.libraryPick):addSituation(b.dataset.libraryPick));
     }catch(e){showMessage(e.message);}
