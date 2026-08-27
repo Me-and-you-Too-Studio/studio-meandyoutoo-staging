@@ -1,7 +1,13 @@
 (()=>{
   const p=new URLSearchParams(location.search),theme=p.get('theme')||'sexisme',projectId=p.get('projectId')||'';
   const api=(url,opt={})=>window.StudioAPI.request(url,opt);const $=id=>document.getElementById(id);
-  const date=v=>v?new Date(v+'T12:00:00').toLocaleDateString('fr-FR'):'À définir';
+  const date=v=>{
+    if(!v)return 'À définir';
+    const raw=String(v),day=raw.slice(0,10);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(day))return 'À définir';
+    const parsed=new Date(day+'T12:00:00');
+    return Number.isNaN(parsed.getTime())?'À définir':parsed.toLocaleDateString('fr-FR');
+  };
   async function load(){
     try{
       if(!projectId){location.href='mes-campagnes.html';return;}
