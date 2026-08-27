@@ -25,6 +25,16 @@
 
   function isLegalChapter(ch=state.chapters[state.active]){return canonical(ch?.slug||ch?.title).includes('harcelement')||canonical(ch?.slug||ch?.title).includes('agression sexuelle');}
   function bestAnswerLabel(){return isLegalChapter()?'Réponse correcte':'Réponse la plus appropriée';}
+  function isStereotypesChapter(ch=state.chapters[state.active]){return themeSlug==='sexisme'&&canonical(ch?.slug||ch?.title).includes('stereotype');}
+  function isAggressionChapter(ch=state.chapters[state.active]){return canonical(ch?.slug||ch?.title).includes('agression sexuelle');}
+  function chapterSituationRules(ch=state.chapters[state.active]){
+    if(isStereotypesChapter(ch))return {min:null,max:null};
+    return {min:isAggressionChapter(ch)?4:5,max:8};
+  }
+  function chapterCountStatus(ch=state.chapters[state.active]){
+    const rules=chapterSituationRules(ch),count=ch?.situations?.length||0;
+    return {rules,count,below:rules.min!=null&&count<rules.min,atMax:rules.max!=null&&count>=rules.max,above:rules.max!=null&&count>rules.max};
+  }
   function answerHtml(a, editable=false){return `<div class="composer-answer ${a.is_best?'is-best':''}">${editable?`<textarea class="composer-inline-answer" data-answer-input="${esc(a.id)}" rows="2" aria-label="Modifier cette réponse">${esc(a.content)}</textarea>`:`<span class="composer-answer-text">${esc(a.content)}</span>`}<span class="composer-score">Score ${Number(a.score).toLocaleString('fr-FR')}</span>${a.is_best?`<span class="composer-best">${bestAnswerLabel()}</span>`:''}</div>`;}
 
   function linkedSituationLabel(s,index,situations){
@@ -39,8 +49,8 @@
     const stereotypes=themeSlug==='sexisme'&&canonical(ch.slug||ch.title).includes('stereotype');
     const locked=Boolean(ch.locked||s.locked||stereotypes);
     const linkedLabel=linkedSituationLabel(s,index,ch.situations);
-    const situationText=locked?`<h3>${esc(s.content)}</h3>`:`<div class="composer-inline-field"><div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Texte de la mise en situation</label><span class="composer-context-tag">Contextualisation uniquement</span></div><textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation" data-situation-input="${esc(s.id)}" rows="3">${esc(s.content)}</textarea><small class="composer-field-guidance">Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel. Si le sens ne convient pas, utilisez « Remplacer » et choisissez une autre situation dans la bibliothèque.</small></div>`;
-    return `<article class="composer-situation ${locked?'is-locked':''}" data-situation-card="${esc(s.id)}"><div class="composer-situation-head">${locked?'<span class="composer-lock-chip">🔒 Contenu méthodologique obligatoire</span>':`<span class="composer-position-chip">Situation ${index+1}</span>`}<span class="composer-origin">Situation Me&YouToo</span></div>${linkedLabel?`<div class="composer-linked-chip">🔗 ${esc(linkedLabel)}</div>`:''}${situationText}<button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="${locked?'false':'true'}">${locked?'Voir les réponses et les scores':'Réponses et scores'} <span>⌄</span></button><div class="composer-answers" id="answers-${esc(s.id)}" ${locked?'hidden':''}>${(s.answers||[]).map(a=>answerHtml(a,!locked)).join('')}</div>${!locked?`<div class="composer-inline-help composer-context-help"><strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span></div><div class="composer-actions"><button class="button button-primary" type="button" data-save="${esc(s.id)}">Enregistrer les modifications</button><button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer</button><button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button></div>`:''}</article>`;
+    const situationText=locked?`<h3>${esc(s.content)}</h3>`:`<div class="composer-inline-field"><label for="situation-text-${esc(s.id)}">Texte de la mise en situation</label><textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation" data-situation-input="${esc(s.id)}" rows="3">${esc(s.content)}</textarea></div>`;
+    return `<article class="composer-situation ${locked?'is-locked':''}" data-situation-card="${esc(s.id)}"><div class="composer-situation-head">${locked?'<span class="composer-lock-chip">🔒 Contenu méthodologique obligatoire</span>':`<span class="composer-position-chip">Situation ${index+1}</span>`}<span class="composer-origin">Situation Me&YouToo</span></div>${linkedLabel?`<div class="composer-linked-chip">🔗 ${esc(linkedLabel)}</div>`:''}${situationText}<button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="${locked?'false':'true'}">${locked?'Voir les réponses et les scores':'Réponses et scores'} <span>⌄</span></button><div class="composer-answers" id="answers-${esc(s.id)}" ${locked?'hidden':''}>${(s.answers||[]).map(a=>answerHtml(a,!locked)).join('')}</div>${!locked?`<p class="composer-inline-help">Vous pouvez adapter les formulations. Les scores restent verrouillés par Me&YouToo.</p><div class="composer-actions"><button class="button button-primary" type="button" data-save="${esc(s.id)}">Enregistrer les modifications</button><button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer</button><button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button></div>`:''}</article>`;
   }
 
   function bindSituations(){
@@ -87,15 +97,100 @@
     }catch(e){showMessage(e.message);}
   }
   function closeLibrary(){$('library-backdrop').hidden=true;$('library-drawer').classList.remove('is-open');$('library-drawer').setAttribute('aria-hidden','true');}
-  async function addSituation(catalogSituationId){const ch=state.chapters[state.active];try{const data=await api(`/api/projects/${projectId}/chapters/${ch.id}/situations`,{method:'POST',body:JSON.stringify({catalogSituationId:Number(catalogSituationId)})});ch.situations.push(...(data.situations||[data.situation]).filter(Boolean));closeLibrary();render();showMessage(data.linked?'Les situations liées ont été ajoutées et enregistrées ensemble.':'La situation a été ajoutée et enregistrée dans le brouillon.','success');}catch(e){showMessage(e.message);}}
+  async function addSituation(catalogSituationId){
+    const ch=state.chapters[state.active],status=chapterCountStatus(ch);
+    if(status.atMax){
+      showMessage(`Cette partie est limitée à ${status.rules.max} situations maximum.`);
+      return;
+    }
+    try{
+      const data=await api(`/api/projects/${projectId}/chapters/${ch.id}/situations`,{method:'POST',body:JSON.stringify({catalogSituationId:Number(catalogSituationId)})});
+      const added=(data.situations||[data.situation]).filter(Boolean);
+      if(status.rules.max!=null&&ch.situations.length+added.length>status.rules.max){
+        showMessage(`Cette sélection dépasserait le maximum de ${status.rules.max} situations.`);
+        return;
+      }
+      ch.situations.push(...added);
+      closeLibrary();render();
+      showMessage(data.linked?'Les situations liées ont été ajoutées et enregistrées ensemble.':'La situation a été ajoutée et enregistrée dans le brouillon.','success');
+    }catch(e){showMessage(e.message);}
+  }
   async function replaceSituation(projectSituationId,catalogSituationId){try{const data=await api(`/api/projects/${projectId}/situations/${projectSituationId}/replace`,{method:'PATCH',body:JSON.stringify({catalogSituationId:Number(catalogSituationId)})});closeLibrary();const refreshed=await api(`/api/projects/${projectId}/composer`);state.project=refreshed.project;state.chapters=refreshed.chapters;render();showMessage(data.linked?'La sélection liée a été remplacée et enregistrée ensemble.':'La situation a été remplacée et enregistrée.','success');}catch(e){showMessage(e.message);}}
 
-  function render(){const ch=state.chapters[state.active];if(!ch)return;const stereotypes=themeSlug==='sexisme'&&canonical(ch.slug||ch.title).includes('stereotype');$('chapter-kicker').textContent=`Partie ${state.active+1} · Questions`;$('chapter-title').textContent=ch.title;$('chapter-desc').textContent=ch.locked?(ch.lock_reason||'Cette partie méthodologique est obligatoire et non modifiable.'):`${ch.situations.length} situations retenues · consultez les réponses et scores avant de modifier votre sélection.`;$('library-button').hidden=Boolean(ch.locked||stereotypes);$('legal-scoring-note').hidden=!isLegalChapter(ch);$('situation-list').innerHTML=ch.situations.map(situationHtml).join('');$('sticky-part-label').textContent=`Partie ${state.active+1}/${state.chapters.length} · ${ch.title}`;const next=$('composer-next');if(next)next.href=`personnalisation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${state.active}`;renderNav();bindSituations();}
+  function render(){
+    const ch=state.chapters[state.active];if(!ch)return;
+    const stereotypes=isStereotypesChapter(ch),status=chapterCountStatus(ch);
+    $('chapter-kicker').textContent=`Partie ${state.active+1} · Questions`;
+    $('chapter-title').textContent=ch.title;
+    $('chapter-desc').textContent=ch.locked
+      ?(ch.lock_reason||'Cette partie méthodologique est obligatoire et non modifiable.')
+      :status.rules.min!=null
+        ?`${status.count} situation${status.count>1?'s':''} retenue${status.count>1?'s':''} · ${status.rules.min} minimum et ${status.rules.max} maximum dans cette partie.`
+        :`${status.count} situations retenues · consultez les réponses et scores avant de modifier votre sélection.`;
+
+    const libraryButton=$('library-button');
+    libraryButton.hidden=Boolean(ch.locked||stereotypes);
+    if(!libraryButton.hidden){
+      libraryButton.classList.toggle('is-disabled',status.atMax);
+      libraryButton.setAttribute('aria-disabled',String(status.atMax));
+      libraryButton.title=status.atMax?`Maximum de ${status.rules.max} situations atteint`:'';
+    }
+
+    $('legal-scoring-note').hidden=!isLegalChapter(ch);
+    $('situation-list').innerHTML=ch.situations.map(situationHtml).join('');
+    $('sticky-part-label').textContent=`Partie ${state.active+1}/${state.chapters.length} · ${ch.title}`;
+
+    const next=$('composer-next');
+    if(next){
+      next.href=`personnalisation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${state.active}`;
+      const blocked=status.below||status.above;
+      next.classList.toggle('is-disabled',blocked);
+      next.setAttribute('aria-disabled',String(blocked));
+      next.onclick=blocked?async(event)=>{
+        event.preventDefault();
+        if(status.below){
+          const goLibrary=await window.StudioModal.confirm({
+            eyebrow:'Composition du diagnostic',
+            title:`Il vous faut ${status.rules.min} situations minimum`,
+            message:`Cette partie contient actuellement ${status.count} situation${status.count>1?'s':''}. Ajoutez-en ${status.rules.min-status.count} depuis la bibliothèque Me&YouToo avant de personnaliser les profils.`,
+            type:'info',
+            cancelLabel:'Rester ici',
+            confirmLabel:'Piocher dans la bibliothèque'
+          });
+          if(goLibrary)openLibrary('add');
+        }else{
+          await window.StudioModal.confirm({
+            eyebrow:'Composition du diagnostic',
+            title:`Maximum de ${status.rules.max} situations`,
+            message:`Cette partie contient plus de ${status.rules.max} situations. Supprimez-en une avant de poursuivre.`,
+            type:'warning',
+            cancelLabel:'Fermer',
+            confirmLabel:'Compris'
+          });
+        }
+      }:null;
+    }
+    renderNav();bindSituations();
+  }
 
   async function ensureProject(){if(projectId)return;const project=await window.StudioProject.createNew(themeSlug);projectId=String(project.id);location.replace(`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`);throw new Error('redirect');}
   async function load(){try{await ensureProject();const data=await api(`/api/projects/${projectId}/composer`);state.project=data.project;state.chapters=data.chapters;state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title;const themeBack=$('composer-theme-back');if(themeBack)themeBack.href=`theme-${themeSlug}.html`;await saveStep('composer');render();}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
 
-  $('library-button').onclick=()=>openLibrary('add');
+  $('library-button').onclick=async()=>{
+    const status=chapterCountStatus(state.chapters[state.active]);
+    if(status.atMax){
+      await window.StudioModal.confirm({
+        eyebrow:'Composition du diagnostic',
+        title:`Maximum de ${status.rules.max} situations atteint`,
+        message:`Vous avez déjà ${status.rules.max} situations dans cette partie. Supprimez-en une avant d’en ajouter une autre depuis la bibliothèque.`,
+        type:'warning',
+        cancelLabel:'Fermer',
+        confirmLabel:'Compris'
+      });
+      return;
+    }
+    openLibrary('add');
+  };
   $('library-close').onclick=closeLibrary;$('library-backdrop').onclick=closeLibrary;
   document.body.classList.add('sidebar-collapsed');
   const collapseButton=document.querySelector('[data-sidebar-collapse]');if(collapseButton){collapseButton.setAttribute('aria-expanded','false');collapseButton.setAttribute('aria-label','Déployer le menu');collapseButton.setAttribute('title','Déployer le menu');}
