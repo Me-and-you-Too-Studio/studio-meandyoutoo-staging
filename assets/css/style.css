@@ -863,6 +863,32 @@ body.studio-modal-open{overflow:hidden}
 .pack-request-status{margin:14px 0 0;padding:12px 14px;border-radius:12px;background:#eef6f8;color:#18375d;font-weight:800}
 .pack-request-status:empty,.pack-request-status[hidden]{display:none}.pack-request-status.success{background:#eaf8f1;color:#216b4a}.pack-request-status.error{background:#fff1f1;color:#9a2929}
 .pack-request-status.pending{border:1px solid #f1d58a;background:#fff8df;color:#805f08}
+
+/* Parcours Questions + Profils, inspiré du fonctionnement ITS */
+.creation-editor-page{padding-bottom:92px}
+.creation-editor-page .main{max-width:none}
+.creation-editor-page .composer{grid-template-columns:250px minmax(0,1fr);gap:16px}
+.creation-editor-page .composer-side{position:sticky;top:16px;max-height:calc(100vh - 120px);overflow:auto;padding:16px}
+.creation-editor-page .composer-main{min-width:0;padding:22px}
+.creation-chapters>.eyebrow{margin-bottom:3px}
+.creation-chapter-item{overflow:hidden;border:1px solid #dfe7ee;border-radius:14px;background:#fff;transition:border-color .15s,box-shadow .15s}
+.creation-chapter-item.is-active{border-color:#0d8791;box-shadow:0 0 0 2px rgba(13,135,145,.08)}
+.creation-chapter-head{display:flex;width:100%;align-items:flex-start;justify-content:space-between;gap:8px;padding:11px 11px 8px;border:0;background:transparent;color:#243b69;text-align:left;font:800 .78rem Asap,sans-serif;line-height:1.3;cursor:pointer}
+div.creation-chapter-head{cursor:default}
+.creation-chapter-head span{display:grid;gap:3px}.creation-chapter-head small{color:#7b8da1;font-size:.62rem;letter-spacing:.05em;text-transform:uppercase}.creation-chapter-head strong{flex:0 0 auto;padding:3px 6px;border-radius:999px;background:#edf4f7;color:#0d8791;font-size:.66rem}
+.creation-chapter-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:0 10px 10px}
+.creation-chapter-tabs a,.creation-chapter-tabs button{display:block;padding:6px 8px;border:1px solid #d9e3ea;border-radius:999px;background:#fff;color:#60758a;text-align:center;text-decoration:none;font:800 .68rem Asap,sans-serif;cursor:pointer}
+.creation-chapter-tabs .is-active{border-color:#243b69;background:#243b69;color:#fff}
+.creation-objective{display:flex;gap:11px;margin:18px 0 14px;padding:13px 15px;border:1px solid #cfe2ef;border-radius:14px;background:#eef7fc;color:#35536c}
+.creation-objective>span{font-size:1.1rem}.creation-objective strong{display:block;color:#0d4c72;font-size:.82rem}.creation-objective p{margin:3px 0 0;font-size:.78rem;line-height:1.4}
+.creation-meta-row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 13px;padding:9px 12px;border-radius:11px;background:#f6f8fa;color:#60758a;font-size:.72rem;font-weight:750}
+.creation-sticky-actions{position:fixed;z-index:55;right:16px;bottom:14px;left:108px;display:grid;grid-template-columns:auto minmax(180px,1fr) auto;align-items:center;gap:14px;padding:12px 14px;border:1px solid #d8e3ea;border-radius:18px;background:rgba(255,255,255,.96);box-shadow:0 14px 38px rgba(13,76,114,.18);backdrop-filter:blur(12px)}
+.creation-sticky-progress{display:grid;justify-items:center;gap:2px;min-width:0;color:#60758a;font-size:.68rem}.creation-sticky-progress strong{max-width:100%;overflow:hidden;color:#243b69;font-size:.78rem;text-overflow:ellipsis;white-space:nowrap}
+.creation-profiles-workspace .profile-excel-grid{margin-top:18px}
+.creation-profiles-workspace .profile-excel-card{min-width:0;padding:16px}.creation-profiles-workspace .profile-excel-card textarea{resize:vertical}
+body:not(.sidebar-collapsed) .creation-sticky-actions{left:288px}
+@media(max-width:1180px){.creation-editor-page .profile-excel-grid{grid-template-columns:1fr}.creation-editor-page .composer{grid-template-columns:220px minmax(0,1fr)}}
+@media(max-width:820px){.creation-editor-page{padding-bottom:150px}.creation-editor-page .composer{grid-template-columns:1fr}.creation-editor-page .composer-side{position:static;max-height:none}.creation-sticky-actions{left:12px;right:12px;bottom:76px;grid-template-columns:1fr 1fr}.creation-sticky-progress{grid-column:1/-1;grid-row:1}.creation-sticky-actions .button{justify-content:center}.creation-editor-page .composer-main-head{display:block}.creation-editor-page .composer-main-head .button,.creation-editor-page .composer-main-head .badge{margin-top:10px}}
 .pack-pending-note{order:5;margin-top:10px;padding:12px 15px;border:1px solid rgba(255,255,255,.3);border-radius:14px;background:rgba(255,202,67,.95);color:#18375d}
 .admin-pack-request{margin:16px 0;padding:16px;border:1px solid #f0c65a;border-radius:16px;background:#fff8df}
 .admin-pack-request-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.admin-pack-request h3{margin:0 0 5px;color:#18375d}.admin-pack-request p{margin:3px 0;color:#536786}.admin-pack-request-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.admin-pack-request-meta span{padding:5px 9px;border-radius:999px;background:#fff;color:#18375d;font-size:.76rem;font-weight:800}
