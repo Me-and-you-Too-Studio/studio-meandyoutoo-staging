@@ -1140,3 +1140,20 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
 [data-live-situation-diff] .composer-diff,
 [data-live-answer-diff] .composer-diff{animation:composerDiffReveal .18s ease-out}
 @keyframes composerDiffReveal{from{opacity:.35;transform:translateY(-2px)}to{opacity:1;transform:none}}
+
+/* Composer — couleurs par situation / groupe lié */
+.composer-situation.tone-1{border-left-color:#0d8791;background:#f4fbfb}
+.composer-situation.tone-2{border-left-color:#d89b1d;background:#fffaf0}
+.composer-situation.tone-3{border-left-color:#7566c8;background:#f8f6ff}
+.composer-situation.tone-4{border-left-color:#d66f7e;background:#fff6f7}
+
+/* Les états fonctionnels restent visibles sans casser la couleur du groupe */
+.composer-situation.has-customization.tone-1,
+.composer-situation.has-customization.tone-2,
+.composer-situation.has-customization.tone-3,
+.composer-situation.has-customization.tone-4{
+  box-shadow:0 8px 24px rgba(19,54,82,.06), inset 0 0 0 1px rgba(233,169,27,.28);
+}
+.composer-situation.is-locked{
+  filter:saturate(.88);
+}

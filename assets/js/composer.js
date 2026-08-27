@@ -68,6 +68,15 @@
     return others.length?`Situation ${index+1} liée ${others.length>1?'aux situations':'à la situation'} ${others.join(' et ')}`:`Situation ${index+1} liée à une autre situation`;
   }
 
+  function situationTone(s,index,ch){
+    const group=s?.metadata?.link_group||'';
+    if(group){
+      const firstLinkedIndex=ch.situations.findIndex(item=>item?.metadata?.link_group===group);
+      return `tone-${(Math.max(0,firstLinkedIndex)%4)+1}`;
+    }
+    return `tone-${(index%4)+1}`;
+  }
+
   function situationHtml(s,index){
     const ch=state.chapters[state.active];
     const stereotypes=themeSlug==='sexisme'&&canonical(ch.slug||ch.title).includes('stereotype');
@@ -85,7 +94,8 @@
           <small class="composer-field-guidance">Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel. Si le sens ne convient pas, utilisez « Remplacer » et choisissez une autre situation dans la bibliothèque.</small>
         </div>`;
     const answerRows=(s.answers||[]).map(a=>{const original=(s.original_answers||[]).find(o=>String(o.id)===String(a.id));return answerHtml(a,!locked,original?.content||a.content);}).join('');
-    return `<article class="composer-situation ${locked?'is-locked':''} ${customized?'has-customization':''}" data-situation-card="${esc(s.id)}">
+    const tone=situationTone(s,index,ch);
+    return `<article class="composer-situation ${tone} ${locked?'is-locked':''} ${customized?'has-customization':''}" data-situation-card="${esc(s.id)}">
       <div class="composer-situation-head">
         <div class="composer-situation-tags">${locked?'<span class="composer-lock-chip">🔒 Contenu méthodologique obligatoire</span>':`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':''}</div>
         <span class="composer-origin">Situation Me&YouToo</span>
