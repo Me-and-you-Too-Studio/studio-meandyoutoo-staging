@@ -6,7 +6,7 @@
 <title>Kit de communication — Studio Me&YouToo</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20260828-kit-its-1">
+<link rel="stylesheet" href="assets/css/style.css?v=20260828-kit-complete-2">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -20,9 +20,11 @@
       <h1 class="page-title">Kit de communication</h1>
       <p class="lead">Nous vérifions la cohérence méthodologique et pédagogique de votre configuration, intégrons vos éléments graphiques puis préparons la campagne et les supports de communication. Nous déposerons en retour les éléments sur cet espace. Vous serez averti par mail.</p>
       <div class="kit-shortcuts">
-        <a class="button button-primary kit-shortcut" href="#brandAssetsBlock">🎨 Déposer mes éléments</a>
+        <a class="button button-primary kit-shortcut" href="#linksBlock">🔗 Liens de diffusion</a>
+        <a class="button button-secondary kit-shortcut" href="#messagesBlock">📣 Messages</a>
+        <a class="button button-secondary kit-shortcut" href="#brandAssetsBlock">🎨 Éléments graphiques</a>
         <a class="button button-secondary kit-shortcut" href="#resourcesBlock">🖼️ Ressources livrées</a>
-        <a class="button button-secondary kit-shortcut" href="#videoBlock">🎬 Vidéo téléchargeable</a>
+        <a class="button button-secondary kit-shortcut" href="#videoBlock">🎬 Vidéo</a>
       </div>
     </div>
     <div class="top-actions"><a class="button button-ghost" href="mes-campagnes.html">← Mes campagnes</a></div>
@@ -44,6 +46,35 @@
   <div id="kit-alert" class="composer-alert" hidden></div>
   <div class="kit-real-grid">
     <div>
+      <section class="card kit-block" id="linksBlock">
+        <p class="eyebrow">Diffusion</p>
+        <h2 class="section-title">🔗 Liens de diffusion</h2>
+        <p class="section-desc">Les liens sont mis à disposition par Me&YouToo une fois la configuration vérifiée et la campagne préparée. Ne diffusez pas le lien de passation avant la date officielle de lancement.</p>
+        <div id="links-admin-box" class="kit-admin-links" hidden>
+          <div class="field"><label for="share-url-admin">URL de la campagne</label><input id="share-url-admin" type="url" placeholder="https://..."></div>
+          <div class="field"><label for="results-url-admin">URL des résultats</label><input id="results-url-admin" type="url" placeholder="https://..."></div>
+          <button class="button button-primary" id="links-save" type="button">Enregistrer les liens et notifier le client</button>
+        </div>
+        <div class="kit-url"><div><div class="kit-url-label">URL de la campagne</div><div class="kit-url-value" id="share-url">En préparation par Me&YouToo</div></div><div class="top-actions"><button class="button button-secondary" type="button" id="share-copy" disabled>Copier</button><a class="button button-secondary" id="share-open" href="#" target="_blank" rel="noopener" aria-disabled="true">Ouvrir</a></div></div>
+        <div class="kit-url"><div><div class="kit-url-label">URL des résultats</div><div class="kit-url-value" id="results-url">En préparation par Me&YouToo</div></div><div class="top-actions"><button class="button button-secondary" type="button" id="results-copy" disabled>Copier</button><a class="button button-secondary" id="results-open" href="#" target="_blank" rel="noopener" aria-disabled="true">Ouvrir</a></div></div>
+      </section>
+
+      <section class="card kit-block" id="qrBlock">
+        <p class="eyebrow">Diffusion</p><h2 class="section-title">▦ QR code</h2><p class="section-desc">Le QR code est généré automatiquement à partir du lien de campagne. Il peut être intégré dans vos affiches, intranet ou supports de lancement.</p>
+        <div id="qr-ready" class="qr-wrap" hidden><img id="qr-image" class="kit-qr-image" alt="QR code de la campagne"><a class="button button-secondary" id="qr-download" target="_blank" rel="noopener">Télécharger le QR code</a></div>
+        <div id="qr-empty" class="kit-empty">Le QR code apparaîtra dès que le lien de diffusion sera disponible.</div>
+      </section>
+
+      <section class="card kit-block" id="timelineBlock">
+        <p class="eyebrow">Conseil de diffusion</p><h2 class="section-title">🗓️ Plan de relance conseillé</h2><p class="section-desc" id="timeline-description">Le rythme est calculé à partir des dates de votre campagne.</p><div class="timeline" id="campaign-timeline"></div>
+      </section>
+
+      <section class="card kit-block" id="messagesBlock">
+        <p class="eyebrow">Prêt à l’emploi</p><h2 class="section-title">📣 Messages de communication</h2><p class="section-desc">Des modèles prêts à copier et adaptés automatiquement au nom, aux dates et au lien de votre campagne.</p>
+        <div class="comm-tabs" role="tablist" aria-label="Modèles de message"><button class="comm-tab on" type="button" data-template="launch">Email lancement</button><button class="comm-tab" type="button" data-template="managers">Email managers</button><button class="comm-tab" type="button" data-template="reminder">Relance</button><button class="comm-tab" type="button" data-template="last">Dernière chance</button><button class="comm-tab" type="button" data-template="channels">Teams / Slack</button><button class="comm-tab" type="button" data-template="intranet">Intranet</button><button class="comm-tab" type="button" data-template="finalResults">Restitution finale</button></div>
+        <div class="template-card"><div class="template-head"><div><div class="template-title" id="tpl-title">Email lancement</div><div class="template-meta" id="tpl-meta">Message prêt à copier</div></div><button class="button button-primary" id="tpl-copy" type="button">Copier ce message</button></div><pre class="template-body" id="tpl-body"></pre></div>
+      </section>
+
       <section class="card kit-block brand-request" id="brandAssetsBlock">
         <div class="kit-section-head"><div><p class="eyebrow">À vous</p><h2 class="section-title" id="kit-upload-title">🎨 Logo & charte graphique à déposer</h2><p class="section-desc" id="kit-upload-desc">Pour que Me&YouToo prépare les supports aux couleurs de votre organisation, déposez ici votre logo, votre charte et vos consignes de marque.</p></div><span class="kit-status-pill" id="kit-project-status">Chargement…</span></div>
         <div class="brand-checklist"><div class="brand-check"><b>Logo</b>PNG ou JPG, idéalement sur fond transparent.</div><div class="brand-check"><b>Charte graphique</b>PDF avec couleurs, typographies et règles d’usage.</div><div class="brand-check"><b>Consignes</b>Ajoutez vos contraintes ou recommandations ci-dessous.</div></div>
@@ -89,10 +120,9 @@
     <aside>
       <section class="card side-card"><div class="side-head">Campagne</div><div class="side-row"><span>Nom</span><strong id="kit-campaign-name">Chargement…</strong></div><div class="side-row"><span>Statut</span><strong id="kit-status-text">—</strong></div><div class="side-row"><span>Lancement</span><strong id="kit-launch">—</strong></div><div class="side-row"><span>Clôture</span><strong id="kit-close">—</strong></div></section>
       <section class="card side-card"><div class="side-head">Que fait Me&YouToo maintenant ?</div><p class="section-desc">Nous vérifions la cohérence méthodologique et pédagogique de votre configuration, intégrons vos éléments graphiques puis préparons la campagne et les supports de communication. Nous déposerons en retour les éléments sur cet espace. Vous serez averti par mail.</p></section>
-      <section class="card side-card kit-anchor-card"><div class="side-head">Accès direct</div><div class="kit-side-links"><a href="#brandAssetsBlock">🎨 Éléments graphiques</a><a href="#resourcesBlock">🖼️ Ressources livrées</a><a href="#videoBlock">🎬 Vidéo</a></div></section>
     </aside>
   </div>
 </main></div>
 <nav class="bottom-nav" id="bottom-nav-root"></nav>
-<script src="assets/js/api.js?v=20260713-2"></script><script src="assets/js/app.js?v=20260824-navigation-popup-8"></script><script src="assets/js/project-context.js?v=20260713-5"></script><script src="assets/js/kit-communication.js?v=20260828-kit-its-1"></script>
+<script src="assets/js/api.js?v=20260713-2"></script><script src="assets/js/app.js?v=20260824-navigation-popup-8"></script><script src="assets/js/project-context.js?v=20260713-5"></script><script src="assets/js/kit-communication.js?v=20260828-kit-complete-2"></script>
 </body></html>
