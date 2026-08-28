@@ -1,73 +1,27 @@
 (()=>{
   const p=new URLSearchParams(location.search),projectId=p.get('projectId')||'';
   const api=(url,opt={})=>window.StudioAPI.request(url,opt),$=id=>document.getElementById(id);
-  let selectedFiles=[],currentUser=null;
-  const date=v=>{if(!v)return '—';const d=String(v).slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return '—';return new Date(d+'T12:00:00').toLocaleDateString('fr-FR');};
+  let brandFiles=[],deliveryFiles=[],currentUser=null,isAdminDeliveryMode=false,communication={};
+  const date=v=>{if(!v)return '—';const d=String(v).slice(0,10);return /^\d{4}-\d{2}-\d{2}$/.test(d)?new Date(d+'T12:00:00').toLocaleDateString('fr-FR'):'—';};
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const statusLabel=status=>({draft:'Brouillon',configuration_submitted:'Configuration transmise',published:'Publiée',active:'En cours',closed:'Clôturée'}[status]||status||'—');
   const formatSize=n=>n>=1048576?`${(n/1048576).toFixed(1).replace('.',',')} Mo`:`${Math.max(1,Math.round(n/1024))} Ko`;
-  function show(message,type='error'){const a=$('kit-alert');a.hidden=false;a.textContent=message;a.className=`composer-alert ${type==='success'?'is-success':''}`;}
-  function renderSelected(){
-    $('brand-selected').innerHTML=selectedFiles.length?selectedFiles.map((f,i)=>`<div class="kit-selected-file"><span>📎 ${esc(f.name)} <small>${formatSize(f.size)}</small></span><button type="button" data-remove-file="${i}" aria-label="Retirer">×</button></div>`).join(''):'';
-    document.querySelectorAll('[data-remove-file]').forEach(b=>b.onclick=()=>{selectedFiles.splice(Number(b.dataset.removeFile),1);renderSelected();});
-  }
-  async function fileToBase64(file){
-    return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]||'');r.onerror=()=>reject(new Error(`Impossible de lire ${file.name}`));r.readAsDataURL(file);});
-  }
-  async function downloadAsset(id,name){
-    try{
-      const token=localStorage.getItem('studio_token')||'';
-      const base=window.StudioAPI.baseUrl||window.STUDIO_API_BASE||'';
-      const response=await fetch(`${base}/api/projects/${projectId}/communication-assets/${id}/download`,{headers:{Authorization:`Bearer ${token}`}});
-      if(!response.ok)throw new Error((await response.json().catch(()=>({}))).error||'Téléchargement impossible');
-      const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name||'fichier';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-    }catch(e){show(e.message);}
-  }
-  function renderAssets(assets){
-    const client=assets.filter(a=>a.kind==='client_brand'),delivery=assets.filter(a=>a.kind==='meayt_delivery');
-    const html=list=>list.length?list.map(a=>`<article class="kit-file-row"><div class="kit-file-icon">${a.mime_type==='application/pdf'?'PDF':'IMG'}</div><div class="kit-file-main"><strong>${esc(a.filename)}</strong><span>${formatSize(Number(a.size_bytes)||0)} · ${new Date(a.created_at).toLocaleDateString('fr-FR')}</span>${a.comment?`<small>${esc(a.comment)}</small>`:''}</div><button class="button button-secondary" type="button" data-download="${a.id}" data-name="${esc(a.filename)}">Télécharger</button></article>`).join(''):'<div class="kit-empty">Aucun fichier disponible pour le moment.</div>';
-    $('client-assets').innerHTML=html(client);$('delivery-assets').innerHTML=html(delivery);
-    document.querySelectorAll('[data-download]').forEach(b=>b.onclick=()=>downloadAsset(b.dataset.download,b.dataset.name));
-  }
-  async function load(){
-    if(!projectId){show('Aucune campagne sélectionnée.');$('brand-upload-button').disabled=true;return;}
-    try{
-      const [composer,me,assetsData]=await Promise.all([api(`/api/projects/${projectId}/composer`),api('/api/me'),api(`/api/projects/${projectId}/communication-assets`)]);
-      const project=composer.project;currentUser=me.user;
-      $('kit-campaign-name').textContent=project.campaign_name||project.title||'Campagne';
-      $('kit-status-text').textContent=statusLabel(project.status);$('kit-project-status').textContent=statusLabel(project.status);
-      $('kit-launch').textContent=date(project.launch_date);$('kit-close').textContent=date(project.close_date);
-      if(currentUser?.role==='admin'){
-        $('kit-upload-title').textContent='Déposer un livrable Me&YouToo';
-        $('kit-upload-desc').textContent='Ajoutez ici les affiches, bannières ou autres fichiers finalisés pour que le client puisse les télécharger.';
-        $('brand-upload-button').textContent='Mettre à disposition du client';
-      }
-      renderAssets(assetsData.assets||[]);
-    }catch(e){show(e.message);}
-  }
-  $('brand-input').addEventListener('change',()=>{
-    const files=[...$('brand-input').files],allowed=new Set(['application/pdf','image/png','image/jpeg']);
-    for(const file of files){
-      if(!allowed.has(file.type)){show(`${file.name} : format non accepté.`);continue;}
-      if(file.size>4*1024*1024){show(`${file.name} dépasse 4 Mo.`);continue;}
-      selectedFiles.push(file);
-    }
-    $('brand-input').value='';renderSelected();
-  });
-  $('brand-upload-button').onclick=async()=>{
-    if(!selectedFiles.length){show('Sélectionnez au moins un fichier.');return;}
-    const button=$('brand-upload-button');button.disabled=true;button.textContent='Envoi…';
-    try{
-      const comment=$('brand-comment').value.trim();
-      for(const file of selectedFiles){
-        const contentBase64=await fileToBase64(file);
-        await api(`/api/projects/${projectId}/communication-assets`,{method:'POST',body:JSON.stringify({filename:file.name,mimeType:file.type,sizeBytes:file.size,contentBase64,comment})});
-      }
-      selectedFiles=[];renderSelected();$('brand-comment').value='';
-      const data=await api(`/api/projects/${projectId}/communication-assets`);renderAssets(data.assets||[]);
-      show(currentUser?.role==='admin'?'Le livrable est maintenant disponible pour le client.':'Vos éléments ont bien été transmis à Me&YouToo.','success');
-    }catch(e){show(e.message);}
-    finally{button.disabled=false;button.textContent=currentUser?.role==='admin'?'Mettre à disposition du client':'Envoyer à Me&YouToo';}
-  };
+  const statusLabel=s=>({draft:'Brouillon',configuration_submitted:'Configuration transmise',scheduled:'Programmée',published:'Publiée',active:'En cours',closed:'Terminée',completed:'Terminée'}[s]||s||'—');
+  function show(message,type='error'){const a=$('kit-alert');a.hidden=false;a.textContent=message;a.className='composer-alert'+(type==='success'?' is-success':'');a.scrollIntoView({behavior:'smooth',block:'nearest'});}
+  function isAllowed(file){return ['application/pdf','image/png','image/jpeg'].includes(file.type)&&file.size>0&&file.size<=4*1024*1024;}
+  function addFiles(target,files){for(const f of files){if(!isAllowed(f)){show(`${f.name} : format non accepté ou fichier supérieur à 4 Mo.`);continue;}if(!target.some(x=>x.name===f.name&&x.size===f.size))target.push(f);}}
+  function renderSelected(target,rootId,prefix){const root=$(rootId);root.innerHTML=target.map((f,i)=>`<div class="kit-selected-file"><span>📎 ${esc(f.name)} <small>${formatSize(f.size)}</small></span><button type="button" data-${prefix}-remove="${i}" aria-label="Retirer">×</button></div>`).join('');root.querySelectorAll(`[data-${prefix}-remove]`).forEach(b=>b.onclick=()=>{target.splice(Number(b.dataset[`${prefix}Remove`]),1);renderSelected(target,rootId,prefix);});}
+  function bindDrop(zoneId,inputId,target,rootId,prefix){const zone=$(zoneId),input=$(inputId);const consume=files=>{addFiles(target,[...files]);renderSelected(target,rootId,prefix);};input.addEventListener('change',()=>{consume(input.files);input.value='';});['dragenter','dragover'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();zone.classList.add('drag-over');}));['dragleave','drop'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();zone.classList.remove('drag-over');}));zone.addEventListener('drop',e=>consume(e.dataTransfer.files));}
+  async function fileToBase64(file){return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]||'');r.onerror=()=>reject(new Error(`Impossible de lire ${file.name}`));r.readAsDataURL(file);});}
+  async function downloadAsset(id,name){try{const token=localStorage.getItem('studio_token')||'',base=window.StudioAPI.baseUrl||window.STUDIO_API_BASE||'';const r=await fetch(`${base}/api/projects/${projectId}/communication-assets/${id}/download`,{headers:{Authorization:`Bearer ${token}`}});if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||'Téléchargement impossible');const blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name||'fichier';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){show(e.message);}}
+  function renderAssets(assets){const client=assets.filter(a=>a.kind==='client_brand'),delivery=assets.filter(a=>a.kind==='meayt_delivery');const html=list=>list.length?list.map(a=>`<article class="kit-file-row"><div class="kit-file-icon">${a.mime_type==='application/pdf'?'PDF':'IMG'}</div><div class="kit-file-main"><strong>${esc(a.filename)}</strong><span>${formatSize(Number(a.size_bytes)||0)} · ${new Date(a.created_at).toLocaleDateString('fr-FR')}</span>${a.comment?`<small>${esc(a.comment)}</small>`:''}</div><button class="button button-secondary" type="button" data-download="${a.id}" data-name="${esc(a.filename)}">Télécharger</button></article>`).join(''):'<div class="kit-empty">Aucun fichier disponible pour le moment.</div>';$('client-assets').innerHTML=html(client);$('delivery-assets').innerHTML=html(delivery);document.querySelectorAll('[data-download]').forEach(b=>b.onclick=()=>downloadAsset(b.dataset.download,b.dataset.name));}
+  function renderVideo(){const url=String(communication.videoDownloadUrl||communication.video_download_url||''),desc=String(communication.videoDescription||communication.video_description||'');if(isAdminDeliveryMode){$('video-url').value=url;$('video-description').value=desc;}$('video-client-box').innerHTML=url?`<div class="video-card-title">Vidéo disponible</div><div class="video-card-text">${esc(desc||'Votre vidéo de communication est prête à être téléchargée.')}</div><a class="button button-primary" href="${esc(url)}" target="_blank" rel="noopener">Télécharger la vidéo</a>`:'<div class="kit-empty">Aucune vidéo disponible pour le moment.</div>';}
+  async function refreshAssets(){const data=await api(`/api/projects/${projectId}/communication-assets`);communication=data.communication||{};renderAssets(data.assets||[]);renderVideo();}
+  async function uploadBatch(files,kind,comment){for(const file of files){await api(`/api/projects/${projectId}/communication-assets`,{method:'POST',body:JSON.stringify({filename:file.name,mimeType:file.type,sizeBytes:file.size,contentBase64:await fileToBase64(file),comment,kind,notify:false})});}if(kind==='meayt_delivery')await api(`/api/projects/${projectId}/communication-assets/notify`,{method:'POST',body:'{}'});}
+  async function load(){if(!projectId){show('Aucune campagne sélectionnée.');return;}try{const [composer,me,assetsData]=await Promise.all([api(`/api/projects/${projectId}/composer`),api('/api/me'),api(`/api/projects/${projectId}/communication-assets`)]);const project=composer.project;currentUser=me.user;isAdminDeliveryMode=currentUser?.role==='admin'&&sessionStorage.getItem('studio_interface_mode')!=='client';communication=assetsData.communication||{};$('kit-campaign-name').textContent=project.campaign_name||project.title||'Campagne';$('kit-status-text').textContent=statusLabel(project.status);$('kit-project-status').textContent=statusLabel(project.status);$('kit-launch').textContent=date(project.launch_date);$('kit-close').textContent=date(project.close_date);$('admin-delivery-upload').hidden=!isAdminDeliveryMode;$('video-admin-box').hidden=!isAdminDeliveryMode;if(isAdminDeliveryMode){$('kit-upload-title').textContent='🎨 Éléments graphiques transmis par le client';$('kit-upload-desc').textContent='Consultez ici les logos et chartes déjà transmis. Pour déposer vos livrables, utilisez la section « Ressources livrées » ci-dessous.';$('brand-upload-button').hidden=true;$('brand-drop-zone').hidden=true;}renderAssets(assetsData.assets||[]);renderVideo();}catch(e){show(e.message);}}
+  bindDrop('brand-drop-zone','brand-input',brandFiles,'brand-selected','brand');bindDrop('delivery-drop-zone','delivery-input',deliveryFiles,'delivery-selected','delivery');
+  $('brand-upload-button').onclick=async()=>{if(!brandFiles.length){show('Sélectionnez ou glissez-déposez au moins un fichier.');return;}const b=$('brand-upload-button');b.disabled=true;b.textContent='Envoi…';try{await uploadBatch(brandFiles,'client_brand',$('brand-comment').value.trim());brandFiles=[];renderSelected(brandFiles,'brand-selected','brand');$('brand-comment').value='';await refreshAssets();show('Vos éléments ont bien été transmis à Me&YouToo.','success');}catch(e){show(e.message);}finally{b.disabled=false;b.textContent='Envoyer à Me&YouToo';}};
+  $('delivery-upload-button').onclick=async()=>{if(!deliveryFiles.length){show('Ajoutez au moins un livrable.');return;}const b=$('delivery-upload-button');b.disabled=true;b.textContent='Mise à disposition…';try{await uploadBatch(deliveryFiles,'meayt_delivery',$('delivery-comment').value.trim());deliveryFiles=[];renderSelected(deliveryFiles,'delivery-selected','delivery');$('delivery-comment').value='';await refreshAssets();show('Les ressources sont disponibles et le client a été averti par mail.','success');}catch(e){show(e.message);}finally{b.disabled=false;b.textContent='Mettre à disposition et notifier le client';}};
+  $('video-save').onclick=async()=>{const url=$('video-url').value.trim(),description=$('video-description').value.trim();if(url&&!/^https:\/\//i.test(url)){show('Le lien vidéo doit commencer par https://');return;}try{const data=await api(`/api/projects/${projectId}/communication-video`,{method:'PATCH',body:JSON.stringify({videoDownloadUrl:url,videoDescription:description,notify:true})});communication=data.communication||{};renderVideo();show('Le lien vidéo est enregistré et le client a été averti par mail.','success');}catch(e){show(e.message);}};
+  $('video-clear').onclick=async()=>{try{const data=await api(`/api/projects/${projectId}/communication-video`,{method:'PATCH',body:JSON.stringify({videoDownloadUrl:'',videoDescription:'',notify:false})});communication=data.communication||{};renderVideo();show('Le lien vidéo a été retiré.','success');}catch(e){show(e.message);}};
   load();
 })();

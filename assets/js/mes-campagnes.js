@@ -61,12 +61,15 @@
   }
 
   function actionHtml(p,primary){
-    var q=query(p);
+    var q=query(p),kit='<a class="button button-secondary" href="kit-communication.html'+q+'">Kit de com</a>';
     if(p.status==='draft'){
       return '<a class="button '+(primary?'button-primary':'button-secondary')+'" href="'+resumePage(p.current_step)+q+'">Continuer</a>';
     }
     if(p.status==='configuration_submitted'){
-      return '<a class="button button-secondary" href="validation.html'+q+'">Voir la configuration</a>';
+      return '<div class="campaign-action-group"><a class="button button-secondary" href="validation.html'+q+'">Voir la configuration</a>'+kit+'</div>';
+    }
+    if(['scheduled','published','active','closed','completed'].includes(p.status)){
+      return '<div class="campaign-action-group"><a class="button button-secondary" href="campagne-detail.html'+q+'">Voir la campagne</a>'+kit+'</div>';
     }
     return '<a class="button button-secondary" href="campagne-detail.html'+q+'">Voir la campagne</a>';
   }

@@ -6,7 +6,7 @@
 <title>Kit de communication — Studio Me&YouToo</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20260827-real-kit-1">
+<link rel="stylesheet" href="assets/css/style.css?v=20260828-kit-its-1">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -14,11 +14,16 @@
 <div class="app-shell">
 <aside class="sidebar" id="sidebar-root"></aside>
 <main class="main" id="contenu">
-  <div class="topbar compact-topbar">
+  <div class="topbar compact-topbar kit-topbar">
     <div>
       <p class="eyebrow">Après transmission</p>
-      <h1 class="page-title">Kit de communication & éléments graphiques</h1>
-      <p class="lead">Déposez vos éléments de marque pendant que Me&YouToo vérifie et prépare votre campagne. Vous retrouverez ici les livrables que nous mettrons ensuite à votre disposition.</p>
+      <h1 class="page-title">Kit de communication</h1>
+      <p class="lead">Nous vérifions la cohérence méthodologique et pédagogique de votre configuration, intégrons vos éléments graphiques puis préparons la campagne et les supports de communication. Nous déposerons en retour les éléments sur cet espace. Vous serez averti par mail.</p>
+      <div class="kit-shortcuts">
+        <a class="button button-primary kit-shortcut" href="#brandAssetsBlock">🎨 Déposer mes éléments</a>
+        <a class="button button-secondary kit-shortcut" href="#resourcesBlock">🖼️ Ressources livrées</a>
+        <a class="button button-secondary kit-shortcut" href="#videoBlock">🎬 Vidéo téléchargeable</a>
+      </div>
     </div>
     <div class="top-actions"><a class="button button-ghost" href="mes-campagnes.html">← Mes campagnes</a></div>
   </div>
@@ -32,70 +37,62 @@
       <div class="studio-process-step is-done"><span>3</span><strong>Paramétrer</strong><small>Dates et critères</small></div>
       <div class="studio-process-step is-done"><span>4</span><strong>Transmettre</strong><small>Configuration figée</small></div>
       <div class="studio-process-step is-current"><span>5</span><strong>Éléments graphiques</strong><small>Logo, charte, consignes</small></div>
-      <div class="studio-process-step"><span>6</span><strong>Kit livré</strong><small>Visuels disponibles ici</small></div>
+      <div class="studio-process-step"><span>6</span><strong>Kit livré</strong><small>Visuels et vidéo ici</small></div>
     </div>
   </section>
 
   <div id="kit-alert" class="composer-alert" hidden></div>
-
   <div class="kit-real-grid">
     <div>
-      <section class="card kit-block" id="brand-upload">
-        <div class="kit-section-head">
-          <div>
-            <p class="eyebrow">À vous</p>
-            <h2 class="section-title" id="kit-upload-title">Transmettre vos éléments graphiques</h2>
-            <p class="section-desc" id="kit-upload-desc">Déposez votre logo, votre charte graphique et les éléments utiles à la préparation de vos supports.</p>
+      <section class="card kit-block brand-request" id="brandAssetsBlock">
+        <div class="kit-section-head"><div><p class="eyebrow">À vous</p><h2 class="section-title" id="kit-upload-title">🎨 Logo & charte graphique à déposer</h2><p class="section-desc" id="kit-upload-desc">Pour que Me&YouToo prépare les supports aux couleurs de votre organisation, déposez ici votre logo, votre charte et vos consignes de marque.</p></div><span class="kit-status-pill" id="kit-project-status">Chargement…</span></div>
+        <div class="brand-checklist"><div class="brand-check"><b>Logo</b>PNG ou JPG, idéalement sur fond transparent.</div><div class="brand-check"><b>Charte graphique</b>PDF avec couleurs, typographies et règles d’usage.</div><div class="brand-check"><b>Consignes</b>Ajoutez vos contraintes ou recommandations ci-dessous.</div></div>
+        <div class="field"><label for="brand-comment">Commentaires / consignes utiles</label><textarea id="brand-comment" rows="4" placeholder="Ex. utiliser le logo institutionnel, éviter telle couleur, privilégier un ton RH interne…"></textarea></div>
+        <div class="upload-box">
+          <div class="drop-zone kit-real-drop" id="brand-drop-zone" tabindex="0">
+            <span class="drop-zone-icon" aria-hidden="true">↥</span>
+            <span class="drop-zone-title">Deux options pour ajouter vos fichiers</span>
+            <div class="drop-zone-actions"><label class="button button-primary" for="brand-input">Sélectionner des fichiers</label><span class="drop-zone-text">ou glissez-déposez-les dans cette zone.</span></div>
+            <span class="drop-zone-text">PDF, PNG ou JPG · 4 Mo maximum par fichier.</span>
+            <input id="brand-input" class="file-input-hidden" type="file" accept="application/pdf,image/png,image/jpeg" multiple>
           </div>
-          <span class="kit-status-pill" id="kit-project-status">Chargement…</span>
-        </div>
-        <div class="field"><label for="brand-comment">Consignes pour Me&YouToo</label><textarea id="brand-comment" rows="4" placeholder="Ex. logo à privilégier, couleurs à éviter, règles de co-branding, ton souhaité…"></textarea></div>
-        <div class="drop-zone kit-real-drop" id="brand-drop-zone">
-          <span class="drop-zone-icon" aria-hidden="true">↥</span>
-          <strong>Logo et charte graphique</strong>
-          <span>PDF, PNG ou JPG · 4 Mo maximum par fichier</span>
-          <label class="button button-secondary" for="brand-input">Sélectionner des fichiers</label>
-          <input id="brand-input" type="file" accept="application/pdf,image/png,image/jpeg" multiple hidden>
+          <div class="top-actions" style="margin-top:10px"><a class="button button-secondary" href="mailto:contact@meandyoutoo.app?subject=Charte%20graphique%20ou%20logo%20volumineux">Envoyer un fichier volumineux</a></div>
         </div>
         <div id="brand-selected" class="kit-selected-files"></div>
         <div class="top-actions" style="margin-top:14px"><button class="button button-primary" id="brand-upload-button" type="button">Envoyer à Me&YouToo</button></div>
       </section>
 
-      <section class="card kit-block">
-        <p class="eyebrow">Déjà transmis</p>
-        <h2 class="section-title">Vos fichiers</h2>
-        <p class="section-desc">Vous gardez ici la trace des éléments graphiques transmis pour cette campagne.</p>
+      <section class="card kit-block" id="clientFilesBlock">
+        <p class="eyebrow">Déjà transmis</p><h2 class="section-title">Vos éléments graphiques</h2><p class="section-desc">Vous gardez ici la trace des fichiers transmis pour cette campagne.</p>
         <div id="client-assets" class="kit-file-list"><div class="kit-empty">Aucun fichier transmis pour le moment.</div></div>
       </section>
 
-      <section class="card kit-block" id="deliveries">
-        <p class="eyebrow">Livraison Me&YouToo</p>
-        <h2 class="section-title">Vos visuels et documents prêts à télécharger</h2>
-        <p class="section-desc">Une fois la configuration vérifiée et les supports préparés, Me&YouToo déposera ici les affiches, bannières et autres livrables de votre campagne.</p>
+      <section class="card kit-block" id="resourcesBlock">
+        <p class="eyebrow">Livraison Me&YouToo</p><h2 class="section-title">🖼️ Affiches & visuels livrés</h2><p class="section-desc">PDF, PNG ou JPG déposés par Me&YouToo pour cette campagne. Vous serez averti par mail lorsqu’un nouvel élément sera disponible.</p>
+        <div id="admin-delivery-upload" class="upload-box" hidden>
+          <strong>Ajouter des ressources pour le client</strong>
+          <div class="drop-zone kit-real-drop" id="delivery-drop-zone" tabindex="0"><span class="drop-zone-icon">↥</span><span class="drop-zone-title">Déposer les visuels livrés</span><div class="drop-zone-actions"><label class="button button-primary" for="delivery-input">Sélectionner des fichiers</label><span class="drop-zone-text">ou glissez-déposez-les ici.</span></div><span class="drop-zone-text">PDF, PNG ou JPG · 4 Mo maximum.</span><input id="delivery-input" class="file-input-hidden" type="file" accept="application/pdf,image/png,image/jpeg" multiple></div>
+          <div id="delivery-selected" class="kit-selected-files"></div>
+          <div class="field"><label for="delivery-comment">Message de livraison visible par le client</label><textarea id="delivery-comment" rows="3" placeholder="Ex. Vous trouverez les affiches intranet et Teams. La version A est recommandée pour le lancement."></textarea></div>
+          <button class="button button-primary" id="delivery-upload-button" type="button">Mettre à disposition et notifier le client</button>
+        </div>
         <div id="delivery-assets" class="kit-file-list"><div class="kit-empty">Aucun livrable disponible pour le moment.</div></div>
+      </section>
+
+      <section class="card kit-block" id="videoBlock">
+        <p class="eyebrow">Livraison Me&YouToo</p><h2 class="section-title">🎬 Vidéo téléchargeable</h2><p class="section-desc">Me&YouToo peut mettre à votre disposition ici une vidéo de lancement ou de communication prête à diffuser.</p>
+        <div id="video-admin-box" class="video-admin-box" hidden><strong>Ajouter ou modifier le lien vidéo</strong><p class="section-desc" style="margin-top:6px">Déposez la vidéo sur votre espace de stockage puis collez ici le lien HTTPS de téléchargement.</p><div class="video-fields"><input id="video-url" class="video-field" type="url" placeholder="https://..."><textarea id="video-description" class="video-field" rows="3" placeholder="Ex. Vidéo de lancement prête à diffuser sur votre intranet."></textarea></div><div class="top-actions" style="margin-top:10px"><button class="button button-primary" id="video-save" type="button">Enregistrer et notifier le client</button><button class="button button-secondary" id="video-clear" type="button">Retirer le lien</button></div></div>
+        <div id="video-client-box" class="video-card"><div class="kit-empty">Aucune vidéo disponible pour le moment.</div></div>
       </section>
     </div>
 
     <aside>
-      <section class="card side-card">
-        <div class="side-head">Campagne</div>
-        <div class="side-row"><span>Nom</span><strong id="kit-campaign-name">Chargement…</strong></div>
-        <div class="side-row"><span>Statut</span><strong id="kit-status-text">—</strong></div>
-        <div class="side-row"><span>Lancement</span><strong id="kit-launch">—</strong></div>
-        <div class="side-row"><span>Clôture</span><strong id="kit-close">—</strong></div>
-      </section>
-      <section class="card side-card">
-        <div class="side-head">Que fait Me&YouToo maintenant ?</div>
-        <p class="section-desc">Nous vérifions la cohérence méthodologique de votre configuration, intégrons vos éléments graphiques puis préparons la campagne et les supports de communication.</p>
-      </section>
+      <section class="card side-card"><div class="side-head">Campagne</div><div class="side-row"><span>Nom</span><strong id="kit-campaign-name">Chargement…</strong></div><div class="side-row"><span>Statut</span><strong id="kit-status-text">—</strong></div><div class="side-row"><span>Lancement</span><strong id="kit-launch">—</strong></div><div class="side-row"><span>Clôture</span><strong id="kit-close">—</strong></div></section>
+      <section class="card side-card"><div class="side-head">Que fait Me&YouToo maintenant ?</div><p class="section-desc">Nous vérifions la cohérence méthodologique et pédagogique de votre configuration, intégrons vos éléments graphiques puis préparons la campagne et les supports de communication. Nous déposerons en retour les éléments sur cet espace. Vous serez averti par mail.</p></section>
+      <section class="card side-card kit-anchor-card"><div class="side-head">Accès direct</div><div class="kit-side-links"><a href="#brandAssetsBlock">🎨 Éléments graphiques</a><a href="#resourcesBlock">🖼️ Ressources livrées</a><a href="#videoBlock">🎬 Vidéo</a></div></section>
     </aside>
   </div>
-</main>
-</div>
+</main></div>
 <nav class="bottom-nav" id="bottom-nav-root"></nav>
-<script src="assets/js/api.js?v=20260713-2"></script>
-<script src="assets/js/app.js?v=20260824-navigation-popup-8"></script>
-<script src="assets/js/project-context.js?v=20260713-5"></script>
-<script src="assets/js/kit-communication.js?v=20260827-real-kit-1"></script>
-</body>
-</html>
+<script src="assets/js/api.js?v=20260713-2"></script><script src="assets/js/app.js?v=20260824-navigation-popup-8"></script><script src="assets/js/project-context.js?v=20260713-5"></script><script src="assets/js/kit-communication.js?v=20260828-kit-its-1"></script>
+</body></html>
