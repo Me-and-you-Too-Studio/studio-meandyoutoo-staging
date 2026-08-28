@@ -151,8 +151,7 @@
     { href: 'admin.html?tab=campaigns&status=configuration_submitted', label: 'À publier', icon: '<path d="M4 12h12"/><path d="m12 6 6 6-6 6"/>' },
     { href: 'admin.html?tab=clients&filter=pack', label: 'Demandes de passations', icon: '<path d="M3 7h18v12H3z"/><path d="M6 7V5h12v2"/>' },
     { href: 'admin.html?tab=accounts', label: 'Comptes & accès', icon: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 3-7 6-7"/><path d="M16 11v6M13 14h6"/>' },
-    { href: 'admin.html?tab=administrators', label: 'Équipe admin', icon: '<circle cx="8" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M2 20c0-4 3-7 6-7M12 20c0-3 2-5 5-5"/>' },
-    { href: '#notifications', label: 'Notifications', action: 'notifications', icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>' }
+    { href: 'notifications.html', label: 'Notifications', icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>' }
   ];
 
   var NAV_SECONDARY = [
@@ -172,8 +171,19 @@
   }
 
   function navLink(item, withIcon){
-    var path=(item.href||'').split('?')[0].split('#')[0];
-    var current = path === CURRENT && !item.action ? ' aria-current="page"' : '';
+    var href=item.href||'',path=href.split('?')[0].split('#')[0],isCurrent=false;
+    if(path===CURRENT&&!item.action){
+      var itemQuery=href.indexOf('?')>=0?new URLSearchParams(href.split('?')[1].split('#')[0]):null;
+      var currentQuery=new URLSearchParams(location.search);
+      if(itemQuery&&[...itemQuery.keys()].length){
+        isCurrent=[...itemQuery.entries()].every(function(pair){return currentQuery.get(pair[0])===pair[1];});
+      }else if(CURRENT==='admin.html'){
+        isCurrent=!currentQuery.get('tab');
+      }else{
+        isCurrent=true;
+      }
+    }
+    var current = isCurrent ? ' aria-current="page"' : '';
     var iconHtml = withIcon ? '<span>' + svg(item.icon) + '</span>' : '';
     var labelAttrs = withIcon ? ' aria-label="' + item.label + '" title="' + item.label + '"' : '';
     var actionAttr=item.action?' data-nav-action="'+item.action+'"':'';
@@ -324,9 +334,6 @@
 
   renderSidebar();
   setupNotifications(0);
-  document.querySelectorAll('[data-nav-action="notifications"]').forEach(function(link){
-    link.addEventListener('click',function(evt){evt.preventDefault();var bell=document.querySelector('.sidebar-notification-root .notification-bell');if(bell)bell.click();});
-  });
   var interfaceButton = document.querySelector('[data-interface-switch]');
   if (interfaceButton) interfaceButton.addEventListener('click', function(){
     var next = interfaceButton.dataset.interfaceSwitch;

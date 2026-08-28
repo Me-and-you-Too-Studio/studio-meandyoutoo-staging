@@ -20,6 +20,22 @@
   function bindUserActions(){$$('[data-resend-client]').forEach(b=>b.onclick=async()=>{try{await StudioAPI.request('/api/admin/users/'+b.dataset.resendClient+'/resend-invitation',{method:'POST',body:'{}'});await StudioModal.alert({title:'Invitation renvoyée',message:'Un nouveau lien a été envoyé.',confirmLabel:'Fermer'});}catch(e){showError(e.message);}});$$('[data-edit-client]').forEach(b=>b.onclick=()=>openUser(users.get(String(b.dataset.editClient))));$$('[data-toggle-client]').forEach(b=>b.onclick=async()=>{try{await StudioAPI.request('/api/admin/client-users/'+b.dataset.toggleClient,{method:'PATCH',body:JSON.stringify({active:b.dataset.active==='true'})});load();}catch(e){showError(e.message);}});$$('[data-delete-client]').forEach(b=>b.onclick=async()=>{const u=users.get(String(b.dataset.deleteClient)),ok=await StudioModal.confirm({type:'danger',title:'Supprimer ce compte client ?',message:'L’accès de '+(u?.first_name||'')+' '+(u?.last_name||'')+' sera définitivement supprimé.',confirmLabel:'Supprimer'});if(!ok)return;try{await StudioAPI.request('/api/admin/client-users/'+b.dataset.deleteClient,{method:'DELETE'});load();}catch(e){showError(e.message);}});}
   async function saveCredits(){try{await StudioAPI.request('/api/admin/organizations/'+organization.id,{method:'PATCH',body:JSON.stringify({passationsQuota:Number($('#client-quota').value)||0,passationsUsed:Number($('#client-used').value)||0,packExpiresAt:$('#client-expiry').value||null})});await load();}catch(e){showError(e.message);}}
   async function saveUser(){const f=$('#user-form');if(!f.reportValidity())return;const id=f.dataset.editId,payload={organizationId:organization.id,firstName:$('#user-first').value.trim(),lastName:$('#user-last').value.trim(),jobTitle:$('#user-job-title').value.trim(),phone:$('#user-phone').value.trim(),email:$('#user-email').value.trim()};try{await StudioAPI.request(id?'/api/admin/client-users/'+id:'/api/admin/users',{method:id?'PATCH':'POST',body:JSON.stringify(payload)});$('#user-dialog').close();load();}catch(e){showError(e.message);}}
-  async function load(){try{const cockpit=await StudioAPI.request('/api/admin/cockpit'),all=cockpit.organizations||[];organization=requestedOrg?all.find(o=>String(o.id)===String(requestedOrg)):requestedProject?all.find(o=>orgProjects(o).some(p=>String(p.id)===String(requestedProject))):null;if(!organization){showError('Dossier client introuvable. Revenez au cockpit clients et ouvrez un client.');return;}users=new Map(orgUsers(organization).map(u=>[String(u.id),u]));render();}catch(e){showError(e.message);}}
+  async function load(){
+    try{
+      $('#client-alert').hidden=true;
+      let data=null;
+      if(requestedOrg){
+        data=await StudioAPI.request('/api/admin/organizations/'+encodeURIComponent(requestedOrg)+'/dossier');
+      }else if(requestedProject){
+        data=await StudioAPI.request('/api/admin/projects/'+encodeURIComponent(requestedProject)+'/dossier');
+      }else{
+        showError('Dossier client introuvable. Revenez au cockpit clients et ouvrez un client.');return;
+      }
+      organization=data?.organization||null;
+      if(!organization){showError('Dossier client introuvable. Revenez au cockpit clients et ouvrez un client.');return;}
+      users=new Map(orgUsers(organization).map(u=>[String(u.id),u]));
+      render();
+    }catch(e){showError(e.message||'Impossible de charger le dossier client.');}
+  }
   $('#refresh-client').onclick=load;$('#add-client-user').onclick=()=>openUser();$('#close-user-dialog').onclick=$('#cancel-user-dialog').onclick=()=>$('#user-dialog').close();$('#save-user').onclick=e=>{e.preventDefault();saveUser();};$('#user-dialog').onclick=e=>{if(e.target===$('#user-dialog'))$('#user-dialog').close();};$('#close-publish-dialog').onclick=$('#cancel-publish-dialog').onclick=()=>$('#publish-dialog').close();$('#confirm-publish').onclick=e=>{e.preventDefault();publish();};$('#publish-dialog').onclick=e=>{if(e.target===$('#publish-dialog'))$('#publish-dialog').close();};load();
 })();
