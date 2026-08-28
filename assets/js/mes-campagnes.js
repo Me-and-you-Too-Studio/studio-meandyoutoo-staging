@@ -39,6 +39,7 @@
       published:'Publiée',
       scheduled:'Programmée',
       active:'En cours',
+      unpublished:'Dépubliée',
       closed:'Terminée',
       completed:'Terminée',
       archived:'Archivée'
@@ -49,6 +50,7 @@
     if(status==='draft')return 'badge-warning';
     if(status==='configuration_submitted'||status==='scheduled')return 'badge-info';
     if(status==='published'||status==='active')return 'badge-success';
+    if(status==='unpublished'||status==='archived')return 'badge-muted';
     return 'badge-muted';
   }
 
@@ -65,8 +67,8 @@
     if(p.status==='draft')return '<div class="campaign-action-group"><a class="button '+(primary?'button-primary':'button-secondary')+'" href="'+resumePage(p.current_step)+q+'">Reprendre le paramétrage</a><button class="button button-danger-soft" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button></div>';
     if(p.status==='configuration_submitted')return '<div class="campaign-action-group"><a class="button button-secondary" href="validation.html'+q+'">👁️ Voir le contenu</a>'+kit+'</div>';
     if(['scheduled','published','active'].includes(p.status))return '<div class="campaign-action-group"><a class="button button-secondary" href="campagne-detail.html'+q+'">👁️ Voir le contenu</a>'+kit+'<button class="button button-secondary" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button></div>';
-    if(['closed','completed'].includes(p.status))return '<div class="campaign-action-group"><button class="button button-primary" type="button" data-project-action="reprogram" data-project-id="'+id+'">🚀 Reprogrammer</button><a class="button button-secondary" href="campagne-detail.html'+q+'">👁️ Voir le contenu</a>'+kit+'<button class="button button-secondary" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button><button class="button button-secondary" type="button" data-project-action="archive" data-project-id="'+id+'">📦 Archiver</button><button class="button button-danger-soft" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button></div>';
-    if(p.status==='archived')return '<div class="campaign-action-group"><button class="button button-primary" type="button" data-project-action="reprogram" data-project-id="'+id+'">🚀 Reprogrammer</button><a class="button button-secondary" href="campagne-detail.html'+q+'">👁️ Voir le contenu</a>'+kit+'<button class="button button-secondary" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button></div>';
+    if(['closed','completed','unpublished'].includes(p.status))return '<div class="campaign-action-group"><button class="button button-primary" type="button" data-project-action="reprogram" data-project-id="'+id+'">🚀 Reprogrammer</button><a class="button button-secondary" href="campagne-detail.html'+q+'">👁️ Voir le contenu</a>'+kit+'<button class="button button-secondary" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button><button class="button button-secondary" type="button" data-project-action="archive" data-project-id="'+id+'">📦 Archiver</button><button class="button button-danger-soft" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button></div>';
+    if(p.status==='archived')return '<div class="campaign-action-group"><button class="button button-primary" type="button" data-project-action="reprogram" data-project-id="'+id+'">🚀 Reprogrammer</button><a class="button button-secondary" href="campagne-detail.html'+q+'">👁️ Voir le contenu</a>'+kit+'<button class="button button-secondary" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button><button class="button button-secondary" type="button" data-project-action="restore" data-project-id="'+id+'">↩️ Restaurer</button></div>';
     return '<a class="button button-secondary" href="campagne-detail.html'+q+'">Voir la campagne</a>';
   }
 
@@ -74,6 +76,7 @@
     var p=projects.find(function(x){return String(x.id)===String(id);});if(!p)return;
     if(action==='delete'){var ok=await StudioModal.confirm({type:'danger',title:'Supprimer cet autodiagnostic ?',message:'Cette suppression est définitive.',confirmLabel:'Supprimer'});if(!ok)return;await StudioAPI.request('/api/projects/'+id,{method:'DELETE'});return load();}
     if(action==='archive'){var ok2=await StudioModal.confirm({title:'Archiver cet autodiagnostic ?',message:'Il sera déplacé dans vos archives et restera reprogrammable.',confirmLabel:'Archiver'});if(!ok2)return;await StudioAPI.request('/api/projects/'+id+'/archive',{method:'PATCH',body:'{}'});return load();}
+    if(action==='restore'){var okRestore=await StudioModal.confirm({title:'Restaurer cette campagne ?',message:'Elle reviendra dans vos campagnes dépubliées.',confirmLabel:'Restaurer'});if(!okRestore)return;await StudioAPI.request('/api/projects/'+id+'/restore',{method:'PATCH',body:'{}'});return load();}
     if(action==='reprogram'){var ok3=await StudioModal.confirm({title:'Reprogrammer cet autodiagnostic ?',message:'La même URL sera conservée. Vous pourrez choisir de nouvelles dates.',confirmLabel:'Reprogrammer'});if(!ok3)return;await StudioAPI.request('/api/projects/'+id+'/reprogram',{method:'POST',body:'{}'});location.href='parametrage.html'+query(p)+'&reprogram=1';return;}
     if(action==='clone'){var ok4=await StudioModal.confirm({title:'Cloner cet autodiagnostic ?',message:'Une copie indépendante sera créée et recevra de nouveaux liens après publication.',confirmLabel:'Cloner'});if(!ok4)return;var r=await StudioAPI.request('/api/projects/'+id+'/clone',{method:'POST',body:'{}'});location.href='composer.html?projectId='+encodeURIComponent(r.project.id);}
   }
@@ -99,7 +102,7 @@
 
   function renderAlerts(){
     var submitted=projects.filter(function(p){return p.status==='configuration_submitted';});
-    var results=projects.filter(function(p){return p.status==='closed'||p.status==='completed';});
+    var results=projects.filter(function(p){return p.status==='closed'||p.status==='completed'||p.status==='unpublished';});
     var now=new Date();
     var soonLimit=new Date(now.getTime()+14*24*60*60*1000);
     var endingSoon=projects.filter(function(p){
@@ -145,7 +148,7 @@
       var key=statusKey(p);
       counts[key]=(counts[key]||0)+1;
     });
-    var order=['all','draft','configuration_submitted','scheduled','published','active','closed','completed','archived'];
+    var order=['all','draft','configuration_submitted','scheduled','published','active','unpublished','closed','completed','archived'];
     filtersRoot.innerHTML=order.filter(function(key){return key==='all'||counts[key];}).map(function(key){
       var label=key==='all'?'Toutes':statusLabel(key);
       return '<button class="status-pill" type="button" data-filter="'+esc(key)+'" aria-pressed="'+(key==='all'?'true':'false')+'">'+esc(label)+' <span class="count">'+Number(counts[key]||0)+'</span></button>';
