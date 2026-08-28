@@ -12,10 +12,10 @@
   try { CURRENT_USER = JSON.parse(localStorage.getItem('studio_user') || 'null'); } catch (e) {}
   var IS_ADMIN = Boolean(CURRENT_USER && CURRENT_USER.role === 'admin');
   var INTERFACE_MODE = IS_ADMIN && sessionStorage.getItem('studio_interface_mode') !== 'client' ? 'admin' : 'client';
-  if (IS_ADMIN && CURRENT === 'admin.html') {
+  if (IS_ADMIN && (CURRENT === 'admin.html' || CURRENT === 'client.html')) {
     INTERFACE_MODE = 'admin';
     sessionStorage.setItem('studio_interface_mode', 'admin');
-  } else if (IS_ADMIN && INTERFACE_MODE === 'admin') {
+  } else if (IS_ADMIN && INTERFACE_MODE === 'admin' && !['admin.html','client.html'].includes(CURRENT)) {
     location.href = 'admin.html';
     return;
   }
@@ -147,7 +147,8 @@
   ];
 
   var NAV_ADMIN = [
-    { href: 'admin.html', label: 'Cockpit clients', icon: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h4M7 16h7"/>' }
+    { href: 'admin.html', label: 'Cockpit clients', icon: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h4M7 16h7"/>' },
+    { href: 'client.html', label: 'Dossier client', icon: '<path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h6"/>' }
   ];
 
   var NAV_SECONDARY = [
@@ -191,7 +192,7 @@
       '</div>' +
       '<div class="sidebar-interface-row">' +
         '<div class="interface-badge ' + (adminInterface ? 'interface-badge-admin' : 'interface-badge-client') + '">' + roleLabel + '</div>' +
-        (adminInterface ? '' : '<div id="notification-root" class="sidebar-notification-root" aria-label="Notifications"></div>') +
+        '<div id="notification-root" class="sidebar-notification-root" aria-label="Notifications"></div>' +
       '</div>' +
       '<nav class="nav">' + mainNavigation.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
       '<div class="sidebar-footer">' +
@@ -300,7 +301,7 @@
     var date=function(value){if(!value)return'';var parsed=new Date(value);return Number.isNaN(parsed.getTime())?'Date indisponible':parsed.toLocaleString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});};
     var notificationAudience=IS_ADMIN?(INTERFACE_MODE==='client'?'client':'admin'):'client';
     async function load(){try{var data=await StudioAPI.request('/api/notifications?audience='+notificationAudience);var unread=Number(data.unread)||0;count.textContent=unread>99?'99+':unread;count.hidden=!unread;shell.classList.toggle('has-unread',Boolean(unread));subtitle.textContent=unread?(unread+' non lue'+(unread>1?'s':'')):'Tout est à jour';list.innerHTML=(data.notifications||[]).map(function(item){var read=Boolean(item.read_at);return'<article class="notification-item '+(read?'treated':'unread')+'" data-notification-id="'+item.id+'" data-notification-url="'+escape(item.action_url||'')+'"><span class="notification-item-icon">'+(String(item.type).includes('approved')?'✅':String(item.type).includes('rejected')?'⚠️':'🎟️')+'</span><button type="button" class="notification-item-main"><strong>'+escape(item.title)+'</strong><small>'+escape(item.message)+'</small><time>'+escape(date(item.created_at))+'</time></button><button type="button" class="notification-item-check" aria-label="'+(read?'Notification traitée':'Marquer comme lue')+'">'+(read?'✓':'')+'</button></article>';}).join('')||'<p class="notification-empty">Aucune notification pour le moment.</p>';bindItems();}catch(error){list.innerHTML='<p class="notification-empty">Notifications indisponibles.</p>';}}
-    function mark(item,navigate){return StudioAPI.request('/api/notifications/'+item.dataset.notificationId+'/read?audience='+notificationAudience,{method:'PATCH',body:'{}'}).catch(function(){}).then(function(){var url=item.dataset.notificationUrl;if(navigate&&url)location.href=url;else load();});}
+    function mark(item,navigate){return StudioAPI.request('/api/notifications/'+item.dataset.notificationId+'/read?audience='+notificationAudience,{method:'PATCH',body:'{}'}).catch(function(){}).then(function(){var url=item.dataset.notificationUrl;if(IS_ADMIN&&INTERFACE_MODE==='admin'&&/^admin\.html\?projectId=/i.test(url||''))url=(url||'').replace(/^admin\.html/i,'client.html');if(navigate&&url)location.href=url;else load();});}
     function bindItems(){list.querySelectorAll('[data-notification-id]').forEach(function(item){item.querySelector('.notification-item-main').onclick=function(){mark(item,true);};item.querySelector('.notification-item-check').onclick=function(){mark(item,false);};});}
     bell.onclick=function(){panel.hidden=!panel.hidden;bell.setAttribute('aria-expanded',panel.hidden?'false':'true');document.body.classList.toggle('notification-panel-open',!panel.hidden);if(!panel.hidden)load();};
     shell.querySelector('.notification-read-all').onclick=async function(){try{await StudioAPI.request('/api/notifications/read-all?audience='+notificationAudience,{method:'PATCH',body:'{}'});load();}catch(error){}};
