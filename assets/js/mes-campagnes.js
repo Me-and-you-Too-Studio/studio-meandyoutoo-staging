@@ -61,18 +61,23 @@
   }
 
   function actionHtml(p,primary){
-    var q=query(p),kit='<a class="button button-secondary" href="kit-communication.html'+q+'">Kit de com</a>';
-    if(p.status==='draft'){
-      return '<a class="button '+(primary?'button-primary':'button-secondary')+'" href="'+resumePage(p.current_step)+q+'">Continuer</a>';
-    }
-    if(p.status==='configuration_submitted'){
-      return '<div class="campaign-action-group"><a class="button button-secondary" href="validation.html'+q+'">Voir la configuration</a>'+kit+'</div>';
-    }
-    if(['scheduled','published','active','closed','completed'].includes(p.status)){
-      return '<div class="campaign-action-group"><a class="button button-secondary" href="campagne-detail.html'+q+'">Voir la campagne</a>'+kit+'</div>';
-    }
+    var q=query(p),id=esc(p.id),kit='<a class="button button-secondary" href="kit-communication.html'+q+'">📣 Kit de com</a>';
+    if(p.status==='draft')return '<div class="campaign-action-group"><a class="button '+(primary?'button-primary':'button-secondary')+'" href="'+resumePage(p.current_step)+q+'">Reprendre le paramétrage</a><button class="button button-danger-soft" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button></div>';
+    if(p.status==='configuration_submitted')return '<div class="campaign-action-group"><a class="button button-secondary" href="validation.html'+q+'">👁️ Voir le contenu</a>'+kit+'</div>';
+    if(['scheduled','published','active'].includes(p.status))return '<div class="campaign-action-group"><a class="button button-secondary" href="campagne-detail.html'+q+'">👁️ Voir le contenu</a>'+kit+'<button class="button button-secondary" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button></div>';
+    if(['closed','completed'].includes(p.status))return '<div class="campaign-action-group"><button class="button button-primary" type="button" data-project-action="reprogram" data-project-id="'+id+'">🚀 Reprogrammer</button><a class="button button-secondary" href="campagne-detail.html'+q+'">👁️ Voir le contenu</a>'+kit+'<button class="button button-secondary" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button><button class="button button-secondary" type="button" data-project-action="archive" data-project-id="'+id+'">📦 Archiver</button><button class="button button-danger-soft" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button></div>';
+    if(p.status==='archived')return '<div class="campaign-action-group"><button class="button button-primary" type="button" data-project-action="reprogram" data-project-id="'+id+'">🚀 Reprogrammer</button><a class="button button-secondary" href="campagne-detail.html'+q+'">👁️ Voir le contenu</a>'+kit+'<button class="button button-secondary" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button></div>';
     return '<a class="button button-secondary" href="campagne-detail.html'+q+'">Voir la campagne</a>';
   }
+
+  async function projectAction(action,id){
+    var p=projects.find(function(x){return String(x.id)===String(id);});if(!p)return;
+    if(action==='delete'){var ok=await StudioModal.confirm({type:'danger',title:'Supprimer cet autodiagnostic ?',message:'Cette suppression est définitive.',confirmLabel:'Supprimer'});if(!ok)return;await StudioAPI.request('/api/projects/'+id,{method:'DELETE'});return load();}
+    if(action==='archive'){var ok2=await StudioModal.confirm({title:'Archiver cet autodiagnostic ?',message:'Il sera déplacé dans vos archives et restera reprogrammable.',confirmLabel:'Archiver'});if(!ok2)return;await StudioAPI.request('/api/projects/'+id+'/archive',{method:'PATCH',body:'{}'});return load();}
+    if(action==='reprogram'){var ok3=await StudioModal.confirm({title:'Reprogrammer cet autodiagnostic ?',message:'La même URL sera conservée. Vous pourrez choisir de nouvelles dates.',confirmLabel:'Reprogrammer'});if(!ok3)return;await StudioAPI.request('/api/projects/'+id+'/reprogram',{method:'POST',body:'{}'});location.href='parametrage.html'+query(p)+'&reprogram=1';return;}
+    if(action==='clone'){var ok4=await StudioModal.confirm({title:'Cloner cet autodiagnostic ?',message:'Une copie indépendante sera créée et recevra de nouveaux liens après publication.',confirmLabel:'Cloner'});if(!ok4)return;var r=await StudioAPI.request('/api/projects/'+id+'/clone',{method:'POST',body:'{}'});location.href='composer.html?projectId='+encodeURIComponent(r.project.id);}
+  }
+  function bindProjectActions(){document.querySelectorAll('[data-project-action]').forEach(function(b){b.onclick=function(){projectAction(b.dataset.projectAction,b.dataset.projectId).catch(function(e){StudioModal.alert({title:'Action impossible',message:e.message||'Une erreur est survenue.',confirmLabel:'Fermer'});});};});}
 
   function renderDrafts(){
     var drafts=projects.filter(function(p){return p.status==='draft';});
@@ -153,6 +158,7 @@
           b.setAttribute('aria-pressed',b===button?'true':'false');
         });
         renderTable();
+        bindProjectActions();
       });
     });
   }
@@ -185,6 +191,7 @@
     var empty=filtered.length===0;
     table.style.display=empty?'none':'';
     noResults.style.display=empty?'':'none';
+    bindProjectActions();
   }
 
   async function load(){
@@ -196,6 +203,7 @@
       renderActive();
       buildFilters();
       renderTable();
+      bindProjectActions();
     }catch(e){
       var message='<div class="composer-alert">Impossible de charger les campagnes : '+esc(e.message)+'</div>';
       draftRoot.innerHTML=message;
