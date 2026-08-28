@@ -7,7 +7,7 @@
 <meta name="description" content="Suivez et pilotez toutes vos campagnes de sensibilisation D&I.">
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20260824-navigation-popup-8">
+<link rel="stylesheet" href="assets/css/style.css?v=20260828-campaign-cards-1">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -26,94 +26,57 @@
       <div>
         <p class="eyebrow">Mes campagnes</p>
         <h1 class="page-title">Mes campagnes</h1>
-        <p class="lead">Retrouvez toutes vos campagnes de sensibilisation, leurs statuts et leurs liens de résultats.</p>
+        <p class="lead">Retrouvez toutes vos campagnes, leur thématique, leur statut et les actions disponibles.</p>
       </div>
       <div class="top-actions">
-        <a class="button button-primary" href="bibliotheque.html">Nouvelle campagne</a>
+        <a class="button button-primary" href="bibliotheque.html">+ Nouvelle campagne</a>
       </div>
     </div>
 
-    <section aria-labelledby="draft-title" class="drafts-section">
-      <div class="section-head" style="margin-top:0">
-        <div>
-          <h2 class="section-title" id="draft-title">Brouillons</h2>
-          <p class="section-desc">Toute campagne commencée est enregistrée en base dès sa création. Reprenez-la à l’étape où vous vous êtes arrêté·e.</p>
-        </div>
-      </div>
-      <div id="draft-campaigns-root" class="draft-campaigns-grid">
-        <p>Chargement des brouillons…</p>
-      </div>
-    </section>
-
-    <section class="alert-strip" aria-label="Points d'attention">
-      <div class="alert-card tone-danger">
+    <section class="alert-strip campaign-watch-strip" aria-label="Points d'attention">
+      <button class="alert-card tone-danger campaign-watch-card" type="button" data-quick-filter="endingSoon">
         <span class="alert-icon" aria-hidden="true">⏰</span>
         <div>
           <strong id="ending-soon-count">0 campagne se termine bientôt</strong>
           <span id="ending-soon-text">Aucune campagne ne nécessite de relance immédiate.</span>
         </div>
-      </div>
-      <div class="alert-card tone-info">
+      </button>
+      <button class="alert-card tone-info campaign-watch-card" type="button" data-quick-filter="configuration_submitted">
         <span class="alert-icon" aria-hidden="true">📤</span>
         <div>
           <strong id="submitted-count">0 configuration transmise</strong>
-          <span>En attente de publication ou de lancement par Me&YouToo.</span>
+          <span>En attente de préparation ou de publication par Me&YouToo.</span>
         </div>
-      </div>
-      <div class="alert-card tone-success">
+      </button>
+      <button class="alert-card tone-success campaign-watch-card" type="button" data-quick-filter="results">
         <span class="alert-icon" aria-hidden="true">📊</span>
         <div>
           <strong id="results-count">0 résultat disponible</strong>
-          <span>Consultez les résultats collectifs de vos campagnes terminées.</span>
+          <span>Retrouvez vos campagnes terminées ou dépubliées.</span>
         </div>
-      </div>
+      </button>
     </section>
 
-    <section aria-labelledby="active-title" style="margin-bottom:8px">
-      <div class="section-head" style="margin-top:0">
-        <div>
-          <h2 class="section-title" id="active-title">En cours &amp; à suivre de près</h2>
-          <p class="section-desc">Les campagnes qui demandent une action ou un suivi rapproché.</p>
-        </div>
-      </div>
-      <div id="active-campaigns-root" class="campaign-grid">
-        <p>Chargement des campagnes actives…</p>
-      </div>
-    </section>
-
-    <section class="table-card" aria-labelledby="list-title">
-      <div class="section-head" style="padding:16px 16px 0;margin:0">
-        <div>
-          <h2 class="section-title" id="list-title">Toutes les campagnes</h2>
-          <p class="section-desc">Historique complet, quel que soit le statut.</p>
-        </div>
-      </div>
-
-      <div style="padding:0 16px">
-        <div class="status-filters" role="group" aria-label="Filtrer par statut" id="campaign-filters"></div>
-        <label class="search-field">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <section class="campaign-browser" aria-labelledby="campaign-list-title">
+      <div class="campaign-toolbar">
+        <div class="campaign-filter-tabs" id="campaign-filters" role="group" aria-label="Filtrer les campagnes"></div>
+        <label class="campaign-search">
+          <span aria-hidden="true">🔎</span>
           <input type="search" id="campaignSearch" placeholder="Rechercher une campagne ou une thématique…" aria-label="Rechercher une campagne">
         </label>
       </div>
 
-      <table class="data-table" id="campaignsTable">
-        <thead>
-          <tr>
-            <th>Campagne</th>
-            <th>Thématique</th>
-            <th>Statut</th>
-            <th>Période</th>
-            <th>Passations</th>
-            <th>Dernière modif.</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="campaigns-table-body">
-          <tr><td colspan="7">Chargement des campagnes…</td></tr>
-        </tbody>
-      </table>
-      <p id="noResults" class="section-desc" style="display:none;padding:0 16px 20px">Aucune campagne ne correspond à ce filtre.</p>
+      <div class="section-head campaign-list-head">
+        <div>
+          <h2 class="section-title" id="campaign-list-title">Toutes les campagnes</h2>
+          <p class="section-desc" id="campaign-list-description">Brouillons, campagnes transmises, publiées, dépubliées et archivées au même endroit.</p>
+        </div>
+      </div>
+
+      <div id="campaigns-card-root" class="campaigns-card-grid" aria-live="polite">
+        <p>Chargement des campagnes…</p>
+      </div>
+      <p id="noResults" class="campaign-empty" hidden>Aucune campagne ne correspond à ce filtre.</p>
     </section>
   </main>
 </div>
@@ -122,6 +85,6 @@
 <script src="assets/js/api.js?v=20260713-2"></script>
 <script src="assets/js/app.js?v=20260828-admin-actions-1"></script>
 <script src="assets/js/project-context.js?v=20260713-5"></script>
-<script src="assets/js/mes-campagnes.js?v=20260828-actions-1"></script>
+<script src="assets/js/mes-campagnes.js?v=20260828-campaign-cards-1"></script>
 </body>
 </html>
