@@ -14,7 +14,7 @@
     if(k==='publish'&&projectId){
       return 'client.html?'+(organizationId?'organizationId='+encodeURIComponent(organizationId)+'&':'')+'projectId='+encodeURIComponent(projectId);
     }
-    if(k==='kit'&&projectId)return 'kit-communication.html?projectId='+encodeURIComponent(projectId);
+    if(k==='kit'&&projectId){const tab=meta.tab?('&tab='+encodeURIComponent(meta.tab)):'';return 'kit-communication.html?projectId='+encodeURIComponent(projectId)+tab;}
     if(k==='passes')return 'admin.html?tab=clients&filter=pack';
     if(/^admin\.html\?projectId=/i.test(url))url=url.replace(/^admin\.html/i,'client.html');
     if(/^client\.html\?projectId=/i.test(url)&&organizationId){const q=new URLSearchParams(url.split('?')[1]||'');url='client.html?organizationId='+encodeURIComponent(organizationId)+'&projectId='+encodeURIComponent(q.get('projectId')||projectId||'');}

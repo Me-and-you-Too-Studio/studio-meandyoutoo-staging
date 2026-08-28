@@ -66,9 +66,7 @@
 
   async function refreshAssets(){const data=await api(`/api/projects/${projectId}/communication-assets`);communication=data.communication||{};renderAssets(data.assets||[]);renderVideo();renderLinks();renderTemplate();}
   async function uploadBatch(files,kind,comment){
-    for(const file of files){await api(`/api/projects/${projectId}/communication-assets`,{method:'POST',body:JSON.stringify({filename:file.name,mimeType:file.type,sizeBytes:file.size,contentBase64:await fileToBase64(file),comment,kind,notify:false})});}
-    if(kind==='meayt_delivery') await api(`/api/projects/${projectId}/communication-assets/notify`,{method:'POST',body:'{}'});
-    if(kind==='client_brand') await api(`/api/projects/${projectId}/communication-assets/notify-admin`,{method:'POST',body:'{}'});
+    for(let i=0;i<files.length;i++){const file=files[i],notify=i===files.length-1;await api(`/api/projects/${projectId}/communication-assets`,{method:'POST',body:JSON.stringify({filename:file.name,mimeType:file.type,sizeBytes:file.size,contentBase64:await fileToBase64(file),comment,kind,notify})});}
   }
   async function load(){if(!projectId){show('Aucune campagne sélectionnée.');return;}try{const [composer,me,assetsData]=await Promise.all([api(`/api/projects/${projectId}/composer`),api('/api/me'),api(`/api/projects/${projectId}/communication-assets`)]);project=composer.project;currentUser=me.user;isAdminDeliveryMode=currentUser?.role==='admin'&&sessionStorage.getItem('studio_interface_mode')!=='client';communication=assetsData.communication||{};$('kit-campaign-name').textContent=project.campaign_name||project.title||'Campagne';$('kit-status-text').textContent=statusLabel(project.status);$('kit-project-status').textContent=statusLabel(project.status);$('kit-launch').textContent=date(project.launch_date);$('kit-close').textContent=date(project.close_date);$('admin-delivery-upload').hidden=!isAdminDeliveryMode;$('video-admin-box').hidden=!isAdminDeliveryMode;if(isAdminDeliveryMode){
       $('graphics-tab-label').textContent='Éléments graphiques du client';
