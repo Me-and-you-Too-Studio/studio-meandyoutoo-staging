@@ -37,5 +37,9 @@
       render();
     }catch(e){showError(e.message||'Impossible de charger le dossier client.');}
   }
-  $('#refresh-client').onclick=load;$('#add-client-user').onclick=()=>openUser();$('#close-user-dialog').onclick=$('#cancel-user-dialog').onclick=()=>$('#user-dialog').close();$('#save-user').onclick=e=>{e.preventDefault();saveUser();};$('#user-dialog').onclick=e=>{if(e.target===$('#user-dialog'))$('#user-dialog').close();};$('#close-publish-dialog').onclick=$('#cancel-publish-dialog').onclick=()=>$('#publish-dialog').close();$('#confirm-publish').onclick=e=>{e.preventDefault();publish();};$('#publish-dialog').onclick=e=>{if(e.target===$('#publish-dialog'))$('#publish-dialog').close();};load();
+  const refreshClient=$('#refresh-client'),addClientUser=$('#add-client-user'),userDialogEl=$('#user-dialog'),publishDialogEl=$('#publish-dialog');
+  if(refreshClient)refreshClient.onclick=load;if(addClientUser)addClientUser.onclick=()=>openUser();
+  const closeUser=()=>userDialogEl?.close();const closeUserBtn=$('#close-user-dialog'),cancelUserBtn=$('#cancel-user-dialog'),saveUserBtn=$('#save-user');if(closeUserBtn)closeUserBtn.onclick=closeUser;if(cancelUserBtn)cancelUserBtn.onclick=closeUser;if(saveUserBtn)saveUserBtn.onclick=e=>{e.preventDefault();saveUser();};if(userDialogEl)userDialogEl.onclick=e=>{if(e.target===userDialogEl)userDialogEl.close();};
+  const closePublish=()=>publishDialogEl?.close();const closePublishBtn=$('#close-publish-dialog'),cancelPublishBtn=$('#cancel-publish-dialog'),confirmPublishBtn=$('#confirm-publish');if(closePublishBtn)closePublishBtn.onclick=closePublish;if(cancelPublishBtn)cancelPublishBtn.onclick=closePublish;if(confirmPublishBtn)confirmPublishBtn.onclick=e=>{e.preventDefault();publish();};if(publishDialogEl)publishDialogEl.onclick=e=>{if(e.target===publishDialogEl)publishDialogEl.close();};
+  load();
 })();
