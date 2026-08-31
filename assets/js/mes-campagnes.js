@@ -35,7 +35,7 @@
       configuration_submitted:'Transmise à Me&YouToo',
       published:'Publiée',
       scheduled:'Programmée',
-      active:'En cours',
+      active:'Publiée',
       unpublished:'Dépubliée',
       closed:'Terminée',
       completed:'Terminée',
@@ -54,9 +54,17 @@
     return 'draft';
   }
 
+  function themeSlug(p){
+    return String(p&&p.theme_slug||'').trim().toLowerCase();
+  }
+
+  function hasTheme(p){
+    return Boolean(themeSlug(p));
+  }
+
   function themeLabel(p){
     var raw=String(p.theme_title||p.theme_slug||'').trim();
-    if(!raw)return 'Autodiagnostic D&I';
+    if(!raw)return 'Thématique indisponible';
     var slug=String(p.theme_slug||raw).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-');
     var labels={
       'sexisme':'Sexisme',
@@ -78,12 +86,13 @@
   }
 
   function query(p){
-    return '?theme='+encodeURIComponent(p.theme_slug||'sexisme')+'&projectId='+encodeURIComponent(p.id);
+    var slug=themeSlug(p);
+    if(!slug)return null;
+    return '?theme='+encodeURIComponent(slug)+'&projectId='+encodeURIComponent(p.id);
   }
 
-
   function contentPage(p){
-    var slug=String(p.theme_slug||'').toLowerCase().trim();
+    var slug=themeSlug(p);
     var pages={
       'sexisme':'theme-sexisme.html',
       'management':'theme-management.html',
@@ -100,7 +109,7 @@
       'collaborateur':'theme-collaborateur.html',
       'collaborateur-inclusif':'theme-collaborateur.html'
     };
-    return (pages[slug]||'composer.html')+query(p);
+    return slug&&pages[slug] ? pages[slug]+query(p) : null;
   }
 
   function campaignName(p){
@@ -125,8 +134,13 @@
     };
   }
 
+  function invalidThemeAction(){
+    return '<span class="campaign-btn campaign-btn-static" title="Le thème réel de ce projet est absent des données API.">Thématique indisponible</span>';
+  }
+
   function primaryAction(p){
     var q=query(p),id=esc(p.id);
+    if(!q)return invalidThemeAction();
     if(p.status==='draft')return '<a class="campaign-btn campaign-btn-primary" href="'+resumePage(p.current_step)+q+'">Reprendre la création</a>';
     if(p.status==='configuration_submitted')return '<span class="campaign-btn campaign-btn-primary campaign-btn-static">En attente de publication</span>';
     if(p.status==='unpublished'||p.status==='closed'||p.status==='completed')return '<button class="campaign-btn campaign-btn-primary" type="button" data-project-action="reprogram" data-project-id="'+id+'">🚀 Reprogrammer</button>';
@@ -137,8 +151,13 @@
   function secondaryActions(p){
     var q=query(p),id=esc(p.id);
     var items=[];
-    if(p.status!=='draft')items.push('<a class="campaign-btn" href="'+contentPage(p)+'">👁️ Voir le contenu</a>');
-    if(p.status==='configuration_submitted'||p.status==='scheduled'||p.status==='published'||p.status==='active'||p.status==='unpublished'||p.status==='closed'||p.status==='completed')items.push('<a class="campaign-btn campaign-btn-kit" href="kit-communication.html'+q+'">📣 Kit de com</a>');
+    var content=contentPage(p);
+    if(p.status!=='draft'){
+      items.push(content
+        ? '<a class="campaign-btn" href="'+content+'">👁️ Voir le contenu</a>'
+        : invalidThemeAction());
+    }
+    if(q&&(p.status==='configuration_submitted'||p.status==='scheduled'||p.status==='published'||p.status==='active'||p.status==='unpublished'||p.status==='closed'||p.status==='completed'))items.push('<a class="campaign-btn campaign-btn-kit" href="kit-communication.html'+q+'">📣 Kit de com</a>');
     if(p.status==='draft')items.push('<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button>');
     if(p.status!=='draft'&&p.status!=='configuration_submitted')items.push('<button class="campaign-btn" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button>');
 
@@ -164,6 +183,7 @@
   function cardHtml(p){
     var visual=statusVisual(p.status);
     var links=linkState(p);
+    var themeWarning=hasTheme(p)?'':'<div class="composer-alert" style="margin:12px 0 0">Le thème réel de cette campagne est absent des données API. Aucun thème de remplacement n’est utilisé.</div>';
     return '<article class="campaign-project-card '+visual+'-card">'+
       '<div class="campaign-status-bar '+visual+'"></div>'+
       '<div class="campaign-project-body">'+
@@ -177,6 +197,7 @@
           '<span class="campaign-status-tag '+visual+'">'+esc(statusLabel(p.status))+'</span>'+
           extraBadges(p)+
         '</div>'+
+        themeWarning+
         secondaryActions(p)+
       '</div>'+
     '</article>';
@@ -187,8 +208,20 @@
     if(action==='delete'){var ok=await StudioModal.confirm({type:'danger',title:'Supprimer cet autodiagnostic ?',message:'Cette suppression est définitive.',confirmLabel:'Supprimer'});if(!ok)return;await StudioAPI.request('/api/projects/'+id,{method:'DELETE'});return load();}
     if(action==='archive'){var ok2=await StudioModal.confirm({title:'Archiver cet autodiagnostic ?',message:'Il sera déplacé dans vos archives et restera reprogrammable.',confirmLabel:'Archiver'});if(!ok2)return;await StudioAPI.request('/api/projects/'+id+'/archive',{method:'PATCH',body:'{}'});return load();}
     if(action==='restore'){var okRestore=await StudioModal.confirm({title:'Restaurer cette campagne ?',message:'Elle reviendra dans vos campagnes dépubliées.',confirmLabel:'Restaurer'});if(!okRestore)return;await StudioAPI.request('/api/projects/'+id+'/restore',{method:'PATCH',body:'{}'});return load();}
-    if(action==='reprogram'){var ok3=await StudioModal.confirm({title:'Reprogrammer cet autodiagnostic ?',message:'La même URL sera conservée. Vous pourrez choisir de nouvelles dates.',confirmLabel:'Reprogrammer'});if(!ok3)return;await StudioAPI.request('/api/projects/'+id+'/reprogram',{method:'POST',body:'{}'});location.href='parametrage.html'+query(p)+'&reprogram=1';return;}
-    if(action==='clone'){var ok4=await StudioModal.confirm({title:'Cloner cet autodiagnostic ?',message:'Une copie indépendante sera créée et recevra de nouveaux liens après publication.',confirmLabel:'Cloner'});if(!ok4)return;var r=await StudioAPI.request('/api/projects/'+id+'/clone',{method:'POST',body:'{}'});location.href='composer.html?projectId='+encodeURIComponent(r.project.id);}
+    if(action==='reprogram'){
+      var q=query(p);
+      if(!q)throw new Error('Le thème réel de cette campagne est absent. Reprogrammation impossible sans corriger les données du projet.');
+      var ok3=await StudioModal.confirm({title:'Reprogrammer cet autodiagnostic ?',message:'La même URL sera conservée. Vous pourrez choisir de nouvelles dates.',confirmLabel:'Reprogrammer'});if(!ok3)return;
+      await StudioAPI.request('/api/projects/'+id+'/reprogram',{method:'POST',body:'{}'});
+      location.href='parametrage.html'+q+'&reprogram=1';
+      return;
+    }
+    if(action==='clone'){
+      if(!hasTheme(p))throw new Error('Le thème réel de cette campagne est absent. Clonage impossible sans corriger les données du projet.');
+      var ok4=await StudioModal.confirm({title:'Cloner cet autodiagnostic ?',message:'Une copie indépendante sera créée et recevra de nouveaux liens après publication.',confirmLabel:'Cloner'});if(!ok4)return;
+      var r=await StudioAPI.request('/api/projects/'+id+'/clone',{method:'POST',body:'{}'});
+      location.href='composer.html?theme='+encodeURIComponent(themeSlug(p))+'&projectId='+encodeURIComponent(r.project.id);
+    }
   }
 
   function bindProjectActions(){
@@ -288,10 +321,23 @@
     });
   }
 
+  async function enrichCommunication(project){
+    if(!project||!project.id)return project;
+    try{
+      var data=await window.StudioAPI.request('/api/projects/'+encodeURIComponent(project.id)+'/communication-assets');
+      var communication=data&&data.communication||{};
+      project.communication_share_url=communication.shareUrl||project.communication_share_url||'';
+      project.communication_results_url=communication.resultsUrl||project.communication_results_url||'';
+      project.communication_video_url=communication.videoDownloadUrl||project.communication_video_url||'';
+    }catch(e){}
+    return project;
+  }
+
   async function load(){
     try{
       var data=await window.StudioAPI.request('/api/projects?organizationId='+encodeURIComponent(window.StudioAPI.organizationId()));
       projects=Array.isArray(data.projects)?data.projects:[];
+      await Promise.all(projects.map(enrichCommunication));
       renderAlerts();
       buildFilters();
       renderCards();

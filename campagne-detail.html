@@ -33,20 +33,32 @@
   function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function dateFr(v){if(!v)return '—';var d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('fr-FR');}
   function statusLabel(s){return {draft:'Brouillon',configuration_submitted:'Transmise à Me&YouToo',scheduled:'Programmée',published:'Publiée',active:'Publiée',unpublished:'Dépubliée',closed:'Terminée',completed:'Terminée',archived:'Archivée'}[s]||s||'Statut inconnu';}
-  function statusClass(s){if(s==='published'||s==='active')return 'badge-success';if(s==='scheduled')return 'badge-info';if(s==='unpublished'||s==='closed'||s==='completed'||s==='archived')return 'badge-neutral';return 'badge-info';}
+  function statusClass(s){if(s==='published'||s==='active')return 'badge-success';if(s==='scheduled')return 'badge-info';if(s==='unpublished'||s==='closed'||s==='completed'||s==='archived')return 'badge-muted';return 'badge-info';}
   function themeLabel(p){
     var raw=String(p.theme_title||p.theme_slug||'').trim();
     var slug=String(p.theme_slug||raw).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-');
     var labels={'sexisme':'Sexisme','management':'Management inclusif','management-inclusif':'Management inclusif','manager-inclusif':'Management inclusif','handicap':'Handicap','lgbt':'LGBT+','lgbt-plus':'LGBT+','origines':'Diversité des origines','diversite-des-origines':'Diversité des origines','religion':'Diversité religieuse','diversite-religieuse':'Diversité religieuse','intergenerationnel':'Intergénérationnel','collaborateur':'Collaborateur inclusif','collaborateur-inclusif':'Collaborateur inclusif'};
-    return labels[slug]||raw||'Autodiagnostic D&I';
+    return labels[slug]||raw||'Thématique indisponible';
+  }
+  function projectQuery(p){
+    var slug=String(p.theme_slug||'').trim();
+    if(!slug)return null;
+    return '?theme='+encodeURIComponent(slug)+'&projectId='+encodeURIComponent(p.id);
   }
   function contentPage(p){
     var slug=String(p.theme_slug||'').toLowerCase().trim();
     var pages={'sexisme':'theme-sexisme.html','management':'theme-management.html','management-inclusif':'theme-management.html','manager-inclusif':'theme-management.html','handicap':'theme-handicap.html','lgbt':'theme-lgbt.html','lgbt-plus':'theme-lgbt.html','origines':'theme-origines.html','diversite-des-origines':'theme-origines.html','religion':'theme-religion.html','diversite-religieuse':'theme-religion.html','intergenerationnel':'theme-intergenerationnel.html','collaborateur':'theme-collaborateur.html','collaborateur-inclusif':'theme-collaborateur.html'};
-    return (pages[slug]||'composer.html')+'?theme='+encodeURIComponent(p.theme_slug||'sexisme')+'&projectId='+encodeURIComponent(p.id);
+    var q=projectQuery(p);
+    return slug&&pages[slug]&&q ? pages[slug]+q : null;
+  }
+  function renderError(message){
+    root.innerHTML='<div class="composer-alert">'+esc(message)+'</div><p><a class="button button-secondary" href="mes-campagnes.html" style="margin-top:12px">Retour à Mes campagnes</a></p>';
   }
   function render(p){
-    var q='?theme='+encodeURIComponent(p.theme_slug||'sexisme')+'&projectId='+encodeURIComponent(p.id);
+    var q=projectQuery(p);
+    if(!q)return renderError('Le thème réel de cette campagne est absent des données API. Aucun thème de remplacement n’est utilisé.');
+    var content=contentPage(p);
+    if(!content)return renderError('La thématique « '+themeLabel(p)+' » n’a pas de page de contenu configurée dans le Studio.');
     var name=p.campaign_name||p.respondent_title||p.title||p.theme_title||'Campagne sans nom';
     var results=String(p.communication_results_url||'').trim();
     var share=String(p.communication_share_url||'').trim();
@@ -63,7 +75,7 @@
       '</section>'+
       '<section class="hero-panel" style="display:flex;justify-content:space-between;gap:24px;align-items:center;flex-wrap:wrap;margin-bottom:24px"><div><h2 class="section-title">Résultats</h2><p class="section-desc">'+(results?'Le lien de résultats renseigné par Me&YouToo est disponible.':'Aucun lien de résultats n\'est encore renseigné pour cette campagne.')+'</p></div>'+resultsHtml+'</section>'+
       '<section class="card" style="padding:26px" aria-labelledby="actions-title"><h2 class="section-title" id="actions-title">Actions sur la campagne</h2><p class="section-desc" style="margin-bottom:18px">Accédez uniquement aux éléments réellement associés à cette campagne.</p><div class="action-bar">'+
-        '<a class="button button-secondary" href="'+contentPage(p)+'">Voir le contenu</a>'+
+        '<a class="button button-secondary" href="'+content+'">Voir le contenu</a>'+
         '<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>'+
         (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
       '</div></section>';
@@ -71,14 +83,13 @@
   }
 
   async function load(){
-    if(!projectId){root.innerHTML='<div class="composer-alert">Campagne introuvable : aucun identifiant de projet n\'a été fourni.</div>';return;}
+    if(!projectId){renderError('Campagne introuvable : aucun identifiant de projet n’a été fourni.');return;}
     try{
-      var data=await StudioAPI.request('/api/projects?organizationId='+encodeURIComponent(StudioAPI.organizationId()));
-      var projects=Array.isArray(data.projects)?data.projects:[];
-      var p=projects.find(function(x){return String(x.id)===String(projectId);});
-      if(!p){root.innerHTML='<div class="composer-alert">Cette campagne n\'existe pas dans les données de votre compte.</div>';return;}
+      var data=await StudioAPI.request('/api/projects/'+encodeURIComponent(projectId)+'/composer');
+      var p=data&&data.project;
+      if(!p){renderError('Cette campagne n’existe pas dans les données de votre compte.');return;}
       render(p);
-    }catch(e){root.innerHTML='<div class="composer-alert">Impossible de charger la campagne : '+esc(e.message||'Erreur inconnue')+'</div>';}
+    }catch(e){renderError('Impossible de charger la campagne : '+(e.message||'Erreur inconnue'));}
   }
   load();
 })();
