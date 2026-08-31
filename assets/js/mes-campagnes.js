@@ -81,6 +81,28 @@
     return '?theme='+encodeURIComponent(p.theme_slug||'sexisme')+'&projectId='+encodeURIComponent(p.id);
   }
 
+
+  function contentPage(p){
+    var slug=String(p.theme_slug||'').toLowerCase().trim();
+    var pages={
+      'sexisme':'theme-sexisme.html',
+      'management':'theme-management.html',
+      'management-inclusif':'theme-management.html',
+      'manager-inclusif':'theme-management.html',
+      'handicap':'theme-handicap.html',
+      'lgbt':'theme-lgbt.html',
+      'lgbt-plus':'theme-lgbt.html',
+      'origines':'theme-origines.html',
+      'diversite-des-origines':'theme-origines.html',
+      'religion':'theme-religion.html',
+      'diversite-religieuse':'theme-religion.html',
+      'intergenerationnel':'theme-intergenerationnel.html',
+      'collaborateur':'theme-collaborateur.html',
+      'collaborateur-inclusif':'theme-collaborateur.html'
+    };
+    return (pages[slug]||'composer.html')+query(p);
+  }
+
   function campaignName(p){
     return p.campaign_name||p.respondent_title||p.title||p.theme_title||'Campagne sans nom';
   }
@@ -115,7 +137,7 @@
   function secondaryActions(p){
     var q=query(p),id=esc(p.id);
     var items=[];
-    if(p.status!=='draft')items.push('<a class="campaign-btn" href="campagne-detail.html'+q+'">👁️ Voir le contenu</a>');
+    if(p.status!=='draft')items.push('<a class="campaign-btn" href="'+contentPage(p)+'">👁️ Voir le contenu</a>');
     if(p.status==='configuration_submitted'||p.status==='scheduled'||p.status==='published'||p.status==='active'||p.status==='unpublished'||p.status==='closed'||p.status==='completed')items.push('<a class="campaign-btn campaign-btn-kit" href="kit-communication.html'+q+'">📣 Kit de com</a>');
     if(p.status==='draft')items.push('<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button>');
     if(p.status!=='draft'&&p.status!=='configuration_submitted')items.push('<button class="campaign-btn" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button>');
