@@ -14,7 +14,9 @@
   const clone=v=>JSON.parse(JSON.stringify(v));
   function normalizeSexismeCriteria(items){
     if(theme!=='sexisme')return items.filter(c=>!isBlankAutoCriterion(c));
-    let cleaned=items.filter(c=>!isBlankAutoCriterion(c));let gender=cleaned.find(c=>c.kind==='gender'||/genre/i.test(c.q||''));const genderWasExisting=Boolean(gender);
+    let cleaned=items.filter(c=>!isBlankAutoCriterion(c));
+    cleaned=cleaned.filter(c=>c.kind==='age'||String(c.q||'').trim()==='Votre âge'||!/(?:âge|\bage\b)/i.test(String(c.q||'')));
+    let gender=cleaned.find(c=>c.kind==='gender'||/genre/i.test(c.q||''));const genderWasExisting=Boolean(gender);
     if(!gender){gender=clone(defaultSocio()[0]);cleaned.unshift(gender);}else{gender.kind='gender';gender.q='Quel est votre genre ?';const existing=Array.isArray(gender.opts)?gender.opts:[];const count=label=>Number(existing.find(o=>String(o.label||'').trim().toLocaleLowerCase('fr-FR')===label.toLocaleLowerCase('fr-FR'))?.n)||0;const labels=['Homme','Femme'];if(!genderWasExisting||existing.some(o=>/^(non[ -]?binaire)$/i.test(String(o.label||'').trim())))labels.push('Non binaire');if(!genderWasExisting||existing.some(o=>/^autre$/i.test(String(o.label||'').trim())))labels.push('Autre');gender.opts=labels.map(label=>({label,n:count(label)}));}
     const age=cleaned.find(c=>c.kind==='age'||String(c.q||'').trim()==='Votre âge');if(age){const existing=Array.isArray(age.opts)?age.opts:[];const count=label=>Number(existing.find(o=>String(o.label||'').trim()===label)?.n)||0;age.kind='age';age.q='Votre âge';age.opts=AGE.opts.map(o=>({label:o.label,n:count(o.label)}));}
     cleaned=cleaned.filter(c=>c!==gender);return [gender,...cleaned];
