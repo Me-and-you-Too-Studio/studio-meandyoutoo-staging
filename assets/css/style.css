@@ -190,6 +190,16 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .campaign-card:not(.with-cover)>h3,.campaign-card:not(.with-cover)>p{width:100%}
 .campaign-card:not(.with-cover)>.button,.campaign-card:not(.with-cover)>.action-bar{margin-top:auto}
 .campaign-card h3{overflow-wrap:anywhere}
+.dashboard-flow{margin-top:0;margin-bottom:28px}
+#dashboard-recent-campaigns{grid-template-columns:1fr}
+.dashboard-campaign-disclosure{display:block;height:auto;padding:0;overflow:hidden}
+.dashboard-campaign-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;color:var(--royal-blue);font-size:1rem;font-weight:900;cursor:pointer;list-style:none}
+.dashboard-campaign-disclosure>summary::-webkit-details-marker{display:none}
+.dashboard-campaign-disclosure>summary:hover{background:var(--royal-blue-tint)}
+.dashboard-campaign-chevron{width:10px;height:10px;flex:0 0 10px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .2s ease}
+.dashboard-campaign-disclosure[open] .dashboard-campaign-chevron{transform:rotate(225deg)}
+.dashboard-campaign-details{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:0 20px 20px;border-top:1px solid #edf1f5}
+.dashboard-campaign-details>.badge{margin-top:16px}.dashboard-campaign-details>p{margin:16px 0 0}.dashboard-campaign-details>.button{margin:16px 0 0 auto}
 .card-bar{width:6px;border-radius:999px;background:#cbd5e1;align-self:stretch;min-height:100%}
 .card-bar.tone-success{background:var(--success)}
 .card-bar.tone-warning{background:var(--sunny-yellow)}

@@ -67,14 +67,16 @@
     }
     recentRoot.innerHTML=projects.map(function(project){
       var action=projectLink(project);
-      return '<article class="card campaign-card">'+
-        '<span class="badge '+statusClass(project.status)+'">'+esc(statusLabel(project.status))+'</span>'+
-        '<h3>'+esc(projectName(project))+'</h3>'+
-        '<p>'+esc(project.theme_title||project.theme_slug||'—')+'</p>'+
-        '<p>'+esc(projectDate(project))+'</p>'+
-        '<p><strong>'+number(project.situation_count)+'</strong> situation'+(Number(project.situation_count)>1?'s':'')+'</p>'+
-        '<a class="button button-secondary" href="'+esc(action.href)+'">'+esc(action.label)+'</a>'+
-      '</article>';
+      return '<details class="card campaign-card dashboard-campaign-disclosure">'+
+        '<summary><span>'+esc(projectName(project))+'</span><span class="dashboard-campaign-chevron" aria-hidden="true"></span></summary>'+
+        '<div class="dashboard-campaign-details">'+
+          '<span class="badge '+statusClass(project.status)+'">'+esc(statusLabel(project.status))+'</span>'+
+          '<p>'+esc(project.theme_title||project.theme_slug||'—')+'</p>'+
+          '<p>'+esc(projectDate(project))+'</p>'+
+          '<p><strong>'+number(project.situation_count)+'</strong> situation'+(Number(project.situation_count)>1?'s':'')+'</p>'+
+          '<a class="button button-secondary" href="'+esc(action.href)+'">'+esc(action.label)+'</a>'+
+        '</div>'+
+      '</details>';
     }).join('');
   }
 
