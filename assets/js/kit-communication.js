@@ -36,7 +36,22 @@
     if(isAdminDeliveryMode){$('share-url-admin').value=share;$('results-url-admin').value=results;}$('links-admin-box').hidden=!isAdminDeliveryMode;if($('links-client-waiting'))$('links-client-waiting').hidden=isAdminDeliveryMode||Boolean(share||results);
     const qrUrl=share?`https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=12&data=${encodeURIComponent(share)}&v=${encodeURIComponent(String(communication.linksUpdatedAt||communication.links_updated_at||Date.now()))}`:'';$('qr-ready').hidden=!qrUrl;$('qr-empty').hidden=Boolean(qrUrl);if(qrUrl){$('qr-image').src=qrUrl;$('qr-download').href=qrUrl;}
   }
-  function renderTimeline(){const launch=project?.launch_date,close=project?.close_date,launchObj=addDays(launch,0),first=addDays(launch,14),last=addDays(close,-10),closeObj=addDays(close,0);$('timeline-description').textContent=launch&&close?`Campagne prévue du ${formatLongDate(launch)} au ${formatLongDate(close)}.`:'Renseignez les dates de campagne pour obtenir le calendrier de relance.';const rows=[['J',dateObjFr(launchObj),'Lancement','Email de lancement + message sur vos canaux internes (Teams, Slack, intranet).'],['J+14',dateObjFr(first),'Première relance','Un rappel auprès des collaborateurs pour maintenir la participation.'],['J-10',dateObjFr(last),'Dernière chance','Dernière relance avant la clôture de la campagne.'],['Après',dateObjFr(closeObj),'Restitution','Remerciez les participants et partagez les premiers enseignements.']];$('campaign-timeline').innerHTML=rows.map(r=>`<div class="time-row"><div class="time-day">${r[0]}</div><div><div class="time-txt">${r[2]} <small>· ${r[1]}</small></div><div class="time-sub">${r[3]}</div></div></div>`).join('');}
+  function renderTimeline(){
+    const launch=project?.launch_date,close=project?.close_date,launchObj=addDays(launch,0),closeObj=addDays(close,0);
+    $('timeline-description').textContent=launch&&close?`Campagne prévue du ${formatLongDate(launch)} au ${formatLongDate(close)}.`:'Renseignez les dates de campagne pour obtenir le calendrier de relance.';
+    if(!launchObj||!closeObj||closeObj<=launchObj){$('campaign-timeline').innerHTML='';return;}
+    const duration=Math.round((closeObj-launchObj)/86400000),rows=[['J',dateObjFr(launchObj),'Lancement','Email de lancement + message sur vos canaux internes (Teams, Slack, intranet).']];
+    if(duration===2){
+      rows.push([`J+1`,dateObjFr(addDays(launch,1)),'Relance','Un rappel auprès des collaborateurs pour maintenir la participation.']);
+    }else if(duration>=3){
+      const firstOffset=Math.max(1,Math.min(14,Math.round(duration/3)));
+      const lastOffset=Math.max(firstOffset+1,Math.min(duration-1,Math.round(duration*.75)));
+      rows.push([`J+${firstOffset}`,dateObjFr(addDays(launch,firstOffset)),'Première relance','Un rappel auprès des collaborateurs pour maintenir la participation.']);
+      rows.push([`J-${duration-lastOffset}`,dateObjFr(addDays(launch,lastOffset)),'Dernière chance','Dernière relance avant la clôture de la campagne.']);
+    }
+    rows.push(['Après',dateObjFr(addDays(close,1)),'Restitution','Remerciez les participants et partagez les premiers enseignements.']);
+    $('campaign-timeline').innerHTML=rows.map(r=>`<div class="time-row"><div class="time-day">${r[0]}</div><div><div class="time-txt">${r[2]} <small>· ${r[1]}</small></div><div class="time-sub">${r[3]}</div></div></div>`).join('');
+  }
   function templates(){const name=project?.campaign_name||project?.respondent_title||project?.title||'notre campagne';const share=String(communication.shareUrl||communication.share_url||'').trim();const link=share||'[LIEN DE CAMPAGNE À VENIR]';const close=formatLongDate(project?.close_date),launch=formatLongDate(project?.launch_date);return {
     launch:{title:'Email lancement',meta:'À adresser aux collaborateurs concernés',body:`Objet : Notre campagne « ${name} » débute aujourd’hui\n\nBonjour,\n\nNous lançons aujourd’hui avec Me&YouToo la campagne « ${name} ».\n\nCette campagne vous propose de vous positionner sur des situations concrètes du quotidien professionnel. Elle ne dure que quelques minutes et vos réponses restent anonymes.\n\nAccédez à la campagne : ${link}\n\nLa campagne est ouverte jusqu’au ${close}.\n\nMerci par avance pour votre participation.`},
     managers:{title:'Email managers',meta:'À adresser aux managers pour relayer la campagne',body:`Objet : Merci de relayer — campagne « ${name} »\n\nBonjour,\n\nLa campagne « ${name} » sera ouverte du ${launch} au ${close}.\n\nMerci de relayer ce message auprès de vos équipes et de les encourager à participer. La participation est anonyme et prend quelques minutes.\n\nLien à partager : ${link}\n\nMerci pour votre soutien.`},
