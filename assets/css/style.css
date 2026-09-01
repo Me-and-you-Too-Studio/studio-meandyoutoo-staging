@@ -713,6 +713,17 @@ body.sidebar-collapsed .main{
 .login-shell{width:min(460px,100%)}
 .login-card{padding:34px;display:grid;gap:16px}
 .login-card>img{width:150px}.login-card h1{font-size:2rem}.login-card form{display:grid}.login-card form[hidden]{display:none}.login-help{color:var(--muted);font-size:.86rem}.login-forgot{display:inline-flex;justify-self:start;color:var(--green-blue-dark);font-size:.86rem;font-weight:850;text-decoration:none}.login-forgot:hover{text-decoration:underline}.login-connect-button{width:100%;justify-content:center;text-decoration:none}.login-card .composer-alert.success{background:#eaf8f1;color:#216b4a;border-color:#a9ddc3}.login-card .composer-alert.success a{color:inherit;font-weight:900}
+.set-password-page{min-height:100svh;padding:12px}
+.set-password-page .login-shell{width:min(440px,100%)}
+.set-password-page .login-card{padding:22px 26px;gap:10px}
+.set-password-page .login-card>img{width:120px}
+.set-password-page .login-card h1{font-size:1.65rem;line-height:1.12}
+.set-password-page #password-intro{font-size:.92rem;line-height:1.4}
+.set-password-page .field{gap:4px;margin-bottom:10px}
+.set-password-page .field input{min-height:40px;padding:8px 11px}
+.set-password-page .field .hint{font-size:.76rem}
+.set-password-page .button{min-height:42px;padding:9px 16px}
+@media(max-width:480px){.set-password-page{padding:8px}.set-password-page .login-card{padding:18px 20px}.set-password-page .login-card>img{width:108px}}
 .sidebar-logout{border:0;background:transparent;color:var(--green-blue-dark);padding:4px 0;font-size:.78rem;font-weight:800;text-align:left}
 .admin-org-grid{display:grid;gap:18px}.admin-org-card{padding:22px}.admin-org-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px}.admin-org-head p{color:var(--muted);font-size:.88rem;margin-top:4px}
 .admin-quota-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}.admin-quota-grid label{display:grid;gap:5px;font-size:.78rem;font-weight:800;color:var(--muted)}.admin-quota-grid input{border:1px solid var(--line);border-radius:10px;padding:10px}.admin-quota-grid strong{font-size:1.45rem;color:var(--green-blue-dark)}
