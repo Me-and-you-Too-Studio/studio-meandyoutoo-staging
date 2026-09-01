@@ -15,12 +15,20 @@
 
       var themeSlug=link.dataset.startTheme||existingTheme;
       if(!themeSlug) return;
+      var chapterLinks=link.closest('tbody')?Array.from(link.closest('tbody').querySelectorAll('[data-start-theme]')):[];
+      var chapterIndex=chapterLinks.indexOf(link);
+
+      function composerUrl(projectId){
+        var target=new URLSearchParams({theme:themeSlug,projectId:String(projectId)});
+        if(chapterIndex>=0)target.set('chapter',String(chapterIndex));
+        return 'composer.html?'+target.toString();
+      }
 
       // Si la page est ouverte dans le contexte d'un projet existant
       // (ex. "Revoir le contenu"), on réutilise strictement ce projet.
       // Aucun nouveau brouillon ne doit être créé.
       if(existingProjectId){
-        location.href='composer.html?theme='+encodeURIComponent(themeSlug)+'&projectId='+encodeURIComponent(existingProjectId);
+        location.href=composerUrl(existingProjectId);
         return;
       }
 
@@ -32,7 +40,7 @@
       try{
         var project=await window.StudioProject.createNew(themeSlug);
         if(!project||!project.id) throw new Error('Le nouveau brouillon n’a pas pu être créé.');
-        location.href='composer.html?theme='+encodeURIComponent(themeSlug)+'&projectId='+encodeURIComponent(project.id);
+        location.href=composerUrl(project.id);
       }catch(error){
         link.dataset.creating='false';
         link.removeAttribute('aria-busy');
