@@ -1239,6 +1239,21 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
 /* Parcours de création — repères de temps et aides contextuelles inspirés d’ITS */
 .step-time-badge{display:inline-flex;align-items:center;gap:7px;margin:10px 0 12px;padding:8px 13px;border:1px solid #b9dfe1;border-radius:999px;background:#f3fbfa;color:#17355f;font-size:.86rem;font-weight:900}
 .step-time-badge span{font-size:1rem}
+.validation-summary{padding:26px;margin:24px 0;background:linear-gradient(145deg,#fff 0%,#fbfdff 100%)}
+.validation-summary-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:20px}
+.validation-summary-head .eyebrow{margin-bottom:5px}
+.validation-summary-head .section-title{margin-bottom:5px}
+.validation-summary-head .section-desc{margin:0}
+.validation-summary-check{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;border-radius:15px;background:#e9f8f3;color:#168264;font-size:1.3rem;font-weight:900}
+.validation-overview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0}
+.validation-overview-card{min-width:0;padding:18px;border:1px solid #dbe4ee;border-radius:18px;background:#fff;box-shadow:0 8px 22px rgba(25,57,98,.045)}
+.validation-overview-card-wide{grid-column:span 2}
+.validation-overview-card dt{display:flex;align-items:center;gap:7px;margin-bottom:9px;color:#7787a3;font-size:.75rem;font-weight:900;letter-spacing:.035em;text-transform:uppercase}
+.validation-overview-card dt span{display:grid;place-items:center;width:25px;height:25px;border-radius:8px;background:#edf8f8;color:#008b94;font-size:.8rem}
+.validation-overview-card dd{margin:0;color:var(--navy);font-size:1.05rem;font-weight:900;line-height:1.4;overflow-wrap:anywhere}
+#validation-situations{font-size:1.65rem;color:var(--royal-blue)}
+@media(max-width:900px){.validation-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.validation-overview-card-wide{grid-column:span 2}}
+@media(max-width:580px){.validation-summary{padding:20px}.validation-summary-check{display:none}.validation-overview-grid{grid-template-columns:1fr}.validation-overview-card-wide{grid-column:auto}}
 .field-help{position:relative;display:inline-flex;vertical-align:middle;margin-left:6px}
 .field-help-button{display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:#173b67;color:#fff;font:900 .78rem Asap,sans-serif;cursor:help}
 .field-help-content{position:absolute;left:50%;bottom:calc(100% + 10px);z-index:80;width:min(330px,75vw);padding:12px 14px;border-radius:12px;background:#173b67;color:#fff;font-size:.78rem;font-weight:700;line-height:1.45;box-shadow:0 14px 32px rgba(23,59,103,.22);opacity:0;visibility:hidden;transform:translate(-50%,5px);transition:.15s ease;pointer-events:none}
