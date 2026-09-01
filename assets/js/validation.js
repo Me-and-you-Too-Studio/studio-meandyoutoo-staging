@@ -5,8 +5,32 @@
   let project=null,currentUser=null,reviewEvents=[],currentChapters=[];
   const date=v=>{if(!v)return 'À définir';const raw=String(v),day=raw.slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(day))return 'À définir';const parsed=new Date(day+'T12:00:00');return Number.isNaN(parsed.getTime())?'À définir':parsed.toLocaleDateString('fr-FR');};
   const statusLabel=status=>({configuration_submitted:'À relire par Me&YouToo',review_pending:'À relire par Me&YouToo',in_review:'En cours de relecture',client_validation_required:'Votre validation est requise',ready_to_publish:'Prête à publier',scheduled:'Campagne programmée',published:'Campagne publiée',active:'Campagne publiée',unpublished:'Campagne dépubliée',closed:'Campagne terminée',completed:'Campagne terminée',archived:'Campagne archivée'}[status]||'Configuration verrouillée');
+  const isoDate=value=>String(value||'').slice(0,10);
+  function showValidationError(message){const box=$('validation-alert');box.hidden=false;box.dataset.tone='';box.textContent=message;box.scrollIntoView({behavior:'smooth',block:'center'});}
+  async function saveValidationSettings({silent=false}={}){
+    if(!project||project.status!=='draft')return true;
+    const campaignName=$('validation-campaign').value.trim(),respondentTitle=$('validation-title').value.trim(),launchDate=$('validation-launch-date').value,closeDate=$('validation-close-date').value;
+    if(!campaignName){showValidationError('Renseignez le nom de la campagne.');return false;}
+    if(!respondentTitle){showValidationError('Renseignez le titre affiché aux répondants.');return false;}
+    if(!launchDate||!closeDate){showValidationError('Renseignez les dates de lancement et de clôture.');return false;}
+    if(closeDate<=launchDate){showValidationError('La date de clôture doit être postérieure à la date de lancement.');return false;}
+    const button=$('save-validation-settings'),status=$('validation-save-status');
+    if(button){button.disabled=true;button.textContent='Enregistrement…';}
+    if(status)status.textContent='';
+    try{
+      const result=await api(`/api/projects/${projectId}/settings`,{method:'PATCH',body:JSON.stringify({campaignName,respondentTitle,introductionHtml:project.introduction_html,launchDate,closeDate})});
+      project=result.project||project;
+      $('validation-alert').hidden=true;
+      if(status&&!silent)status.textContent='✓ Modifications enregistrées';
+      return true;
+    }catch(error){showValidationError(error.message);return false;}
+    finally{if(button){button.disabled=false;button.textContent='Enregistrer les modifications';}}
+  }
   function lockSubmittedState(){
     document.querySelectorAll('[data-validation-check]').forEach(c=>{c.disabled=true;c.closest('label')?.style.setProperty('opacity','.6');});
+    document.querySelectorAll('[data-validation-edit]').forEach(field=>field.disabled=true);
+    const saveButton=$('save-validation-settings');if(saveButton)saveButton.hidden=true;
+    const editBadge=document.querySelector('.validation-summary-edit-badge');if(editBadge)editBadge.textContent='Configuration transmise';
     const submit=$('submit-project');
     if(submit){submit.disabled=true;submit.classList.add('is-disabled');submit.textContent=statusLabel(project?.status);}
     const back=$('validation-back');if(back){back.hidden=false;back.textContent='← Revoir le paramétrage';}
@@ -45,7 +69,7 @@
       project=d.project;reviewEvents=d.reviewEvents||[];currentChapters=d.chapters||[];currentUser=me.user;if(!theme)theme=project?.theme_slug||'';const chapters=currentChapters,quota=quotaData.organization;
       if(project.status!=='draft'){document.querySelector('.page-title').textContent='Relecture de la configuration';document.querySelector('.topbar .lead').textContent=currentUser?.role==='admin'?'Contrôlez et corrigez la configuration avant sa publication.':'Suivez la relecture Me&YouToo et validez les modifications importantes si nécessaire.';}if(currentUser?.role==='admin')$('validation-credit').hidden=true;
       const socioLabels=(project.sociodemo||[]).flatMap(item=>[item.q,...(item.opts||[]).filter(option=>option.subcriterion).map(option=>`${option.subcriterion.q} (si « ${option.label} »)`)]);
-      $('validation-theme').textContent=project.theme_title||'Autodiagnostic';$('validation-campaign').textContent=project.campaign_name||project.title;$('validation-dates').textContent=`${date(project.launch_date)} – ${date(project.close_date)}`;$('validation-title').textContent=project.respondent_title||'—';$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').textContent=socioLabels.join(', ')||'Aucune';
+      $('validation-theme').textContent=project.theme_title||'Autodiagnostic';$('validation-campaign').value=project.campaign_name||project.title||'';$('validation-title').value=project.respondent_title||'';$('validation-launch-date').value=isoDate(project.launch_date);$('validation-close-date').value=isoDate(project.close_date);$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').textContent=socioLabels.join(', ')||'Aucune';
       const need=Number(project.estimated_respondents)||0,remaining=quota?Number(quota.passations_remaining)||0:0;$('validation-credit-needed').textContent=need?need.toLocaleString('fr-FR'):'—';$('validation-credit-remaining').textContent=quota?remaining.toLocaleString('fr-FR'):'À confirmer';$('validation-credit-status').textContent=!quota?'À confirmer par Me&YouToo':(!need?'Volume facultatif non renseigné':(remaining>=need?'Solde suffisant':'Solde insuffisant'));$('validation-credit-status').style.color=quota&&need&&remaining<need?'var(--danger)':'';
       $('validation-back').href=`parametrage.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;
       if(project.status!=='draft'){
@@ -56,9 +80,11 @@
       }
     }catch(e){$('validation-alert').hidden=false;$('validation-alert').textContent=e.message;}
   }
+  $('save-validation-settings').onclick=()=>saveValidationSettings();
   $('submit-project').onclick=async()=>{
     if(!project||project.status!=='draft'){lockSubmittedState();return;}
     const checks=[...document.querySelectorAll('[data-validation-check]')];if(checks.some(c=>!c.checked)){$('validation-alert').hidden=false;$('validation-alert').textContent='Confirmez les trois points avant de transmettre.';return;}
+    if(!await saveValidationSettings({silent:true}))return;
     const button=$('submit-project');button.disabled=true;button.textContent='Transmission…';
     try{const result=await api(`/api/projects/${projectId}/submit`,{method:'POST',body:'{}'});project=result.project||project;lockSubmittedState();await window.StudioModal.alert({eyebrow:'Configuration transmise',title:'Votre configuration a bien été transmise',message:'Me&YouToo va en prendre connaissance et la vérifier. Votre configuration est désormais figée pendant cette vérification. En attendant, transmettez-nous votre logo, votre charte graphique et vos éventuelles consignes de communication.',type:'success',confirmLabel:'Transmettre mes éléments graphiques'});location.href=`kit-communication.html?projectId=${encodeURIComponent(projectId)}&theme=${encodeURIComponent(theme)}`;}catch(e){button.disabled=false;button.textContent='Transmettre à Me&YouToo';$('validation-alert').hidden=false;$('validation-alert').textContent=e.message;}
   };
