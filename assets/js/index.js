@@ -23,6 +23,10 @@
     return {
       draft:'Brouillon',
       configuration_submitted:'Configuration transmise',
+      review_pending:'À relire par Me&YouToo',
+      in_review:'En cours de relecture',
+      client_validation_required:'Votre validation est requise',
+      ready_to_publish:'Prête à publier',
       scheduled:'Programmée',
       published:'Publiée',
       active:'En cours',
@@ -34,7 +38,7 @@
 
   function statusClass(status){
     if(status==='draft')return 'badge-warning';
-    if(status==='configuration_submitted'||status==='scheduled')return 'badge-info';
+    if(['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish','scheduled'].includes(status))return 'badge-info';
     if(status==='published'||status==='active')return 'badge-success';
     return 'badge-muted';
   }
@@ -49,7 +53,7 @@
       var pages={composer:'composer.html',personnalisation:'personnalisation.html',parametrage:'parametrage.html',validation:'validation.html'};
       return { href:(pages[project.current_step]||'composer.html')+query, label:'Continuer' };
     }
-    if(project.status==='configuration_submitted')return { href:'validation.html'+query, label:'Voir la configuration' };
+    if(['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(project.status))return { href:'validation.html'+query, label:'Suivre la relecture' };
     return { href:'campagne-detail.html'+query, label:'Voir la campagne' };
   }
 

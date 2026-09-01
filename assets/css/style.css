@@ -713,6 +713,15 @@ body.sidebar-collapsed .main{
 .login-shell{width:min(460px,100%)}
 .login-card{padding:34px;display:grid;gap:16px}
 .login-card>img{width:150px}.login-card h1{font-size:2rem}.login-card form{display:grid}.login-card form[hidden]{display:none}.login-help{color:var(--muted);font-size:.86rem}.login-forgot{display:inline-flex;justify-self:start;color:var(--green-blue-dark);font-size:.86rem;font-weight:850;text-decoration:none}.login-forgot:hover{text-decoration:underline}.login-connect-button{width:100%;justify-content:center;text-decoration:none}.login-card .composer-alert.success{background:#eaf8f1;color:#216b4a;border-color:#a9ddc3}.login-card .composer-alert.success a{color:inherit;font-weight:900}
+.review-workflow{margin:24px 0;padding:24px;border-left:6px solid var(--green-blue)}
+.review-status{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:16px 0;padding:14px 16px;border-radius:14px;background:var(--royal-blue-tint)}
+.review-status span{color:var(--muted);font-weight:700}.review-status strong{color:var(--green-blue-dark)}
+.review-edit-links{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}.review-workflow textarea{width:100%;resize:vertical}
+.review-ready{margin:14px 0;padding:14px;border-radius:14px;background:var(--success-soft);color:var(--success);font-weight:800}
+.review-client-decision{display:grid;gap:12px;margin-top:16px;padding:18px;border:1px solid var(--line);border-radius:16px;background:#fff}
+.review-history{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}.review-history summary{font-weight:800;cursor:pointer}.review-history p{margin-top:8px;color:var(--muted);font-size:.86rem}
+.review-diff{margin:18px 0}.review-diff h3{margin-bottom:10px}.review-diff-scroll{overflow:auto;border:1px solid var(--line);border-radius:14px}.review-diff table{width:100%;min-width:720px;border-collapse:collapse}.review-diff th,.review-diff td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:.84rem}.review-diff thead th{background:var(--royal-blue-tint);color:var(--royal-blue)}.review-diff tbody th{width:22%;color:var(--green-blue-dark)}.review-no-diff{margin:14px 0;color:var(--muted)}
+@media(max-width:620px){.review-status{align-items:flex-start;flex-direction:column}.review-workflow .top-actions{align-items:stretch}.review-workflow .button{width:100%}}
 .set-password-page{min-height:100svh;padding:12px}
 .set-password-page .login-shell{width:min(440px,100%)}
 .set-password-page .login-card{padding:22px 26px;gap:10px}

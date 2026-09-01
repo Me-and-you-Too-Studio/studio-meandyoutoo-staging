@@ -5,7 +5,7 @@
   const date=v=>{if(!v)return '—';const d=String(v).slice(0,10);return /^\d{4}-\d{2}-\d{2}$/.test(d)?new Date(d+'T12:00:00').toLocaleDateString('fr-FR'):'—';};
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const formatSize=n=>n>=1048576?`${(n/1048576).toFixed(1).replace('.',',')} Mo`:`${Math.max(1,Math.round(n/1024))} Ko`;
-  const statusLabel=s=>({draft:'Brouillon',configuration_submitted:'Configuration transmise',scheduled:'Programmée',published:'Publiée',active:'En cours',closed:'Terminée',completed:'Terminée'}[s]||s||'—');
+  const statusLabel=s=>({draft:'Brouillon',configuration_submitted:'À relire',review_pending:'À relire',in_review:'En relecture',client_validation_required:'Validation client requise',ready_to_publish:'Prête à publier',scheduled:'Programmée',published:'Publiée',active:'En cours',closed:'Terminée',completed:'Terminée'}[s]||s||'—');
   function show(message,type='error'){const a=$('kit-alert');a.hidden=false;a.textContent=message;a.className='composer-alert'+(type==='success'?' is-success':'');a.scrollIntoView({behavior:'smooth',block:'nearest'});}
   function isAllowed(file){return ['application/pdf','image/png','image/jpeg'].includes(file.type)&&file.size>0&&file.size<=4*1024*1024;}
   function addFiles(target,files){for(const f of files){if(!isAllowed(f)){show(`${f.name} : format non accepté ou fichier supérieur à 4 Mo.`);continue;}if(!target.some(x=>x.name===f.name&&x.size===f.size))target.push(f);}}

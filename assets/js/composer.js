@@ -80,7 +80,7 @@
   function situationHtml(s,index){
     const ch=state.chapters[state.active];
     const stereotypes=themeSlug==='sexisme'&&canonical(ch.slug||ch.title).includes('stereotype');
-    const locked=Boolean(ch.locked||s.locked||stereotypes);
+    const locked=Boolean(ch.locked||s.locked||stereotypes||state.project?.can_edit===false);
     const linkedLabel=linkedSituationLabel(s,index,ch.situations);
     const originalText=s.original_content||s.content||'';
     const customized=Boolean(s.has_customization||String(originalText)!==String(s.content||'')||(s.answers||[]).some(a=>{const o=(s.original_answers||[]).find(x=>String(x.id)===String(a.id));return o&&String(o.content)!==String(a.content);}));
@@ -293,7 +293,7 @@
         :`${status.count} situations retenues · consultez les réponses et scores avant de modifier votre sélection.`;
 
     const libraryButton=$('library-button');
-    libraryButton.hidden=Boolean(ch.locked||stereotypes);
+    libraryButton.hidden=Boolean(ch.locked||stereotypes||state.project?.can_edit===false);
     if(!libraryButton.hidden){
       libraryButton.classList.toggle('is-disabled',status.atMax);
       libraryButton.setAttribute('aria-disabled',String(status.atMax));
@@ -338,7 +338,7 @@
   }
 
   async function ensureProject(){if(projectId)return;const project=await window.StudioProject.createNew(themeSlug);projectId=String(project.id);location.replace(`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`);throw new Error('redirect');}
-  async function load(){try{await ensureProject();const data=await api(`/api/projects/${projectId}/composer`);state.project=data.project;state.chapters=data.chapters;state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title;const themeBack=$('composer-theme-back');if(themeBack)themeBack.href=`theme-${themeSlug}.html`;await saveStep('composer');render();}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
+  async function load(){try{await ensureProject();const data=await api(`/api/projects/${projectId}/composer`);state.project=data.project;state.chapters=data.chapters;state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title;const themeBack=$('composer-theme-back');if(themeBack)themeBack.href=`theme-${themeSlug}.html`;if(data.project.can_edit)await saveStep('composer');render();if(data.project.review_mode)showMessage('Mode relecture Me&YouToo : vos corrections sont enregistrées sur la configuration transmise.','success');else if(!data.project.can_edit)showMessage('Configuration verrouillée pendant la relecture Me&YouToo.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
 
   $('library-button').onclick=async()=>{
     const status=chapterCountStatus(state.chapters[state.active]);

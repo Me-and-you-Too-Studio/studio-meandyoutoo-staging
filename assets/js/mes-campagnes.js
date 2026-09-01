@@ -33,6 +33,10 @@
     return {
       draft:'Brouillon',
       configuration_submitted:'Transmise à Me&YouToo',
+      review_pending:'À relire par Me&YouToo',
+      in_review:'En cours de relecture',
+      client_validation_required:'Votre validation est requise',
+      ready_to_publish:'Prête à publier',
       published:'Publiée',
       scheduled:'Programmée',
       active:'Publiée',
@@ -45,7 +49,7 @@
 
   function statusVisual(status){
     if(status==='draft')return 'draft';
-    if(status==='configuration_submitted')return 'submitted';
+    if(['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(status))return 'submitted';
     if(status==='scheduled')return 'scheduled';
     if(status==='published'||status==='active')return 'published';
     if(status==='unpublished')return 'unpublished';
@@ -142,7 +146,7 @@
     var q=query(p),id=esc(p.id);
     if(!q)return invalidThemeAction();
     if(p.status==='draft')return '<a class="campaign-btn campaign-btn-primary" href="'+resumePage(p.current_step)+q+'">Reprendre la création</a>';
-    if(p.status==='configuration_submitted')return '<span class="campaign-btn campaign-btn-primary campaign-btn-static">En attente de publication</span>';
+    if(['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(p.status))return '<a class="campaign-btn campaign-btn-primary" href="validation.html'+q+'">Suivre la relecture</a>';
     if(p.status==='unpublished'||p.status==='closed'||p.status==='completed')return '<button class="campaign-btn campaign-btn-primary" type="button" data-project-action="reprogram" data-project-id="'+id+'">🚀 Reprogrammer</button>';
     if(p.status==='archived')return '<button class="campaign-btn campaign-btn-primary" type="button" data-project-action="restore" data-project-id="'+id+'">↩️ Restaurer</button>';
     return '<a class="campaign-btn campaign-btn-primary" href="campagne-detail.html'+q+'">Voir la campagne</a>';
@@ -157,9 +161,9 @@
         ? '<a class="campaign-btn" href="'+content+'">👁️ Voir le contenu</a>'
         : invalidThemeAction());
     }
-    if(q&&(p.status==='configuration_submitted'||p.status==='scheduled'||p.status==='published'||p.status==='active'||p.status==='unpublished'||p.status==='closed'||p.status==='completed'))items.push('<a class="campaign-btn campaign-btn-kit" href="kit-communication.html'+q+'">📣 Kit de com</a>');
+    if(q&&(['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish','scheduled','published','active','unpublished','closed','completed'].includes(p.status)))items.push('<a class="campaign-btn campaign-btn-kit" href="kit-communication.html'+q+'">📣 Kit de com</a>');
     if(p.status==='draft')items.push('<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button>');
-    if(p.status!=='draft'&&p.status!=='configuration_submitted')items.push('<button class="campaign-btn" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button>');
+    if(!['draft','configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(p.status))items.push('<button class="campaign-btn" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button>');
 
     var more=[];
     if(p.status==='unpublished'||p.status==='closed'||p.status==='completed')more.push('<button type="button" data-project-action="archive" data-project-id="'+id+'">📦 Archiver</button>');
@@ -236,7 +240,7 @@
   }
 
   function renderAlerts(){
-    var submitted=projects.filter(function(p){return p.status==='configuration_submitted';});
+    var submitted=projects.filter(function(p){return ['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(p.status);});
     var results=projects.filter(function(p){return p.status==='closed'||p.status==='completed'||p.status==='unpublished';});
     var now=new Date();
     var soonLimit=new Date(now.getTime()+14*24*60*60*1000);
@@ -261,12 +265,14 @@
     if(key==='all')return 'Toutes';
     if(key==='results')return 'Résultats';
     if(key==='endingSoon')return 'À surveiller';
+    if(key==='review')return 'En relecture';
     return statusLabel(key);
   }
 
   function countForFilter(key){
     if(key==='all')return projects.length;
     if(key==='results')return projects.filter(function(p){return ['unpublished','closed','completed'].includes(p.status);}).length;
+    if(key==='review')return projects.filter(function(p){return ['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(p.status);}).length;
     if(key==='endingSoon'){
       var now=new Date(),limit=new Date(now.getTime()+14*24*60*60*1000);
       return projects.filter(function(p){var d=new Date(p.close_date);return ['published','active'].includes(p.status)&&p.close_date&&!Number.isNaN(d.getTime())&&d>=now&&d<=limit;}).length;
@@ -275,7 +281,7 @@
   }
 
   function buildFilters(){
-    var order=['all','published','scheduled','configuration_submitted','draft','unpublished','closed','completed','archived'];
+    var order=['all','published','scheduled','review','draft','unpublished','closed','completed','archived'];
     filtersRoot.innerHTML=order.filter(function(key){return key==='all'||countForFilter(key)>0;}).map(function(key){
       return '<button class="campaign-filter-tab'+(activeFilter===key?' active':'')+'" type="button" data-filter="'+esc(key)+'">'+esc(filterLabel(key))+' <span>'+countForFilter(key)+'</span></button>';
     }).join('');
@@ -291,6 +297,7 @@
   function matchesFilter(p){
     if(activeFilter==='all')return true;
     if(activeFilter==='results')return ['unpublished','closed','completed'].includes(p.status);
+    if(activeFilter==='review')return ['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(p.status);
     if(activeFilter==='endingSoon'){
       if(!['published','active'].includes(p.status)||!p.close_date)return false;
       var now=new Date(),limit=new Date(now.getTime()+14*24*60*60*1000),d=new Date(p.close_date);

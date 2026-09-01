@@ -1,7 +1,7 @@
 (()=>{
   const p=new URLSearchParams(location.search);let theme=p.get('theme')||'',projectId=p.get('projectId')||'';
   const api=(url,opt={})=>window.StudioAPI.request(url,opt);let baseTitle='',socio=[],quota=null,referenceIntro='',project=null;
-  const isReadOnly=()=>Boolean(project&&project.status!=='draft');
+  const isReadOnly=()=>Boolean(project&&project.can_edit===false);
   const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const stripHtml=v=>{let html=String(v||'');const start=html.indexOf('« Nous entendons');if(start>=0)html=html.slice(start);const d=document.createElement('div');d.innerHTML=html.replace(/<br\s*\/?\s*>/gi,'\n').replace(/<\/p>/gi,'\n\n').replace(/<\/li>/gi,'\n');return(d.textContent||'').replace(/\n{3,}/g,'\n\n').trim();};
   const iso=d=>{const x=new Date();x.setDate(x.getDate()+d);return x.toISOString().slice(0,10);};
@@ -92,7 +92,7 @@
     if(isReadOnly()){location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;return;}
     const readiness=settingsReadiness();if(!readiness.introChanged||!readiness.launchFilled||!readiness.closeFilled){await showReadinessModal();return;}
     const campaignName=$('campaign-name').value.trim(),respondentTitle=$('respondent-title').value.trim(),introductionHtml=readiness.intro,launchDate=readiness.launch,closeDate=readiness.close;const rawRespondents=$('nb-respondents').value.trim(),nbRespondents=rawRespondents?Number(rawRespondents):null;
-    if(!respondentTitle)return show('Le titre visible est obligatoire.');if(launchDate<iso(5))return show('La date de lancement doit être au minimum à J+5.');if(closeDate<=launchDate)return show('La date de clôture doit être postérieure à la date de lancement.');if(!socio.length)return show('Au moins une donnée d’analyse doit être présente.');if(invalidSocio())return show('Chaque donnée et chaque sous-critère doivent avoir un intitulé et au moins deux réponses renseignées.');
+    if(!respondentTitle)return show('Le titre visible est obligatoire.');if(!project?.review_mode&&launchDate<iso(5))return show('La date de lancement doit être au minimum à J+5.');if(closeDate<=launchDate)return show('La date de clôture doit être postérieure à la date de lancement.');if(!socio.length)return show('Au moins une donnée d’analyse doit être présente.');if(invalidSocio())return show('Chaque donnée et chaque sous-critère doivent avoir un intitulé et au moins deux réponses renseignées.');
     try{await api(`/api/projects/${projectId}/settings`,{method:'PATCH',body:JSON.stringify({campaignName,respondentTitle,introductionHtml,launchDate,closeDate,nbRespondents,sociodemo:socio})});location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;}catch(error){show(error.message);}
   });load();
 })();

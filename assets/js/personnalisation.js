@@ -1,7 +1,7 @@
 (()=>{
   const p=new URLSearchParams(location.search),theme=p.get('theme')||'',projectId=p.get('projectId')||'';let active=Math.max(0,Number(p.get('chapter')||0)),chapters=[],project=null;
   const api=(url,opt={})=>window.StudioAPI.request(url,opt),$=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const isReadOnly=()=>Boolean(project&&project.status!=='draft');
+  const isReadOnly=()=>Boolean(project&&project.can_edit===false);
   const colorRank=color=>{const c=String(color||'').toLowerCase();if(c.includes('ff847')||c.includes('ff84')||c.includes('b423')||c.includes('red'))return 0;if(c.includes('ffc')||c.includes('yellow'))return 1;if(c.includes('77cd')||c.includes('green'))return 2;return 3;};
   const q=chapter=>`?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}&chapter=${chapter}`;
   const canonical=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();

@@ -52,7 +52,7 @@
     d.setDate(d.getDate()+1);
     return d.toLocaleDateString('fr-FR');
   }
-  function statusLabel(s){return {draft:'Brouillon',configuration_submitted:'Transmise à Me&YouToo',scheduled:'Programmée',published:'Publiée',active:'Publiée',unpublished:'Dépubliée',closed:'Terminée',completed:'Terminée',archived:'Archivée'}[s]||s||'Statut inconnu';}
+  function statusLabel(s){return {draft:'Brouillon',configuration_submitted:'À relire par Me&YouToo',review_pending:'À relire par Me&YouToo',in_review:'En cours de relecture',client_validation_required:'Votre validation est requise',ready_to_publish:'Prête à publier',scheduled:'Programmée',published:'Publiée',active:'Publiée',unpublished:'Dépubliée',closed:'Terminée',completed:'Terminée',archived:'Archivée'}[s]||s||'Statut inconnu';}
   function statusClass(s){if(s==='published'||s==='active')return 'badge-success';if(s==='scheduled')return 'badge-info';if(s==='unpublished'||s==='closed'||s==='completed'||s==='archived')return 'badge-muted';return 'badge-info';}
   function themeLabel(p){
     var raw=String(p.theme_title||p.theme_slug||'').trim();
