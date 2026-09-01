@@ -4,7 +4,7 @@
   const isReadOnly=()=>Boolean(project&&project.can_edit===false);
   const colorRank=color=>{const c=String(color||'').toLowerCase();if(c.includes('ff847')||c.includes('ff84')||c.includes('b423')||c.includes('red'))return 0;if(c.includes('ffc')||c.includes('yellow'))return 1;if(c.includes('77cd')||c.includes('green'))return 2;return 3;};
   const q=chapter=>`?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}&chapter=${chapter}`;
-  const canonical=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const canonical=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   const isStereotypes=ch=>theme==='sexisme'&&canonical(ch?.slug||ch?.title).includes('stereotype');
   const isAggression=ch=>canonical(ch?.slug||ch?.title).includes('agression sexuelle');
   const rules=ch=>isStereotypes(ch)?{min:null,max:null}:{min:isAggression(ch)?4:5,max:8};
