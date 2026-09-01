@@ -2,8 +2,9 @@
 <title>Composer une campagne — Studio Me&YouToo</title><meta name="robots" content="noindex,nofollow"><link rel="icon" href="assets/img/brand/favicon.png"><link rel="stylesheet" href="assets/css/style.css?v=20260827-linked-colors-1"></head>
 <body class="creation-editor-page"><a class="skip-link" href="#contenu">Aller au contenu</a><header class="mobile-header"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo Studio"><button class="icon-button" aria-label="Ouvrir le menu" aria-expanded="false" data-menu-toggle><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button></header>
 <div class="app-shell"><aside class="sidebar" aria-label="Navigation principale" id="sidebar-root"></aside>
-<main class="main" id="contenu"><div class="topbar compact-topbar"><div><p class="eyebrow"><a href="theme-sexisme.html" id="theme-link">Sexisme</a></p><h1 class="page-title">Composer et personnaliser votre diagnostic comportemental</h1><p class="lead">Composez votre autodiagnostic à partir des contenus Me&YouToo et contextualisez, si nécessaire, certaines formulations à votre organisation.</p></div></div>
+<main class="main" id="contenu"><div class="topbar compact-topbar"><div><p class="eyebrow"><a href="bibliotheque.html" id="theme-link">Thématique</a></p><h1 class="page-title" id="composer-page-title">Composer et personnaliser votre diagnostic comportemental</h1><p class="lead" id="composer-page-lead">Composez votre autodiagnostic à partir des contenus Me&YouToo et contextualisez, si nécessaire, certaines formulations à votre organisation.</p></div></div>
 <nav class="steps" aria-label="Étapes de composition"><span class="step"><span class="step-num">1</span>Choisir</span><span class="step" aria-current="step"><span class="step-num">2</span>Composer</span><span class="step"><span class="step-num">3</span>Personnaliser</span><span class="step"><span class="step-num">4</span>Paramétrer</span><span class="step"><span class="step-num">5</span>Transmettre</span></nav>
+<div id="composer-readonly-banner" class="composer-alert" data-tone="success" hidden><strong>🔒 Campagne en lecture seule.</strong> Vous pouvez revoir le contenu de cette campagne, mais aucune modification n’est possible lorsqu’elle est programmée ou publiée. Pour demander un changement, <a href="contact.html" style="text-decoration:underline;font-weight:900">contactez Me&YouToo</a>.</div>
 <div id="composer-alert" class="composer-alert" hidden></div>
 <section class="composer composer-live" aria-live="polite">
 <aside class="composer-side creation-chapters card"><p class="eyebrow">Chapitres</p><h2 class="section-title" id="catalog-title">Chargement…</h2><p class="section-desc" id="catalog-summary"></p><div class="progress"><span id="catalog-progress" style="width:0%"></span></div><p id="catalog-count"></p><div id="chapter-nav" class="composer-chapter-nav"></div></aside>
@@ -16,8 +17,113 @@
 </div></div>
 <div class="creation-objective"><span aria-hidden="true">💡</span><div><strong>Objectif de cette étape</strong><p>Choisissez les situations de cette partie et adaptez uniquement celles qui nécessitent une contextualisation à votre organisation.</p></div></div><div class="legal-scoring-note" id="legal-scoring-note" hidden><span aria-hidden="true">⚖️</span><div><strong>Scoring renforcé en raison du cadre légal</strong><p>Dans cette partie consacrée au harcèlement et à l’agression sexuelle, le scoring est volontairement plus sévère : les situations et les réponses sont liées à des obligations et qualifications prévues par la loi. La meilleure réponse est donc indiquée comme « Réponse correcte ».</p></div></div><div class="creation-meta-row"><span id="duration-estimate">Calcul en cours…</span><span>Les réponses et les scores garantissent la cohérence méthodologique.</span></div><div id="situation-list" class="composer-situation-list"></div></div>
 </section>
-<div class="creation-sticky-actions"><a class="button button-ghost" id="composer-theme-back" href="theme-sexisme.html">← Revenir au thème</a><div class="creation-sticky-progress"><strong id="sticky-part-label">Partie en cours</strong><span>Questions → Profils</span></div><a class="button button-primary" id="composer-next" href="personnalisation.html">Personnaliser les profils de cette partie →</a></div>
+<div class="creation-sticky-actions"><a class="button button-ghost" id="composer-theme-back" href="bibliotheque.html">← Revenir au thème</a><div class="creation-sticky-progress"><strong id="sticky-part-label">Partie en cours</strong><span id="sticky-step-copy">Questions → Profils</span></div><a class="button button-primary" id="composer-next" href="personnalisation.html">Personnaliser les profils de cette partie →</a></div>
 </main></div><nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <div class="composer-drawer-backdrop" id="library-backdrop" hidden></div><aside class="composer-drawer" id="library-drawer" aria-hidden="true"><div class="composer-drawer-head"><div><p class="eyebrow">Bibliothèque Me&YouToo</p><h2 id="library-title">Situations alternatives</h2></div><button class="icon-button" id="library-close" aria-label="Fermer">×</button></div><div id="library-list" class="composer-library-list"></div></aside>
 <script src="assets/js/api.js?v=20260713-2"></script>
-<script src="assets/js/app.js?v=20260824-navigation-popup-8"></script><script src="assets/js/project-context.js?v=20260713-5"></script><script src="assets/js/composer.js?v=20260827-linked-colors-1"></script></body></html>
+<script src="assets/js/app.js?v=20260824-navigation-popup-8"></script>
+<script src="assets/js/project-context.js?v=20260713-5"></script>
+<script>
+(function(){
+  var params=new URLSearchParams(location.search);
+  var projectId=params.get('projectId')||'';
+  var readOnlyStatuses=new Set(['scheduled','published','active']);
+  var originalRequest=window.StudioAPI&&window.StudioAPI.request;
+
+  function loadComposerScript(){
+    var script=document.createElement('script');
+    script.src='assets/js/composer.js?v=20260901-campaign-readonly-1';
+    document.body.appendChild(script);
+  }
+
+  function applyReadOnly(project){
+    document.body.dataset.campaignReadOnly='true';
+    var banner=document.getElementById('composer-readonly-banner');
+    if(banner)banner.hidden=false;
+    var title=document.getElementById('composer-page-title');
+    var lead=document.getElementById('composer-page-lead');
+    if(title)title.textContent='Revoir le contenu de votre campagne';
+    if(lead)lead.textContent='Consultez les situations, les réponses et les scores de cette campagne. Le contenu est verrouillé tant que la campagne est programmée ou publiée.';
+    var guidance=document.querySelector('.composer-customization-guidance');
+    if(guidance)guidance.hidden=true;
+    var objective=document.querySelector('.creation-objective');
+    if(objective){
+      var strong=objective.querySelector('strong');
+      var p=objective.querySelector('p');
+      if(strong)strong.textContent='Consultation du contenu';
+      if(p)p.textContent='Parcourez les chapitres et ouvrez les réponses pour revoir exactement le contenu de la campagne.';
+    }
+    var themeLink=document.getElementById('theme-link');
+    if(themeLink){
+      themeLink.textContent=project.theme_title||project.theme_slug||'Thématique';
+      themeLink.href=project.theme_slug?'theme-'+encodeURIComponent(project.theme_slug)+'.html':'bibliotheque.html';
+    }
+    var back=document.getElementById('composer-theme-back');
+    if(back)back.href='campagne-detail.html?projectId='+encodeURIComponent(project.id);
+    var next=document.getElementById('composer-next');
+    if(next)next.hidden=true;
+    var sticky=document.getElementById('sticky-step-copy');
+    if(sticky)sticky.textContent='Lecture seule';
+
+    function lockRenderedControls(){
+      var library=document.getElementById('library-button');
+      if(library)library.hidden=true;
+      document.querySelectorAll('[data-situation-input],[data-answer-input]').forEach(function(input){
+        input.readOnly=true;
+        input.setAttribute('aria-readonly','true');
+      });
+      document.querySelectorAll('.composer-actions,.composer-save-row,.composer-inline-help,.composer-context-tag,.composer-field-guidance').forEach(function(el){
+        el.hidden=true;
+      });
+      document.querySelectorAll('[data-situation-card]').forEach(function(card){
+        var tags=card.querySelector('.composer-situation-tags');
+        if(tags&&!tags.querySelector('.campaign-readonly-chip')){
+          tags.insertAdjacentHTML('beforeend','<span class="composer-lock-chip campaign-readonly-chip">🔒 Lecture seule</span>');
+        }
+      });
+    }
+
+    lockRenderedControls();
+    var observer=new MutationObserver(lockRenderedControls);
+    var list=document.getElementById('situation-list');
+    var nav=document.getElementById('chapter-nav');
+    if(list)observer.observe(list,{childList:true,subtree:true});
+    if(nav)observer.observe(nav,{childList:true,subtree:true});
+  }
+
+  if(!projectId||!originalRequest){
+    loadComposerScript();
+    return;
+  }
+
+  originalRequest('/api/projects/'+encodeURIComponent(projectId)+'/composer').then(function(data){
+    var project=data&&data.project;
+    if(!project){
+      loadComposerScript();
+      return;
+    }
+    var readOnly=readOnlyStatuses.has(project.status);
+    if(readOnly){
+      window.STUDIO_COMPOSER_READ_ONLY=true;
+      window.StudioAPI.request=function(path,options){
+        var method=String(options&&options.method||'GET').toUpperCase();
+        if(method==='PATCH'&&path==='/api/projects/'+encodeURIComponent(projectId)+'/progress'){
+          return Promise.resolve({project:project,readOnly:true});
+        }
+        return originalRequest.call(window.StudioAPI,path,options);
+      };
+      applyReadOnly(project);
+    }else{
+      var themeLink=document.getElementById('theme-link');
+      if(themeLink){
+        themeLink.textContent=project.theme_title||project.theme_slug||'Thématique';
+        themeLink.href=project.theme_slug?'theme-'+encodeURIComponent(project.theme_slug)+'.html':'bibliotheque.html';
+      }
+    }
+    loadComposerScript();
+  }).catch(function(){
+    loadComposerScript();
+  });
+})();
+</script>
+</body></html>

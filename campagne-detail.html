@@ -30,8 +30,8 @@
   var params=new URLSearchParams(location.search);
   var projectId=params.get('projectId');
 
-  // Seul le statut "draft" reste modifiable par le client (même règle que l'API : editableStatuses = ['draft']).
-  var EDITABLE_STATUSES=new Set(['draft']);
+  // Lecture seule demandée côté client uniquement pour les campagnes programmées ou publiées.
+  var READ_ONLY_STATUSES=new Set(['scheduled','published','active']);
 
   var ICONS={
     status:'<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11.5V16"/><circle cx="12" cy="8" r=".7" fill="currentColor" stroke="none"/></svg>',
@@ -66,10 +66,8 @@
     return '?theme='+encodeURIComponent(slug)+'&projectId='+encodeURIComponent(p.id);
   }
   function contentPage(p){
-    var slug=String(p.theme_slug||'').toLowerCase().trim();
-    var pages={'sexisme':'theme-sexisme.html','management':'theme-management.html','management-inclusif':'theme-management.html','manager-inclusif':'theme-management.html','handicap':'theme-handicap.html','lgbt':'theme-lgbt.html','lgbt-plus':'theme-lgbt.html','origines':'theme-origines.html','diversite-des-origines':'theme-origines.html','religion':'theme-religion.html','diversite-religieuse':'theme-religion.html','intergenerationnel':'theme-intergenerationnel.html','collaborateur':'theme-collaborateur.html','collaborateur-inclusif':'theme-collaborateur.html'};
     var q=projectQuery(p);
-    return slug&&pages[slug]&&q ? pages[slug]+q : null;
+    return q ? 'composer.html'+q : null;
   }
   function renderError(message){
     root.innerHTML='<div class="composer-alert">'+esc(message)+'</div><p><a class="button button-secondary" href="mes-campagnes.html" style="margin-top:12px">Retour à Mes campagnes</a></p>';
@@ -78,11 +76,11 @@
     var q=projectQuery(p);
     if(!q)return renderError('Le thème réel de cette campagne est absent des données API. Aucun thème de remplacement n’est utilisé.');
     var content=contentPage(p);
-    if(!content)return renderError('La thématique « '+themeLabel(p)+' » n’a pas de page de contenu configurée dans le Studio.');
     var name=p.campaign_name||p.respondent_title||p.title||p.theme_title||'Campagne sans nom';
     var results=String(p.communication_results_url||'').trim();
     var share=String(p.communication_share_url||'').trim();
-    var isEditable=EDITABLE_STATUSES.has(p.status);
+    var isDraft=p.status==='draft';
+    var isReadOnly=READ_ONLY_STATUSES.has(p.status);
     var resultsHtml=results
       ? '<a class="button button-primary" href="'+esc(results)+'" target="_blank" rel="noopener">Voir les résultats ↗</a>'
       : '<span class="button button-secondary" aria-disabled="true">Résultats non disponibles</span>';
@@ -95,20 +93,30 @@
     }
 
     var actionsHtml;
-    if(isEditable){
-      // Brouillon : le contenu reste modifiable, comportement inchangé.
+    if(isDraft){
       actionsHtml=
         '<div class="action-bar">'+
-          '<a class="button button-secondary" href="'+content+'">Voir le contenu</a>'+
+          '<a class="button button-secondary" href="'+content+'">Modifier le contenu</a>'+
           '<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>'+
           (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
         '</div>';
-    }else{
-      // Campagne transmise à Me&YouToo (ou au-delà) : contenu verrouillé, aucun lien vers une interface de modification.
+    }else if(isReadOnly){
       actionsHtml=
         '<div class="campaign-lock-panel">'+
-          '<div class="campaign-lock-head"><span class="campaign-lock-title">Voir le contenu</span><span class="composer-lock-chip">🔒 Contenu verrouillé</span></div>'+
-          '<p class="campaign-lock-text">Le contenu n’est plus modifiable à ce stade. Pour demander un changement, contactez Me&YouToo.</p>'+
+          '<div class="campaign-lock-head"><span class="campaign-lock-title">Revoir le contenu</span><span class="composer-lock-chip">🔒 Lecture seule</span></div>'+
+          '<p class="campaign-lock-text">Vous pouvez revoir l’ensemble du contenu de cette campagne, mais il ne peut plus être modifié. Pour demander un changement, contactez Me&YouToo.</p>'+
+        '</div>'+
+        '<div class="action-bar">'+
+          '<a class="button button-secondary" href="'+content+'">Revoir le contenu</a>'+
+          '<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>'+
+          '<a class="button button-primary" href="contact.html">Nous contacter</a>'+
+          (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
+        '</div>';
+    }else{
+      actionsHtml=
+        '<div class="campaign-lock-panel">'+
+          '<div class="campaign-lock-head"><span class="campaign-lock-title">Contenu de la campagne</span><span class="composer-lock-chip">🔒 Contenu verrouillé</span></div>'+
+          '<p class="campaign-lock-text">Le contenu n’est pas accessible en modification dans ce statut. Pour demander un changement, contactez Me&YouToo.</p>'+
         '</div>'+
         '<div class="action-bar">'+
           '<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>'+
