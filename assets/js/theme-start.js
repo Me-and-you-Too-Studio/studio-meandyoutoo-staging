@@ -3,6 +3,11 @@
   var existingProjectId=params.get('projectId')||'';
   var existingTheme=params.get('theme')||'';
 
+  if(existingProjectId){
+    var newCampaignPanel=document.querySelector('.hero-panel [data-start-theme]');
+    if(newCampaignPanel)newCampaignPanel.closest('.hero-panel').hidden=true;
+  }
+
   document.querySelectorAll('[data-start-theme]').forEach(function(link){
     link.addEventListener('click',async function(event){
       event.preventDefault();
