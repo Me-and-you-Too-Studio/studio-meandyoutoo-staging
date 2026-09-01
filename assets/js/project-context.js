@@ -54,7 +54,7 @@
       var page=stepLink.dataset.stepPage;
       var q=new URLSearchParams();
       if(currentTheme)q.set('theme',currentTheme);
-      if(id&&page!=='theme-sexisme.html')q.set('projectId',id);
+      if(id)q.set('projectId',id);
       var qs=q.toString();
       stepLink.href=page+(qs?'?'+qs:'');
     });
