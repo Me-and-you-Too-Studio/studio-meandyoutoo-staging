@@ -1304,8 +1304,14 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
 .validation-credit-actions{margin-top:16px}
 .validation-credit-actions .button-secondary{background:#fff;border-color:#d9a6a0;color:#8c3f43}
 .validation-credit-actions .button-secondary:hover{background:#fff4f2;border-color:#eb6366;color:#8c3f43}
+.validation-pack-pending{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:16px;padding:15px 17px;border:1px solid #e8bf56;border-radius:16px;background:#fff5cf;color:#684d09}
+.validation-pack-pending[hidden]{display:none!important}
+.validation-pack-pending>div{display:grid;gap:4px}
+.validation-pack-pending strong{color:#624608;font-size:.94rem}
+.validation-pack-pending span{font-size:.8rem;line-height:1.4}
+.validation-pack-pending-status{flex:0 0 auto;padding:7px 10px;border-radius:999px;background:#f1bd51;color:#533d07;font-weight:900;white-space:nowrap}
 @media(max-width:900px){.validation-edit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.validation-edit-card-wide{grid-column:span 2}}
-@media(max-width:580px){.validation-summary-head{display:grid}.validation-summary-edit-badge{justify-self:start}.validation-edit-grid{grid-template-columns:1fr}.validation-edit-card-wide{grid-column:auto}.validation-edit-actions{align-items:flex-start;flex-direction:column}.validation-credit{padding:22px}}
+@media(max-width:580px){.validation-summary-head{display:grid}.validation-summary-edit-badge{justify-self:start}.validation-edit-grid{grid-template-columns:1fr}.validation-edit-card-wide{grid-column:auto}.validation-edit-actions{align-items:flex-start;flex-direction:column}.validation-credit{padding:22px}.validation-pack-pending{align-items:flex-start;flex-direction:column}.validation-pack-pending-status{white-space:normal}}
 .field-help{position:relative;display:inline-flex;vertical-align:middle;margin-left:6px}
 .field-help-button{display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:#173b67;color:#fff;font:900 .78rem Asap,sans-serif;cursor:help}
 .field-help-content{position:absolute;left:50%;bottom:calc(100% + 10px);z-index:80;width:min(330px,75vw);padding:12px 14px;border-radius:12px;background:#173b67;color:#fff;font-size:.78rem;font-weight:700;line-height:1.45;box-shadow:0 14px 32px rgba(23,59,103,.22);opacity:0;visibility:hidden;transform:translate(-50%,5px);transition:.15s ease;pointer-events:none}

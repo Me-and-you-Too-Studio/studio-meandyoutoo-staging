@@ -71,6 +71,13 @@
       const socioLabels=(project.sociodemo||[]).flatMap(item=>[item.q,...(item.opts||[]).filter(option=>option.subcriterion).map(option=>`${option.subcriterion.q} (si « ${option.label} »)`)]);
       $('validation-theme').textContent=project.theme_title||'Autodiagnostic';$('validation-campaign').value=project.campaign_name||project.title||'';$('validation-title').value=project.respondent_title||'';$('validation-launch-date').value=isoDate(project.launch_date);$('validation-close-date').value=isoDate(project.close_date);$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').textContent=socioLabels.join(', ')||'Aucune';
       const need=Number(project.estimated_respondents)||0,remaining=quota?Number(quota.passations_remaining)||0:0;$('validation-credit-needed').textContent=need?need.toLocaleString('fr-FR'):'—';$('validation-credit-remaining').textContent=quota?remaining.toLocaleString('fr-FR'):'À confirmer';$('validation-credit-status').textContent=!quota?'À confirmer par Me&YouToo':(!need?'Volume facultatif non renseigné':(remaining>=need?'Solde suffisant':'Solde insuffisant'));$('validation-credit-status').style.color=quota&&need&&remaining<need?'var(--danger)':'';
+      const pending=quota?.pending_pack_request,pendingBox=$('validation-pack-pending');
+      if(pending&&pendingBox){
+        const volume=pending.unlimited?'un pack illimité':`${Number(pending.volume||0).toLocaleString('fr-FR')} passations`,requestedAt=pending.requestedAt?new Date(pending.requestedAt):null,dateLabel=requestedAt&&!Number.isNaN(requestedAt.getTime())?` le ${requestedAt.toLocaleDateString('fr-FR')}`:'';
+        $('validation-pack-pending-title').textContent=`Demande de ${volume} en attente`;
+        $('validation-pack-pending-detail').textContent=`Demande envoyée${dateLabel}. Votre solde actuel restera affiché jusqu’à sa validation par Me&YouToo.`;
+        pendingBox.hidden=false;
+      }else if(pendingBox)pendingBox.hidden=true;
       $('validation-back').href=`parametrage.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;
       if(project.status!=='draft'){
         lockSubmittedState();
