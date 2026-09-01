@@ -48,7 +48,12 @@
       $('validation-theme').textContent=project.theme_title||'Autodiagnostic';$('validation-campaign').textContent=project.campaign_name||project.title;$('validation-dates').textContent=`${date(project.launch_date)} – ${date(project.close_date)}`;$('validation-title').textContent=project.respondent_title||'—';$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').textContent=socioLabels.join(', ')||'Aucune';
       const need=Number(project.estimated_respondents)||0,remaining=quota?Number(quota.passations_remaining)||0:0;$('validation-credit-needed').textContent=need?need.toLocaleString('fr-FR'):'—';$('validation-credit-remaining').textContent=quota?remaining.toLocaleString('fr-FR'):'À confirmer';$('validation-credit-status').textContent=!quota?'À confirmer par Me&YouToo':(!need?'Volume facultatif non renseigné':(remaining>=need?'Solde suffisant':'Solde insuffisant'));$('validation-credit-status').style.color=quota&&need&&remaining<need?'var(--danger)':'';
       $('validation-back').href=`parametrage.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;
-      if(project.status!=='draft')lockSubmittedState();else await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:'validation'})});reviewPanel();
+      if(project.status!=='draft'){
+        lockSubmittedState();
+        reviewPanel();
+      }else{
+        await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:'validation'})});
+      }
     }catch(e){$('validation-alert').hidden=false;$('validation-alert').textContent=e.message;}
   }
   $('submit-project').onclick=async()=>{
