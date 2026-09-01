@@ -1,6 +1,7 @@
 (()=>{
-  const p=new URLSearchParams(location.search),theme=p.get('theme')||'sexisme',projectId=p.get('projectId')||'';
-  const api=(url,opt={})=>window.StudioAPI.request(url,opt);let baseTitle='',socio=[],quota=null,referenceIntro='';
+  const p=new URLSearchParams(location.search);let theme=p.get('theme')||'',projectId=p.get('projectId')||'';
+  const api=(url,opt={})=>window.StudioAPI.request(url,opt);let baseTitle='',socio=[],quota=null,referenceIntro='',project=null;
+  const isReadOnly=()=>Boolean(project&&project.status!=='draft');
   const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const stripHtml=v=>{let html=String(v||'');const start=html.indexOf('« Nous entendons');if(start>=0)html=html.slice(start);const d=document.createElement('div');d.innerHTML=html.replace(/<br\s*\/?\s*>/gi,'\n').replace(/<\/p>/gi,'\n\n').replace(/<\/li>/gi,'\n');return(d.textContent||'').replace(/\n{3,}/g,'\n\n').trim();};
   const iso=d=>{const x=new Date();x.setDate(x.getDate()+d);return x.toISOString().slice(0,10);};
@@ -9,67 +10,38 @@
   const EXAMPLES=[['Business Unit',['Business Unit 1','Business Unit 2']],['Régions',['Région 1','Région 2']],['Fonction',['Fonction 1','Fonction 2']],['Manager ou collaborateur',['Manager','Collaborateur']]];
   const newSubcriterion=()=>({q:'Précisez votre choix',opts:[{label:'Sous-réponse 1',n:0},{label:'Sous-réponse 2',n:0}]});
   const normalizedSocio=value=>(Array.isArray(value)?value:[]).map(item=>({kind:String(item?.kind||''),q:String(item?.q||''),opts:(Array.isArray(item?.opts)?item.opts:[]).map(option=>({label:String(option?.label||''),n:Number(option?.n)||0,...(option?.subcriterion?{subcriterion:{q:String(option.subcriterion.q||''),opts:(Array.isArray(option.subcriterion.opts)?option.subcriterion.opts:[]).map(child=>({label:String(child?.label||''),n:Number(child?.n)||0}))}}:{})}))}));
-  const isBlankAutoCriterion=criterion=>{
-    const q=String(criterion?.q||'').trim();
-    const labels=(Array.isArray(criterion?.opts)?criterion.opts:[]).map(o=>String(o?.label||'').trim());
-    const noRealQuestion=!q||q==='Nouvelle donnée';
-    const noRealAnswers=!labels.length||labels.every(label=>!label||/^Réponse\s*[12]$/i.test(label));
-    return !criterion?.kind&&noRealQuestion&&noRealAnswers;
-  };
+  const isBlankAutoCriterion=criterion=>{const q=String(criterion?.q||'').trim();const labels=(Array.isArray(criterion?.opts)?criterion.opts:[]).map(o=>String(o?.label||'').trim());const noRealQuestion=!q||q==='Nouvelle donnée';const noRealAnswers=!labels.length||labels.every(label=>!label||/^Réponse\s*[12]$/i.test(label));return !criterion?.kind&&noRealQuestion&&noRealAnswers;};
   const clone=v=>JSON.parse(JSON.stringify(v));
   function normalizeSexismeCriteria(items){
     if(theme!=='sexisme')return items.filter(c=>!isBlankAutoCriterion(c));
-    let cleaned=items.filter(c=>!isBlankAutoCriterion(c));
-    let gender=cleaned.find(c=>c.kind==='gender'||/genre/i.test(c.q||''));
-    const genderWasExisting=Boolean(gender);
-    if(!gender){
-      gender=clone(defaultSocio()[0]);
-      cleaned.unshift(gender);
-    }else{
-      gender.kind='gender';
-      gender.q='Quel est votre genre ?';
-      const existing=Array.isArray(gender.opts)?gender.opts:[];
-      const count=label=>Number(existing.find(o=>String(o.label||'').trim().toLocaleLowerCase('fr-FR')===label.toLocaleLowerCase('fr-FR'))?.n)||0;
-      const labels=['Homme','Femme'];
-      // Non binaire et Autre sont proposés au départ mais, une fois supprimés et enregistrés,
-      // ils ne doivent pas réapparaître au rechargement.
-      if(!genderWasExisting || existing.some(o=>/^(non[ -]?binaire)$/i.test(String(o.label||'').trim()))) labels.push('Non binaire');
-      if(!genderWasExisting || existing.some(o=>/^autre$/i.test(String(o.label||'').trim()))) labels.push('Autre');
-      gender.opts=labels.map(label=>({label,n:count(label)}));
-    }
-    const age=cleaned.find(c=>c.kind==='age'||String(c.q||'').trim()==='Votre âge');
-    if(age){
-      const existing=Array.isArray(age.opts)?age.opts:[];
-      const count=label=>Number(existing.find(o=>String(o.label||'').trim()===label)?.n)||0;
-      age.kind='age';
-      age.q='Votre âge';
-      age.opts=AGE.opts.map(o=>({label:o.label,n:count(o.label)}));
-    }
-    // Genre est toujours le premier critère. Tous les autres suivent sans cartes vides intercalées.
-    cleaned=cleaned.filter(c=>c!==gender);
-    return [gender,...cleaned];
+    let cleaned=items.filter(c=>!isBlankAutoCriterion(c));let gender=cleaned.find(c=>c.kind==='gender'||/genre/i.test(c.q||''));const genderWasExisting=Boolean(gender);
+    if(!gender){gender=clone(defaultSocio()[0]);cleaned.unshift(gender);}else{gender.kind='gender';gender.q='Quel est votre genre ?';const existing=Array.isArray(gender.opts)?gender.opts:[];const count=label=>Number(existing.find(o=>String(o.label||'').trim().toLocaleLowerCase('fr-FR')===label.toLocaleLowerCase('fr-FR'))?.n)||0;const labels=['Homme','Femme'];if(!genderWasExisting||existing.some(o=>/^(non[ -]?binaire)$/i.test(String(o.label||'').trim())))labels.push('Non binaire');if(!genderWasExisting||existing.some(o=>/^autre$/i.test(String(o.label||'').trim())))labels.push('Autre');gender.opts=labels.map(label=>({label,n:count(label)}));}
+    const age=cleaned.find(c=>c.kind==='age'||String(c.q||'').trim()==='Votre âge');if(age){const existing=Array.isArray(age.opts)?age.opts:[];const count=label=>Number(existing.find(o=>String(o.label||'').trim()===label)?.n)||0;age.kind='age';age.q='Votre âge';age.opts=AGE.opts.map(o=>({label:o.label,n:count(o.label)}));}
+    cleaned=cleaned.filter(c=>c!==gender);return [gender,...cleaned];
   }
   function show(message){const alert=$('param-alert');alert.hidden=false;alert.textContent=message;alert.scrollIntoView({behavior:'smooth',block:'center'});}
   function optionState(value){const n=Number(value)||0;if(!n)return{cls:'empty',hint:'Effectif à renseigner'};if(n<8)return{cls:'danger',hint:'🚨 Groupe trop petit : moins de 8'};if(n<10)return{cls:'warning',hint:'⚠️ Groupe fragile : entre 8 et 9'};return{cls:'success',hint:'✓ Groupe exploitable'};}
   function updateOptionVisual(input){const unit=input.closest('.socio-option-unit'),state=optionState(input.value),field=unit?.querySelector('.socio-count-field'),hint=unit?.querySelector('.socio-option-hint');if(field)field.className='socio-count-field '+state.cls;if(hint){hint.className='socio-option-hint '+state.cls;hint.textContent=state.hint;}updateVigilance();}
-  const answerRow=(option,path,removable,sub=false)=>{const state=optionState(option.n),labelAttr=sub?'data-sub-label':'data-opt-label',countAttr=sub?'data-sub-n':'data-opt-n',removeAttr=sub?'data-sub-opt-remove':'data-opt-remove';return`<div class="socio-option-unit"><div class="${sub?'socio-sub-option':'socio-option'}"><div class="socio-answer-field"><span>Réponse</span><input ${labelAttr}="${path}" value="${esc(option.label)}" aria-label="Réponse possible"></div><div class="socio-count-field ${state.cls}"><span>Effectif estimé</span><input ${countAttr}="${path}" type="number" min="0" placeholder="Ex. 25" value="${Number(option.n)||''}" aria-label="Effectif estimé"></div><button type="button" class="socio-option-remove" ${removeAttr}="${path}" ${removable?'':'disabled'}>×</button></div><div class="socio-option-hint ${state.cls}">${state.hint}</div></div>`;};
+  const answerRow=(option,path,removable,sub=false)=>{const state=optionState(option.n),labelAttr=sub?'data-sub-label':'data-opt-label',countAttr=sub?'data-sub-n':'data-opt-n',removeAttr=sub?'data-sub-opt-remove':'data-opt-remove',ro=isReadOnly();return`<div class="socio-option-unit"><div class="${sub?'socio-sub-option':'socio-option'}"><div class="socio-answer-field"><span>Réponse</span><input ${labelAttr}="${path}" value="${esc(option.label)}" aria-label="Réponse possible" ${ro?'readonly tabindex="-1"':''}></div><div class="socio-count-field ${state.cls}"><span>Effectif estimé</span><input ${countAttr}="${path}" type="number" min="0" placeholder="Ex. 25" value="${Number(option.n)||''}" aria-label="Effectif estimé" ${ro?'readonly tabindex="-1"':''}></div>${ro?'':`<button type="button" class="socio-option-remove" ${removeAttr}="${path}" ${removable?'':'disabled'}>×</button>`}</div><div class="socio-option-hint ${state.cls}">${state.hint}</div></div>`;};
   function renderSocio(){
+    const ro=isReadOnly();
     $('socio-list').innerHTML=socio.map((criterion,i)=>{
-      const isGender=theme==='sexisme'&&criterion.kind==='gender',isAge=theme==='sexisme'&&criterion.kind==='age',locked=isGender||isAge,mandatory=isGender;
+      const isGender=theme==='sexisme'&&criterion.kind==='gender',isAge=theme==='sexisme'&&criterion.kind==='age',locked=isGender||isAge||ro;
       const optionsHtml=criterion.opts.map((option,j)=>{
         if(locked){
-          const state=optionState(option.n),genderRequired=isGender&&(option.label==='Homme'||option.label==='Femme'),canRemove=isGender&&!genderRequired;
+          const state=optionState(option.n),genderRequired=isGender&&(option.label==='Homme'||option.label==='Femme'),canRemove=!ro&&isGender&&!genderRequired;
           const removeControl=canRemove?`<button type="button" class="socio-option-remove socio-option-remove-visible" data-opt-remove="${i}:${j}" aria-label="Supprimer ${esc(option.label)}" title="Supprimer cette réponse facultative">×</button>`:`<span class="socio-option-spacer" aria-hidden="true"></span>`;
-          return `<div class="socio-option-unit locked-option"><div class="socio-option"><div class="socio-answer-field locked-field"><span>Réponse figée</span><input value="${esc(option.label)}" readonly tabindex="-1" aria-label="Réponse standardisée non modifiable"></div><div class="socio-count-field ${state.cls}"><span>Effectif estimé</span><input data-opt-n="${i}:${j}" type="number" min="0" placeholder="Ex. 25" value="${Number(option.n)||''}" aria-label="Effectif estimé"></div>${removeControl}</div><div class="socio-option-hint ${state.cls}">${state.hint}</div></div>`;
+          return `<div class="socio-option-unit locked-option"><div class="socio-option"><div class="socio-answer-field locked-field"><span>Réponse figée</span><input value="${esc(option.label)}" readonly tabindex="-1" aria-label="Réponse non modifiable"></div><div class="socio-count-field ${state.cls}"><span>Effectif estimé</span><input data-opt-n="${i}:${j}" type="number" min="0" value="${Number(option.n)||''}" readonly tabindex="-1"></div>${removeControl}</div><div class="socio-option-hint ${state.cls}">${state.hint}</div></div>`;
         }
         return `<div class="socio-option-block">${answerRow(option,`${i}:${j}`,criterion.opts.length>2)}${option.subcriterion?`<div class="socio-subcriterion"><div class="socio-sub-head"><span class="socio-level-badge">Niveau 2 · si « ${esc(option.label||'cette réponse')} »</span><button type="button" class="socio-sub-remove" data-sub-remove="${i}:${j}">Retirer</button></div><div class="field"><label>Question complémentaire</label><input data-sub-q="${i}:${j}" value="${esc(option.subcriterion.q)}"></div><div class="socio-sub-options">${option.subcriterion.opts.map((child,k)=>answerRow(child,`${i}:${j}:${k}`,option.subcriterion.opts.length>2,true)).join('')}</div><button class="button button-ghost" type="button" data-sub-opt-add="${i}:${j}">+ Ajouter une sous-réponse</button></div>`:`<button class="socio-add-sub" type="button" data-sub-add="${i}:${j}">+ Ajouter un sous-critère pour cette réponse</button>`}</div>`;
       }).join('');
-      const lockText=isGender?'Obligatoire · réponses standardisées. Homme et Femme sont obligatoires ; Non binaire et Autre peuvent être supprimés.':isAge?'Facultatif · tranches d’âge figées pour garantir des benchmarks comparables d’une organisation à l’autre.':'';
-      const headerAction=isGender?`<span class="socio-required-badge">Obligatoire</span>`:`<button class="button button-danger-soft" type="button" data-socio-remove="${i}" ${socio.length<=1?'disabled':''}>Supprimer le critère</button>`;
-      return `<article class="socio-card ${locked?'socio-card-locked':''} ${isGender?'socio-card-gender':''} ${isAge?'socio-card-age':''}"><div class="socio-card-head"><span class="socio-number"><small>Critère</small>${i+1}</span><div class="field socio-question"><label>Question posée aux répondants ${locked?'<span class="socio-lock-badge">🔒 Figé</span>':''}</label><input data-socio-q="${i}" value="${esc(criterion.q)}" ${locked?'readonly tabindex="-1"':''}>${locked?`<span class="socio-lock-help">${lockText}</span>`:''}</div>${headerAction}</div><div class="socio-options">${optionsHtml}</div>${locked?'':`<button class="button button-ghost" type="button" data-opt-add="${i}">+ Ajouter une réponse</button>`}</article>`;
+      const lockText=ro?'Campagne en lecture seule.':isGender?'Obligatoire · réponses standardisées. Homme et Femme sont obligatoires ; Non binaire et Autre peuvent être supprimés.':isAge?'Facultatif · tranches d’âge figées pour garantir des benchmarks comparables d’une organisation à l’autre.':'';
+      const headerAction=ro?'<span class="socio-required-badge">🔒 Lecture seule</span>':isGender?`<span class="socio-required-badge">Obligatoire</span>`:`<button class="button button-danger-soft" type="button" data-socio-remove="${i}" ${socio.length<=1?'disabled':''}>Supprimer le critère</button>`;
+      return `<article class="socio-card ${locked?'socio-card-locked':''} ${isGender?'socio-card-gender':''} ${isAge?'socio-card-age':''}" ${ro?'style="background:var(--royal-blue-tint)"':''}><div class="socio-card-head"><span class="socio-number"><small>Critère</small>${i+1}</span><div class="field socio-question"><label>Question posée aux répondants ${locked?'<span class="socio-lock-badge">🔒 Figé</span>':''}</label><input data-socio-q="${i}" value="${esc(criterion.q)}" ${locked?'readonly tabindex="-1"':''}>${locked?`<span class="socio-lock-help">${lockText}</span>`:''}</div>${headerAction}</div><div class="socio-options">${optionsHtml}</div>${locked?'':`<button class="button button-ghost" type="button" data-opt-add="${i}">+ Ajouter une réponse</button>`}</article>`;
     }).join('');bindSocio();updateVigilance();
   }
   function bindSocio(){
+    if(isReadOnly())return;
     document.querySelectorAll('[data-socio-q]').forEach(el=>el.oninput=()=>{socio[+el.dataset.socioQ].q=el.value;});
     document.querySelectorAll('[data-opt-label]').forEach(el=>el.oninput=()=>{const[i,j]=el.dataset.optLabel.split(':').map(Number);socio[i].opts[j].label=el.value;});
     document.querySelectorAll('[data-opt-n]').forEach(el=>el.oninput=()=>{const[i,j]=el.dataset.optN.split(':').map(Number);socio[i].opts[j].n=Number(el.value)||0;updateOptionVisual(el);});
@@ -86,72 +58,41 @@
   }
   const fmt=n=>Number(n||0).toLocaleString('fr-FR');
   function bindPackToggle(){const toggle=$('toggle-packs'),panel=$('inline-packs');if(toggle&&panel)toggle.onclick=()=>{panel.hidden=!panel.hidden;toggle.textContent=panel.hidden?'Voir les packs disponibles':'Masquer les packs';if(!panel.hidden)panel.scrollIntoView({behavior:'smooth',block:'nearest'});};}
-  function renderQuota(){const root=$('param-credit-card');if(!root)return;if(!quota){root.innerHTML='<div><h3>Pack non renseigné</h3><p>Le volume sera confirmé par Me&YouToo. Indiquez d’abord le nombre de répondants prévu ci-dessus.</p></div><button class="button" type="button" id="toggle-packs">Voir les packs disponibles</button>';bindPackToggle();return;}const need=Number($('nb-respondents').value)||0,unlimited=Boolean(quota.pack_unlimited),remaining=unlimited?null:Number(quota.passations_remaining)||0,pending=quota.pending_pack_request;let status=need?'Calcul du besoin…':'↑ Indiquez le nombre de répondants ci-dessus pour calculer « Prévues ici ».',tone='';if(need){if(unlimited||remaining>=need)status='✓ Solde suffisant pour cette campagne.';else{status='⚠ Il manque '+fmt(need-remaining)+' passation(s) pour couvrir le besoin estimé.';tone=' warn';}}const pendingRequested=pending&&(pending.requestedAt||pending.requested_at),pendingExpiry=pending&&(pending.expiresAt||pending.expires_at),pendingLabel=pending&&(pending.packLabel||pending.pack_label);const pendingMessage=pending?`<div class="pack-pending-note">⏳ Demande de pack <strong>${esc(pendingLabel||'')}</strong> envoyée le ${pendingRequested?new Date(pendingRequested).toLocaleDateString('fr-FR'):'—'}. Après validation, elle sera valable jusqu’au ${pendingExpiry?new Date(String(pendingExpiry).slice(0,10)+'T12:00:00').toLocaleDateString('fr-FR'):'—'}.</div>`:'';root.className='passation-credit-card'+tone;root.innerHTML=`<div><h3>${esc(quota.name||'Votre entreprise')}</h3>${quota.pack_expires_at?'<p>Pack valable jusqu’au '+new Date(String(quota.pack_expires_at).slice(0,10)+'T12:00:00').toLocaleDateString('fr-FR')+'</p>':''}<div class="credit-stats"><div class="credit-stat"><strong>${unlimited?'Illimité':fmt(quota.passations_quota)}</strong><span>Achetées</span></div><div class="credit-stat"><strong>${fmt(quota.passations_used)}</strong><span>Utilisées</span></div><div class="credit-stat"><strong>${unlimited?'Illimité':fmt(remaining)}</strong><span>Restantes</span></div><div class="credit-stat ${need?'filled':'waiting'}"><strong>${need||'À remplir'}</strong><span>Prévues ici</span></div></div><div class="credit-status">${status}</div>${pendingMessage}</div><button class="button" type="button" id="toggle-packs">${pending?'Voir les autres packs':'Voir les packs disponibles'}</button>`;bindPackToggle();}
+  function renderQuota(){const root=$('param-credit-card');if(!root)return;if(!quota){root.innerHTML='<div><h3>Pack non renseigné</h3><p>Le volume sera confirmé par Me&YouToo.</p></div><button class="button" type="button" id="toggle-packs">Voir les packs disponibles</button>';bindPackToggle();return;}const need=Number($('nb-respondents').value)||0,unlimited=Boolean(quota.pack_unlimited),remaining=unlimited?null:Number(quota.passations_remaining)||0,pending=quota.pending_pack_request;let status=need?'Calcul du besoin…':'Volume non renseigné',tone='';if(need){if(unlimited||remaining>=need)status='✓ Solde suffisant pour cette campagne.';else{status='⚠ Il manque '+fmt(need-remaining)+' passation(s) pour couvrir le besoin estimé.';tone=' warn';}}const pendingRequested=pending&&(pending.requestedAt||pending.requested_at),pendingExpiry=pending&&(pending.expiresAt||pending.expires_at),pendingLabel=pending&&(pending.packLabel||pending.pack_label);const pendingMessage=pending?`<div class="pack-pending-note">⏳ Demande de pack <strong>${esc(pendingLabel||'')}</strong> envoyée le ${pendingRequested?new Date(pendingRequested).toLocaleDateString('fr-FR'):'—'}. Après validation, elle sera valable jusqu’au ${pendingExpiry?new Date(String(pendingExpiry).slice(0,10)+'T12:00:00').toLocaleDateString('fr-FR'):'—'}.</div>`:'';root.className='passation-credit-card'+tone;root.innerHTML=`<div><h3>${esc(quota.name||'Votre entreprise')}</h3>${quota.pack_expires_at?'<p>Pack valable jusqu’au '+new Date(String(quota.pack_expires_at).slice(0,10)+'T12:00:00').toLocaleDateString('fr-FR')+'</p>':''}<div class="credit-stats"><div class="credit-stat"><strong>${unlimited?'Illimité':fmt(quota.passations_quota)}</strong><span>Achetées</span></div><div class="credit-stat"><strong>${fmt(quota.passations_used)}</strong><span>Utilisées</span></div><div class="credit-stat"><strong>${unlimited?'Illimité':fmt(remaining)}</strong><span>Restantes</span></div><div class="credit-stat ${need?'filled':'waiting'}"><strong>${need||'—'}</strong><span>Prévues ici</span></div></div><div class="credit-status">${status}</div>${pendingMessage}</div><button class="button" type="button" id="toggle-packs">${pending?'Voir les autres packs':'Voir les packs disponibles'}</button>`;bindPackToggle();}
   async function loadQuota(){try{const data=await api('/api/me/organization-quota');quota=data.organization||null;}catch(error){quota=null;}renderQuota();}
-  function updateVigilance(){const total=Number($('nb-respondents').value)||0,allOptions=socio.flatMap(s=>s.opts.flatMap(o=>[o,...(o.subcriterion?.opts||[])])),counts=allOptions.map(o=>Number(o.n)||0).filter(n=>n>0),min=counts.length?Math.min(...counts):0,missing=allOptions.filter(o=>!Number(o.n)).length,subcount=socio.flatMap(s=>s.opts).filter(o=>o.subcriterion).length;let level='Faible',cls='low',text='Les groupes estimés sont suffisamment larges.';if(!total||!counts.length){level='À compléter';cls='';text='Renseignez les effectifs estimés par option.';}if(total&&total<8){level='Élevé';cls='high';text='Le nombre total de répondants est insuffisant pour une analyse collective.';}else if((min&&min<8)||socio.length>=4){level='Élevé';cls='high';text='Des groupes sont trop petits ou les croisements sont trop nombreux.';}else if((min&&min<10)||socio.length>=3||subcount){level='Modéré';cls='medium';text='Certains croisements devront être interprétés avec prudence.';}$('anonymity-level').textContent=level;$('anonymity-level').className='anonymity-level '+cls;$('anonymity-summary-text').textContent=text;$('anonymity-metrics').innerHTML=`<span class="anonymity-metric">${socio.length} critère(s)</span><span class="anonymity-metric">${subcount} sous-critère(s)</span><span class="anonymity-metric">Plus petit groupe : ${min||'—'}</span><span class="anonymity-metric">${missing} effectif(s) manquant(s)</span>`;const live=$('anon-alert');if(total&&total<8){live.hidden=false;live.className='anonymity-live-alert danger';live.innerHTML='<strong>🚨 Attention : moins de 8 répondants sont prévus au total.</strong><span>Le volume est insuffisant pour restituer des résultats collectifs fiables et anonymes. Élargissez le périmètre de la campagne.</span>';}else if(min&&min<8){live.hidden=false;live.className='anonymity-live-alert danger';live.innerHTML='<strong>🚨 Attention : au moins un groupe compte moins de 8 répondants.</strong><span>Ce résultat ne pourra pas être exploité de manière suffisamment fiable et anonyme. Regroupez certaines réponses ou élargissez le périmètre.</span>';}else if(min&&min<10){live.hidden=false;live.className='anonymity-live-alert warning';live.innerHTML='<strong>⚠️ Vigilance : au moins un groupe compte seulement 8 ou 9 répondants.</strong><span>L’analyse restera fragile. Un minimum de 10 répondants par groupe est recommandé.</span>';}else{live.hidden=true;live.innerHTML='';}}
-  const normalizeIntro=value=>String(value||'')
-    .replace(/<br\s*\/?>/gi,' ')
-    .replace(/<\/p>/gi,' ')
-    .replace(/<\/li>/gi,' ')
-    .replace(/<[^>]+>/g,' ')
-    .replace(/&nbsp;|&#160;/gi,' ')
-    .replace(/&amp;/gi,'&')
-    .replace(/&quot;|&#34;/gi,'"')
-    .replace(/&#39;|&apos;/gi,"'")
-    .replace(/\s+/g,' ')
-    .trim();
-  function settingsReadiness(){
-    const intro=$('intro').value.trim(),launch=$('launch-date').value,close=$('close-date').value;
-    return {
-      introChanged:Boolean(intro)&&normalizeIntro(intro)!==normalizeIntro(referenceIntro),
-      launchFilled:Boolean(launch),
-      closeFilled:Boolean(close),
-      intro,launch,close
-    };
+  function updateVigilance(){const total=Number($('nb-respondents').value)||0,allOptions=socio.flatMap(s=>s.opts.flatMap(o=>[o,...(o.subcriterion?.opts||[])])),counts=allOptions.map(o=>Number(o.n)||0).filter(n=>n>0),min=counts.length?Math.min(...counts):0,missing=allOptions.filter(o=>!Number(o.n)).length,subcount=socio.flatMap(s=>s.opts).filter(o=>o.subcriterion).length;let level='Faible',cls='low',text='Les groupes estimés sont suffisamment larges.';if(!total||!counts.length){level='À compléter';cls='';text='Renseignez les effectifs estimés par option.';}if(total&&total<8){level='Élevé';cls='high';text='Le nombre total de répondants est insuffisant pour une analyse collective.';}else if((min&&min<8)||socio.length>=4){level='Élevé';cls='high';text='Des groupes sont trop petits ou les croisements sont trop nombreux.';}else if((min&&min<10)||socio.length>=3||subcount){level='Modéré';cls='medium';text='Certains croisements devront être interprétés avec prudence.';}$('anonymity-level').textContent=level;$('anonymity-level').className='anonymity-level '+cls;$('anonymity-summary-text').textContent=text;$('anonymity-metrics').innerHTML=`<span class="anonymity-metric">${socio.length} critère(s)</span><span class="anonymity-metric">${subcount} sous-critère(s)</span><span class="anonymity-metric">Plus petit groupe : ${min||'—'}</span><span class="anonymity-metric">${missing} effectif(s) manquant(s)</span>`;const live=$('anon-alert');if(total&&total<8){live.hidden=false;live.className='anonymity-live-alert danger';live.innerHTML='<strong>🚨 Attention : moins de 8 répondants sont prévus au total.</strong><span>Le volume est insuffisant pour restituer des résultats collectifs fiables et anonymes.</span>';}else if(min&&min<8){live.hidden=false;live.className='anonymity-live-alert danger';live.innerHTML='<strong>🚨 Attention : au moins un groupe compte moins de 8 répondants.</strong>';}else if(min&&min<10){live.hidden=false;live.className='anonymity-live-alert warning';live.innerHTML='<strong>⚠️ Vigilance : au moins un groupe compte seulement 8 ou 9 répondants.</strong>';}else{live.hidden=true;live.innerHTML='';}}
+  const normalizeIntro=value=>String(value||'').replace(/<br\s*\/?>/gi,' ').replace(/<\/p>/gi,' ').replace(/<\/li>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;|&#160;/gi,' ').replace(/&amp;/gi,'&').replace(/&quot;|&#34;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/\s+/g,' ').trim();
+  function settingsReadiness(){const intro=$('intro').value.trim(),launch=$('launch-date').value,close=$('close-date').value;return{introChanged:Boolean(intro)&&normalizeIntro(intro)!==normalizeIntro(referenceIntro),launchFilled:Boolean(launch),closeFilled:Boolean(close),intro,launch,close};}
+  function updateNextState(){const button=$('param-next');if(!button)return;if(isReadOnly()){button.classList.remove('is-disabled');button.setAttribute('aria-disabled','false');button.dataset.ready='true';button.title='';button.textContent='Revoir la transmission →';return;}const state=settingsReadiness(),ready=state.introChanged&&state.launchFilled&&state.closeFilled;button.classList.toggle('is-disabled',!ready);button.setAttribute('aria-disabled',String(!ready));button.dataset.ready=ready?'true':'false';button.title=ready?'':!state.introChanged?'Adaptez l’introduction avant de poursuivre.':'Renseignez les deux dates avant de poursuivre.';}
+  async function showReadinessModal(){const state=settingsReadiness(),missing=[];if(!state.introChanged)missing.push('adapter l’introduction Me&YouToo à votre organisation');if(!state.launchFilled)missing.push('renseigner la date de lancement');if(!state.closeFilled)missing.push('renseigner la date de clôture');await window.StudioModal.alert({eyebrow:'Paramétrage incomplet',title:'Complétez les éléments obligatoires',message:`Avant de passer à l’étape suivante, vous devez ${missing.join(', puis ')}.`,type:'info',confirmLabel:'J’ai compris'});}
+  function applyReadOnlyUI(){
+    const alert=$('param-alert');alert.hidden=false;alert.dataset.tone='success';alert.innerHTML='<strong>🔒 Paramétrage en lecture seule.</strong> Cette campagne a déjà été transmise. Pour toute modification, <a href="contact.html" style="text-decoration:underline;font-weight:900">contactez Me&YouToo</a>.';
+    document.querySelectorAll('#settings-form input,#settings-form textarea,#settings-form select').forEach(el=>{el.readOnly=true;el.setAttribute('aria-readonly','true');el.style.background='var(--surface-soft)';el.style.pointerEvents='none';});
+    document.querySelectorAll('[data-example],#add-socio,[data-socio-remove],[data-opt-remove],[data-opt-add],[data-sub-add],[data-sub-remove],[data-sub-opt-add],[data-sub-opt-remove]').forEach(el=>{el.style.display='none';});
+    document.querySelectorAll('.socio-card').forEach(el=>el.style.background='var(--royal-blue-tint)');
+    updateNextState();
   }
-  function updateNextState(){
-    const button=$('param-next');if(!button)return;
-    const state=settingsReadiness(),ready=state.introChanged&&state.launchFilled&&state.closeFilled;
-    button.classList.toggle('is-disabled',!ready);
-    button.setAttribute('aria-disabled',String(!ready));
-    button.dataset.ready=ready?'true':'false';
-    button.title=ready?'':!state.introChanged?'Adaptez l’introduction avant de poursuivre.':'Renseignez les deux dates avant de poursuivre.';
-  }
-  async function showReadinessModal(){
-    const state=settingsReadiness(),missing=[];
-    if(!state.introChanged)missing.push('adapter l’introduction Me&YouToo à votre organisation');
-    if(!state.launchFilled)missing.push('renseigner la date de lancement');
-    if(!state.closeFilled)missing.push('renseigner la date de clôture');
-    await window.StudioModal.alert({
-      eyebrow:'Paramétrage incomplet',
-      title:'Complétez les éléments obligatoires',
-      message:`Avant de passer à l’étape suivante, vous devez ${missing.join(', puis ')}. Le nombre de répondants et les effectifs estimés restent facultatifs.`,
-      type:'info',
-      confirmLabel:'J’ai compris'
-    });
-  }
-
-  async function load(){try{if(!projectId){const project=await window.StudioProject.createOrResume(theme);location.replace(`parametrage.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(project.id)}`);return;}const data=await api(`/api/projects/${projectId}/composer`),meta=data.project||{};await loadQuota();baseTitle=meta.base_title||meta.theme_title||meta.title||'Compréhension du sexisme';referenceIntro=stripHtml(meta.theme_introduction_html||'');$('param-theme').textContent=meta.theme_title||'Compréhension du sexisme';$('campaign-name').value=meta.campaign_name||baseTitle;$('respondent-title').value=meta.respondent_title||meta.respondent_title_default||baseTitle;$('intro').value=stripHtml(meta.introduction_html||meta.theme_introduction_html||'');$('launch-date').min=iso(5);$('launch-date').value=meta.launch_date?String(meta.launch_date).slice(0,10):iso(5);$('close-date').value=meta.close_date?String(meta.close_date).slice(0,10):'';syncCloseMin();$('nb-respondents').value=meta.estimated_respondents||'';socio=normalizeSexismeCriteria(normalizedSocio(Array.isArray(meta.sociodemo)&&meta.sociodemo.length?meta.sociodemo:defaultSocio()));renderSocio();renderQuota();updateNextState();$('param-back').href=`personnalisation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:'parametrage'})});}catch(error){show(error.message);}}
-  function syncCloseMin(){const d=$('launch-date').value;if(!d)return;const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+1);const min=x.toISOString().slice(0,10);$('close-date').min=min;if($('close-date').value&&$('close-date').value<min)$('close-date').value='';}
+  async function load(){try{
+    if(!projectId){if(!theme)throw new Error('Thématique manquante.');const created=await window.StudioProject.createOrResume(theme);location.replace(`parametrage.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(created.id)}`);return;}
+    const data=await api(`/api/projects/${projectId}/composer`),meta=data.project||{};project=meta;if(!theme)theme=meta.theme_slug||'';await loadQuota();
+    baseTitle=meta.base_title||meta.theme_title||meta.title||'Autodiagnostic';referenceIntro=stripHtml(meta.theme_introduction_html||'');$('param-theme').textContent=meta.theme_title||'Autodiagnostic';$('campaign-name').value=meta.campaign_name||baseTitle;$('respondent-title').value=meta.respondent_title||meta.respondent_title_default||baseTitle;$('intro').value=stripHtml(meta.introduction_html||meta.theme_introduction_html||'');$('launch-date').min=iso(5);$('launch-date').value=meta.launch_date?String(meta.launch_date).slice(0,10):iso(5);$('close-date').value=meta.close_date?String(meta.close_date).slice(0,10):'';syncCloseMin();$('nb-respondents').value=meta.estimated_respondents||'';socio=normalizeSexismeCriteria(normalizedSocio(Array.isArray(meta.sociodemo)&&meta.sociodemo.length?meta.sociodemo:defaultSocio()));renderSocio();renderQuota();$('param-back').href=`personnalisation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;
+    if(isReadOnly())applyReadOnlyUI();else{updateNextState();await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:'parametrage'})});}
+  }catch(error){show(error.message);}}
+  function syncCloseMin(){const d=$('launch-date').value;if(!d)return;const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+1);const min=x.toISOString().slice(0,10);$('close-date').min=min;if(!isReadOnly()&&$('close-date').value&&$('close-date').value<min)$('close-date').value='';}
   function invalidSocio(){return socio.some(s=>!s.q.trim()||s.opts.length<2||s.opts.some(o=>!o.label.trim()||(o.subcriterion&&(!o.subcriterion.q.trim()||o.subcriterion.opts.length<2||o.subcriterion.opts.some(child=>!child.label.trim())))));}
-  $('add-socio').onclick=()=>{socio.push({q:'',opts:[{label:'',n:0},{label:'',n:0}]});renderSocio();};
-  $('intro').addEventListener('input',updateNextState);
-  $('launch-date').addEventListener('change',()=>{syncCloseMin();updateNextState();});
-  $('close-date').addEventListener('change',updateNextState);document.querySelectorAll('[data-example]').forEach(b=>b.onclick=()=>{const k=b.dataset.example;if(k==='age'){if(!socio.some(c=>c.kind==='age'||c.q==='Votre âge'))socio.push(clone(AGE));}else{const e=EXAMPLES[+k];socio.push({q:e[0],opts:e[1].map(label=>({label,n:0}))});}renderSocio();});$('nb-respondents').oninput=()=>{updateVigilance();renderQuota();};$('close-packs').onclick=()=>{const panel=$('inline-packs');panel.hidden=true;const toggle=$('toggle-packs');if(toggle)toggle.textContent='Voir les packs disponibles';};window.addEventListener('studio:pack-requested',loadQuota);bindPackToggle();
+  $('add-socio').onclick=()=>{if(isReadOnly())return;socio.push({q:'',opts:[{label:'',n:0},{label:'',n:0}]});renderSocio();};
+  $('intro').addEventListener('input',()=>{if(!isReadOnly())updateNextState();});
+  $('launch-date').addEventListener('change',()=>{if(!isReadOnly()){syncCloseMin();updateNextState();}});
+  $('close-date').addEventListener('change',()=>{if(!isReadOnly())updateNextState();});
+  document.querySelectorAll('[data-example]').forEach(b=>b.onclick=()=>{if(isReadOnly())return;const k=b.dataset.example;if(k==='age'){if(!socio.some(c=>c.kind==='age'||c.q==='Votre âge'))socio.push(clone(AGE));}else{const e=EXAMPLES[+k];socio.push({q:e[0],opts:e[1].map(label=>({label,n:0}))});}renderSocio();});
+  $('nb-respondents').oninput=()=>{if(isReadOnly())return;updateVigilance();renderQuota();};
+  $('close-packs').onclick=()=>{const panel=$('inline-packs');panel.hidden=true;const toggle=$('toggle-packs');if(toggle)toggle.textContent='Voir les packs disponibles';};window.addEventListener('studio:pack-requested',loadQuota);bindPackToggle();
   $('settings-form').addEventListener('submit',async event=>{
     event.preventDefault();
-    const readiness=settingsReadiness();
-    if(!readiness.introChanged||!readiness.launchFilled||!readiness.closeFilled){await showReadinessModal();return;}
-    const campaignName=$('campaign-name').value.trim(),respondentTitle=$('respondent-title').value.trim(),introductionHtml=readiness.intro,launchDate=readiness.launch,closeDate=readiness.close;
-    const rawRespondents=$('nb-respondents').value.trim(),nbRespondents=rawRespondents?Number(rawRespondents):null;
-    if(!respondentTitle)return show('Le titre visible est obligatoire.');
-    if(launchDate<iso(5))return show('La date de lancement doit être au minimum à J+5.');
-    if(closeDate<=launchDate)return show('La date de clôture doit être postérieure à la date de lancement.');
-    if(!socio.length)return show('Au moins une donnée d’analyse doit être présente.');
-    if(invalidSocio())return show('Chaque donnée et chaque sous-critère doivent avoir un intitulé et au moins deux réponses renseignées.');
-    try{
-      await api(`/api/projects/${projectId}/settings`,{method:'PATCH',body:JSON.stringify({campaignName,respondentTitle,introductionHtml,launchDate,closeDate,nbRespondents,sociodemo:socio})});
-      location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;
-    }catch(error){show(error.message);}
+    if(isReadOnly()){location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;return;}
+    const readiness=settingsReadiness();if(!readiness.introChanged||!readiness.launchFilled||!readiness.closeFilled){await showReadinessModal();return;}
+    const campaignName=$('campaign-name').value.trim(),respondentTitle=$('respondent-title').value.trim(),introductionHtml=readiness.intro,launchDate=readiness.launch,closeDate=readiness.close;const rawRespondents=$('nb-respondents').value.trim(),nbRespondents=rawRespondents?Number(rawRespondents):null;
+    if(!respondentTitle)return show('Le titre visible est obligatoire.');if(launchDate<iso(5))return show('La date de lancement doit être au minimum à J+5.');if(closeDate<=launchDate)return show('La date de clôture doit être postérieure à la date de lancement.');if(!socio.length)return show('Au moins une donnée d’analyse doit être présente.');if(invalidSocio())return show('Chaque donnée et chaque sous-critère doivent avoir un intitulé et au moins deux réponses renseignées.');
+    try{await api(`/api/projects/${projectId}/settings`,{method:'PATCH',body:JSON.stringify({campaignName,respondentTitle,introductionHtml,launchDate,closeDate,nbRespondents,sociodemo:socio})});location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;}catch(error){show(error.message);}
   });load();
 })();

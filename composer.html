@@ -4,7 +4,7 @@
 <div class="app-shell"><aside class="sidebar" aria-label="Navigation principale" id="sidebar-root"></aside>
 <main class="main" id="contenu"><div class="topbar compact-topbar"><div><p class="eyebrow"><a href="bibliotheque.html" id="theme-link">Thématique</a></p><h1 class="page-title" id="composer-page-title">Composer et personnaliser votre diagnostic comportemental</h1><p class="lead" id="composer-page-lead">Composez votre autodiagnostic à partir des contenus Me&YouToo et contextualisez, si nécessaire, certaines formulations à votre organisation.</p></div></div>
 <nav class="steps" aria-label="Étapes de composition"><span class="step"><span class="step-num">1</span>Choisir</span><span class="step" aria-current="step"><span class="step-num">2</span>Composer</span><span class="step"><span class="step-num">3</span>Personnaliser</span><span class="step"><span class="step-num">4</span>Paramétrer</span><span class="step"><span class="step-num">5</span>Transmettre</span></nav>
-<div id="composer-readonly-banner" class="composer-alert" data-tone="success" hidden><strong>🔒 Campagne en lecture seule.</strong> Vous pouvez revoir le contenu de cette campagne, mais aucune modification n’est possible lorsqu’elle est programmée ou publiée. Pour demander un changement, <a href="contact.html" style="text-decoration:underline;font-weight:900">contactez Me&YouToo</a>.</div>
+<div id="composer-readonly-banner" class="composer-alert" data-tone="success" hidden><strong>🔒 Campagne en lecture seule.</strong> Vous pouvez revoir le contenu de cette campagne, mais aucune modification n’est possible après transmission. Pour demander un changement, <a href="contact.html" style="text-decoration:underline;font-weight:900">contactez Me&YouToo</a>.</div>
 <div id="composer-alert" class="composer-alert" hidden></div>
 <section class="composer composer-live" aria-live="polite">
 <aside class="composer-side creation-chapters card"><p class="eyebrow">Chapitres</p><h2 class="section-title" id="catalog-title">Chargement…</h2><p class="section-desc" id="catalog-summary"></p><div class="progress"><span id="catalog-progress" style="width:0%"></span></div><p id="catalog-count"></p><div id="chapter-nav" class="composer-chapter-nav"></div></aside>
@@ -27,25 +27,26 @@
 (function(){
   var params=new URLSearchParams(location.search);
   var projectId=params.get('projectId')||'';
-  var readOnlyStatuses=new Set(['scheduled','published','active']);
   var originalRequest=window.StudioAPI&&window.StudioAPI.request;
 
   function loadComposerScript(){
     var script=document.createElement('script');
-    script.src='assets/js/composer.js?v=20260901-campaign-readonly-1';
+    script.src='assets/js/composer.js?v=20260901-campaign-readonly-2';
     document.body.appendChild(script);
   }
 
   function applyReadOnly(project){
     document.body.dataset.campaignReadOnly='true';
+    window.STUDIO_COMPOSER_READ_ONLY=true;
+
     var banner=document.getElementById('composer-readonly-banner');
     if(banner)banner.hidden=false;
     var title=document.getElementById('composer-page-title');
     var lead=document.getElementById('composer-page-lead');
     if(title)title.textContent='Revoir le contenu de votre campagne';
-    if(lead)lead.textContent='Consultez les situations, les réponses et les scores de cette campagne. Le contenu est verrouillé tant que la campagne est programmée ou publiée.';
+    if(lead)lead.textContent='Consultez les situations, les réponses et les scores. Le contenu est verrouillé après transmission.';
     var guidance=document.querySelector('.composer-customization-guidance');
-    if(guidance)guidance.hidden=true;
+    if(guidance)guidance.style.display='none';
     var objective=document.querySelector('.creation-objective');
     if(objective){
       var strong=objective.querySelector('strong');
@@ -61,27 +62,49 @@
     var back=document.getElementById('composer-theme-back');
     if(back)back.href='campagne-detail.html?projectId='+encodeURIComponent(project.id);
     var next=document.getElementById('composer-next');
-    if(next)next.hidden=true;
+    if(next){
+      next.hidden=false;
+      next.href='personnalisation.html?theme='+encodeURIComponent(project.theme_slug||'')+'&projectId='+encodeURIComponent(project.id);
+      next.textContent='Revoir les profils →';
+    }
     var sticky=document.getElementById('sticky-step-copy');
     if(sticky)sticky.textContent='Lecture seule';
 
     function lockRenderedControls(){
       var library=document.getElementById('library-button');
-      if(library)library.hidden=true;
+      if(library)library.style.display='none';
+
       document.querySelectorAll('[data-situation-input],[data-answer-input]').forEach(function(input){
         input.readOnly=true;
         input.setAttribute('aria-readonly','true');
+        input.style.pointerEvents='none';
+        input.style.background='var(--surface-soft)';
+        input.style.borderColor='var(--line)';
       });
       document.querySelectorAll('.composer-actions,.composer-save-row,.composer-inline-help,.composer-context-tag,.composer-field-guidance').forEach(function(el){
-        el.hidden=true;
+        el.style.display='none';
+      });
+      document.querySelectorAll('[data-replace],[data-remove],[data-reset],[data-library-pick]').forEach(function(el){
+        el.style.display='none';
+        el.disabled=true;
       });
       document.querySelectorAll('[data-situation-card]').forEach(function(card){
+        card.style.background='var(--royal-blue-tint)';
+        card.style.borderColor='var(--line)';
         var tags=card.querySelector('.composer-situation-tags');
         if(tags&&!tags.querySelector('.campaign-readonly-chip')){
           tags.insertAdjacentHTML('beforeend','<span class="composer-lock-chip campaign-readonly-chip">🔒 Lecture seule</span>');
         }
       });
     }
+
+    document.addEventListener('click',function(event){
+      if(!document.body.dataset.campaignReadOnly)return;
+      if(event.target.closest('[data-replace],[data-remove],[data-reset],[data-library-pick],#library-button')){
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    },true);
 
     lockRenderedControls();
     var observer=new MutationObserver(lockRenderedControls);
@@ -102,13 +125,12 @@
       loadComposerScript();
       return;
     }
-    var readOnly=readOnlyStatuses.has(project.status);
-    if(readOnly){
-      window.STUDIO_COMPOSER_READ_ONLY=true;
+    if(project.status!=='draft'){
       window.StudioAPI.request=function(path,options){
         var method=String(options&&options.method||'GET').toUpperCase();
-        if(method==='PATCH'&&path==='/api/projects/'+encodeURIComponent(projectId)+'/progress'){
-          return Promise.resolve({project:project,readOnly:true});
+        var ownProjectPath='/api/projects/'+encodeURIComponent(projectId);
+        if(method!=='GET'&&String(path).indexOf(ownProjectPath)===0){
+          return Promise.reject(new Error('Campagne en lecture seule. Pour toute modification, contactez Me&YouToo.'));
         }
         return originalRequest.call(window.StudioAPI,path,options);
       };
