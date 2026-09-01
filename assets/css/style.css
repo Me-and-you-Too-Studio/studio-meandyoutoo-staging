@@ -1262,3 +1262,20 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
 .campaign-empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;text-align:center;padding:44px 20px;color:#64748b}
 @media(max-width:980px){.campaigns-card-grid{grid-template-columns:1fr}.campaign-search{max-width:none;width:100%}}
 @media(max-width:620px){.campaign-toolbar{align-items:stretch}.campaign-search{min-width:0}.campaign-project-card{grid-template-columns:6px minmax(0,1fr);padding:15px}.campaign-row-actions,.campaign-btn,.campaign-more,.campaign-more>summary{width:100%}.campaign-more-menu{position:static;margin-top:6px;width:100%}}
+
+/* ==========================================================================
+   campagne-detail.html — icônes, encart de programmation, verrouillage du
+   contenu après transmission. Scopé à .campaign-detail-page pour ne toucher
+   aucune autre page du Studio.
+   ========================================================================== */
+.campaign-detail-page .campaign-section-title{display:flex;align-items:center;gap:10px}
+.campaign-detail-page .campaign-section-icon{display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;background:var(--royal-blue-soft);color:var(--royal-blue)}
+.campaign-detail-page .campaign-section-icon svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.campaign-detail-page .campaign-schedule-note{display:flex;gap:14px;align-items:flex-start;padding:16px 18px;border-radius:16px;background:var(--green-blue-soft);border:1px solid #bfe3e6;color:var(--green-blue-dark);margin-bottom:24px}
+.campaign-detail-page .campaign-schedule-note svg{width:22px;height:22px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;margin-top:1px}
+.campaign-detail-page .campaign-schedule-note p{margin:0;font-weight:700;line-height:1.5}
+.campaign-detail-page .campaign-lock-panel{padding:18px 20px;border-radius:16px;background:var(--royal-blue-tint);border:1px solid var(--line);margin-bottom:18px}
+.campaign-detail-page .campaign-lock-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.campaign-detail-page .campaign-lock-title{font-weight:900;color:var(--royal-blue)}
+.campaign-detail-page .campaign-lock-text{margin:0;color:var(--muted)}
+@media(max-width:620px){.campaign-detail-page .campaign-schedule-note{flex-direction:column}.campaign-detail-page .campaign-lock-head{flex-direction:column;align-items:flex-start}}
