@@ -19,8 +19,9 @@
     $('catalog-count').innerHTML=`<strong>${total}</strong> situations dans votre autodiagnostic`;
     $('catalog-progress').style.width='100%';
     $('duration-estimate').textContent=`${Math.max(3,Math.round(total*.35))} à ${Math.max(5,Math.round(total*.45))} minutes · ${total} situations`;
-    $('chapter-nav').innerHTML=state.chapters.map((ch,i)=>`<article class="creation-chapter-item ${i===state.active?'is-active':''}"><button class="creation-chapter-head" data-chapter="${i}" type="button"><span><small>Partie ${i+1}</small>${esc(ch.title)}</span><strong>${ch.situations.length}</strong></button><div class="creation-chapter-tabs"><button class="${i===state.active?'is-active':''}" data-chapter="${i}" type="button">Questions</button><a href="personnalisation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${i}">Profils</a></div></article>`).join('');
+    $('chapter-nav').innerHTML=state.chapters.map((ch,i)=>{const blocking=firstInvalidIndex(i),blocked=blocking!==-1,st=chapterCountStatus(ch);return `<article class="creation-chapter-item ${i===state.active?'is-active':''} ${st.below||st.above?'is-incomplete':''}"><button class="creation-chapter-head" data-chapter="${i}" type="button"><span><small>Partie ${i+1}</small>${esc(ch.title)}</span><strong>${ch.situations.length}</strong></button><div class="creation-chapter-tabs"><button class="${i===state.active?'is-active':''}" data-chapter="${i}" type="button">Questions</button><button class="${blocked?'is-disabled':''}" data-profile-chapter="${i}" data-blocking-chapter="${blocking}" aria-disabled="${blocked}" type="button">Profils</button></div></article>`;}).join('');
     document.querySelectorAll('[data-chapter]').forEach(button=>button.onclick=()=>{state.active=Number(button.dataset.chapter);history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${state.active}`);render();window.scrollTo({top:0,behavior:'smooth'});});
+    document.querySelectorAll('[data-profile-chapter]').forEach(button=>button.onclick=async()=>{const blocking=Number(button.dataset.blockingChapter);if(blocking>=0){await showIncompleteChapterModal(blocking,'Complétez les situations avant de personnaliser les profils');return;}location.href=`personnalisation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${button.dataset.profileChapter}`;});
   }
 
   function isLegalChapter(ch=state.chapters[state.active]){return canonical(ch?.slug||ch?.title).includes('harcelement')||canonical(ch?.slug||ch?.title).includes('agression sexuelle');}
@@ -34,6 +35,13 @@
   function chapterCountStatus(ch=state.chapters[state.active]){
     const rules=chapterSituationRules(ch),count=ch?.situations?.length||0;
     return {rules,count,below:rules.min!=null&&count<rules.min,atMax:rules.max!=null&&count>=rules.max,above:rules.max!=null&&count>rules.max};
+  }
+  function firstInvalidIndex(limit=state.chapters.length-1){for(let i=0;i<=Math.min(limit,state.chapters.length-1);i++){const st=chapterCountStatus(state.chapters[i]);if(st.below||st.above)return i;}return -1;}
+  async function showIncompleteChapterModal(index,title){
+    const ch=state.chapters[index],status=chapterCountStatus(ch);if(!ch)return;
+    state.active=index;history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${index}`);render();window.scrollTo({top:0,behavior:'smooth'});
+    if(status.below){const goLibrary=await window.StudioModal.confirm({eyebrow:'Composition du diagnostic',title:title||`Il vous faut ${status.rules.min} situations minimum`,message:`« ${ch.title} » contient ${status.count} situation${status.count>1?'s':''}. Ajoutez-en ${status.rules.min-status.count} avant de personnaliser les profils.`,type:'info',cancelLabel:'Rester sur le chapitre',confirmLabel:'Piocher dans la bibliothèque'});if(goLibrary)openLibrary('add');return;}
+    await window.StudioModal.alert({eyebrow:'Composition du diagnostic',title:`Maximum de ${status.rules.max} situations`,message:`« ${ch.title} » contient plus de ${status.rules.max} situations. Supprimez-en une avant de personnaliser les profils.`,type:'warning',confirmLabel:'J’ai compris'});
   }
   function wordDiffHtml(original,current){
     const a=String(original||'').split(/(\s+|[.,;:!?'"()«»–—-])/).filter(Boolean),b=String(current||'').split(/(\s+|[.,;:!?'"()«»–—-])/).filter(Boolean);
@@ -310,29 +318,7 @@
       const blocked=status.below||status.above;
       next.classList.toggle('is-disabled',blocked);
       next.setAttribute('aria-disabled',String(blocked));
-      next.onclick=blocked?async(event)=>{
-        event.preventDefault();
-        if(status.below){
-          const goLibrary=await window.StudioModal.confirm({
-            eyebrow:'Composition du diagnostic',
-            title:`Il vous faut ${status.rules.min} situations minimum`,
-            message:`Ce chapitre contient actuellement ${status.count} situation${status.count>1?'s':''}. Ajoutez-en ${status.rules.min-status.count} depuis la bibliothèque Me&YouToo avant de personnaliser les profils.`,
-            type:'info',
-            cancelLabel:'Rester ici',
-            confirmLabel:'Piocher dans la bibliothèque'
-          });
-          if(goLibrary)openLibrary('add');
-        }else{
-          await window.StudioModal.confirm({
-            eyebrow:'Composition du diagnostic',
-            title:`Maximum de ${status.rules.max} situations`,
-            message:`Ce chapitre contient plus de ${status.rules.max} situations. Supprimez-en une avant de poursuivre.`,
-            type:'warning',
-            cancelLabel:'Fermer',
-            confirmLabel:'Compris'
-          });
-        }
-      }:null;
+      next.onclick=blocked?async(event)=>{event.preventDefault();await showIncompleteChapterModal(state.active);}:null;
     }
     renderNav();bindSituations();
   }

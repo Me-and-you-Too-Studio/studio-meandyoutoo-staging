@@ -56,6 +56,7 @@
       const d=await api(`/api/projects/${projectId}/composer`);project=d.project;chapters=d.chapters||[];
     }
     active=Math.min(active,Math.max(0,chapters.length-1));if(chapters.some(ch=>(ch.profiles||[]).length!==3))throw new Error('Le référentiel doit contenir exactement 3 profils par partie.');
+    const blocking=firstInvalidIndex(active);if(!isReadOnly()&&blocking!==-1){await incompleteModal(blocking,'Complétez les situations avant de personnaliser les profils');if(location.pathname.includes('personnalisation.html'))location.replace('composer.html'+q(blocking));return;}
     $('theme-name').textContent=project?.theme_title||'Autodiagnostic';$('profiles-catalog-title').textContent=project?.theme_title||'Autodiagnostic';
     if(!isReadOnly())await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:'personnalisation'})});
     render();
