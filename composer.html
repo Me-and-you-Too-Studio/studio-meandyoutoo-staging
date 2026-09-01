@@ -129,7 +129,16 @@
       window.StudioAPI.request=function(path,options){
         var method=String(options&&options.method||'GET').toUpperCase();
         var ownProjectPath='/api/projects/'+encodeURIComponent(projectId);
-        if(method!=='GET'&&String(path).indexOf(ownProjectPath)===0){
+        var requestPath=String(path||'');
+
+        // composer.js enregistre l'étape courante au chargement. En lecture seule,
+        // on neutralise uniquement ce PATCH pour laisser le contenu se charger.
+        if(method==='PATCH'&&requestPath===ownProjectPath+'/progress'){
+          return Promise.resolve({project:project,readOnly:true});
+        }
+
+        // Toutes les autres écritures concernant cette campagne restent bloquées.
+        if(method!=='GET'&&requestPath.indexOf(ownProjectPath)===0){
           return Promise.reject(new Error('Campagne en lecture seule. Pour toute modification, contactez Me&YouToo.'));
         }
         return originalRequest.call(window.StudioAPI,path,options);
