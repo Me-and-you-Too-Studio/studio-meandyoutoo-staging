@@ -1,5 +1,5 @@
 (()=>{
-  const p=new URLSearchParams(location.search),theme=p.get('theme')||'',projectId=p.get('projectId')||'';let active=Math.max(0,Number(p.get('chapter')||0)),chapters=[],project=null;
+  const p=new URLSearchParams(location.search),theme=p.get('theme')||'',projectId=p.get('projectId')||'',requestedProfile=p.get('profile')||'';let active=Math.max(0,Number(p.get('chapter')||0)),chapters=[],project=null;
   const api=(url,opt={})=>window.StudioAPI.request(url,opt),$=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const isReadOnly=()=>Boolean(project&&project.can_edit===false);
   const colorRank=color=>{const c=String(color||'').toLowerCase();if(c.includes('ff847')||c.includes('ff84')||c.includes('b423')||c.includes('red'))return 0;if(c.includes('ffc')||c.includes('yellow'))return 1;if(c.includes('77cd')||c.includes('green'))return 2;return 3;};
@@ -49,7 +49,7 @@
         const blocking=firstInvalidIndex();next.href=`parametrage.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;next.textContent='Toutes les parties terminées · Paramétrer →';next.classList.toggle('is-disabled',blocking!==-1);next.setAttribute('aria-disabled',String(blocking!==-1));next.onclick=blocking!==-1?async e=>{e.preventDefault();await incompleteModal(blocking,'Toutes les parties ne sont pas terminées');}:null;
       }
     }
-    renderNav();bind();
+    renderNav();bind();if(requestedProfile){requestAnimationFrame(()=>{const field=document.querySelector(`[data-profile-title="${CSS.escape(String(requestedProfile))}"],[data-profile-summary="${CSS.escape(String(requestedProfile))}"],[data-profile-content="${CSS.escape(String(requestedProfile))}"]`);const card=field?.closest('.profile-excel-card');if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});field.focus({preventScroll:true});}});}
   }
   async function load(){try{
     if(!theme&&projectId){const d=await api(`/api/projects/${projectId}/composer`);project=d.project;theme=project?.theme_slug||'';chapters=d.chapters||[];}else{
