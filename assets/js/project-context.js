@@ -26,7 +26,7 @@
     return realTheme;
   }
 
-  async function createProject(themeSlug,startMode){
+  async function createProject(themeSlug,startMode,confirmedSelection){
     var selected=String(themeSlug||theme()||'').trim();
     if(!selected)throw new Error('Aucune thématique n’a été sélectionnée. Le Studio ne choisit pas de thème par défaut.');
     var data=await window.StudioAPI.request('/api/projects/from-template',{
@@ -34,12 +34,13 @@
       body:JSON.stringify({
         themeSlug:selected,
         organizationId:window.StudioAPI.organizationId(),
-        startMode:startMode==='resume'?'resume':'new'
+        startMode:startMode==='resume'?'resume':'new',
+        creationIntent:confirmedSelection===true?'confirmed-theme-selection':''
       })
     });
     return data.project;
   }
-  function createNew(themeSlug){return createProject(themeSlug,'new');}
+  function createNew(themeSlug,confirmedSelection){return createProject(themeSlug,'new',confirmedSelection);}
   function createOrResume(themeSlug){return createProject(themeSlug,'resume');}
   window.StudioProject={projectId:projectId,theme:theme,query:query,link:link,ensureTheme:ensureTheme,createNew:createNew,createOrResume:createOrResume};
 

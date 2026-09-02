@@ -53,7 +53,7 @@
   }
   async function load(){try{
     if(!theme&&projectId){const d=await api(`/api/projects/${projectId}/composer`);project=d.project;theme=project?.theme_slug||'';chapters=d.chapters||[];}else{
-      if(!projectId){if(!theme)throw new Error('Thématique manquante.');const created=await window.StudioProject.createOrResume(theme);location.replace(`personnalisation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(created.id)}&chapter=0`);return;}
+      if(!projectId){if(!theme)throw new Error('Thématique manquante.');location.replace(`theme-${encodeURIComponent(theme)}.html?theme=${encodeURIComponent(theme)}`);return;}
       const d=await api(`/api/projects/${projectId}/composer`);project=d.project;chapters=d.chapters||[];
     }
     active=Math.min(active,Math.max(0,chapters.length-1));if(chapters.some(ch=>(ch.profiles||[]).length!==3))throw new Error('Le référentiel doit contenir exactement 3 profils par partie.');
