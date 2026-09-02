@@ -7,7 +7,8 @@
   const canonical=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   const isStereotypes=ch=>theme==='sexisme'&&canonical(ch?.slug||ch?.title).includes('stereotype');
   const isAggression=ch=>canonical(ch?.slug||ch?.title).includes('agression sexuelle');
-  const rules=ch=>isStereotypes(ch)?{min:null,max:null}:{min:isAggression(ch)?4:5,max:8};
+  const isHostile=ch=>theme==='sexisme'&&canonical(ch?.slug||ch?.title).includes('sexisme hostile');
+  const rules=ch=>isStereotypes(ch)?{min:null,max:null}:{min:isAggression(ch)||isHostile(ch)?4:5,max:8};
   const status=ch=>{const r=rules(ch),count=(ch?.situations||[]).length;return {rules:r,count,valid:(r.min==null||count>=r.min)&&(r.max==null||count<=r.max)};};
   function firstInvalidIndex(limit=chapters.length-1){for(let i=0;i<=Math.min(limit,chapters.length-1);i++)if(!status(chapters[i]).valid)return i;return -1;}
   async function incompleteModal(index,title){

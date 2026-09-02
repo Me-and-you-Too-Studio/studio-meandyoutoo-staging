@@ -28,9 +28,10 @@
   function bestAnswerLabel(){return isLegalChapter()?'Réponse correcte':'Réponse la plus appropriée';}
   function isStereotypesChapter(ch=state.chapters[state.active]){return themeSlug==='sexisme'&&canonical(ch?.slug||ch?.title).includes('stereotype');}
   function isAggressionChapter(ch=state.chapters[state.active]){return canonical(ch?.slug||ch?.title).includes('agression sexuelle');}
+  function isHostileChapter(ch=state.chapters[state.active]){return themeSlug==='sexisme'&&canonical(ch?.slug||ch?.title).includes('sexisme hostile');}
   function chapterSituationRules(ch=state.chapters[state.active]){
     if(isStereotypesChapter(ch))return {min:null,max:null};
-    return {min:isAggressionChapter(ch)?4:5,max:8};
+    return {min:isAggressionChapter(ch)||isHostileChapter(ch)?4:5,max:8};
   }
   function chapterCountStatus(ch=state.chapters[state.active]){
     const rules=chapterSituationRules(ch),count=ch?.situations?.length||0;
