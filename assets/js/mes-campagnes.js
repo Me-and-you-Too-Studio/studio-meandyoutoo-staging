@@ -162,12 +162,11 @@
         : invalidThemeAction());
     }
     if(q&&(['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish','scheduled','published','active','unpublished','closed','completed'].includes(p.status)))items.push('<a class="campaign-btn campaign-btn-kit" href="kit-communication.html'+q+'">📣 Kit de com</a>');
-    if(p.status==='draft')items.push('<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button>');
+    if(!['scheduled','published','active'].includes(p.status))items.push('<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button>');
     if(!['draft','configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(p.status))items.push('<button class="campaign-btn" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button>');
 
     var more=[];
     if(p.status==='unpublished'||p.status==='closed'||p.status==='completed')more.push('<button type="button" data-project-action="archive" data-project-id="'+id+'">📦 Archiver</button>');
-    if((p.status==='unpublished'||p.status==='closed'||p.status==='completed'||p.status==='archived'))more.push('<button class="danger" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button>');
 
     var html='<div class="campaign-row-actions">'+primaryAction(p)+items.join('');
     if(more.length){
@@ -209,7 +208,7 @@
 
   async function projectAction(action,id){
     var p=projects.find(function(x){return String(x.id)===String(id);});if(!p)return;
-    if(action==='delete'){var ok=await StudioModal.confirm({type:'danger',title:'Supprimer cet autodiagnostic ?',message:'Cette suppression est définitive.',confirmLabel:'Supprimer'});if(!ok)return;await StudioAPI.request('/api/projects/'+id,{method:'DELETE'});return load();}
+    if(action==='delete'){var ok=await StudioModal.confirm({eyebrow:'Faire du tri',type:'danger',title:'Supprimer « '+campaignName(p)+' » ?',message:'Cet autodiagnostic, son contenu personnalisé et ses fichiers seront définitivement supprimés. Cette action ne peut pas être annulée.',cancelLabel:'Conserver cet AD',confirmLabel:'Supprimer définitivement'});if(!ok)return;await StudioAPI.request('/api/projects/'+id,{method:'DELETE'});await StudioModal.alert({eyebrow:'Autodiagnostic supprimé',title:'La suppression est terminée',message:'« '+campaignName(p)+' » a été retiré de votre espace.',type:'success',confirmLabel:'Fermer'});return load();}
     if(action==='archive'){var ok2=await StudioModal.confirm({title:'Archiver cet autodiagnostic ?',message:'Il sera déplacé dans vos archives et restera reprogrammable.',confirmLabel:'Archiver'});if(!ok2)return;await StudioAPI.request('/api/projects/'+id+'/archive',{method:'PATCH',body:'{}'});return load();}
     if(action==='restore'){var okRestore=await StudioModal.confirm({title:'Restaurer cette campagne ?',message:'Elle reviendra dans vos campagnes dépubliées.',confirmLabel:'Restaurer'});if(!okRestore)return;await StudioAPI.request('/api/projects/'+id+'/restore',{method:'PATCH',body:'{}'});return load();}
     if(action==='reprogram'){
