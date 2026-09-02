@@ -31,7 +31,7 @@
 
   function loadComposerScript(){
     var script=document.createElement('script');
-    script.src='assets/js/composer.js?v=20260902-review-workflow-2';
+    script.src='assets/js/composer.js?v=20260902-review-workflow-3';
     document.body.appendChild(script);
   }
 
@@ -125,14 +125,14 @@
       loadComposerScript();
       return;
     }
-    if(project.status!=='draft'){
+    if(project.can_edit===false){
       window.StudioAPI.request=function(path,options){
         var method=String(options&&options.method||'GET').toUpperCase();
         var ownProjectPath='/api/projects/'+encodeURIComponent(projectId);
         var requestPath=String(path||'');
 
-        // composer.js enregistre l'étape courante au chargement. En lecture seule,
-        // on neutralise uniquement ce PATCH pour laisser le contenu se charger.
+        // En lecture seule uniquement, on neutralise le PATCH d'étape afin de
+        // laisser le contenu se charger sans autoriser d'autres écritures.
         if(method==='PATCH'&&requestPath===ownProjectPath+'/progress'){
           return Promise.resolve({project:project,readOnly:true});
         }
