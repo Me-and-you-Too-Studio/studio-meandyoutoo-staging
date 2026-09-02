@@ -168,7 +168,7 @@
     const situationDiff=card.querySelector('[data-live-situation-diff]');
     const situationInput=card.querySelector('[data-situation-input]');
     const situationChanged=situationOriginal!==String(situationText||'');
-    const submitted=submittedSituation(id);if(situationDiff)situationDiff.innerHTML=situationChanged?reviewDiff(situationOriginal,submitted?.content,situationText,'la situation Me&YouToo'):'';
+    const submitted=submittedSituation(s.id);if(situationDiff)situationDiff.innerHTML=situationChanged?reviewDiff(situationOriginal,submitted?.content,situationText,'la situation Me&YouToo'):'';
     if(situationInput)situationInput.classList.toggle('is-customized',situationChanged);
 
     let anyChanged=situationChanged;
