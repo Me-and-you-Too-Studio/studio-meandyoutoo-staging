@@ -2,7 +2,7 @@
   if(!StudioAPI.requireAuth('admin'))return;
   const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt=v=>Number(v||0).toLocaleString('fr-FR'),date=v=>v?new Date(String(v).slice(0,10)+'T12:00:00').toLocaleDateString('fr-FR'):'—',dateTime=v=>v?new Date(v).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'Jamais';
-  const params=new URLSearchParams(location.search),requestedOrg=params.get('organizationId'),requestedProject=params.get('projectId');let organization=null,users=new Map(),projects=new Map(),filter='all';
+  const params=new URLSearchParams(location.search),requestedOrg=params.get('organizationId'),requestedProject=params.get('projectId'),requestedPublish=params.get('publish')==='1';let organization=null,users=new Map(),projects=new Map(),filter='all',publishOpened=false;
   const orgUsers=o=>Array.isArray(o?.users)?o.users:[],orgProjects=o=>Array.isArray(o?.projects)?o.projects:[],orgSectors=o=>Array.isArray(o?.sectors)&&o.sectors.length?o.sectors:(o?.sector?[o.sector]:[]),remaining=o=>o?.pack_unlimited?null:Math.max(0,Number(o?.passations_quota||0)-Number(o?.passations_used||0));
   function showError(message){const box=$('#client-alert');box.hidden=false;box.textContent=message;box.scrollIntoView({behavior:'smooth',block:'center'});}function normalizedStatus(p){return p.status==='configuration_submitted'?'review_pending':['completed','closed'].includes(p.status)?'unpublished':p.status;}function statusLabel(p){return({draft:'Brouillon',review_pending:'À relire',in_review:'En relecture',client_validation_required:'Validation client requise',ready_to_publish:'Prête à publier',scheduled:'Programmé',published:'Publié',active:'Publié',unpublished:'Dépublié',archived:'Archivé'}[normalizedStatus(p)]||p.status||'—');}
   function adFilterKey(p){const st=normalizedStatus(p),now=new Date(),close=p.close_date?new Date(String(p.close_date).slice(0,10)+'T12:00:00'):null;if(['published','active'].includes(st)&&close){const d=Math.ceil((close-now)/86400000);if(d>=0&&d<14)return'endingSoon';}if(['review_pending','in_review','client_validation_required','ready_to_publish'].includes(st))return'sent';if(st==='draft')return'draft';if(st==='archived')return'archived';if(st==='unpublished')return'unpublished';if(['published','active','scheduled'].includes(st))return'published';return st;}
@@ -35,6 +35,7 @@
       if(!organization){showError('Dossier client introuvable. Revenez au cockpit clients et ouvrez un client.');return;}
       users=new Map(orgUsers(organization).map(u=>[String(u.id),u]));
       render();
+      if(requestedPublish&&requestedProject&&!publishOpened&&normalizedStatus(projects.get(String(requestedProject))||{})==='ready_to_publish'){publishOpened=true;openPublish(requestedProject);}
     }catch(e){showError(e.message||'Impossible de charger le dossier client.');}
   }
   const refreshClient=$('#refresh-client'),addClientUser=$('#add-client-user'),userDialogEl=$('#user-dialog'),publishDialogEl=$('#publish-dialog');
