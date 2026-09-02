@@ -88,7 +88,9 @@
   function situationHtml(s,index){
     const ch=state.chapters[state.active];
     const stereotypes=themeSlug==='sexisme'&&canonical(ch.slug||ch.title).includes('stereotype');
-    const locked=Boolean(ch.locked||s.locked||stereotypes||state.project?.can_edit===false);
+    const methodologyLocked=Boolean(ch.locked||s.locked||stereotypes);
+    const adminCorrection=Boolean(state.project?.review_mode&&state.project?.can_edit===true);
+    const locked=Boolean(methodologyLocked||(!adminCorrection&&state.project?.can_edit===false));
     const linkedLabel=linkedSituationLabel(s,index,ch.situations);
     const originalText=s.original_content||s.content||'';
     const customized=Boolean(s.has_customization||String(originalText)!==String(s.content||'')||(s.answers||[]).some(a=>{const o=(s.original_answers||[]).find(x=>String(x.id)===String(a.id));return o&&String(o.content)!==String(a.content);}));
