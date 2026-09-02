@@ -225,6 +225,11 @@
       setSaveStatus(card,'is-error',`Non enregistré · ${e.message||'erreur serveur'}`);
     }
   }
+  async function returnToReview(){
+    const ids=(state.chapters[state.active]?.situations||[]).map(s=>String(s.id));
+    await Promise.all(ids.map(id=>saveInlineSituation(id)));
+    location.href=`validation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`;
+  }
 
   async function resetSituationCustomization(id){
     const s=findSituation(id);if(!s)return;
@@ -322,11 +327,14 @@
 
     const next=$('composer-next');
     if(next){
+      if(state.project?.review_mode){next.href=`validation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`;next.textContent='Enregistrer et revenir au contrôle qualité →';next.classList.remove('is-disabled');next.setAttribute('aria-disabled','false');next.onclick=async event=>{event.preventDefault();next.setAttribute('aria-busy','true');next.textContent='Enregistrement…';await returnToReview();};}
+      else{
       next.href=`personnalisation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${state.active}`;
       const blocked=status.below||status.above;
       next.classList.toggle('is-disabled',blocked);
       next.setAttribute('aria-disabled',String(blocked));
       next.onclick=blocked?async(event)=>{event.preventDefault();await showIncompleteChapterModal(state.active);}:null;
+      }
     }
     renderNav();bindSituations();
   }

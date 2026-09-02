@@ -38,7 +38,11 @@
     $('profiles-root').innerHTML=`<div class="profile-excel-grid">${profiles.map((pr,pi)=>card(ch,pr,pi)).join('')}</div>`;
     $('profile-sticky-label').textContent=`Chapitre ${active+1}/${chapters.length} · ${ch.title}`;
     $('back-link').href='composer.html'+q(active);$('questions-step').href='composer.html'+q(active);
-    if(isReadOnly()){
+    if(project?.review_mode){
+      const reviewUrl=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;
+      $('back-link').href=reviewUrl;$('back-link').textContent='← Retour au contrôle qualité';
+      const next=$('next-link');next.href=reviewUrl;next.textContent='Enregistrer et revenir au contrôle qualité →';next.classList.remove('is-disabled');next.setAttribute('aria-disabled','false');next.onclick=async event=>{event.preventDefault();next.setAttribute('aria-busy','true');next.textContent='Enregistrement…';try{await saveAllProfiles();location.href=reviewUrl;}catch(error){next.removeAttribute('aria-busy');next.textContent='Enregistrer et revenir au contrôle qualité →';await window.StudioModal.alert({title:'Modification non enregistrée',message:error.message,type:'error'});}};
+    }else if(isReadOnly()){
       const alert=$('profiles-alert');alert.hidden=false;alert.dataset.tone='success';alert.innerHTML='<strong>🔒 Profils en lecture seule.</strong> Cette campagne a déjà été transmise. Pour toute modification, <a href="contact.html" style="text-decoration:underline;font-weight:900">contactez Me&YouToo</a>.';
       const next=$('next-link');next.href=`parametrage.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;next.textContent='Revoir le paramétrage →';next.classList.remove('is-disabled');next.setAttribute('aria-disabled','false');next.onclick=null;
     }else{
@@ -50,6 +54,11 @@
       }
     }
     renderNav();bind();if(requestedProfile){requestAnimationFrame(()=>{const field=document.querySelector(`[data-profile-title="${CSS.escape(String(requestedProfile))}"],[data-profile-summary="${CSS.escape(String(requestedProfile))}"],[data-profile-content="${CSS.escape(String(requestedProfile))}"]`);const card=field?.closest('.profile-excel-card');if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});field.focus({preventScroll:true});}});}
+  }
+  async function saveAllProfiles(){
+    const fields=[...document.querySelectorAll('[data-profile-title],[data-profile-summary],[data-profile-content]')],byProfile=new Map();
+    fields.forEach(field=>{const id=field.dataset.profileTitle||field.dataset.profileSummary||field.dataset.profileContent;if(!byProfile.has(id))byProfile.set(id,{});const values=byProfile.get(id);if(field.dataset.profileTitle)values.title=field.value;if(field.dataset.profileSummary)values.summary=field.value;if(field.dataset.profileContent)values.content=field.value;});
+    await Promise.all([...byProfile].map(([id,values])=>api(`/api/projects/${projectId}/profiles/${id}`,{method:'PATCH',body:JSON.stringify(values)})));
   }
   async function load(){try{
     if(!theme&&projectId){const d=await api(`/api/projects/${projectId}/composer`);project=d.project;theme=project?.theme_slug||'';chapters=d.chapters||[];}else{
