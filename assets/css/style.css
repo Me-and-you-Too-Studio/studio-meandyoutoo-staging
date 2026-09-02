@@ -1135,6 +1135,7 @@ body.sidebar-collapsed .sidebar-notification-root{display:flex}
 .composer-diff-text{font-size:.82rem;line-height:1.5;color:#405468}
 .composer-diff ins{padding:1px 2px;border-radius:3px;background:#dff5e5;color:#176c35;text-decoration:none}
 .composer-diff del{padding:1px 2px;border-radius:3px;background:#fde4e1;color:#9e3028;text-decoration:line-through}
+.composer-diff.is-admin-correction{border-color:#d5b9f1;background:#faf5ff}.composer-diff.is-admin-correction .composer-diff-label{color:#653493}.composer-diff.is-admin-correction ins{background:#e8d5ff;color:#572482}.composer-diff.is-admin-correction del{background:#f0e4fb;color:#75508f}
 .composer-inline-situation.is-customized,.composer-inline-answer.is-customized{border-color:#dfbd57;background:#fffef9}
 
 /* Composer — auto-enregistrement */

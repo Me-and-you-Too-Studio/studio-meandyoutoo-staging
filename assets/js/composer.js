@@ -55,17 +55,19 @@
     }
     return out;
   }
-  function diffBlock(original,current,label){
+  function diffBlock(original,current,label,admin=false){
     if(String(original||'')===String(current||''))return '';
-    return `<div class="composer-diff"><div class="composer-diff-label">${esc(label)}</div><div class="composer-diff-text">${wordDiffHtml(original,current)}</div></div>`;
+    return `<div class="composer-diff${admin?' is-admin-correction':''}"><div class="composer-diff-label">${esc(label)}</div><div class="composer-diff-text">${wordDiffHtml(original,current)}</div></div>`;
   }
-  function answerHtml(a, editable=false, originalContent=''){
+  function submittedSituation(id){const chapters=state.project?.review_snapshot?.chapters;return Array.isArray(chapters)?chapters.flatMap(ch=>ch.situations||[]).find(s=>String(s.id)===String(id)):null;}
+  function reviewDiff(original,submitted,current,referenceLabel){if(!state.project?.review_mode)return diffBlock(original,current,`Modifications par rapport à ${referenceLabel}`);const client=submitted==null?current:submitted;return diffBlock(original,client,'Adaptations transmises par le client')+diffBlock(client,current,'Correction ajoutée par Me&YouToo',true);}
+  function answerHtml(a, editable=false, originalContent='',submittedContent=null){
     const changed=editable&&String(originalContent||'')!==String(a.content||'');
     return `<div class="composer-answer ${a.is_best?'is-best':''} ${changed?'is-customized':''}">
       ${editable?`<textarea class="composer-inline-answer" data-answer-input="${esc(a.id)}" data-original-answer="${esc(originalContent||a.content)}" rows="2" aria-label="Modifier cette réponse">${esc(a.content)}</textarea>`:`<span class="composer-answer-text">${esc(a.content)}</span>`}
       <span class="composer-score">Score ${Number(a.score).toLocaleString('fr-FR')}</span>
       ${a.is_best?`<span class="composer-best">${bestAnswerLabel()}</span>`:''}
-      <div data-live-answer-diff="${esc(a.id)}">${changed?diffBlock(originalContent,a.content,'Modifications par rapport à la réponse Me&YouToo'):''}</div>
+      <div data-live-answer-diff="${esc(a.id)}">${changed?reviewDiff(originalContent,submittedContent,a.content,'la réponse Me&YouToo'):''}</div>
     </div>`;
   }
 
@@ -93,6 +95,7 @@
     const locked=Boolean(methodologyLocked||(!adminCorrection&&state.project?.can_edit===false));
     const linkedLabel=linkedSituationLabel(s,index,ch.situations);
     const originalText=s.original_content||s.content||'';
+    const submitted=submittedSituation(s.id);
     const customized=Boolean(s.has_customization||String(originalText)!==String(s.content||'')||(s.answers||[]).some(a=>{const o=(s.original_answers||[]).find(x=>String(x.id)===String(a.id));return o&&String(o.content)!==String(a.content);}));
     const originTag=s.from_library?'<span class="composer-library-choice-tag">✓ Choisie dans la bibliothèque</span>':'';
     const situationText=locked
@@ -100,10 +103,10 @@
       :`<div class="composer-inline-field">
           <div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Texte de la mise en situation</label><span class="composer-context-tag">Contextualisation uniquement</span></div>
           <textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation ${String(originalText)!==String(s.content||'')?'is-customized':''}" data-situation-input="${esc(s.id)}" data-original-situation="${esc(originalText)}" rows="3">${esc(s.content)}</textarea>
-          <div data-live-situation-diff>${diffBlock(originalText,s.content,'Modifications par rapport à la situation Me&YouToo')}</div>
+          <div data-live-situation-diff>${reviewDiff(originalText,submitted?.content,s.content,'la situation Me&YouToo')}</div>
           <small class="composer-field-guidance">Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel. Si le sens ne convient pas, utilisez « Remplacer » et choisissez une autre situation dans la bibliothèque.</small>
         </div>`;
-    const answerRows=(s.answers||[]).map(a=>{const original=(s.original_answers||[]).find(o=>String(o.id)===String(a.id));return answerHtml(a,!locked,original?.content||a.content);}).join('');
+    const answerRows=(s.answers||[]).map(a=>{const original=(s.original_answers||[]).find(o=>String(o.id)===String(a.id)),sent=(submitted?.answers||[]).find(o=>String(o.id)===String(a.id));return answerHtml(a,!locked,original?.content||a.content,sent?.content??null);}).join('');
     const tone=situationTone(s,index,ch);
     return `<article class="composer-situation ${tone} ${locked?'is-locked':''} ${customized?'has-customization':''}" data-situation-card="${esc(s.id)}">
       <div class="composer-situation-head">
@@ -117,7 +120,7 @@
       ${!locked?`<div class="composer-inline-help composer-context-help"><strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span></div>
       <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${customized?'Enregistré':'Enregistrement automatique'}</span></span></div>
       <div class="composer-actions">
-        ${customized?`<button class="button button-ghost" type="button" data-reset="${esc(s.id)}">↶ Annuler mes modifications</button>`:''}
+        ${customized?`<button class="button button-ghost" type="button" data-reset="${esc(s.id)}">↶ ${state.project?.review_mode?'Annuler ma correction':'Annuler mes modifications'}</button>`:''}
         <button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer</button>
         <button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button>
       </div>`:''}
@@ -165,7 +168,7 @@
     const situationDiff=card.querySelector('[data-live-situation-diff]');
     const situationInput=card.querySelector('[data-situation-input]');
     const situationChanged=situationOriginal!==String(situationText||'');
-    if(situationDiff)situationDiff.innerHTML=situationChanged?diffBlock(situationOriginal,situationText,'Modifications par rapport à la situation Me&YouToo'):'';
+    const submitted=submittedSituation(id);if(situationDiff)situationDiff.innerHTML=situationChanged?reviewDiff(situationOriginal,submitted?.content,situationText,'la situation Me&YouToo'):'';
     if(situationInput)situationInput.classList.toggle('is-customized',situationChanged);
 
     let anyChanged=situationChanged;
@@ -179,7 +182,7 @@
       anyChanged=anyChanged||changed;
       input.closest('.composer-answer')?.classList.toggle('is-customized',changed);
       const diff=card.querySelector(`[data-live-answer-diff="${CSS.escape(String(item.id))}"]`);
-      if(diff)diff.innerHTML=changed?diffBlock(original,item.content,'Modifications par rapport à la réponse Me&YouToo'):'';
+      const sent=(submitted?.answers||[]).find(answer=>String(answer.id)===String(item.id));if(diff)diff.innerHTML=changed?reviewDiff(original,sent?.content??null,item.content,'la réponse Me&YouToo'):'';
     });
     card.classList.toggle('has-customization',anyChanged);
     return anyChanged;
@@ -213,7 +216,7 @@
       if(!hasCustomization&&customTag)customTag.remove();
       if(hasCustomization&&!card.querySelector('[data-reset]')){
         const actions=card.querySelector('.composer-actions');
-        if(actions)actions.insertAdjacentHTML('afterbegin',`<button class="button button-ghost" type="button" data-reset="${esc(id)}">↶ Annuler mes modifications</button>`);
+        if(actions)actions.insertAdjacentHTML('afterbegin',`<button class="button button-ghost" type="button" data-reset="${esc(id)}">↶ ${state.project?.review_mode?'Annuler ma correction':'Annuler mes modifications'}</button>`);
         const reset=card.querySelector('[data-reset]');if(reset)reset.onclick=()=>resetSituationCustomization(id);
       }
     }catch(e){
@@ -223,6 +226,7 @@
 
   async function resetSituationCustomization(id){
     const s=findSituation(id);if(!s)return;
+    if(state.project?.review_mode){const submitted=submittedSituation(id);if(!submitted||!Array.isArray(submitted.answers)){await window.StudioModal.alert({eyebrow:'Correction Me&YouToo',title:'Version client détaillée indisponible',message:'Cette transmission est antérieure au nouvel historique détaillé. Pour protéger les modifications du client, aucune donnée ne sera effacée automatiquement.',type:'info',confirmLabel:'J’ai compris'});return;}const confirmed=await window.StudioModal.confirm({eyebrow:'Correction Me&YouToo',title:'Annuler uniquement votre correction ?',message:'La situation et ses réponses reviendront exactement à la version transmise par le client.',type:'warning',cancelLabel:'Conserver ma correction',confirmLabel:'Restaurer la version client'});if(!confirmed)return;try{await api(`/api/projects/${projectId}/situations/${id}`,{method:'PATCH',body:JSON.stringify({customContent:submitted.content,customAnswers:submitted.answers.map(answer=>({id:answer.id,content:answer.content}))})});const refreshed=await api(`/api/projects/${projectId}/composer`);state.project=refreshed.project;state.chapters=refreshed.chapters;render();showMessage('La version transmise par le client a été restaurée.','success');}catch(e){showMessage(e.message);}return;}
     const confirmed=await window.StudioModal.confirm({
       eyebrow:'Personnalisation',
       title:'Revenir à la version Me&YouToo ?',
@@ -326,7 +330,7 @@
   }
 
   async function ensureProject(){if(projectId)return;const project=await window.StudioProject.createNew(themeSlug);projectId=String(project.id);location.replace(`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`);throw new Error('redirect');}
-  async function load(){try{await ensureProject();const data=await api(`/api/projects/${projectId}/composer`);state.project=data.project;state.chapters=data.chapters;state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title;const themeBack=$('composer-theme-back');if(themeBack)themeBack.href=data.project.review_mode?`validation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`:`theme-${themeSlug}.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`;if(data.project.can_edit)await saveStep('composer');render();if(data.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!data.project.can_edit)showMessage('Configuration verrouillée pendant la relecture Me&YouToo.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
+  async function load(){try{await ensureProject();const data=await api(`/api/projects/${projectId}/composer`);state.project=data.project;state.chapters=data.chapters;state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title;const themeBack=$('composer-theme-back');if(themeBack){themeBack.href=data.project.review_mode?`validation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`:`theme-${themeSlug}.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`;if(data.project.review_mode)themeBack.textContent="← Retourner à la relecture et finaliser";}if(data.project.can_edit)await saveStep('composer');render();if(data.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!data.project.can_edit)showMessage('Configuration verrouillée pendant la relecture Me&YouToo.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
 
   $('library-button').onclick=async()=>{
     const status=chapterCountStatus(state.chapters[state.active]);
