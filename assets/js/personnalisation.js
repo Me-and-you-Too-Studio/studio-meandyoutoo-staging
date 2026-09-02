@@ -58,6 +58,7 @@
     active=Math.min(active,Math.max(0,chapters.length-1));if(chapters.some(ch=>(ch.profiles||[]).length!==3))throw new Error('Le référentiel doit contenir exactement 3 profils par partie.');
     const blocking=firstInvalidIndex(active);if(!isReadOnly()&&blocking!==-1){await incompleteModal(blocking,'Complétez les situations avant de personnaliser les profils');if(location.pathname.includes('personnalisation.html'))location.replace('composer.html'+q(blocking));return;}
     $('theme-name').textContent=project?.theme_title||'Autodiagnostic';$('profiles-catalog-title').textContent=project?.theme_title||'Autodiagnostic';
+    if(project?.review_mode){const alert=$('profiles-alert');alert.hidden=false;alert.dataset.tone='success';alert.innerHTML='<strong>✎ Correction Me&YouToo active.</strong> Vous pouvez modifier les profils. Les changements sont enregistrés dans la version Me&YouToo et la version transmise par le client reste conservée.';}
     if(!isReadOnly())await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:'personnalisation'})});
     render();
   }catch(e){$('profiles-alert').hidden=false;$('profiles-alert').textContent=e.message;}}
