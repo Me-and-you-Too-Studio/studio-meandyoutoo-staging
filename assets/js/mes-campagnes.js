@@ -97,24 +97,8 @@
   }
 
   function contentPage(p){
-    var slug=themeSlug(p);
-    var pages={
-      'sexisme':'theme-sexisme.html',
-      'management':'theme-management.html',
-      'management-inclusif':'theme-management.html',
-      'manager-inclusif':'theme-management.html',
-      'handicap':'theme-handicap.html',
-      'lgbt':'theme-lgbt.html',
-      'lgbt-plus':'theme-lgbt.html',
-      'origines':'theme-origines.html',
-      'diversite-des-origines':'theme-origines.html',
-      'religion':'theme-religion.html',
-      'diversite-religieuse':'theme-religion.html',
-      'intergenerationnel':'theme-intergenerationnel.html',
-      'collaborateur':'theme-collaborateur.html',
-      'collaborateur-inclusif':'theme-collaborateur.html'
-    };
-    return slug&&pages[slug] ? pages[slug]+query(p) : null;
+    var q=query(p);
+    return q?'composer.html'+q:null;
   }
 
   function campaignName(p){
