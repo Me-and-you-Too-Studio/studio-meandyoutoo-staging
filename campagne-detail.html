@@ -7,7 +7,7 @@
 <meta name="description" content="Suivez votre campagne Me&YouToo et accédez à ses liens réels.">
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20260901-campaign-lifecycle-1">
+<link rel="stylesheet" href="assets/css/style.css?v=20260903-campaign-lifecycle-1">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -82,6 +82,10 @@
     var share=String(p.communication_share_url||'').trim();
     var isDraft=p.status==='draft';
     var isReadOnly=READ_ONLY_STATUSES.has(p.status);
+    var lifecycleActions='';
+    if(p.status==='published'||p.status==='active')lifecycleActions='<a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=extend">📅 Prolonger</a><a class="button button-danger-soft" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=unpublish">⏹ Dépublier</a>';
+    if(p.status==='unpublished')lifecycleActions='<a class="button button-primary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=reprogram">🚀 Reprogrammer</a><a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=archive">📦 Archiver</a>';
+    if(p.status==='closed'||p.status==='completed'||p.status==='archived')lifecycleActions='<a class="button button-primary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=reprogram">🚀 Reprogrammer avec les mêmes liens</a>';
     var resultsHtml=results
       ? '<a class="button button-primary" href="'+esc(results)+'" target="_blank" rel="noopener">Voir les résultats ↗</a>'
       : '<span class="button button-secondary" aria-disabled="true">Résultats non disponibles</span>';
@@ -111,6 +115,7 @@
           '<a class="button button-secondary" href="'+content+'">Revoir le contenu</a>'+
           '<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>'+
           '<button class="button button-primary" type="button" data-content-adjustment="multiple">Demander un ajustement</button>'+
+          lifecycleActions+
           (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
         '</div>';
     }else{
@@ -122,6 +127,7 @@
         '<div class="action-bar">'+
           '<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>'+
           '<button class="button button-primary" type="button" data-content-adjustment="multiple">Demander un ajustement</button>'+
+          lifecycleActions+
           (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
         '</div>';
     }
@@ -136,7 +142,7 @@
         '<article class="stat-card"><div class="stat-icon">'+ICONS.end+'</div><p class="stat-label">Date de fin</p><p class="stat-value" style="font-size:1.5rem">'+dateFr(p.close_date)+'</p></article>'+
       '</section>'+
       '<section class="hero-panel" style="display:flex;justify-content:space-between;gap:24px;align-items:center;flex-wrap:wrap;margin-bottom:24px"><div><h2 class="section-title campaign-section-title"><span class="campaign-section-icon">'+ICONS.results+'</span>Résultats</h2><p class="section-desc">'+(results?'Le lien de résultats renseigné par Me&YouToo est disponible.':'Aucun lien de résultats n\'est encore renseigné pour cette campagne.')+'</p></div>'+resultsHtml+'</section>'+
-      '<section class="card" style="padding:26px" aria-labelledby="actions-title"><h2 class="section-title campaign-section-title" id="actions-title"><span class="campaign-section-icon">'+ICONS.actions+'</span>Actions sur la campagne</h2><p class="section-desc" style="margin-bottom:18px">Accédez uniquement aux éléments réellement associés à cette campagne.</p>'+actionsHtml+'</section>';
+      '<section class="card" style="padding:26px" aria-labelledby="actions-title"><h2 class="section-title campaign-section-title" id="actions-title"><span class="campaign-section-icon">'+ICONS.actions+'</span>Actions sur la campagne</h2><p class="section-desc" style="margin-bottom:18px">'+(['unpublished','closed','completed','archived'].includes(p.status)?'Pour relancer ce thème, reprogrammez cette campagne : son contenu et ses liens seront conservés.':'Accédez uniquement aux éléments réellement associés à cette campagne.')+'</p>'+actionsHtml+'</section>';
     document.title=name+' — Suivi de campagne — Studio Me&YouToo';
   }
 

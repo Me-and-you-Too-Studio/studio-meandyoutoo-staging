@@ -7,6 +7,7 @@
 
   var projects=[];
   var activeFilter='all';
+  var pageParams=new URLSearchParams(location.search),initialAction=pageParams.get('action'),initialProjectId=pageParams.get('projectId'),initialActionHandled=false;
 
   function esc(v){
     return String(v??'').replace(/[&<>"']/g,function(c){
@@ -112,6 +113,18 @@
     return 'Clôture : '+dateFr(p.close_date);
   }
 
+  function isoDay(value){return String(value||'').slice(0,10);}
+  function addDays(day,count){var d=new Date(day+'T12:00:00');d.setDate(d.getDate()+count);return d.toISOString().slice(0,10);}
+  function askExtensionDate(p){
+    return new Promise(function(resolve){
+      document.getElementById('campaign-extension-dialog')?.remove();
+      var current=isoDay(p.close_date),minimum=current?addDays(current,1):new Date().toISOString().slice(0,10),suggested=current?addDays(current,7):minimum;
+      var dialog=document.createElement('dialog');dialog.id='campaign-extension-dialog';dialog.className='admin-dialog campaign-lifecycle-dialog';
+      dialog.innerHTML='<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Campagne publiée</p><h2>Prolonger « '+esc(campaignName(p))+' »</h2><p>La campagne et ses liens restent identiques. Seule la date de clôture change.</p><label class="field"><span>Clôture actuelle</span><strong>'+esc(dateFr(p.close_date))+'</strong></label><label class="field"><span>Nouvelle date de clôture</span><input id="campaign-new-close-date" type="date" min="'+esc(minimum)+'" value="'+esc(suggested)+'" required></label><div class="campaign-lifecycle-note"><strong>Vous n’avez rien à reconstruire.</strong><span>Le contenu, l’URL de passation et l’URL de résultats sont conservés.</span></div><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" id="confirm-extension" type="button">Confirmer la prolongation</button></div></form>';
+      document.body.append(dialog);var settled=false,finish=function(value){if(settled)return;settled=true;dialog.close();dialog.remove();resolve(value);};dialog.addEventListener('cancel',function(e){e.preventDefault();finish('');});dialog.addEventListener('close',function(){if(!settled){settled=true;dialog.remove();resolve('');}});dialog.querySelector('[value="cancel"]').onclick=function(){finish('');};dialog.querySelector('.admin-dialog-close').onclick=function(){finish('');};dialog.querySelector('#confirm-extension').onclick=function(){var value=dialog.querySelector('#campaign-new-close-date').value;if(!value||value<minimum){dialog.querySelector('#campaign-new-close-date').reportValidity();return;}finish(value);};dialog.showModal();
+    });
+  }
+
   function linkState(p){
     var share=String(p.communication_share_url||'').trim();
     var results=String(p.communication_results_url||'').trim();
@@ -148,11 +161,13 @@
         : invalidThemeAction());
     }
     if(q&&(['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish','scheduled','published','active','unpublished','closed','completed'].includes(p.status)))items.push('<a class="campaign-btn campaign-btn-kit" href="kit-communication.html'+q+'">📣 Kit de com</a>');
+    if(['published','active'].includes(p.status))items.push('<button class="campaign-btn" type="button" data-project-action="extend" data-project-id="'+id+'">📅 Prolonger</button>');
+    if(['published','active'].includes(p.status))items.push('<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="unpublish" data-project-id="'+id+'">⏹ Dépublier</button>');
     if(!['scheduled','published','active'].includes(p.status))items.push('<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button>');
     if(!['draft','configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(p.status))items.push('<button class="campaign-btn" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button>');
 
     var more=[];
-    if(p.status==='unpublished'||p.status==='closed'||p.status==='completed')more.push('<button type="button" data-project-action="archive" data-project-id="'+id+'">📦 Archiver</button>');
+    if(p.status==='unpublished')more.push('<button type="button" data-project-action="archive" data-project-id="'+id+'">📦 Archiver</button>');
 
     var html='<div class="campaign-row-actions">'+primaryAction(p)+items.join('');
     if(more.length){
@@ -187,6 +202,7 @@
           extraBadges(p)+
         '</div>'+
         themeWarning+
+        (['unpublished','closed','completed','archived'].includes(p.status)?'<div class="campaign-reprogram-hint"><strong>Relancer ce même autodiagnostic</strong><span>Utilisez « Reprogrammer » pour conserver le contenu et les mêmes liens. Il n’est pas nécessaire de reconstruire une campagne sur ce thème.</span></div>':'')+
         secondaryActions(p)+
       '</div>'+
     '</article>';
@@ -196,11 +212,13 @@
     var p=projects.find(function(x){return String(x.id)===String(id);});if(!p)return;
     if(action==='delete'){var ok=await StudioModal.confirm({eyebrow:'Faire du tri',type:'danger',title:'Supprimer « '+campaignName(p)+' » ?',message:'Cet autodiagnostic, son contenu personnalisé et ses fichiers seront définitivement supprimés. Cette action ne peut pas être annulée.',cancelLabel:'Conserver cet AD',confirmLabel:'Supprimer définitivement'});if(!ok)return;await StudioAPI.request('/api/projects/'+id,{method:'DELETE'});await StudioModal.alert({eyebrow:'Autodiagnostic supprimé',title:'La suppression est terminée',message:'« '+campaignName(p)+' » a été retiré de votre espace.',type:'success',confirmLabel:'Fermer'});return load();}
     if(action==='archive'){var ok2=await StudioModal.confirm({title:'Archiver cet autodiagnostic ?',message:'Il sera déplacé dans vos archives et restera reprogrammable.',confirmLabel:'Archiver'});if(!ok2)return;await StudioAPI.request('/api/projects/'+id+'/archive',{method:'PATCH',body:'{}'});return load();}
+    if(action==='extend'){var closeDate=await askExtensionDate(p);if(!closeDate)return;await StudioAPI.request('/api/projects/'+id+'/extend',{method:'PATCH',body:JSON.stringify({closeDate:closeDate})});await StudioModal.alert({eyebrow:'Campagne prolongée',title:'La nouvelle date est enregistrée',message:'La campagne, son contenu et ses liens restent inchangés.',type:'success',confirmLabel:'Fermer'});return load();}
+    if(action==='unpublish'){var okUnpublish=await StudioModal.confirm({eyebrow:'Campagne publiée',type:'warning',title:'Dépublier « '+campaignName(p)+' » ?',message:'La campagne ne sera plus accessible aux répondants. Son contenu, ses résultats et ses liens seront conservés. Vous pourrez ensuite l’archiver ou la reprogrammer.',cancelLabel:'Laisser publiée',confirmLabel:'Dépublier la campagne'});if(!okUnpublish)return;await StudioAPI.request('/api/projects/'+id+'/unpublish',{method:'PATCH',body:'{}'});await StudioModal.alert({eyebrow:'Campagne dépubliée',title:'La campagne n’est plus accessible',message:'Vous pouvez maintenant l’archiver ou la reprogrammer avec les mêmes liens.',type:'success',confirmLabel:'Fermer'});return load();}
     if(action==='restore'){var okRestore=await StudioModal.confirm({title:'Restaurer cette campagne ?',message:'Elle reviendra dans vos campagnes dépubliées.',confirmLabel:'Restaurer'});if(!okRestore)return;await StudioAPI.request('/api/projects/'+id+'/restore',{method:'PATCH',body:'{}'});return load();}
     if(action==='reprogram'){
       var q=query(p);
       if(!q)throw new Error('Le thème réel de cette campagne est absent. Reprogrammation impossible sans corriger les données du projet.');
-      var ok3=await StudioModal.confirm({title:'Reprogrammer cet autodiagnostic ?',message:'La même URL sera conservée. Vous pourrez choisir de nouvelles dates.',confirmLabel:'Reprogrammer'});if(!ok3)return;
+      var ok3=await StudioModal.confirm({eyebrow:'Réutiliser une campagne existante',title:'Reprogrammer cet autodiagnostic ?',message:'Vous n’avez pas besoin de reconstruire une campagne sur le même thème. Le contenu, l’URL de passation et l’URL de résultats seront conservés ; vous choisirez seulement de nouvelles dates.',confirmLabel:'Reprogrammer avec les mêmes liens'});if(!ok3)return;
       await StudioAPI.request('/api/projects/'+id+'/reprogram',{method:'POST',body:'{}'});
       location.href='parametrage.html'+q+'&reprogram=1';
       return;
@@ -336,6 +354,7 @@
       renderAlerts();
       buildFilters();
       renderCards();
+      if(!initialActionHandled&&initialAction&&initialProjectId){initialActionHandled=true;projectAction(initialAction,initialProjectId).catch(function(err){StudioModal.alert({title:'Action impossible',message:err.message||'Une erreur est survenue.',confirmLabel:'Fermer'});});}
     }catch(e){
       cardRoot.innerHTML='<div class="composer-alert">Impossible de charger les campagnes : '+esc(e.message)+'</div>';
     }
