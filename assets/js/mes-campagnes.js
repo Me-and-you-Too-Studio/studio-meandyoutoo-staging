@@ -35,7 +35,7 @@
       configuration_submitted:'Transmise à Me&YouToo',
       review_pending:'À relire par Me&YouToo',
       in_review:'En cours de relecture',
-      client_validation_required:'Votre validation est requise',
+      client_validation_required:'À valider',
       ready_to_publish:'Prête à publier',
       published:'Publiée',
       scheduled:'Programmée',
@@ -49,7 +49,8 @@
 
   function statusVisual(status){
     if(status==='draft')return 'draft';
-    if(['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(status))return 'submitted';
+    if(status==='client_validation_required')return 'validation';
+    if(['configuration_submitted','review_pending','in_review','ready_to_publish'].includes(status))return 'submitted';
     if(status==='scheduled')return 'scheduled';
     if(status==='published'||status==='active')return 'published';
     if(status==='unpublished')return 'unpublished';
@@ -146,7 +147,8 @@
     var q=query(p),id=esc(p.id);
     if(!q)return invalidThemeAction();
     if(p.status==='draft')return '<a class="campaign-btn campaign-btn-primary" href="'+resumePage(p.current_step)+q+'">Reprendre la création</a>';
-    if(['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(p.status))return '<a class="campaign-btn campaign-btn-primary" href="validation.html'+q+'">Suivre la relecture</a>';
+    if(p.status==='client_validation_required')return '<a class="campaign-btn campaign-btn-primary" href="validation.html'+q+'">Valider les corrections</a>';
+    if(['configuration_submitted','review_pending','in_review','ready_to_publish'].includes(p.status))return '<a class="campaign-btn campaign-btn-primary" href="validation.html'+q+'">Suivre la relecture</a>';
     if(p.status==='unpublished'||p.status==='closed'||p.status==='completed')return '<button class="campaign-btn campaign-btn-primary" type="button" data-project-action="reprogram" data-project-id="'+id+'">🚀 Reprogrammer</button>';
     if(p.status==='archived')return '<button class="campaign-btn campaign-btn-primary" type="button" data-project-action="restore" data-project-id="'+id+'">↩️ Restaurer</button>';
     return '<a class="campaign-btn campaign-btn-primary" href="campagne-detail.html'+q+'">Voir la campagne</a>';
@@ -264,6 +266,7 @@
     if(key==='all')return 'Toutes';
     if(key==='results')return 'Résultats';
     if(key==='endingSoon')return 'À surveiller';
+    if(key==='validation')return 'À valider';
     if(key==='review')return 'En relecture';
     return statusLabel(key);
   }
@@ -271,7 +274,8 @@
   function countForFilter(key){
     if(key==='all')return projects.length;
     if(key==='results')return projects.filter(function(p){return ['unpublished','closed','completed'].includes(p.status);}).length;
-    if(key==='review')return projects.filter(function(p){return ['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(p.status);}).length;
+    if(key==='validation')return projects.filter(function(p){return p.status==='client_validation_required';}).length;
+    if(key==='review')return projects.filter(function(p){return ['configuration_submitted','review_pending','in_review'].includes(p.status);}).length;
     if(key==='endingSoon'){
       var now=new Date(),limit=new Date(now.getTime()+14*24*60*60*1000);
       return projects.filter(function(p){var d=new Date(p.close_date);return ['published','active'].includes(p.status)&&p.close_date&&!Number.isNaN(d.getTime())&&d>=now&&d<=limit;}).length;
@@ -280,7 +284,7 @@
   }
 
   function buildFilters(){
-    var order=['all','published','scheduled','review','draft','unpublished','closed','completed','archived'];
+    var order=['all','validation','published','scheduled','review','draft','unpublished','closed','completed','archived'];
     filtersRoot.innerHTML=order.filter(function(key){return key==='all'||countForFilter(key)>0;}).map(function(key){
       return '<button class="campaign-filter-tab'+(activeFilter===key?' active':'')+'" type="button" data-filter="'+esc(key)+'">'+esc(filterLabel(key))+' <span>'+countForFilter(key)+'</span></button>';
     }).join('');
@@ -296,7 +300,8 @@
   function matchesFilter(p){
     if(activeFilter==='all')return true;
     if(activeFilter==='results')return ['unpublished','closed','completed'].includes(p.status);
-    if(activeFilter==='review')return ['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(p.status);
+    if(activeFilter==='validation')return p.status==='client_validation_required';
+    if(activeFilter==='review')return ['configuration_submitted','review_pending','in_review'].includes(p.status);
     if(activeFilter==='endingSoon'){
       if(!['published','active'].includes(p.status)||!p.close_date)return false;
       var now=new Date(),limit=new Date(now.getTime()+14*24*60*60*1000),d=new Date(p.close_date);
