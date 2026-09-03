@@ -24,6 +24,7 @@
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20260713-2"></script>
 <script src="assets/js/app.js?v=20260828-admin-actions-1"></script>
+<script src="assets/js/content-adjustment.js?v=20260903-inline-adjustment-1"></script>
 <script>
 (function(){
   var root=document.getElementById('campaign-detail-root');
@@ -109,7 +110,7 @@
         '<div class="action-bar">'+
           '<a class="button button-secondary" href="'+content+'">Revoir le contenu</a>'+
           '<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>'+
-          '<a class="button button-primary" href="validation.html'+q+'&adjustment=multiple">Demander un ajustement</a>'+
+          '<button class="button button-primary" type="button" data-content-adjustment="multiple">Demander un ajustement</button>'+
           (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
         '</div>';
     }else{
@@ -120,7 +121,7 @@
         '</div>'+
         '<div class="action-bar">'+
           '<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>'+
-          '<a class="button button-primary" href="validation.html'+q+'&adjustment=multiple">Demander un ajustement</a>'+
+          '<button class="button button-primary" type="button" data-content-adjustment="multiple">Demander un ajustement</button>'+
           (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
         '</div>';
     }
