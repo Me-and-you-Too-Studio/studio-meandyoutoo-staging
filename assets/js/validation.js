@@ -134,6 +134,19 @@
     $('review-accept-all')?.addEventListener('click',()=>call(`/api/projects/${projectId}/review/progress`,{acceptedKeys:correctionKeys}));
     $('review-accept')?.addEventListener('click',()=>{if(!allAccepted)return window.StudioModal.alert({title:'Validez toutes les corrections',message:'Chaque correction doit être acceptée avant la confirmation finale. Vous pouvez aussi demander un ajustement sur la ligne concernée.',type:'info'});call(`/api/projects/${projectId}/review/accept`,{acceptedKeys:[...acceptedCorrections],expectedKeys:correctionKeys});});
     $('review-adjust')?.addEventListener('click',()=>openAdjustmentDialog(adjustmentTargets,call));
+    const requestedAdjustment=p.get('adjustment');
+    if(!isAdmin&&requestedAdjustment&&!window.__studioAdjustmentOpened){
+      window.__studioAdjustmentOpened=true;
+      requestAnimationFrame(()=>{
+        openAdjustmentDialog(adjustmentTargets,call).then(()=>{
+          const category=$('adjust-category');
+          if(category&&['situation','profile','intro','settings','sociodemo','multiple','other'].includes(requestedAdjustment)){
+            category.value=requestedAdjustment;
+            category.dispatchEvent(new Event('change',{bubbles:true}));
+          }
+        });
+      });
+    }
   }
   async function load(){
     try{

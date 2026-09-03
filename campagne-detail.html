@@ -104,23 +104,23 @@
       actionsHtml=
         '<div class="campaign-lock-panel">'+
           '<div class="campaign-lock-head"><span class="campaign-lock-title">Revoir le contenu</span><span class="composer-lock-chip">🔒 Lecture seule</span></div>'+
-          '<p class="campaign-lock-text">Vous pouvez revoir l’ensemble du contenu de cette campagne, mais il ne peut plus être modifié. Pour demander un changement, contactez Me&YouToo.</p>'+
+          '<p class="campaign-lock-text">Vous pouvez revoir l’ensemble du contenu de cette campagne. Pour signaler précisément un changement, utilisez la demande d’ajustement guidée.</p>'+
         '</div>'+
         '<div class="action-bar">'+
           '<a class="button button-secondary" href="'+content+'">Revoir le contenu</a>'+
           '<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>'+
-          '<a class="button button-primary" href="contact.html">Nous contacter</a>'+
+          '<a class="button button-primary" href="validation.html'+q+'&adjustment=multiple">Demander un ajustement</a>'+
           (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
         '</div>';
     }else{
       actionsHtml=
         '<div class="campaign-lock-panel">'+
           '<div class="campaign-lock-head"><span class="campaign-lock-title">Contenu de la campagne</span><span class="composer-lock-chip">🔒 Contenu verrouillé</span></div>'+
-          '<p class="campaign-lock-text">Le contenu n’est pas accessible en modification dans ce statut. Pour demander un changement, contactez Me&YouToo.</p>'+
+          '<p class="campaign-lock-text">Le contenu n’est pas accessible en modification dans ce statut. Vous pouvez signaler précisément le changement souhaité.</p>'+
         '</div>'+
         '<div class="action-bar">'+
           '<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>'+
-          '<a class="button button-primary" href="contact.html">Nous contacter</a>'+
+          '<a class="button button-primary" href="validation.html'+q+'&adjustment=multiple">Demander un ajustement</a>'+
           (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
         '</div>';
     }

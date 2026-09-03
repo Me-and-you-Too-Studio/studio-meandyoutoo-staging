@@ -43,7 +43,7 @@
       $('back-link').href=reviewUrl;$('back-link').textContent='← Retour au contrôle qualité';
       const next=$('next-link');next.href=reviewUrl;next.textContent='Enregistrer et revenir au contrôle qualité →';next.classList.remove('is-disabled');next.setAttribute('aria-disabled','false');next.onclick=async event=>{event.preventDefault();next.setAttribute('aria-busy','true');next.textContent='Enregistrement…';try{await saveAllProfiles();location.href=reviewUrl;}catch(error){next.removeAttribute('aria-busy');next.textContent='Enregistrer et revenir au contrôle qualité →';await window.StudioModal.alert({title:'Modification non enregistrée',message:error.message,type:'error'});}};
     }else if(isReadOnly()){
-      const alert=$('profiles-alert');alert.hidden=false;alert.dataset.tone='success';alert.innerHTML='<strong>🔒 Profils en lecture seule.</strong> Cette campagne a déjà été transmise. Pour toute modification, <a href="contact.html" style="text-decoration:underline;font-weight:900">contactez Me&YouToo</a>.';
+      const alert=$('profiles-alert');alert.hidden=false;alert.dataset.tone='success';alert.innerHTML=`<strong>🔒 Profils en lecture seule.</strong> Cette campagne a déjà été transmise. <a class="button button-secondary button-small" href="validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}&adjustment=profile">Demander un ajustement</a>`;
       const next=$('next-link');next.href=`parametrage.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;next.textContent='Revoir le paramétrage →';next.classList.remove('is-disabled');next.setAttribute('aria-disabled','false');next.onclick=null;
     }else{
       const next=$('next-link');
