@@ -138,6 +138,12 @@
           return Promise.resolve({project:project,readOnly:true});
         }
 
+        // Une campagne programmée ou publiée reste non modifiable, mais le
+        // client doit pouvoir envoyer la demande ciblée prévue à cet effet.
+        if(method==='POST'&&requestPath===ownProjectPath+'/review/request-adjustment'){
+          return originalRequest.call(window.StudioAPI,path,options);
+        }
+
         // Toutes les autres écritures concernant cette campagne restent bloquées.
         if(method!=='GET'&&requestPath.indexOf(ownProjectPath)===0){
           return Promise.reject(new Error('Campagne en lecture seule. Utilisez « Demander un ajustement » pour signaler un changement.'));
