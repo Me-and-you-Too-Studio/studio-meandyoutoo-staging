@@ -6,7 +6,7 @@
   function wordDiff(before,after,admin=false){
     const a=plain(before).split(/(\s+|[.,;:!?\"'()«»–—-])/).filter(Boolean),b=plain(after).split(/(\s+|[.,;:!?\"'()«»–—-])/).filter(Boolean),n=a.length,m=b.length,dp=Array.from({length:n+1},()=>Array(m+1).fill(0));
     for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)dp[i][j]=a[i]===b[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
-    let i=0,j=0,out='';while(i<n||j<m){if(i<n&&j<m&&a[i]===b[j]){out+=esc(a[i]);i++;j++;}else if(j<m&&(i===n||dp[i][j+1]>=(dp[i+1]?.[j]||0))){out+=`<ins class="${admin?'is-admin':''}">${esc(b[j])}</ins>`;j++;}else{out+=`<del class="${admin?'is-admin':''}">${esc(a[i])}</del>`;i++;}}return out;
+    let i=0,j=0,out='';while(i<n||j<m){if(i<n&&j<m&&a[i]===b[j]){out+=esc(a[i]);i++;j++;}else if(j<m&&(i===n||dp[i][j+1]>=(dp[i+1]?.[j]||0))){out+=`<ins class="${admin?'is-admin':''}">${esc(b[j])}</ins>`;j++;}else{out+=`<del>${esc(a[i])}</del>`;i++;}}return out;
   }
   let project=null,currentUser=null,reviewEvents=[],currentChapters=[];
   const date=v=>{if(!v)return 'À définir';const raw=String(v),day=raw.slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(day))return 'À définir';const parsed=new Date(day+'T12:00:00');return Number.isNaN(parsed.getTime())?'À définir':parsed.toLocaleDateString('fr-FR');};
