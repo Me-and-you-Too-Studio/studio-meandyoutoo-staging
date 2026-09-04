@@ -38,6 +38,7 @@
     users = new Map(),
     projects = new Map(),
     filter = "all",
+    sortMode = "updated-desc",
     publishOpened = false;
   const orgUsers = (o) => (Array.isArray(o?.users) ? o.users : []),
     orgProjects = (o) => (Array.isArray(o?.projects) ? o.projects : []),
@@ -223,6 +224,11 @@
       id = p.id,
       q = "?projectId=" + encodeURIComponent(id),
       buttons = [];
+    buttons.push(
+      '<button class="button button-secondary" type="button" data-rename="' +
+        id +
+        '">✏️ Renommer</button>',
+    );
     if (st === "draft")
       buttons.push(
         '<a class="button button-primary" href="' +
@@ -409,8 +415,18 @@
       '">Supprimer</button></div></article>'
     );
   }
+  function sortProjects(rows) {
+    return [...rows].sort((a, b) => {
+      const nameA = a.campaign_name || a.title || "",
+        nameB = b.campaign_name || b.title || "";
+      if (sortMode === "name-asc") return nameA.localeCompare(nameB, "fr", { sensitivity: "base" });
+      if (sortMode === "launch-asc") return String(a.launch_date || "9999-12-31").localeCompare(String(b.launch_date || "9999-12-31"));
+      if (sortMode === "close-asc") return String(a.close_date || "9999-12-31").localeCompare(String(b.close_date || "9999-12-31"));
+      return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+    });
+  }
   function render() {
-    const ps = orgProjects(organization),
+    const ps = sortProjects(orgProjects(organization)),
       rem = remaining(organization),
       used = Number(organization.passations_used || 0),
       quota = Number(organization.passations_quota || 0),
@@ -520,6 +536,11 @@
         )
         .join("") +
       '<label class="admin-ad-search">🔎 <input id="client-ad-search" type="search" placeholder="Rechercher un AD, une thématique…"></label>';
+    $("#client-ad-filters").insertAdjacentHTML(
+      "beforeend",
+      '<label class="admin-ad-sort">Trier par <select id="client-ad-sort"><option value="updated-desc">Dernière modification</option><option value="name-asc">Nom A–Z</option><option value="launch-asc">Lancement le plus proche</option><option value="close-asc">Clôture la plus proche</option></select></label>',
+    );
+    $("#client-ad-sort").value = sortMode;
     $("#client-ads").innerHTML =
       ps.map(card).join("") ||
       '<p class="admin-empty">Aucun autodiagnostic.</p>';
@@ -676,7 +697,43 @@
       dialog.showModal();
     });
   }
+  function askInternalName(p) {
+    return new Promise((resolve) => {
+      document.getElementById("admin-rename-dialog")?.remove();
+      const dialog = document.createElement("dialog");
+      dialog.id = "admin-rename-dialog";
+      dialog.className = "admin-dialog campaign-rename-dialog";
+      dialog.innerHTML =
+        '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Classement du client</p><h2>Renommer la campagne</h2><p>Ce nom sert uniquement au classement dans le Studio. Le titre affiché aux répondants reste inchangé.</p><label class="field"><span>Nom interne</span><input id="admin-internal-name" maxlength="120" minlength="2" required value="' +
+        esc(p.campaign_name || p.title || "") +
+        '"></label><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" id="admin-confirm-rename" type="button">Enregistrer le nom</button></div></form>';
+      document.body.append(dialog);
+      let settled = false;
+      const finish = (value) => { if (settled) return; settled = true; dialog.close(); dialog.remove(); resolve(value); };
+      dialog.addEventListener("cancel", (e) => { e.preventDefault(); finish(""); });
+      dialog.querySelectorAll('[value="cancel"]').forEach((button) => (button.onclick = () => finish("")));
+      dialog.querySelector("#admin-confirm-rename").onclick = () => {
+        const input = dialog.querySelector("#admin-internal-name"), value = input.value.replace(/\s+/g, " ").trim();
+        if (value.length < 2) { input.reportValidity(); return; }
+        finish(value);
+      };
+      dialog.showModal();
+      dialog.querySelector("#admin-internal-name").select();
+    });
+  }
   function bindProjectActions() {
+    $$('[data-rename]').forEach(
+      (b) =>
+        (b.onclick = async () => {
+          const p = projects.get(String(b.dataset.rename)),
+            internalName = await askInternalName(p);
+          if (!internalName || internalName === (p.campaign_name || p.title || "")) return;
+          await mutate(p.id, "/internal-name", {
+            method: "PATCH",
+            body: JSON.stringify({ campaignName: internalName }),
+          });
+        }),
+    );
     $$("[data-publish]").forEach(
       (b) => (b.onclick = () => openPublish(b.dataset.publish)),
     );
@@ -824,6 +881,10 @@
         }),
     );
     $("#client-ad-search").oninput = applyFilter;
+    $("#client-ad-sort").onchange = (event) => {
+      sortMode = event.target.value;
+      render();
+    };
     $("#save-client-credits").onclick = saveCredits;
     bindUserActions();
     bindProjectActions();

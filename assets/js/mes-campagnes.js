@@ -2,6 +2,7 @@
   var cardRoot = document.getElementById("campaigns-card-root");
   var filtersRoot = document.getElementById("campaign-filters");
   var search = document.getElementById("campaignSearch");
+  var sort = document.getElementById("campaignSort");
   var noResults = document.getElementById("noResults");
   if (!cardRoot || !filtersRoot) return;
 
@@ -310,6 +311,12 @@
     var q = query(p),
       id = esc(p.id);
     var items = [];
+    if (can("edit_campaigns"))
+      items.push(
+        '<button class="campaign-btn" type="button" data-project-action="rename" data-project-id="' +
+          id +
+          '">✏️ Renommer</button>',
+      );
     var content = contentPage(p);
     if (p.status !== "draft") {
       items.push(
@@ -403,6 +410,37 @@
     return html;
   }
 
+  function askInternalName(p) {
+    return new Promise(function (resolve) {
+      document.getElementById("campaign-rename-dialog")?.remove();
+      var dialog = document.createElement("dialog");
+      dialog.id = "campaign-rename-dialog";
+      dialog.className = "admin-dialog campaign-rename-dialog";
+      dialog.innerHTML =
+        '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Classement</p><h2>Renommer la campagne</h2><p>Ce nom est uniquement utilisé dans le Studio. Le titre affiché aux répondants ne sera pas modifié.</p><label class="field"><span>Nom interne</span><input id="campaign-internal-name" maxlength="120" minlength="2" required value="' +
+        esc(campaignName(p)) +
+        '"></label><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" id="confirm-campaign-rename" type="button">Enregistrer le nom</button></div></form>';
+      document.body.append(dialog);
+      var settled = false;
+      function finish(value) {
+        if (settled) return;
+        settled = true;
+        dialog.close();
+        dialog.remove();
+        resolve(value);
+      }
+      dialog.addEventListener("cancel", function (e) { e.preventDefault(); finish(""); });
+      dialog.querySelectorAll('[value="cancel"]').forEach(function (button) { button.onclick = function () { finish(""); }; });
+      dialog.querySelector("#confirm-campaign-rename").onclick = function () {
+        var input = dialog.querySelector("#campaign-internal-name"), value = input.value.replace(/\s+/g, " ").trim();
+        if (value.length < 2) { input.reportValidity(); return; }
+        finish(value);
+      };
+      dialog.showModal();
+      dialog.querySelector("#campaign-internal-name").select();
+    });
+  }
+
   function extraBadges(p) {
     var parts = [];
     if (p.reprogrammed_at || p.reprogrammedAt)
@@ -470,6 +508,15 @@
       return String(x.id) === String(id);
     });
     if (!p) return;
+    if (action === "rename") {
+      var internalName = await askInternalName(p);
+      if (!internalName || internalName === campaignName(p)) return;
+      await StudioAPI.request("/api/projects/" + id + "/internal-name", {
+        method: "PATCH",
+        body: JSON.stringify({ campaignName: internalName }),
+      });
+      return load();
+    }
     if (action === "delete") {
       var ok = await StudioModal.confirm({
         eyebrow: "Faire du tri",
@@ -827,6 +874,13 @@
         .toLowerCase();
       return matchesFilter(p) && (!term || haystack.indexOf(term) !== -1);
     });
+    var mode = (sort && sort.value) || "updated-desc";
+    filtered.sort(function (a, b) {
+      if (mode === "name-asc") return campaignName(a).localeCompare(campaignName(b), "fr", { sensitivity: "base" });
+      if (mode === "launch-asc") return String(a.launch_date || "9999-12-31").localeCompare(String(b.launch_date || "9999-12-31"));
+      if (mode === "close-asc") return String(a.close_date || "9999-12-31").localeCompare(String(b.close_date || "9999-12-31"));
+      return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
+    });
     cardRoot.innerHTML = filtered.map(cardHtml).join("");
     noResults.hidden = filtered.length !== 0;
     bindProjectActions();
@@ -903,6 +957,7 @@
   }
 
   if (search) search.addEventListener("input", renderCards);
+  if (sort) sort.addEventListener("change", renderCards);
   bindQuickFilters();
   load();
 })();
