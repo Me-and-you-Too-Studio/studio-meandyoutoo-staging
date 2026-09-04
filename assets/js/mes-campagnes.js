@@ -267,7 +267,7 @@
   function filterLabel(key){
     if(key==='all')return 'Toutes';
     if(key==='results')return 'Résultats';
-    if(key==='endingSoon')return 'À surveiller';
+    if(key==='endingSoon')return 'Fin proche';
     if(key==='validation')return 'À valider';
     if(key==='review')return 'En relecture';
     return statusLabel(key);
@@ -277,7 +277,7 @@
     if(key==='all')return projects.length;
     if(key==='results')return projects.filter(function(p){return ['unpublished','closed','completed'].includes(p.status);}).length;
     if(key==='validation')return projects.filter(function(p){return p.status==='client_validation_required';}).length;
-    if(key==='review')return projects.filter(function(p){return ['configuration_submitted','review_pending','in_review'].includes(p.status);}).length;
+    if(key==='review')return projects.filter(function(p){return ['configuration_submitted','review_pending','in_review','ready_to_publish'].includes(p.status);}).length;
     if(key==='endingSoon'){
       var now=new Date(),limit=new Date(now.getTime()+14*24*60*60*1000);
       return projects.filter(function(p){var d=new Date(p.close_date);return ['published','active'].includes(p.status)&&p.close_date&&!Number.isNaN(d.getTime())&&d>=now&&d<=limit;}).length;
@@ -286,7 +286,7 @@
   }
 
   function buildFilters(){
-    var order=['all','validation','published','scheduled','review','draft','unpublished','closed','completed','archived'];
+    var order=['all','endingSoon','validation','review','results','draft','scheduled','published','unpublished','archived'];
     filtersRoot.innerHTML=order.filter(function(key){return key==='all'||countForFilter(key)>0;}).map(function(key){
       return '<button class="campaign-filter-tab'+(activeFilter===key?' active':'')+'" type="button" data-filter="'+esc(key)+'">'+esc(filterLabel(key))+' <span>'+countForFilter(key)+'</span></button>';
     }).join('');
@@ -303,7 +303,7 @@
     if(activeFilter==='all')return true;
     if(activeFilter==='results')return ['unpublished','closed','completed'].includes(p.status);
     if(activeFilter==='validation')return p.status==='client_validation_required';
-    if(activeFilter==='review')return ['configuration_submitted','review_pending','in_review'].includes(p.status);
+    if(activeFilter==='review')return ['configuration_submitted','review_pending','in_review','ready_to_publish'].includes(p.status);
     if(activeFilter==='endingSoon'){
       if(!['published','active'].includes(p.status)||!p.close_date)return false;
       var now=new Date(),limit=new Date(now.getTime()+14*24*60*60*1000),d=new Date(p.close_date);
