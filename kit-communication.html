@@ -6,7 +6,7 @@
 <title>Kit de communication — Studio Me&YouToo</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20260828-kit-links-role-3">
+<link rel="stylesheet" href="assets/css/style.css?v=20260904-admin-context-1">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -16,11 +16,11 @@
 <main class="main" id="contenu">
   <div class="topbar compact-topbar kit-topbar">
     <div>
-      <p class="eyebrow">Après transmission</p>
+      <p class="eyebrow" id="kit-page-eyebrow">Après transmission</p>
       <h1 class="page-title">Kit de communication</h1>
-      <p class="lead">Nous vérifions la cohérence méthodologique et pédagogique de votre configuration, intégrons vos éléments graphiques puis préparons la campagne et les supports de communication. Nous déposerons en retour les éléments sur cet espace. Vous serez averti par mail.</p>
+      <p class="lead" id="kit-page-intro">Nous vérifions la cohérence méthodologique et pédagogique de votre configuration, intégrons vos éléments graphiques puis préparons la campagne et les supports de communication. Nous déposerons en retour les éléments sur cet espace. Vous serez averti par mail.</p>
     </div>
-    <div class="top-actions"><a class="button button-ghost" href="mes-campagnes.html">← Mes campagnes</a></div>
+    <div class="top-actions"><a class="button button-ghost" id="kit-back-link" href="mes-campagnes.html">← Mes campagnes</a></div>
   </div>
 
   <section class="card studio-process-card">
@@ -107,7 +107,7 @@
         <div id="video-admin-box" class="video-admin-box" hidden><strong>Ajouter ou modifier le lien vidéo</strong><p class="section-desc" style="margin-top:6px">Déposez la vidéo sur votre espace de stockage puis collez ici le lien HTTPS de téléchargement.</p><div class="video-fields"><input id="video-url" class="video-field" type="url" placeholder="https://..."><textarea id="video-description" class="video-field" rows="3" placeholder="Ex. Vidéo de lancement prête à diffuser sur votre intranet."></textarea></div><div class="top-actions" style="margin-top:10px"><button class="button button-primary" id="video-save" type="button">Enregistrer et notifier le client</button><button class="button button-secondary" id="video-clear" type="button">Retirer le lien</button></div></div>
         <div id="video-client-box" class="video-card"><div class="kit-empty">Aucune vidéo disponible pour le moment.</div></div>
       </section></div>
-      <aside class="kit-tab-side"><section class="card side-card"><div class="side-head">Campagne</div><div class="side-row"><span>Nom</span><strong id="kit-campaign-name">Chargement…</strong></div><div class="side-row"><span>Statut</span><strong id="kit-status-text">—</strong></div><div class="side-row"><span>Lancement</span><strong id="kit-launch">—</strong></div><div class="side-row"><span>Clôture</span><strong id="kit-close">—</strong></div></section></aside>
+      <aside class="kit-tab-side"><section class="card side-card kit-campaign-context"><div class="side-head">Campagne concernée</div><div class="side-row"><span>Entreprise cliente</span><strong id="kit-organization-name">Chargement…</strong></div><div class="side-row"><span>Commanditaire</span><strong id="kit-commanditaire-name">—</strong><small id="kit-commanditaire-details"></small></div><div class="side-row"><span>Thématique</span><strong id="kit-theme-name">—</strong></div><div class="side-row"><span>Nom de la campagne</span><strong id="kit-campaign-name">Chargement…</strong></div><div class="side-row"><span>Titre répondants</span><strong id="kit-respondent-title">—</strong></div><div class="side-row"><span>Statut</span><strong id="kit-status-text">—</strong></div><div class="side-row"><span>Lancement</span><strong id="kit-launch">—</strong></div><div class="side-row"><span>Clôture</span><strong id="kit-close">—</strong></div></section></aside>
     </div>
   </section>
 </main></div>
@@ -123,7 +123,7 @@
       <button class="button button-danger" id="kit-delete-confirm" type="button">Supprimer</button>
     </div>
   </div>
-<script src="assets/js/api.js?v=20260713-2"></script><script src="assets/js/app.js?v=20260828-notif-toggle-3"></script><script src="assets/js/project-context.js?v=20260713-5"></script><script src="assets/js/kit-communication.js?v=20260901-review-workflow-1"></script>
+<script src="assets/js/api.js?v=20260713-2"></script><script src="assets/js/app.js?v=20260828-notif-toggle-3"></script><script src="assets/js/project-context.js?v=20260713-5"></script><script src="assets/js/kit-communication.js?v=20260904-admin-context-1"></script>
 </div>
 
 </body></html>

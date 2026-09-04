@@ -83,7 +83,11 @@
   async function uploadBatch(files,kind,comment){
     for(let i=0;i<files.length;i++){const file=files[i],notify=i===files.length-1;await api(`/api/projects/${projectId}/communication-assets`,{method:'POST',body:JSON.stringify({filename:file.name,mimeType:file.type,sizeBytes:file.size,contentBase64:await fileToBase64(file),comment,kind,notify})});}
   }
-  async function load(){if(!projectId){show('Aucune campagne sélectionnée.');return;}try{const [composer,me,assetsData]=await Promise.all([api(`/api/projects/${projectId}/composer`),api('/api/me'),api(`/api/projects/${projectId}/communication-assets`)]);project=composer.project;currentUser=me.user;isAdminDeliveryMode=currentUser?.role==='admin'&&sessionStorage.getItem('studio_interface_mode')!=='client';communication=assetsData.communication||{};$('kit-campaign-name').textContent=project.campaign_name||project.title||'Campagne';$('kit-status-text').textContent=statusLabel(project.status);$('kit-project-status').textContent=statusLabel(project.status);$('kit-launch').textContent=date(project.launch_date);$('kit-close').textContent=date(project.close_date);$('admin-delivery-upload').hidden=!isAdminDeliveryMode;$('video-admin-box').hidden=!isAdminDeliveryMode;if(isAdminDeliveryMode){
+  async function load(){if(!projectId){show('Aucune campagne sélectionnée.');return;}try{const [composer,me,assetsData]=await Promise.all([api(`/api/projects/${projectId}/composer`),api('/api/me'),api(`/api/projects/${projectId}/communication-assets`)]);project=composer.project;currentUser=me.user;isAdminDeliveryMode=currentUser?.role==='admin'&&sessionStorage.getItem('studio_interface_mode')!=='client';communication=assetsData.communication||{};$('kit-organization-name').textContent=project.organization_name||'Entreprise non renseignée';$('kit-commanditaire-name').textContent=project.commanditaire_name||'Non renseigné';$('kit-commanditaire-details').textContent=[project.commanditaire_job_title,project.commanditaire_email].filter(Boolean).join(' · ');$('kit-theme-name').textContent=project.theme_title||'Thématique non renseignée';$('kit-campaign-name').textContent=project.campaign_name||project.title||'Campagne';$('kit-respondent-title').textContent=project.respondent_title||'Non renseigné';$('kit-status-text').textContent=statusLabel(project.status);$('kit-project-status').textContent=statusLabel(project.status);$('kit-launch').textContent=date(project.launch_date);$('kit-close').textContent=date(project.close_date);$('admin-delivery-upload').hidden=!isAdminDeliveryMode;$('video-admin-box').hidden=!isAdminDeliveryMode;if(isAdminDeliveryMode){
+      $('kit-page-eyebrow').textContent='Administration · Kit client';
+      $('kit-page-intro').textContent='Pilotez la préparation et la livraison du kit de cette campagne. Consultez les éléments transmis par le client, déposez les livrables Me&YouToo et renseignez les liens de diffusion.';
+      $('kit-back-link').textContent='← Retour au dossier client';
+      $('kit-back-link').href='client.html?organizationId='+encodeURIComponent(project.organization_id)+'&projectId='+encodeURIComponent(project.id);
       $('graphics-tab-label').textContent='Éléments graphiques du client';
       $('client-assets-title').textContent='Éléments graphiques du client';
       $('client-assets-desc').textContent='Fichiers transmis par le client pour cette campagne.';
@@ -91,6 +95,9 @@
       $('kit-upload-desc').textContent='Consultez ici les logos, chartes et consignes transmis par le client. Pour déposer vos livrables, utilisez l’onglet « Livraison Me&YouToo ».';
       $('brand-upload-button').hidden=true;$('brand-drop-zone').hidden=true;
     }else{
+      $('kit-page-eyebrow').textContent='Après transmission';
+      $('kit-back-link').textContent='← Mes campagnes';
+      $('kit-back-link').href='mes-campagnes.html';
       $('graphics-tab-label').textContent='Vos éléments graphiques';
       $('client-assets-title').textContent='Vos éléments graphiques';
       $('client-assets-desc').textContent='Vous gardez ici la trace des fichiers transmis pour cette campagne.';
