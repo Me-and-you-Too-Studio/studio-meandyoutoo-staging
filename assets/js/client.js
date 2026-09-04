@@ -340,6 +340,8 @@
       (isEndingSoon(p) ? "true" : "false") +
       '" data-starting-soon="' +
       (isStartingSoon(p) ? "true" : "false") +
+      '" data-has-results="' +
+      (String(p.communication_results_url || "").trim() ? "true" : "false") +
       '" data-search="' +
       esc((title + " " + theme + " " + respondent).toLowerCase()) +
       '" id="admin-ad-' +
@@ -447,6 +449,7 @@
       all: ps.length,
       startingSoon: ps.filter(isStartingSoon).length,
       endingSoon: ps.filter(isEndingSoon).length,
+      results: ps.filter((p) => Boolean(String(p.communication_results_url || "").trim())).length,
       sent: 0,
       draft: 0,
       scheduled: 0,
@@ -463,6 +466,7 @@
       ["startingSoon", "🚀 Début proche"],
       ["endingSoon", "🔴 Fin proche"],
       ["sent", "🚀 À publier"],
+      ["results", "📊 Résultats disponibles"],
       ["draft", "✏️ Brouillons"],
       ["scheduled", "🗓️ Programmées"],
       ["published", "🟢 Publiées"],
@@ -491,7 +495,14 @@
       counts.scheduled +
       ' programmée' +
       (counts.scheduled > 1 ? "s" : "") +
-      '</strong><small>Campagnes planifiées à une date future.</small></div></button>';
+      '</strong><small>Campagnes planifiées à une date future.</small></div></button>' +
+      '<button type="button" class="admin-campaign-watch-card results" data-watch-filter="results"><span class="admin-watch-icon">📊</span><div><strong>' +
+      counts.results +
+      ' résultat' +
+      (counts.results > 1 ? "s" : "") +
+      ' disponible' +
+      (counts.results > 1 ? "s" : "") +
+      '</strong><small>Liens accessibles dès la programmation et pendant la campagne.</small></div></button>';
     $("#client-ad-filters").innerHTML =
       chips
         .filter(([k]) => k === "all" || counts[k] > 0)
@@ -542,7 +553,9 @@
     $$("[data-ad-card]").forEach((c) => {
       const ok =
         filter === "all" ||
-        (["endingSoon", "startingSoon"].includes(filter)
+        (filter === "results"
+          ? Boolean(c.dataset.hasResults === "true")
+          : ["endingSoon", "startingSoon"].includes(filter)
           ? c.dataset[filter] === "true"
           : c.dataset.status === filter);
       c.hidden = !(ok && (!q || c.dataset.search.includes(q)));

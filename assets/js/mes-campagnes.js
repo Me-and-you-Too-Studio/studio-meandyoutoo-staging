@@ -631,13 +631,11 @@
         "ready_to_publish",
       ].includes(p.status);
     });
-    var results = projects.filter(function (p) {
-      return (
-        p.status === "closed" ||
-        p.status === "completed" ||
-        p.status === "unpublished"
-      );
-    });
+    var results = can("view_results")
+      ? projects.filter(function (p) {
+          return Boolean(String(p.communication_results_url || "").trim());
+        })
+      : [];
     var now = new Date();
     var soonLimit = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
     var startingSoon = projects.filter(function (p) {
@@ -704,7 +702,7 @@
     if (key === "results")
       return can("view_results")
         ? projects.filter(function (p) {
-            return ["unpublished", "closed", "completed"].includes(p.status);
+            return Boolean(String(p.communication_results_url || "").trim());
           }).length
         : 0;
     if (key === "validation")
@@ -791,7 +789,7 @@
   function matchesFilter(p) {
     if (activeFilter === "all") return true;
     if (activeFilter === "results")
-      return ["unpublished", "closed", "completed"].includes(p.status);
+      return can("view_results") && Boolean(String(p.communication_results_url || "").trim());
     if (activeFilter === "validation")
       return p.status === "client_validation_required";
     if (activeFilter === "review")
