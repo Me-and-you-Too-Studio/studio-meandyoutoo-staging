@@ -7,6 +7,8 @@
 
   var projects=[];
   var activeFilter='all';
+  var currentUser=window.StudioAPI.user&&window.StudioAPI.user()||{};
+  function can(permission){return currentUser.role==='admin'||Boolean(currentUser.permissions&&currentUser.permissions[permission]);}
   var pageParams=new URLSearchParams(location.search),initialAction=pageParams.get('action'),initialProjectId=pageParams.get('projectId'),initialActionHandled=false;
 
   function esc(v){
@@ -132,7 +134,7 @@
       share:share,
       results:results,
       shareText:share?'disponible':'en attente Me&YouToo',
-      resultsText:results?'disponibles':'non disponibles'
+      resultsText:can('view_results')?(results?'disponibles':'non disponibles'):'accès non autorisé'
     };
   }
 
@@ -143,11 +145,11 @@
   function primaryAction(p){
     var q=query(p),id=esc(p.id);
     if(!q)return invalidThemeAction();
-    if(p.status==='draft')return '<a class="campaign-btn campaign-btn-primary" href="'+resumePage(p.current_step)+q+'">Reprendre la création</a>';
+    if(p.status==='draft')return can('edit_campaigns')?'<a class="campaign-btn campaign-btn-primary" href="'+resumePage(p.current_step)+q+'">Reprendre la création</a>':'<a class="campaign-btn campaign-btn-primary" href="campagne-detail.html'+q+'">Consulter</a>';
     if(p.status==='client_validation_required')return '<a class="campaign-btn campaign-btn-primary" href="validation.html'+q+'">Valider les corrections</a>';
     if(['configuration_submitted','review_pending','in_review','ready_to_publish'].includes(p.status))return '<a class="campaign-btn campaign-btn-primary" href="validation.html'+q+'">Suivre la relecture</a>';
-    if(p.status==='unpublished'||p.status==='closed'||p.status==='completed')return '<button class="campaign-btn campaign-btn-primary" type="button" data-project-action="reprogram" data-project-id="'+id+'">🚀 Reprogrammer</button>';
-    if(p.status==='archived')return '<button class="campaign-btn campaign-btn-primary" type="button" data-project-action="restore" data-project-id="'+id+'">↩️ Restaurer</button>';
+    if((p.status==='unpublished'||p.status==='closed'||p.status==='completed')&&can('manage_schedule'))return '<button class="campaign-btn campaign-btn-primary" type="button" data-project-action="reprogram" data-project-id="'+id+'">🚀 Reprogrammer</button>';
+    if(p.status==='archived'&&can('manage_schedule'))return '<button class="campaign-btn campaign-btn-primary" type="button" data-project-action="restore" data-project-id="'+id+'">↩️ Restaurer</button>';
     return '<a class="campaign-btn campaign-btn-primary" href="campagne-detail.html'+q+'">Voir la campagne</a>';
   }
 
@@ -161,13 +163,13 @@
         : invalidThemeAction());
     }
     if(q&&(['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish','scheduled','published','active','unpublished','closed','completed'].includes(p.status)))items.push('<a class="campaign-btn campaign-btn-kit" href="kit-communication.html'+q+'">📣 Kit de com</a>');
-    if(['published','active'].includes(p.status))items.push('<button class="campaign-btn" type="button" data-project-action="extend" data-project-id="'+id+'">📅 Prolonger</button>');
-    if(['published','active'].includes(p.status))items.push('<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="unpublish" data-project-id="'+id+'">⏹ Dépublier</button>');
-    if(!['scheduled','published','active'].includes(p.status))items.push('<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button>');
-    if(!['draft','configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(p.status))items.push('<button class="campaign-btn" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button>');
+    if(['published','active'].includes(p.status)&&can('manage_schedule'))items.push('<button class="campaign-btn" type="button" data-project-action="extend" data-project-id="'+id+'">📅 Prolonger</button>');
+    if(['published','active'].includes(p.status)&&can('manage_schedule'))items.push('<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="unpublish" data-project-id="'+id+'">⏹ Dépublier</button>');
+    if(!['scheduled','published','active'].includes(p.status)&&can('edit_campaigns'))items.push('<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button>');
+    if(!['draft','configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(p.status)&&can('create_campaigns'))items.push('<button class="campaign-btn" type="button" data-project-action="clone" data-project-id="'+id+'">🧬 Cloner</button>');
 
     var more=[];
-    if(p.status==='unpublished')more.push('<button type="button" data-project-action="archive" data-project-id="'+id+'">📦 Archiver</button>');
+    if(p.status==='unpublished'&&can('manage_schedule'))more.push('<button type="button" data-project-action="archive" data-project-id="'+id+'">📦 Archiver</button>');
 
     var html='<div class="campaign-row-actions">'+primaryAction(p)+items.join('');
     if(more.length){
@@ -275,7 +277,7 @@
 
   function countForFilter(key){
     if(key==='all')return projects.length;
-    if(key==='results')return projects.filter(function(p){return ['unpublished','closed','completed'].includes(p.status);}).length;
+    if(key==='results')return can('view_results')?projects.filter(function(p){return ['unpublished','closed','completed'].includes(p.status);}).length:0;
     if(key==='validation')return projects.filter(function(p){return p.status==='client_validation_required';}).length;
     if(key==='review')return projects.filter(function(p){return ['configuration_submitted','review_pending','in_review','ready_to_publish'].includes(p.status);}).length;
     if(key==='endingSoon'){
@@ -348,6 +350,9 @@
 
   async function load(){
     try{
+      var me=await window.StudioAPI.request('/api/me');currentUser=me.user||currentUser;localStorage.setItem('studio_user',JSON.stringify(currentUser));
+      var newCampaign=document.querySelector('a[href="bibliotheque.html"].button-primary');if(newCampaign)newCampaign.hidden=!can('create_campaigns');
+      var resultsCard=document.querySelector('[data-quick-filter="results"]');if(resultsCard)resultsCard.hidden=!can('view_results');
       var data=await window.StudioAPI.request('/api/projects?organizationId='+encodeURIComponent(window.StudioAPI.organizationId()));
       projects=Array.isArray(data.projects)?data.projects:[];
       await Promise.all(projects.map(enrichCommunication));

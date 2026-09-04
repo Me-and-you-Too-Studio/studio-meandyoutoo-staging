@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="canonical" href="https://studio.meandyoutoo.app/account.html">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20260825-account-counter-2">
+<link rel="stylesheet" href="assets/css/style.css?v=20260904-client-access-1">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -73,6 +73,11 @@
       </article>
     </section>
 
+    <section class="table-card account-access-manager" id="team-access-section" hidden>
+      <div class="account-history-heading"><div><p class="eyebrow">Équipe</p><h2 class="section-title">Comptes et droits d’accès</h2><p class="section-desc">Invitez vos collaborateurs et choisissez précisément ce qu’ils peuvent faire ou consulter.</p></div><button class="button button-primary" id="add-team-user" type="button">+ Ajouter un accès</button></div>
+      <div id="team-users" class="access-user-list"></div>
+    </section>
+
     <section class="table-card account-history" aria-labelledby="history-title">
       <div class="account-history-heading"><span class="account-history-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span><div><p class="eyebrow">Suivi des commandes</p><h2 class="section-title" id="history-title">Historique des packs commandés</h2></div></div>
       <table class="data-table">
@@ -83,9 +88,10 @@
     <p class="composer-alert" id="account-alert" hidden></p>
   </main>
 </div>
+<dialog id="team-user-dialog" class="admin-dialog access-dialog"><form method="dialog" id="team-user-form"><button type="button" class="admin-dialog-close" id="close-team-user" aria-label="Fermer">×</button><p class="eyebrow">Compte client</p><h2 id="team-user-title">Ajouter un accès</h2><div class="parameter-grid"><div class="field"><label for="team-first">Prénom</label><input id="team-first" required></div><div class="field"><label for="team-last">Nom</label><input id="team-last" required></div><div class="field"><label for="team-job">Fonction</label><input id="team-job" required></div><div class="field"><label for="team-phone">Téléphone</label><input id="team-phone" type="tel"></div></div><div class="field"><label for="team-email">Email professionnel</label><input id="team-email" type="email" required></div><div class="field"><label for="team-level">Niveau d’accès</label><select id="team-level"><option value="owner">Responsable du compte</option><option value="manager">Gestionnaire de campagnes</option><option value="contributor">Contributeur</option><option value="viewer">Lecture seule</option></select></div><fieldset class="access-rights"><legend>Droits personnalisés</legend><div id="team-permissions" class="access-rights-grid"></div></fieldset><div class="top-actions"><button class="button button-ghost" id="cancel-team-user" type="button">Annuler</button><button class="button button-primary" id="save-team-user" type="button">Créer et inviter</button></div></form></dialog>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20260713-2"></script>
 <script src="assets/js/app.js?v=20260824-navigation-popup-8"></script>
-<script src="assets/js/account.js?v=20260825-account-counter-2"></script>
+<script src="assets/js/account.js?v=20260904-client-access-1"></script>
 </body>
 </html>

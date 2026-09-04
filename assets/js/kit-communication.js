@@ -33,6 +33,7 @@
     const share=String(communication.shareUrl||communication.share_url||''),results=String(communication.resultsUrl||communication.results_url||'');
     const set=(value,textId,copyId,openId)=>{$(textId).textContent=value||'En préparation par Me&YouToo';$(copyId).disabled=!value;const open=$(openId);open.href=value||'#';open.setAttribute('aria-disabled',String(!value));open.classList.toggle('is-disabled',!value);};
     set(share,'share-url','share-copy','share-open');set(results,'results-url','results-copy','results-open');
+    if(communication.resultsRestricted){$('results-url').textContent='Accès non autorisé pour votre compte';$('results-copy').disabled=true;$('results-open').setAttribute('aria-disabled','true');$('results-open').classList.add('is-disabled');}
     if(isAdminDeliveryMode){$('share-url-admin').value=share;$('results-url-admin').value=results;}$('links-admin-box').hidden=!isAdminDeliveryMode;if($('links-client-waiting'))$('links-client-waiting').hidden=isAdminDeliveryMode||Boolean(share||results);
     const qrUrl=share?`https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=12&data=${encodeURIComponent(share)}&v=${encodeURIComponent(String(communication.linksUpdatedAt||communication.links_updated_at||Date.now()))}`:'';$('qr-ready').hidden=!qrUrl;$('qr-empty').hidden=Boolean(qrUrl);if(qrUrl){$('qr-image').src=qrUrl;$('qr-download').href=qrUrl;}
   }
