@@ -194,7 +194,8 @@
     if(IS_ADMIN)return;
     var required={
       'packs.html':'order_passations',
-      'commande.html':'order_passations'
+      'commande.html':'order_passations',
+      'kit-communication.html':'manage_kit'
     }[CURRENT];
     if(!required||CURRENT_USER&&CURRENT_USER.permissions&&CURRENT_USER.permissions[required])return;
     var main=document.querySelector('main.main');

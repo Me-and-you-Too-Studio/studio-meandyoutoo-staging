@@ -162,7 +162,7 @@
         ? '<a class="campaign-btn" href="'+content+'">👁️ Voir le contenu</a>'
         : invalidThemeAction());
     }
-    if(q&&(['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish','scheduled','published','active','unpublished','closed','completed'].includes(p.status)))items.push('<a class="campaign-btn campaign-btn-kit" href="kit-communication.html'+q+'">📣 Kit de com</a>');
+    if(q&&can('manage_kit')&&(['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish','scheduled','published','active','unpublished','closed','completed'].includes(p.status)))items.push('<a class="campaign-btn campaign-btn-kit" href="kit-communication.html'+q+'">📣 Kit de com</a>');
     if(['scheduled','published','active'].includes(p.status)&&can('manage_schedule'))items.push('<button class="campaign-btn" type="button" data-project-action="extend" data-project-id="'+id+'">📅 Prolonger</button>');
     if(['published','active'].includes(p.status)&&can('manage_schedule'))items.push('<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="unpublish" data-project-id="'+id+'">⏹ Dépublier</button>');
     if(!['scheduled','published','active'].includes(p.status)&&can('edit_campaigns'))items.push('<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="delete" data-project-id="'+id+'">🗑️ Supprimer</button>');
