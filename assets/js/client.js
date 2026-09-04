@@ -179,6 +179,17 @@
     now.setHours(12, 0, 0, 0);
     return Math.ceil((close - now) / 86400000);
   }
+  function daysUntilStart(p) {
+    if (!p.launch_date) return null;
+    const start = new Date(String(p.launch_date).slice(0, 10) + "T12:00:00"),
+      now = new Date();
+    now.setHours(12, 0, 0, 0);
+    return Math.ceil((start - now) / 86400000);
+  }
+  function isStartingSoon(p) {
+    const days = daysUntilStart(p);
+    return normalizedStatus(p) === "scheduled" && days !== null && days >= 0 && days <= 14;
+  }
   function isEndingSoon(p) {
     const st = normalizedStatus(p),
       days = daysUntilClose(p);
@@ -186,7 +197,7 @@
       ["scheduled", "published", "active"].includes(st) &&
       days !== null &&
       days >= 0 &&
-      days <= 7
+      days <= 14
     );
   }
   function adFilterKey(p) {
@@ -307,6 +318,14 @@
           esc(contact.email || "")
         : "Non renseigné dans cet AD.",
       days = daysUntilClose(p),
+      startDays = daysUntilStart(p),
+      starting = isStartingSoon(p)
+        ? '<span class="admin-ad-status status-starting">Début dans ' +
+          startDays +
+          " jour" +
+          (startDays > 1 ? "s" : "") +
+          "</span>"
+        : "",
       ending = isEndingSoon(p)
         ? '<span class="admin-ad-status status-ending">Fin dans ' +
           days +
@@ -319,6 +338,8 @@
       adFilterKey(p) +
       '" data-ending-soon="' +
       (isEndingSoon(p) ? "true" : "false") +
+      '" data-starting-soon="' +
+      (isStartingSoon(p) ? "true" : "false") +
       '" data-search="' +
       esc((title + " " + theme + " " + respondent).toLowerCase()) +
       '" id="admin-ad-' +
@@ -336,6 +357,7 @@
       '">' +
       statusLabel(p) +
       "</span>" +
+      starting +
       ending +
       '</div><div class="admin-ad-commanditaire"><strong>Commanditaire campagne</strong><span>' +
       commanditaire +
@@ -423,6 +445,7 @@
       "</small></article>";
     const counts = {
       all: ps.length,
+      startingSoon: ps.filter(isStartingSoon).length,
       endingSoon: ps.filter(isEndingSoon).length,
       sent: 0,
       draft: 0,
@@ -437,7 +460,8 @@
     });
     const chips = [
       ["all", "✨ Tous"],
-      ["endingSoon", "🔴 Fin proche (7 jours)"],
+      ["startingSoon", "🚀 Début proche"],
+      ["endingSoon", "🔴 Fin proche"],
       ["sent", "🚀 À publier"],
       ["draft", "✏️ Brouillons"],
       ["scheduled", "🗓️ Programmées"],
@@ -445,6 +469,29 @@
       ["unpublished", "🛑 Dépubliées"],
       ["archived", "📦 Archivées"],
     ];
+    $("#client-campaign-watch").innerHTML =
+      '<button type="button" class="admin-campaign-watch-card starting" data-watch-filter="startingSoon"><span class="admin-watch-icon">🚀</span><div><strong>' +
+      counts.startingSoon +
+      " campagne" +
+      (counts.startingSoon > 1 ? "s" : "") +
+      " commence" +
+      (counts.startingSoon > 1 ? "nt" : "") +
+      ' bientôt</strong><small>Dans les 14 prochains jours · préparer le plan de communication.</small></div></button>' +
+      '<button type="button" class="admin-campaign-watch-card ending" data-watch-filter="endingSoon"><span class="admin-watch-icon">⏰</span><div><strong>' +
+      counts.endingSoon +
+      " campagne" +
+      (counts.endingSoon > 1 ? "s" : "") +
+      " se termine" +
+      (counts.endingSoon > 1 ? "nt" : "") +
+      ' bientôt</strong><small>Dans les 14 prochains jours · prévoir une dernière relance.</small></div></button>' +
+      '<button type="button" class="admin-campaign-watch-card publish" data-watch-filter="sent"><span class="admin-watch-icon">📤</span><div><strong>' +
+      counts.sent +
+      ' à publier</strong><small>Configurations transmises ou en cours de relecture.</small></div></button>' +
+      '<button type="button" class="admin-campaign-watch-card scheduled" data-watch-filter="scheduled"><span class="admin-watch-icon">🗓️</span><div><strong>' +
+      counts.scheduled +
+      ' programmée' +
+      (counts.scheduled > 1 ? "s" : "") +
+      '</strong><small>Campagnes planifiées à une date future.</small></div></button>';
     $("#client-ad-filters").innerHTML =
       chips
         .filter(([k]) => k === "all" || counts[k] > 0)
@@ -495,8 +542,8 @@
     $$("[data-ad-card]").forEach((c) => {
       const ok =
         filter === "all" ||
-        (filter === "endingSoon"
-          ? c.dataset.endingSoon === "true"
+        (["endingSoon", "startingSoon"].includes(filter)
+          ? c.dataset[filter] === "true"
           : c.dataset.status === filter);
       c.hidden = !(ok && (!q || c.dataset.search.includes(q)));
     });
@@ -750,6 +797,17 @@
             x.classList.toggle("is-active", x === btn),
           );
           applyFilter();
+        }),
+    );
+    $$('[data-watch-filter]').forEach(
+      (btn) =>
+        (btn.onclick = () => {
+          filter = btn.dataset.watchFilter;
+          $$('[data-ad-filter]').forEach((x) =>
+            x.classList.toggle('is-active', x.dataset.adFilter === filter),
+          );
+          applyFilter();
+          document.getElementById('client-ad-filters')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }),
     );
     $("#client-ad-search").oninput = applyFilter;

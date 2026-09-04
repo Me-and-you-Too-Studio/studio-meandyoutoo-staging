@@ -639,7 +639,7 @@
       );
     });
     var now = new Date();
-    var soonLimit = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    var soonLimit = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
     var startingSoon = projects.filter(function (p) {
       if (p.status !== "scheduled" || !p.launch_date) return false;
       var d = new Date(p.launch_date);
@@ -666,12 +666,8 @@
       (startingSoon.length > 1 ? "nt" : "") +
       " bientôt";
     document.getElementById("starting-soon-text").textContent = startingSoon.length
-      ? startingSoon
-          .map(function (p) {
-            return campaignName(p) + " · lancement le " + dateFr(p.launch_date) + " · pensez au plan de communication";
-          })
-          .join(" — ")
-      : "Aucun lancement prévu dans les 7 prochains jours.";
+      ? "Cliquez pour afficher les campagnes et préparer leur plan de communication."
+      : "Aucun lancement prévu dans les 14 prochains jours.";
     document.getElementById("results-count").textContent =
       results.length +
       " campagne" +
@@ -685,12 +681,8 @@
       (endingSoon.length > 1 ? "nt" : "") +
       " bientôt";
     document.getElementById("ending-soon-text").textContent = endingSoon.length
-      ? endingSoon
-          .map(function (p) {
-            return campaignName(p) + " · clôture le " + dateFr(p.close_date);
-          })
-          .join(" — ")
-      : "Aucune campagne ne nécessite de relance immédiate.";
+      ? "Cliquez pour afficher les campagnes concernées et préparer une dernière relance."
+      : "Aucune clôture prévue dans les 14 prochains jours.";
   }
 
   function statusKey(p) {
@@ -730,7 +722,7 @@
       }).length;
     if (key === "startingSoon") {
       var nowStart = new Date(),
-        startLimit = new Date(nowStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+        startLimit = new Date(nowStart.getTime() + 14 * 24 * 60 * 60 * 1000);
       return projects.filter(function (p) {
         var d = new Date(p.launch_date);
         return p.status === "scheduled" && p.launch_date && !Number.isNaN(d.getTime()) && d >= nowStart && d <= startLimit;
@@ -738,7 +730,7 @@
     }
     if (key === "endingSoon") {
       var now = new Date(),
-        limit = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        limit = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
       return projects.filter(function (p) {
         var d = new Date(p.close_date);
         return (
@@ -812,7 +804,7 @@
     if (activeFilter === "startingSoon") {
       if (p.status !== "scheduled" || !p.launch_date) return false;
       var nowStart = new Date(),
-        startLimit = new Date(nowStart.getTime() + 7 * 24 * 60 * 60 * 1000),
+        startLimit = new Date(nowStart.getTime() + 14 * 24 * 60 * 60 * 1000),
         startDate = new Date(p.launch_date);
       return !Number.isNaN(startDate.getTime()) && startDate >= nowStart && startDate <= startLimit;
     }
@@ -820,7 +812,7 @@
       if (!["scheduled", "published", "active"].includes(p.status) || !p.close_date)
         return false;
       var now = new Date(),
-        limit = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+        limit = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
         d = new Date(p.close_date);
       return !Number.isNaN(d.getTime()) && d >= now && d <= limit;
     }
