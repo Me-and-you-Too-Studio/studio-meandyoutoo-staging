@@ -8492,6 +8492,7 @@ body.sidebar-collapsed .sidebar-notification-root {
   }
 }
 .campaign-sort,.admin-ad-sort{display:flex;align-items:center;gap:8px;color:#526b82;font-size:.82rem;font-weight:800;white-space:nowrap}.campaign-sort select,.admin-ad-sort select{min-height:42px;border:1px solid #d2e0e9;border-radius:12px;background:#fff;padding:0 34px 0 12px;color:#123b63;font:inherit;font-weight:800}.admin-ad-sort{margin-left:auto}.campaign-rename-dialog{width:min(560px,calc(100vw - 28px))}.campaign-rename-dialog .field{margin:20px 0}.campaign-rename-dialog input{font-size:1rem;font-weight:700}
+.admin-theme-sort{margin-left:0}.campaign-theme-sort select,.admin-theme-sort select{min-width:220px}
 @media(max-width:760px){.campaign-sort,.admin-ad-sort{width:100%;align-items:flex-start;flex-direction:column}.campaign-sort select,.admin-ad-sort select{width:100%}.admin-ad-sort{margin-left:0}}
 
 /* Admin project actions / publication modal */

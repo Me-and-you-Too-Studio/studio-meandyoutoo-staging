@@ -443,9 +443,7 @@
     const root = $("#client-folder-bar");
     if (!root) return;
     const chip = (key, label, count) => '<button type="button" class="campaign-folder-chip ' + (activeFolder === key ? "is-active" : "") + '" data-admin-folder-filter="' + esc(key) + '"><span>' + label + '</span><strong>' + count + '</strong></button>';
-    const themes = [...new Set(ps.map((p) => p.theme_title).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr", { sensitivity: "base" }));
-    const themeSelect = '<label class="campaign-theme-filter"><span>Thématique</span><select id="admin-theme-filter"><option value="all">Toutes les thématiques</option>' + themes.map((theme) => '<option value="' + esc(theme) + '" ' + (activeTheme === theme ? "selected" : "") + '>' + esc(theme) + ' · ' + ps.filter((p) => p.theme_title === theme).length + '</option>').join("") + '</select></label>';
-    root.innerHTML = '<div class="campaign-folder-heading"><div><strong>Mes dossiers pour ce client</strong><span>Classement personnel à votre espace administrateur</span></div><div class="campaign-folder-tools">' + themeSelect + '<button class="campaign-folder-create" type="button" data-admin-folder-create>+ Nouveau dossier</button></div></div><div class="campaign-folder-list">' + chip("all", "🗂️ Toutes", ps.length) + chip("unclassified", "📄 Non classées", ps.filter((p) => !p.folder_id).length) + folders.map((f) => '<span class="campaign-folder-group">' + chip(String(f.id), "📁 " + esc(f.name), ps.filter((p) => String(p.folder_id || "") === String(f.id)).length) + '<button type="button" class="campaign-folder-manage" data-admin-folder-manage="' + esc(f.id) + '" aria-label="Gérer ' + esc(f.name) + '">•••</button></span>').join("") + '</div>';
+    root.innerHTML = '<div class="campaign-folder-heading"><div><strong>Mes dossiers pour ce client</strong><span>Votre classement personnel des campagnes</span></div><button class="campaign-folder-create" type="button" data-admin-folder-create>+ Nouveau dossier</button></div><div class="campaign-folder-list">' + chip("all", "🗂️ Toutes", ps.length) + chip("unclassified", "📄 Non classées", ps.filter((p) => !p.folder_id).length) + folders.map((f) => '<span class="campaign-folder-group">' + chip(String(f.id), "📁 " + esc(f.name), ps.filter((p) => String(p.folder_id || "") === String(f.id)).length) + '<button type="button" class="campaign-folder-manage" data-admin-folder-manage="' + esc(f.id) + '" aria-label="Gérer ' + esc(f.name) + '">•••</button></span>').join("") + '</div>';
   }
   function render() {
     const ps = sortProjects(orgProjects(organization)),
@@ -563,6 +561,8 @@
       "beforeend",
       '<label class="admin-ad-sort">Trier par <select id="client-ad-sort"><option value="updated-desc">Dernière modification</option><option value="name-asc">Nom A–Z</option><option value="launch-asc">Lancement le plus proche</option><option value="close-asc">Clôture la plus proche</option></select></label>',
     );
+    const themes = [...new Set(ps.map((p) => p.theme_title).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr", { sensitivity: "base" }));
+    $("#client-ad-filters").insertAdjacentHTML("beforeend", '<label class="admin-ad-sort admin-theme-sort">Thématique <select id="admin-theme-filter"><option value="all">Toutes les thématiques</option>' + themes.map((theme) => '<option value="' + esc(theme) + '" ' + (activeTheme === theme ? "selected" : "") + '>' + esc(theme) + ' · ' + ps.filter((p) => p.theme_title === theme).length + '</option>').join("") + '</select></label>');
     $("#client-ad-sort").value = sortMode;
     $("#client-ads").innerHTML =
       ps.map(card).join("") ||
