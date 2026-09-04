@@ -1,90 +1,170 @@
 <!doctype html>
 <html lang="fr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mes campagnes — Studio Me&YouToo</title>
-<meta name="description" content="Suivez et pilotez toutes vos campagnes de sensibilisation D&I.">
-<meta name="robots" content="noindex,nofollow">
-<link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20260903-campaign-lifecycle-1">
-</head>
-<body>
-<a class="skip-link" href="#contenu">Aller au contenu</a>
-<header class="mobile-header">
-  <img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo Studio">
-  <button class="icon-button" aria-label="Ouvrir le menu" aria-expanded="false" data-menu-toggle>
-    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-  </button>
-</header>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mes campagnes — Studio Me&YouToo</title>
+    <meta
+      name="description"
+      content="Suivez et pilotez toutes vos campagnes de sensibilisation D&I."
+    />
+    <meta name="robots" content="noindex,nofollow" />
+    <link rel="icon" href="assets/img/brand/favicon.png" />
+    <link
+      rel="stylesheet"
+      href="assets/css/style.css?v=20260903-campaign-lifecycle-1"
+    />
+  </head>
+  <body>
+    <a class="skip-link" href="#contenu">Aller au contenu</a>
+    <header class="mobile-header">
+      <img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo Studio" />
+      <button
+        class="icon-button"
+        aria-label="Ouvrir le menu"
+        aria-expanded="false"
+        data-menu-toggle
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </header>
 
-<div class="app-shell">
-  <aside class="sidebar" aria-label="Navigation principale" id="sidebar-root"></aside>
+    <div class="app-shell">
+      <aside
+        class="sidebar"
+        aria-label="Navigation principale"
+        id="sidebar-root"
+      ></aside>
 
-  <main class="main" id="contenu">
-    <div class="topbar compact-topbar">
-      <div>
-        <p class="eyebrow">Mes campagnes</p>
-        <h1 class="page-title">Mes campagnes</h1>
-        <p class="lead">Retrouvez toutes vos campagnes, leur thématique, leur statut et les actions disponibles.</p>
-      </div>
-      <div class="top-actions">
-        <a class="button button-primary" href="bibliotheque.html">+ Nouvelle campagne</a>
-      </div>
+      <main class="main" id="contenu">
+        <div class="topbar compact-topbar">
+          <div>
+            <p class="eyebrow">Mes campagnes</p>
+            <h1 class="page-title">Mes campagnes</h1>
+            <p class="lead">
+              Retrouvez toutes vos campagnes, leur thématique, leur statut et
+              les actions disponibles.
+            </p>
+          </div>
+          <div class="top-actions">
+            <a class="button button-primary" href="bibliotheque.html"
+              >+ Nouvelle campagne</a
+            >
+          </div>
+        </div>
+
+        <section
+          class="alert-strip campaign-watch-strip"
+          aria-label="Points d'attention"
+        >
+          <button
+            class="alert-card tone-warning campaign-watch-card"
+            type="button"
+            data-quick-filter="startingSoon"
+          >
+            <span class="alert-icon" aria-hidden="true">🚀</span>
+            <div>
+              <strong id="starting-soon-count">0 campagne commence bientôt</strong>
+              <span id="starting-soon-text">Aucun lancement prévu dans les 7 prochains jours.</span>
+            </div>
+          </button>
+          <button
+            class="alert-card tone-danger campaign-watch-card"
+            type="button"
+            data-quick-filter="endingSoon"
+          >
+            <span class="alert-icon" aria-hidden="true">⏰</span>
+            <div>
+              <strong id="ending-soon-count"
+                >0 campagne se termine bientôt</strong
+              >
+              <span id="ending-soon-text"
+                >Aucune campagne ne nécessite de relance immédiate.</span
+              >
+            </div>
+          </button>
+          <button
+            class="alert-card tone-info campaign-watch-card"
+            type="button"
+            data-quick-filter="review"
+          >
+            <span class="alert-icon" aria-hidden="true">📤</span>
+            <div>
+              <strong id="submitted-count">0 configuration transmise</strong>
+              <span
+                >En attente de préparation ou de publication par
+                Me&YouToo.</span
+              >
+            </div>
+          </button>
+          <button
+            class="alert-card tone-success campaign-watch-card"
+            type="button"
+            data-quick-filter="results"
+          >
+            <span class="alert-icon" aria-hidden="true">📊</span>
+            <div>
+              <strong id="results-count">0 résultat disponible</strong>
+              <span>Retrouvez vos campagnes terminées ou dépubliées.</span>
+            </div>
+          </button>
+        </section>
+
+        <section class="campaign-browser" aria-labelledby="campaign-list-title">
+          <div class="campaign-toolbar">
+            <div
+              class="campaign-filter-tabs"
+              id="campaign-filters"
+              role="group"
+              aria-label="Filtrer les campagnes"
+            ></div>
+            <label class="campaign-search">
+              <span aria-hidden="true">🔎</span>
+              <input
+                type="search"
+                id="campaignSearch"
+                placeholder="Rechercher une campagne ou une thématique…"
+                aria-label="Rechercher une campagne"
+              />
+            </label>
+          </div>
+
+          <div class="section-head campaign-list-head">
+            <div>
+              <h2 class="section-title" id="campaign-list-title">
+                Toutes les campagnes
+              </h2>
+              <p class="section-desc" id="campaign-list-description">
+                Brouillons, campagnes transmises, publiées, dépubliées et
+                archivées au même endroit.
+              </p>
+            </div>
+          </div>
+
+          <div
+            id="campaigns-card-root"
+            class="campaigns-card-grid"
+            aria-live="polite"
+          >
+            <p>Chargement des campagnes…</p>
+          </div>
+          <p id="noResults" class="campaign-empty" hidden>
+            Aucune campagne ne correspond à ce filtre.
+          </p>
+        </section>
+      </main>
     </div>
 
-    <section class="alert-strip campaign-watch-strip" aria-label="Points d'attention">
-      <button class="alert-card tone-danger campaign-watch-card" type="button" data-quick-filter="endingSoon">
-        <span class="alert-icon" aria-hidden="true">⏰</span>
-        <div>
-          <strong id="ending-soon-count">0 campagne se termine bientôt</strong>
-          <span id="ending-soon-text">Aucune campagne ne nécessite de relance immédiate.</span>
-        </div>
-      </button>
-      <button class="alert-card tone-info campaign-watch-card" type="button" data-quick-filter="review">
-        <span class="alert-icon" aria-hidden="true">📤</span>
-        <div>
-          <strong id="submitted-count">0 configuration transmise</strong>
-          <span>En attente de préparation ou de publication par Me&YouToo.</span>
-        </div>
-      </button>
-      <button class="alert-card tone-success campaign-watch-card" type="button" data-quick-filter="results">
-        <span class="alert-icon" aria-hidden="true">📊</span>
-        <div>
-          <strong id="results-count">0 résultat disponible</strong>
-          <span>Retrouvez vos campagnes terminées ou dépubliées.</span>
-        </div>
-      </button>
-    </section>
-
-    <section class="campaign-browser" aria-labelledby="campaign-list-title">
-      <div class="campaign-toolbar">
-        <div class="campaign-filter-tabs" id="campaign-filters" role="group" aria-label="Filtrer les campagnes"></div>
-        <label class="campaign-search">
-          <span aria-hidden="true">🔎</span>
-          <input type="search" id="campaignSearch" placeholder="Rechercher une campagne ou une thématique…" aria-label="Rechercher une campagne">
-        </label>
-      </div>
-
-      <div class="section-head campaign-list-head">
-        <div>
-          <h2 class="section-title" id="campaign-list-title">Toutes les campagnes</h2>
-          <p class="section-desc" id="campaign-list-description">Brouillons, campagnes transmises, publiées, dépubliées et archivées au même endroit.</p>
-        </div>
-      </div>
-
-      <div id="campaigns-card-root" class="campaigns-card-grid" aria-live="polite">
-        <p>Chargement des campagnes…</p>
-      </div>
-      <p id="noResults" class="campaign-empty" hidden>Aucune campagne ne correspond à ce filtre.</p>
-    </section>
-  </main>
-</div>
-
-<nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
-<script src="assets/js/api.js?v=20260713-2"></script>
-<script src="assets/js/app.js?v=20260904-permissions-3"></script>
-<script src="assets/js/project-context.js?v=20260713-5"></script>
-<script src="assets/js/mes-campagnes.js?v=20260904-permissions-3"></script>
-</body>
+    <nav
+      class="bottom-nav"
+      aria-label="Navigation mobile"
+      id="bottom-nav-root"
+    ></nav>
+    <script src="assets/js/api.js?v=20260713-2"></script>
+    <script src="assets/js/app.js?v=20260904-permissions-3"></script>
+    <script src="assets/js/project-context.js?v=20260713-5"></script>
+    <script src="assets/js/mes-campagnes.js?v=20260904-campaign-reminders-1"></script>
+  </body>
 </html>
