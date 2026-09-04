@@ -6188,6 +6188,24 @@ div.creation-chapter-head {
   box-shadow: 0 14px 38px rgba(13, 76, 114, 0.18);
   backdrop-filter: blur(12px);
 }
+.composer-context-back {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid #d5e1ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #17355f;
+  font: 800 .8rem Asap, sans-serif;
+  text-decoration: none;
+}
+.composer-context-back:hover {
+  border-color: #0d8791;
+  background: #f1fbfb;
+  color: #08737a;
+}
 .creation-sticky-progress {
   display: grid;
   justify-items: center;
