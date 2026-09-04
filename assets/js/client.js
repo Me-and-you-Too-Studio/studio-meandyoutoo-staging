@@ -39,6 +39,7 @@
     projects = new Map(),
     folders = [],
     activeFolder = "all",
+    activeTheme = "all",
     filter = "all",
     sortMode = "updated-desc",
     publishOpened = false;
@@ -335,6 +336,8 @@
       adFilterKey(p) +
       '" data-folder-id="' +
       esc(p.folder_id || "") +
+      '" data-theme="' +
+      esc(theme) +
       '" data-ending-soon="' +
       (isEndingSoon(p) ? "true" : "false") +
       '" data-starting-soon="' +
@@ -440,7 +443,9 @@
     const root = $("#client-folder-bar");
     if (!root) return;
     const chip = (key, label, count) => '<button type="button" class="campaign-folder-chip ' + (activeFolder === key ? "is-active" : "") + '" data-admin-folder-filter="' + esc(key) + '"><span>' + label + '</span><strong>' + count + '</strong></button>';
-    root.innerHTML = '<div class="campaign-folder-heading"><div><strong>Dossiers du client</strong><span>Classement partagé avec les utilisateurs autorisés</span></div><button class="campaign-folder-create" type="button" data-admin-folder-create>+ Nouveau dossier</button></div><div class="campaign-folder-list">' + chip("all", "🗂️ Toutes", ps.length) + chip("unclassified", "📄 Non classées", ps.filter((p) => !p.folder_id).length) + folders.map((f) => '<span class="campaign-folder-group">' + chip(String(f.id), "📁 " + esc(f.name), ps.filter((p) => String(p.folder_id || "") === String(f.id)).length) + '<button type="button" class="campaign-folder-manage" data-admin-folder-manage="' + esc(f.id) + '" aria-label="Gérer ' + esc(f.name) + '">•••</button></span>').join("") + '</div>';
+    const themes = [...new Set(ps.map((p) => p.theme_title).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr", { sensitivity: "base" }));
+    const themeSelect = '<label class="campaign-theme-filter"><span>Thématique</span><select id="admin-theme-filter"><option value="all">Toutes les thématiques</option>' + themes.map((theme) => '<option value="' + esc(theme) + '" ' + (activeTheme === theme ? "selected" : "") + '>' + esc(theme) + ' · ' + ps.filter((p) => p.theme_title === theme).length + '</option>').join("") + '</select></label>';
+    root.innerHTML = '<div class="campaign-folder-heading"><div><strong>Mes dossiers pour ce client</strong><span>Classement personnel à votre espace administrateur</span></div><div class="campaign-folder-tools">' + themeSelect + '<button class="campaign-folder-create" type="button" data-admin-folder-create>+ Nouveau dossier</button></div></div><div class="campaign-folder-list">' + chip("all", "🗂️ Toutes", ps.length) + chip("unclassified", "📄 Non classées", ps.filter((p) => !p.folder_id).length) + folders.map((f) => '<span class="campaign-folder-group">' + chip(String(f.id), "📁 " + esc(f.name), ps.filter((p) => String(p.folder_id || "") === String(f.id)).length) + '<button type="button" class="campaign-folder-manage" data-admin-folder-manage="' + esc(f.id) + '" aria-label="Gérer ' + esc(f.name) + '">•••</button></span>').join("") + '</div>';
   }
   function render() {
     const ps = sortProjects(orgProjects(organization)),
@@ -598,7 +603,8 @@
           ? c.dataset[filter] === "true"
           : c.dataset.status === filter);
       const folderOk = activeFolder === "all" || (activeFolder === "unclassified" ? !c.dataset.folderId : c.dataset.folderId === activeFolder);
-      c.hidden = !(folderOk && ok && (!q || c.dataset.search.includes(q)));
+      const themeOk = activeTheme === "all" || c.dataset.theme === activeTheme;
+      c.hidden = !(folderOk && themeOk && ok && (!q || c.dataset.search.includes(q)));
     });
   }
   async function mutate(id, path, options, success) {
@@ -891,6 +897,7 @@
     );
   }
   function bind() {
+    $('#admin-theme-filter')?.addEventListener('change', (event) => { activeTheme = event.target.value; applyFilter(); });
     $$('[data-admin-folder-filter]').forEach((btn) => btn.onclick = () => { activeFolder = btn.dataset.adminFolderFilter; render(); });
     $('[data-admin-folder-create]')?.addEventListener('click', async () => { const name = await askFolderValue("Nouveau dossier"); if (!name) return; await StudioAPI.request('/api/campaign-folders', { method: 'POST', body: JSON.stringify({ organizationId: organization.id, name }) }); await load(); });
     $$('[data-admin-folder-manage]').forEach((btn) => btn.onclick = async () => {

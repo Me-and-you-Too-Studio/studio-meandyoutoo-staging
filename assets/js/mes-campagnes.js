@@ -9,6 +9,7 @@
   var projects = [];
   var folders = [];
   var activeFolder = "all";
+  var activeTheme = "all";
   var activeFilter = "all";
   var currentUser = (window.StudioAPI.user && window.StudioAPI.user()) || {};
   function can(permission) {
@@ -495,7 +496,10 @@
     if (!root) return;
     function chip(key, label, count) { return '<button type="button" class="campaign-folder-chip ' + (activeFolder === key ? "is-active" : "") + '" data-folder-filter="' + esc(key) + '"><span>' + label + '</span><strong>' + count + '</strong></button>'; }
     var unclassified = projects.filter(function (p) { return !p.folder_id; }).length;
-    root.innerHTML = '<div class="campaign-folder-heading"><div><strong>Dossiers</strong><span>Retrouvez rapidement vos campagnes</span></div>' + (can("organize_folders") ? '<button class="campaign-folder-create" type="button" data-folder-create>+ Nouveau dossier</button>' : "") + '</div><div class="campaign-folder-list">' + chip("all", "🗂️ Toutes", projects.length) + chip("unclassified", "📄 Non classées", unclassified) + folders.map(function (f) { return '<span class="campaign-folder-group">' + chip(String(f.id), "📁 " + esc(f.name), projects.filter(function (p) { return String(p.folder_id || "") === String(f.id); }).length) + (can("organize_folders") ? '<button type="button" class="campaign-folder-manage" data-folder-manage="' + esc(f.id) + '" aria-label="Gérer le dossier ' + esc(f.name) + '">•••</button>' : "") + '</span>'; }).join("") + '</div>';
+    var themes = Array.from(new Set(projects.map(themeLabel).filter(Boolean))).sort(function (a, b) { return a.localeCompare(b, "fr", { sensitivity: "base" }); });
+    var themeSelect = '<label class="campaign-theme-filter"><span>Thématique</span><select id="campaign-theme-filter"><option value="all">Toutes les thématiques</option>' + themes.map(function (theme) { return '<option value="' + esc(theme) + '" ' + (activeTheme === theme ? "selected" : "") + '>' + esc(theme) + ' · ' + projects.filter(function (p) { return themeLabel(p) === theme; }).length + '</option>'; }).join("") + '</select></label>';
+    root.innerHTML = '<div class="campaign-folder-heading"><div><strong>Dossiers</strong><span>Combinez votre classement avec une thématique</span></div><div class="campaign-folder-tools">' + themeSelect + (can("organize_folders") ? '<button class="campaign-folder-create" type="button" data-folder-create>+ Nouveau dossier</button>' : "") + '</div></div><div class="campaign-folder-list">' + chip("all", "🗂️ Toutes", projects.length) + chip("unclassified", "📄 Non classées", unclassified) + folders.map(function (f) { return '<span class="campaign-folder-group">' + chip(String(f.id), "📁 " + esc(f.name), projects.filter(function (p) { return String(p.folder_id || "") === String(f.id); }).length) + (can("organize_folders") ? '<button type="button" class="campaign-folder-manage" data-folder-manage="' + esc(f.id) + '" aria-label="Gérer le dossier ' + esc(f.name) + '">•••</button>' : "") + '</span>'; }).join("") + '</div>';
+    root.querySelector("#campaign-theme-filter")?.addEventListener("change", function (event) { activeTheme = event.target.value; renderCards(); });
     root.querySelectorAll("[data-folder-filter]").forEach(function (b) { b.onclick = function () { activeFolder = b.dataset.folderFilter; renderFolderBar(); renderCards(); }; });
     root.querySelector("[data-folder-create]")?.addEventListener("click", async function () { var name = await askFolderName("Nouveau dossier", ""); if (!name) return; await StudioAPI.request("/api/campaign-folders", { method: "POST", body: JSON.stringify({ name: name }) }); await load(); });
     root.querySelectorAll("[data-folder-manage]").forEach(function (b) { b.onclick = async function () { var folder = folderById(b.dataset.folderManage); if (!folder) return; var rename = await StudioModal.confirm({ eyebrow: "Dossier", title: folder.name, message: "Renommez ce dossier, ou supprimez-le pour replacer ses campagnes dans « Non classées ».", cancelLabel: "Supprimer le dossier", confirmLabel: "Renommer" }); if (rename) { var name = await askFolderName("Renommer le dossier", folder.name); if (!name || name === folder.name) return; await StudioAPI.request("/api/campaign-folders/" + folder.id, { method: "PATCH", body: JSON.stringify({ name: name }) }); } else { var remove = await StudioModal.confirm({ type: "danger", title: "Supprimer le dossier « " + folder.name + " » ?", message: "Les campagnes ne seront pas supprimées. Elles retourneront dans « Non classées ».", cancelLabel: "Conserver", confirmLabel: "Supprimer le dossier" }); if (!remove) return; await StudioAPI.request("/api/campaign-folders/" + folder.id, { method: "DELETE" }); if (activeFolder === String(folder.id)) activeFolder = "all"; } await load(); }; });
@@ -951,7 +955,8 @@
         .join(" ")
         .toLowerCase();
       var inFolder = activeFolder === "all" || (activeFolder === "unclassified" ? !p.folder_id : String(p.folder_id || "") === activeFolder);
-      return inFolder && matchesFilter(p) && (!term || haystack.indexOf(term) !== -1);
+      var inTheme = activeTheme === "all" || themeLabel(p) === activeTheme;
+      return inFolder && inTheme && matchesFilter(p) && (!term || haystack.indexOf(term) !== -1);
     });
     var mode = (sort && sort.value) || "updated-desc";
     filtered.sort(function (a, b) {

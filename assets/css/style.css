@@ -9655,6 +9655,9 @@ body.sidebar-collapsed .sidebar-notification-root {
 .campaign-folder-heading > div { display: grid; gap: 2px; }
 .campaign-folder-heading strong { color: #102d59; font-size: 1rem; }
 .campaign-folder-heading span { color: #60708b; font-size: .86rem; }
+.campaign-folder-tools { display: flex; align-items: end; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.campaign-theme-filter { display: grid; gap: 3px; color: #60708b; font-size: .72rem; font-weight: 800; }
+.campaign-theme-filter select { min-width: 230px; min-height: 38px; padding: 7px 34px 7px 11px; border: 1px solid #cfdaea; border-radius: 10px; background: #fff; color: #17345f; font: 750 .82rem Asap, sans-serif; }
 .campaign-folder-list { flex-wrap: wrap; gap: 9px; }
 .campaign-folder-group { gap: 3px; }
 .campaign-folder-chip,
@@ -9675,6 +9678,7 @@ body.sidebar-collapsed .sidebar-notification-root {
 .admin-folder-bar { margin-top: 16px; }
 @media (max-width: 700px) {
   .campaign-folder-heading { align-items: flex-start; flex-direction: column; }
+  .campaign-folder-tools, .campaign-theme-filter, .campaign-theme-filter select { width: 100%; }
   .campaign-folder-create { width: 100%; }
 }
 .campaign-filter-tabs {
