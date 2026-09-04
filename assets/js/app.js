@@ -153,7 +153,7 @@
   ];
 
   var NAV_SECONDARY = [
-    { href: 'packs.html', label: 'Commander des passations', icon: '<path d="M3 7h18v12H3z"/><path d="M16 12h5"/><path d="M6 7V5h12v2"/>' },
+    { href: 'packs.html', label: 'Commander des passations', permission:'order_passations', icon: '<path d="M3 7h18v12H3z"/><path d="M16 12h5"/><path d="M6 7V5h12v2"/>' },
     { href: 'account.html', label: 'Mon compte', icon: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>' }
   ];
 
@@ -185,7 +185,27 @@
     var iconHtml = withIcon ? '<span>' + svg(item.icon) + '</span>' : '';
     var labelAttrs = withIcon ? ' aria-label="' + item.label + '" title="' + item.label + '"' : '';
     var actionAttr=item.action?' data-nav-action="'+item.action+'"':'';
-    return '<a href="' + item.href + '" data-nav'+actionAttr+ current + labelAttrs + '>' + iconHtml + item.label + '</a>';
+    var allowed=!item.permission||IS_ADMIN||Boolean(CURRENT_USER&&CURRENT_USER.permissions&&CURRENT_USER.permissions[item.permission]);
+    var locked=allowed?'':' aria-disabled="true" data-nav-locked title="Accès non autorisé"';
+    return '<a href="' + item.href + '" data-nav'+actionAttr+ current + labelAttrs + locked + '>' + iconHtml + (allowed?'':'<b class="nav-lock" aria-hidden="true">🔒</b>') + item.label + '</a>';
+  }
+
+  function enforcePageAccess(){
+    if(IS_ADMIN)return;
+    var required={
+      'packs.html':'order_passations',
+      'commande.html':'order_passations'
+    }[CURRENT];
+    if(!required||CURRENT_USER&&CURRENT_USER.permissions&&CURRENT_USER.permissions[required])return;
+    var main=document.querySelector('main.main');
+    if(main)main.innerHTML='<section class="card permission-denied"><div class="permission-denied-icon">🔒</div><p class="eyebrow">Accès limité</p><h1>Cette fonctionnalité ne vous est pas autorisée</h1><p>Le responsable de votre compte peut modifier vos droits d’accès.</p><a class="button button-secondary" href="index.html">Retour à l’accueil</a></section>';
+  }
+
+  function enforceActionAccess(){
+    if(IS_ADMIN||CURRENT_USER&&CURRENT_USER.permissions&&CURRENT_USER.permissions.edit_campaigns)return;
+    document.querySelectorAll('[data-content-adjustment]').forEach(function(control){
+      control.removeAttribute('data-content-adjustment');control.classList.add('button-locked');control.setAttribute('aria-disabled','true');control.innerHTML='🔒 Demander un ajustement';control.addEventListener('click',function(event){event.preventDefault();StudioModal.alert({eyebrow:'Accès limité',title:'Demande d’ajustement verrouillée',message:'Le responsable de votre compte peut vous accorder le droit de modifier les campagnes et de demander des ajustements.',type:'warning'});});
+    });
   }
 
   function renderSidebar(){
@@ -337,6 +357,9 @@
   }
 
   renderSidebar();
+  enforcePageAccess();
+  enforceActionAccess();
+  document.querySelectorAll('[data-nav-locked]').forEach(function(link){link.addEventListener('click',function(event){event.preventDefault();StudioModal.alert({eyebrow:'Accès limité',title:'Fonctionnalité verrouillée',message:'Le responsable de votre compte peut vous accorder ce droit.',type:'warning'});});});
   setupNotifications(0);
   var interfaceButton = document.querySelector('[data-interface-switch]');
   if (interfaceButton) interfaceButton.addEventListener('click', function(){

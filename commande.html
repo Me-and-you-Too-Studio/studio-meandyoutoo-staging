@@ -81,6 +81,7 @@
           <div class="field">
             <label for="fEmail">Email professionnel *</label>
             <input id="fEmail" name="email" type="email" required autocomplete="email">
+            <p class="hint">Utilisez l’adresse de votre entreprise. Les adresses personnelles ne sont pas acceptées.</p>
           </div>
           <div class="field">
             <label for="fTelephone">Téléphone <span class="tag-chip tag-chip-sm">optionnel</span></label>
@@ -208,6 +209,9 @@
       form.reportValidity();
       return;
     }
+    var privateDomains=['gmail.com','googlemail.com','hotmail.com','hotmail.fr','outlook.com','outlook.fr','live.com','live.fr','yahoo.com','yahoo.fr','icloud.com','me.com','mac.com','orange.fr','wanadoo.fr','free.fr','sfr.fr','laposte.net','proton.me','protonmail.com','gmx.com','gmx.fr'];
+    var professionalEmail=String(form.elements.email.value||'').trim().toLowerCase(),emailDomain=professionalEmail.split('@')[1]||'';
+    if(privateDomains.includes(emailDomain)){errorText.textContent='Veuillez utiliser une adresse email professionnelle liée à votre entreprise.';errorBox.hidden=false;form.elements.email.focus();return;}
 
     function hubspotPackValue(p){
       return p.name + ' (' + (typeof p.volume === 'number' ? p.volume : 'illimité') + ')';

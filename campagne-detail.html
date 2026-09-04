@@ -33,6 +33,8 @@
 
   // Lecture seule demandée côté client uniquement pour les campagnes programmées ou publiées.
   var READ_ONLY_STATUSES=new Set(['scheduled','published','active']);
+  var currentUser=window.StudioAPI.user&&window.StudioAPI.user()||{};
+  function can(permission){return currentUser.role==='admin'||Boolean(currentUser.permissions&&currentUser.permissions[permission]);}
 
   var ICONS={
     status:'<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11.5V16"/><circle cx="12" cy="8" r=".7" fill="currentColor" stroke="none"/></svg>',
@@ -83,7 +85,8 @@
     var isDraft=p.status==='draft';
     var isReadOnly=READ_ONLY_STATUSES.has(p.status);
     var lifecycleActions='';
-    if(p.status==='published'||p.status==='active')lifecycleActions='<a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=extend">📅 Prolonger</a><a class="button button-danger-soft" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=unpublish">⏹ Dépublier</a>';
+    if(p.status==='scheduled'&&can('manage_schedule'))lifecycleActions='<a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=extend">📅 Prolonger</a>';
+    if((p.status==='published'||p.status==='active')&&can('manage_schedule'))lifecycleActions='<a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=extend">📅 Prolonger</a><a class="button button-danger-soft" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=unpublish">⏹ Dépublier</a>';
     if(p.status==='unpublished')lifecycleActions='<a class="button button-primary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=reprogram">🚀 Reprogrammer</a><a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=archive">📦 Archiver</a>';
     if(p.status==='closed'||p.status==='completed'||p.status==='archived')lifecycleActions='<a class="button button-primary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=reprogram">🚀 Reprogrammer avec les mêmes liens</a>';
     var resultsHtml=results
@@ -114,7 +117,7 @@
         '<div class="action-bar">'+
           '<a class="button button-secondary" href="'+content+'">Revoir le contenu</a>'+
           '<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>'+
-          '<button class="button button-primary" type="button" data-content-adjustment="multiple">Demander un ajustement</button>'+
+          (can('edit_campaigns')?'<button class="button button-primary" type="button" data-content-adjustment="multiple">Demander un ajustement</button>':'<span class="button button-locked" aria-disabled="true">🔒 Demander un ajustement</span>')+
           lifecycleActions+
           (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
         '</div>';
@@ -126,7 +129,7 @@
         '</div>'+
         '<div class="action-bar">'+
           '<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>'+
-          '<button class="button button-primary" type="button" data-content-adjustment="multiple">Demander un ajustement</button>'+
+          (can('edit_campaigns')?'<button class="button button-primary" type="button" data-content-adjustment="multiple">Demander un ajustement</button>':'<span class="button button-locked" aria-disabled="true">🔒 Demander un ajustement</span>')+
           lifecycleActions+
           (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
         '</div>';

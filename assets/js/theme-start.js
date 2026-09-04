@@ -59,8 +59,12 @@
   // La création d'un brouillon est réservée au CTA principal de la page.
   // La liste des chapitres reste une consultation sans effet en base.
   document.querySelectorAll('.hero-panel [data-start-theme]').forEach(function(link){
+    var user=window.StudioAPI.user&&window.StudioAPI.user();
+    var canCreate=user&&user.role==='admin'||Boolean(user&&user.permissions&&user.permissions.create_campaigns);
+    if(!canCreate){link.classList.add('button-locked');link.innerHTML='🔒 '+esc(link.textContent);link.title='Votre accès ne permet pas de créer des campagnes';}
     link.addEventListener('click',async function(event){
       event.preventDefault();
+      if(!canCreate){await window.StudioModal.alert({eyebrow:'Accès limité',title:'Création de campagne verrouillée',message:'Le responsable de votre compte peut vous accorder le droit de créer des campagnes.',type:'warning'});return;}
       if(link.dataset.creating==='true') return;
 
       var themeSlug=link.dataset.startTheme||existingTheme;
