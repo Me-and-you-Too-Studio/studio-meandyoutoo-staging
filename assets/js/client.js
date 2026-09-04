@@ -37,6 +37,8 @@
   let organization = null,
     users = new Map(),
     projects = new Map(),
+    folders = [],
+    activeFolder = "all",
     filter = "all",
     sortMode = "updated-desc",
     publishOpened = false;
@@ -65,6 +67,7 @@
       manage_users: "Gérer les comptes et les accès",
       create_campaigns: "Créer des campagnes",
       edit_campaigns: "Modifier et renommer les campagnes, et demander des ajustements",
+      organize_folders: "Organiser les campagnes dans des dossiers",
       submit_campaigns:
         "Transmettre une configuration à Me&YouToo pour relecture",
       manage_schedule: "Programmer, prolonger et reprogrammer",
@@ -78,6 +81,7 @@
         manage_users: true,
         create_campaigns: true,
         edit_campaigns: true,
+        organize_folders: true,
         submit_campaigns: true,
         manage_schedule: true,
         manage_kit: true,
@@ -89,6 +93,7 @@
         manage_users: false,
         create_campaigns: true,
         edit_campaigns: true,
+        organize_folders: true,
         submit_campaigns: true,
         manage_schedule: true,
         manage_kit: true,
@@ -100,6 +105,7 @@
         manage_users: false,
         create_campaigns: true,
         edit_campaigns: true,
+        organize_folders: false,
         submit_campaigns: true,
         manage_schedule: false,
         manage_kit: true,
@@ -111,6 +117,7 @@
         manage_users: false,
         create_campaigns: false,
         edit_campaigns: false,
+        organize_folders: false,
         submit_campaigns: false,
         manage_schedule: false,
         manage_kit: false,
@@ -229,6 +236,9 @@
         id +
         '">✏️ Renommer</button>',
     );
+    buttons.push(
+      '<button class="button button-secondary" type="button" data-move-folder="' + id + '">📁 Classer</button>',
+    );
     if (st === "draft")
       buttons.push(
         '<a class="button button-primary" href="' +
@@ -339,9 +349,12 @@
           (days > 1 ? "s" : "") +
           "</span>"
         : "";
+    const folder = folders.find((item) => String(item.id) === String(p.folder_id || ""));
     return (
       '<article class="admin-ad-card" data-ad-card data-status="' +
       adFilterKey(p) +
+      '" data-folder-id="' +
+      esc(p.folder_id || "") +
       '" data-ending-soon="' +
       (isEndingSoon(p) ? "true" : "false") +
       '" data-starting-soon="' +
@@ -365,6 +378,7 @@
       '">' +
       statusLabel(p) +
       "</span>" +
+      (folder ? '<span class="campaign-folder-tag">📁 ' + esc(folder.name) + '</span>' : "") +
       starting +
       ending +
       '</div><div class="admin-ad-commanditaire"><strong>Commanditaire campagne</strong><span>' +
@@ -425,6 +439,29 @@
       return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
     });
   }
+  function askFolderValue(title, value = "", project = null) {
+    return new Promise((resolve) => {
+      document.getElementById("admin-folder-dialog")?.remove();
+      const dialog = document.createElement("dialog");
+      dialog.id = "admin-folder-dialog";
+      dialog.className = "admin-dialog campaign-rename-dialog";
+      const move = Boolean(project);
+      dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Classement client</p><h2>' + esc(title) + '</h2>' + (move ? '<p>« ' + esc(project.campaign_name || project.title || "Campagne") + ' »</p><label class="field"><span>Dossier</span><select id="admin-folder-value"><option value="">Non classées</option>' + folders.map((f) => '<option value="' + esc(f.id) + '" ' + (String(project.folder_id || "") === String(f.id) ? "selected" : "") + '>' + esc(f.name) + '</option>').join("") + '</select></label>' : '<p>Utilisez un nom utile au client : année, équipe, thématique ou projet.</p><label class="field"><span>Nom du dossier</span><input id="admin-folder-value" minlength="2" maxlength="80" required value="' + esc(value) + '"></label>') + '<div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" type="button" id="admin-folder-confirm">Enregistrer</button></div></form>';
+      document.body.append(dialog);
+      let done = false;
+      const finish = (result) => { if (done) return; done = true; dialog.close(); dialog.remove(); resolve(result); };
+      dialog.querySelectorAll('[value="cancel"]').forEach((b) => b.onclick = () => finish(null));
+      dialog.addEventListener("cancel", (e) => { e.preventDefault(); finish(null); });
+      dialog.querySelector("#admin-folder-confirm").onclick = () => { const input = dialog.querySelector("#admin-folder-value"), result = move ? input.value : input.value.replace(/\s+/g, " ").trim(); if (!move && result.length < 2) { input.reportValidity(); return; } finish(result); };
+      dialog.showModal();
+    });
+  }
+  function renderFolderBar(ps) {
+    const root = $("#client-folder-bar");
+    if (!root) return;
+    const chip = (key, label, count) => '<button type="button" class="campaign-folder-chip ' + (activeFolder === key ? "is-active" : "") + '" data-admin-folder-filter="' + esc(key) + '"><span>' + label + '</span><strong>' + count + '</strong></button>';
+    root.innerHTML = '<div class="campaign-folder-heading"><div><strong>Dossiers du client</strong><span>Classement partagé avec les utilisateurs autorisés</span></div><button class="campaign-folder-create" type="button" data-admin-folder-create>+ Nouveau dossier</button></div><div class="campaign-folder-list">' + chip("all", "🗂️ Toutes", ps.length) + chip("unclassified", "📄 Non classées", ps.filter((p) => !p.folder_id).length) + folders.map((f) => '<span class="campaign-folder-group">' + chip(String(f.id), "📁 " + esc(f.name), ps.filter((p) => String(p.folder_id || "") === String(f.id)).length) + '<button type="button" class="campaign-folder-manage" data-admin-folder-manage="' + esc(f.id) + '" aria-label="Gérer ' + esc(f.name) + '">•••</button></span>').join("") + '</div>';
+  }
   function render() {
     const ps = sortProjects(orgProjects(organization)),
       rem = remaining(organization),
@@ -432,6 +469,7 @@
       quota = Number(organization.passations_quota || 0),
       rate = quota ? Math.min(100, Math.round((used / quota) * 100)) : 0;
     projects = new Map(ps.map((p) => [String(p.id), p]));
+    renderFolderBar(ps);
     $("#client-name").textContent = organization.name || "Dossier client";
     $("#client-subtitle").textContent =
       (orgSectors(organization).join(" · ") || "Secteur non renseigné") +
@@ -579,7 +617,8 @@
           : ["endingSoon", "startingSoon"].includes(filter)
           ? c.dataset[filter] === "true"
           : c.dataset.status === filter);
-      c.hidden = !(ok && (!q || c.dataset.search.includes(q)));
+      const folderOk = activeFolder === "all" || (activeFolder === "unclassified" ? !c.dataset.folderId : c.dataset.folderId === activeFolder);
+      c.hidden = !(folderOk && ok && (!q || c.dataset.search.includes(q)));
     });
   }
   async function mutate(id, path, options, success) {
@@ -722,6 +761,14 @@
     });
   }
   function bindProjectActions() {
+    $$('[data-move-folder]').forEach(
+      (b) =>
+        (b.onclick = async () => {
+          const p = projects.get(String(b.dataset.moveFolder)), folderId = await askFolderValue("Classer la campagne", "", p);
+          if (folderId === null) return;
+          await mutate(p.id, "/folder", { method: "PATCH", body: JSON.stringify({ folderId: folderId || null }) });
+        }),
+    );
     $$('[data-rename]').forEach(
       (b) =>
         (b.onclick = async () => {
@@ -859,6 +906,24 @@
     );
   }
   function bind() {
+    $$('[data-admin-folder-filter]').forEach((btn) => btn.onclick = () => { activeFolder = btn.dataset.adminFolderFilter; render(); });
+    $('[data-admin-folder-create]')?.addEventListener('click', async () => { const name = await askFolderValue("Nouveau dossier"); if (!name) return; await StudioAPI.request('/api/campaign-folders', { method: 'POST', body: JSON.stringify({ organizationId: organization.id, name }) }); await load(); });
+    $$('[data-admin-folder-manage]').forEach((btn) => btn.onclick = async () => {
+      const folder = folders.find((f) => String(f.id) === String(btn.dataset.adminFolderManage));
+      if (!folder) return;
+      const rename = await StudioModal.confirm({ eyebrow: 'Classement client', title: folder.name, message: 'Vous pouvez renommer ce dossier ou le supprimer. Ses campagnes ne seront jamais supprimées.', cancelLabel: 'Supprimer le dossier', confirmLabel: 'Renommer' });
+      if (rename) {
+        const name = await askFolderValue('Renommer le dossier', folder.name);
+        if (!name || name === folder.name) return;
+        await StudioAPI.request('/api/campaign-folders/' + folder.id, { method: 'PATCH', body: JSON.stringify({ organizationId: organization.id, name }) });
+      } else {
+        const remove = await StudioModal.confirm({ type: 'danger', title: 'Supprimer le dossier « ' + folder.name + ' » ?', message: 'Toutes ses campagnes retourneront dans « Non classées ». Aucune campagne ne sera supprimée.', cancelLabel: 'Conserver', confirmLabel: 'Supprimer le dossier' });
+        if (!remove) return;
+        await StudioAPI.request('/api/campaign-folders/' + folder.id + '?organizationId=' + encodeURIComponent(organization.id), { method: 'DELETE' });
+        if (activeFolder === String(folder.id)) activeFolder = 'all';
+      }
+      await load();
+    });
     $$("[data-ad-filter]").forEach(
       (btn) =>
         (btn.onclick = () => {
@@ -1060,6 +1125,8 @@
         );
         return;
       }
+      const folderData = await StudioAPI.request('/api/campaign-folders?organizationId=' + encodeURIComponent(organization.id));
+      folders = Array.isArray(folderData.folders) ? folderData.folders : [];
       users = new Map(orgUsers(organization).map((u) => [String(u.id), u]));
       render();
       if (

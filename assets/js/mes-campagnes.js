@@ -7,6 +7,8 @@
   if (!cardRoot || !filtersRoot) return;
 
   var projects = [];
+  var folders = [];
+  var activeFolder = "all";
   var activeFilter = "all";
   var currentUser = (window.StudioAPI.user && window.StudioAPI.user()) || {};
   function can(permission) {
@@ -311,6 +313,12 @@
     var q = query(p),
       id = esc(p.id);
     var items = [];
+    if (can("organize_folders"))
+      items.push(
+        '<button class="campaign-btn" type="button" data-project-action="move-folder" data-project-id="' +
+          id +
+          '">📁 Classer</button>',
+      );
     if (can("edit_campaigns"))
       items.push(
         '<button class="campaign-btn" type="button" data-project-action="rename" data-project-id="' +
@@ -441,6 +449,59 @@
     });
   }
 
+  function folderById(id) {
+    return folders.find(function (folder) { return String(folder.id) === String(id); });
+  }
+
+  function askFolderName(title, value) {
+    return new Promise(function (resolve) {
+      document.getElementById("campaign-folder-dialog")?.remove();
+      var dialog = document.createElement("dialog");
+      dialog.id = "campaign-folder-dialog";
+      dialog.className = "admin-dialog campaign-rename-dialog";
+      dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Classement</p><h2>' + esc(title) + '</h2><p>Créez un classement simple adapté à votre organisation : année, équipe, thématique ou projet.</p><label class="field"><span>Nom du dossier</span><input id="campaign-folder-name" maxlength="80" minlength="2" required value="' + esc(value || "") + '"></label><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" id="confirm-folder-name" type="button">Enregistrer</button></div></form>';
+      document.body.append(dialog);
+      var done = false;
+      function finish(result) { if (done) return; done = true; dialog.close(); dialog.remove(); resolve(result); }
+      dialog.querySelectorAll('[value="cancel"]').forEach(function (b) { b.onclick = function () { finish(""); }; });
+      dialog.addEventListener("cancel", function (e) { e.preventDefault(); finish(""); });
+      dialog.querySelector("#confirm-folder-name").onclick = function () {
+        var input = dialog.querySelector("#campaign-folder-name"), result = input.value.replace(/\s+/g, " ").trim();
+        if (result.length < 2) { input.reportValidity(); return; }
+        finish(result);
+      };
+      dialog.showModal(); dialog.querySelector("#campaign-folder-name").focus();
+    });
+  }
+
+  function askMoveFolder(p) {
+    return new Promise(function (resolve) {
+      document.getElementById("campaign-move-folder-dialog")?.remove();
+      var dialog = document.createElement("dialog");
+      dialog.id = "campaign-move-folder-dialog";
+      dialog.className = "admin-dialog campaign-rename-dialog";
+      dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Classement</p><h2>Classer la campagne</h2><p>« ' + esc(campaignName(p)) + ' »</p><label class="field"><span>Dossier</span><select id="campaign-folder-select"><option value="">Non classées</option>' + folders.map(function (f) { return '<option value="' + esc(f.id) + '" ' + (String(p.folder_id || "") === String(f.id) ? "selected" : "") + '>' + esc(f.name) + '</option>'; }).join("") + '</select></label><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" id="confirm-folder-move" type="button">Classer</button></div></form>';
+      document.body.append(dialog);
+      var done = false;
+      function finish(result) { if (done) return; done = true; dialog.close(); dialog.remove(); resolve(result); }
+      dialog.querySelectorAll('[value="cancel"]').forEach(function (b) { b.onclick = function () { finish(null); }; });
+      dialog.addEventListener("cancel", function (e) { e.preventDefault(); finish(null); });
+      dialog.querySelector("#confirm-folder-move").onclick = function () { finish(dialog.querySelector("#campaign-folder-select").value); };
+      dialog.showModal();
+    });
+  }
+
+  function renderFolderBar() {
+    var root = document.getElementById("campaign-folder-bar");
+    if (!root) return;
+    function chip(key, label, count) { return '<button type="button" class="campaign-folder-chip ' + (activeFolder === key ? "is-active" : "") + '" data-folder-filter="' + esc(key) + '"><span>' + label + '</span><strong>' + count + '</strong></button>'; }
+    var unclassified = projects.filter(function (p) { return !p.folder_id; }).length;
+    root.innerHTML = '<div class="campaign-folder-heading"><div><strong>Dossiers</strong><span>Retrouvez rapidement vos campagnes</span></div>' + (can("organize_folders") ? '<button class="campaign-folder-create" type="button" data-folder-create>+ Nouveau dossier</button>' : "") + '</div><div class="campaign-folder-list">' + chip("all", "🗂️ Toutes", projects.length) + chip("unclassified", "📄 Non classées", unclassified) + folders.map(function (f) { return '<span class="campaign-folder-group">' + chip(String(f.id), "📁 " + esc(f.name), projects.filter(function (p) { return String(p.folder_id || "") === String(f.id); }).length) + (can("organize_folders") ? '<button type="button" class="campaign-folder-manage" data-folder-manage="' + esc(f.id) + '" aria-label="Gérer le dossier ' + esc(f.name) + '">•••</button>' : "") + '</span>'; }).join("") + '</div>';
+    root.querySelectorAll("[data-folder-filter]").forEach(function (b) { b.onclick = function () { activeFolder = b.dataset.folderFilter; renderFolderBar(); renderCards(); }; });
+    root.querySelector("[data-folder-create]")?.addEventListener("click", async function () { var name = await askFolderName("Nouveau dossier", ""); if (!name) return; await StudioAPI.request("/api/campaign-folders", { method: "POST", body: JSON.stringify({ name: name }) }); await load(); });
+    root.querySelectorAll("[data-folder-manage]").forEach(function (b) { b.onclick = async function () { var folder = folderById(b.dataset.folderManage); if (!folder) return; var rename = await StudioModal.confirm({ eyebrow: "Dossier", title: folder.name, message: "Renommez ce dossier, ou supprimez-le pour replacer ses campagnes dans « Non classées ».", cancelLabel: "Supprimer le dossier", confirmLabel: "Renommer" }); if (rename) { var name = await askFolderName("Renommer le dossier", folder.name); if (!name || name === folder.name) return; await StudioAPI.request("/api/campaign-folders/" + folder.id, { method: "PATCH", body: JSON.stringify({ name: name }) }); } else { var remove = await StudioModal.confirm({ type: "danger", title: "Supprimer le dossier « " + folder.name + " » ?", message: "Les campagnes ne seront pas supprimées. Elles retourneront dans « Non classées ».", cancelLabel: "Conserver", confirmLabel: "Supprimer le dossier" }); if (!remove) return; await StudioAPI.request("/api/campaign-folders/" + folder.id, { method: "DELETE" }); if (activeFolder === String(folder.id)) activeFolder = "all"; } await load(); }; });
+  }
+
   function extraBadges(p) {
     var parts = [];
     if (p.reprogrammed_at || p.reprogrammedAt)
@@ -491,6 +552,7 @@
       '">' +
       esc(statusLabel(p.status)) +
       "</span>" +
+      (folderById(p.folder_id) ? '<span class="campaign-folder-tag">📁 ' + esc(folderById(p.folder_id).name) + '</span>' : "") +
       extraBadges(p) +
       "</div>" +
       themeWarning +
@@ -514,6 +576,15 @@
       await StudioAPI.request("/api/projects/" + id + "/internal-name", {
         method: "PATCH",
         body: JSON.stringify({ campaignName: internalName }),
+      });
+      return load();
+    }
+    if (action === "move-folder") {
+      var folderId = await askMoveFolder(p);
+      if (folderId === null) return;
+      await StudioAPI.request("/api/projects/" + id + "/folder", {
+        method: "PATCH",
+        body: JSON.stringify({ folderId: folderId || null }),
       });
       return load();
     }
@@ -872,7 +943,8 @@
       var haystack = [campaignName(p), themeLabel(p), statusLabel(p.status)]
         .join(" ")
         .toLowerCase();
-      return matchesFilter(p) && (!term || haystack.indexOf(term) !== -1);
+      var inFolder = activeFolder === "all" || (activeFolder === "unclassified" ? !p.folder_id : String(p.folder_id || "") === activeFolder);
+      return inFolder && matchesFilter(p) && (!term || haystack.indexOf(term) !== -1);
     });
     var mode = (sort && sort.value) || "updated-desc";
     filtered.sort(function (a, b) {
@@ -934,8 +1006,14 @@
           encodeURIComponent(window.StudioAPI.organizationId()),
       );
       projects = Array.isArray(data.projects) ? data.projects : [];
+      var folderData = await window.StudioAPI.request(
+        "/api/campaign-folders?organizationId=" +
+          encodeURIComponent(window.StudioAPI.organizationId()),
+      );
+      folders = Array.isArray(folderData.folders) ? folderData.folders : [];
       await Promise.all(projects.map(enrichCommunication));
       renderAlerts();
+      renderFolderBar();
       buildFilters();
       renderCards();
       if (!initialActionHandled && initialAction && initialProjectId) {

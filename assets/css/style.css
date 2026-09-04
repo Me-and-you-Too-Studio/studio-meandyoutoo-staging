@@ -9622,6 +9622,43 @@ body.sidebar-collapsed .sidebar-notification-root {
   box-shadow: 0 10px 25px rgba(23, 53, 95, 0.05);
   margin-bottom: 16px;
 }
+
+.campaign-folder-bar {
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  border: 1px solid #dbe5f1;
+  border-radius: 18px;
+  background: #f8fbff;
+}
+.campaign-folder-heading,
+.campaign-folder-list,
+.campaign-folder-group { display: flex; align-items: center; }
+.campaign-folder-heading { justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.campaign-folder-heading > div { display: grid; gap: 2px; }
+.campaign-folder-heading strong { color: #102d59; font-size: 1rem; }
+.campaign-folder-heading span { color: #60708b; font-size: .86rem; }
+.campaign-folder-list { flex-wrap: wrap; gap: 9px; }
+.campaign-folder-group { gap: 3px; }
+.campaign-folder-chip,
+.campaign-folder-create,
+.campaign-folder-manage {
+  border: 1px solid #cfdaea;
+  background: #fff;
+  color: #17345f;
+  cursor: pointer;
+}
+.campaign-folder-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 7px 12px; border-radius: 999px; font-weight: 700; }
+.campaign-folder-chip strong { min-width: 22px; padding: 2px 6px; border-radius: 999px; background: #edf3fa; text-align: center; font-size: .78rem; }
+.campaign-folder-chip:hover,
+.campaign-folder-chip.is-active { border-color: #087f89; background: #e8f7f7; color: #006b73; }
+.campaign-folder-create { padding: 8px 13px; border-radius: 10px; border-color: #078b93; color: #06737b; font-weight: 800; }
+.campaign-folder-manage { width: 32px; height: 32px; border-radius: 50%; font-weight: 900; line-height: 1; }
+.campaign-folder-tag { display: inline-flex; align-items: center; padding: 5px 9px; border-radius: 999px; background: #edf3fa; color: #294b75; font-size: .78rem; font-weight: 700; }
+.admin-folder-bar { margin-top: 16px; }
+@media (max-width: 700px) {
+  .campaign-folder-heading { align-items: flex-start; flex-direction: column; }
+  .campaign-folder-create { width: 100%; }
+}
 .campaign-filter-tabs {
   display: flex;
   gap: 8px;
