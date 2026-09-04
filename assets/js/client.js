@@ -64,7 +64,7 @@
     permissionLabels = {
       manage_users: "Gérer les comptes et les accès",
       create_campaigns: "Créer des campagnes",
-      edit_campaigns: "Modifier les campagnes et demander des ajustements",
+      edit_campaigns: "Modifier et renommer les campagnes, et demander des ajustements",
       submit_campaigns:
         "Transmettre une configuration à Me&YouToo pour relecture",
       manage_schedule: "Programmer, prolonger et reprogrammer",
