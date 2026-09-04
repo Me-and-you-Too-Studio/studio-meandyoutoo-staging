@@ -9962,7 +9962,9 @@ body.sidebar-collapsed .sidebar-notification-root {
   box-shadow: 0 14px 35px rgba(23, 53, 95, 0.14);
   padding: 5px;
 }
-.campaign-more-menu button {
+.campaign-more-menu button,
+.campaign-more-menu a {
+  display: block;
   width: 100%;
   border: 0;
   background: #fff;
@@ -9974,11 +9976,15 @@ body.sidebar-collapsed .sidebar-notification-root {
     sans-serif;
   color: #17355f;
   cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
 }
-.campaign-more-menu button:hover {
+.campaign-more-menu button:hover,
+.campaign-more-menu a:hover {
   background: #f7f9fc;
 }
-.campaign-more-menu button.danger {
+.campaign-more-menu button.danger,
+.campaign-more-menu a.danger {
   color: #bd3344;
 }
 .campaign-empty {

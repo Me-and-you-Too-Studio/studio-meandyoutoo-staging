@@ -230,17 +230,16 @@
     const st = normalizedStatus(p),
       id = p.id,
       q = "?projectId=" + encodeURIComponent(id),
-      buttons = [];
-    buttons.push(
-      '<button class="button button-secondary" type="button" data-rename="' +
-        id +
-        '">✏️ Renommer</button>',
-    );
-    buttons.push(
-      '<button class="button button-secondary" type="button" data-move-folder="' + id + '">📁 Classer</button>',
-    );
-    if (st === "draft")
-      buttons.push(
+      more = [];
+    more.push('<button type="button" data-rename="' + id + '">✏️ Renommer</button>');
+    more.push('<button type="button" data-move-folder="' + id + '">📁 Classer</button>');
+    let primary = "";
+    if (st === "ready_to_publish")
+      primary = '<button class="button button-primary" type="button" data-publish="' + id + '">🚀 Publier</button>';
+    else if (["unpublished", "archived"].includes(st))
+      primary = '<button class="button button-primary" type="button" data-reprogram="' + id + '">🚀 Reprogrammer</button>';
+    else if (st === "draft")
+      primary =
         '<a class="button button-primary" href="' +
           (p.current_step === "parametrage"
             ? "parametrage.html"
@@ -248,8 +247,7 @@
               ? "personnalisation.html"
               : "composer.html") +
           q +
-          '">✏️ Reprendre</a>',
-      );
+          '">✏️ Reprendre</a>';
     else if (
       [
         "review_pending",
@@ -258,69 +256,51 @@
         "ready_to_publish",
       ].includes(st)
     )
-      buttons.push(
+      primary =
         '<a class="button button-primary" href="validation.html' +
           q +
-          '">🔎 Relecture et corrections</a>',
-      );
+          '">🔎 Relecture et corrections</a>';
     else
-      buttons.push(
+      primary =
         '<a class="button button-secondary" href="campagne-detail.html' +
           q +
-          '">👁️ Voir la campagne</a>',
-      );
-    buttons.push(
-      '<a class="button button-secondary" href="kit-communication.html' +
-        q +
-        '">📣 Kit de com</a>',
-    );
-    if (st === "ready_to_publish")
-      buttons.unshift(
-        '<button class="button button-primary" type="button" data-publish="' +
-          id +
-          '">🚀 Publier</button>',
-      );
+          '">👁️ Voir la campagne</a>';
+    const kit = '<a class="button button-secondary" href="kit-communication.html' + q + '">📣 Kit de com</a>';
     if (["scheduled", "published", "active"].includes(st))
-      buttons.push(
-        '<button class="button button-secondary" type="button" data-extend="' +
+      more.push(
+        '<button type="button" data-extend="' +
           id +
           '">📅 Prolonger</button>',
       );
     if (["published", "active"].includes(st))
-      buttons.push(
-        '<button class="button button-danger-soft" type="button" data-unpublish="' +
+      more.push(
+        '<button class="danger" type="button" data-unpublish="' +
           id +
           '">⏹ Dépublier</button>',
-      );
-    if (["unpublished", "archived"].includes(st))
-      buttons.unshift(
-        '<button class="button button-primary" type="button" data-reprogram="' +
-          id +
-          '">🚀 Reprogrammer</button>',
       );
     if (
       ["scheduled", "published", "active", "unpublished", "archived"].includes(
         st,
       )
     )
-      buttons.push(
-        '<button class="button button-secondary" type="button" data-clone="' +
+      more.push(
+        '<button type="button" data-clone="' +
           id +
           '">🧬 Cloner</button>',
       );
     if (st === "unpublished")
-      buttons.push(
-        '<button class="button button-secondary admin-action-archive" type="button" data-archive="' +
+      more.push(
+        '<button type="button" data-archive="' +
           id +
           '">📦 Archiver</button>',
       );
     if (!["published", "active", "scheduled"].includes(st))
-      buttons.push(
-        '<button class="button button-danger-soft" type="button" data-delete-project="' +
+      more.push(
+        '<button class="danger" type="button" data-delete-project="' +
           id +
           '">🗑️ Supprimer</button>',
       );
-    return buttons.join("");
+    return primary + kit + '<details class="campaign-more"><summary>Autres actions</summary><div class="campaign-more-menu">' + more.join("") + '</div></details>';
   }
   function card(p) {
     const st = normalizedStatus(p),
@@ -766,7 +746,12 @@
         (b.onclick = async () => {
           const p = projects.get(String(b.dataset.moveFolder)), folderId = await askFolderValue("Classer la campagne", "", p);
           if (folderId === null) return;
-          await mutate(p.id, "/folder", { method: "PATCH", body: JSON.stringify({ folderId: folderId || null }) });
+          try {
+            await StudioAPI.request("/api/projects/" + p.id + "/folder", { method: "PATCH", body: JSON.stringify({ folderId: folderId || null }) });
+            const selectedFolder = folders.find((folder) => String(folder.id) === String(folderId));
+            await StudioModal.alert({ eyebrow: "Classement enregistré", title: selectedFolder ? "Campagne ajoutée à « " + selectedFolder.name + " »" : "Campagne replacée dans « Non classées »", message: "Ce classement est propre à votre espace administrateur.", type: "success", confirmLabel: "Fermer" });
+            await load();
+          } catch (e) { showError(e.message); }
         }),
     );
     $$('[data-rename]').forEach(
@@ -1128,10 +1113,10 @@
       const folderData = await StudioAPI.request('/api/campaign-folders?organizationId=' + encodeURIComponent(organization.id));
       folders = Array.isArray(folderData.folders) ? folderData.folders : [];
       orgProjects(organization).forEach((project) => { project.folder_id = null; });
-      folders.forEach((folder) => (folder.project_ids || []).forEach((projectId) => {
-        const project = orgProjects(organization).find((item) => String(item.id) === String(projectId));
-        if (project) project.folder_id = folder.id;
-      }));
+      (folderData.assignments || []).forEach((assignment) => {
+        const project = orgProjects(organization).find((item) => String(item.id) === String(assignment.project_id));
+        if (project) project.folder_id = assignment.folder_id;
+      });
       users = new Map(orgUsers(organization).map((u) => [String(u.id), u]));
       render();
       if (

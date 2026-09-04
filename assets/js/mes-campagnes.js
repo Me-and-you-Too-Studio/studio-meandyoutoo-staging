@@ -312,24 +312,24 @@
   function secondaryActions(p) {
     var q = query(p),
       id = esc(p.id);
-    var items = [];
+    var more = [], visible = [];
     if (can("organize_folders"))
-      items.push(
-        '<button class="campaign-btn" type="button" data-project-action="move-folder" data-project-id="' +
+      more.push(
+        '<button type="button" data-project-action="move-folder" data-project-id="' +
           id +
           '">📁 Classer</button>',
       );
     if (can("edit_campaigns"))
-      items.push(
-        '<button class="campaign-btn" type="button" data-project-action="rename" data-project-id="' +
+      more.push(
+        '<button type="button" data-project-action="rename" data-project-id="' +
           id +
           '">✏️ Renommer</button>',
       );
     var content = contentPage(p);
     if (p.status !== "draft") {
-      items.push(
+      more.push(
         content
-          ? '<a class="campaign-btn" href="' +
+          ? '<a href="' +
               content +
               '">👁️ Voir le contenu</a>'
           : invalidThemeAction(),
@@ -352,7 +352,7 @@
         "completed",
       ].includes(p.status)
     )
-      items.push(
+      visible.push(
         '<a class="campaign-btn campaign-btn-kit" href="kit-communication.html' +
           q +
           '">📣 Kit de com</a>',
@@ -361,14 +361,14 @@
       ["scheduled", "published", "active"].includes(p.status) &&
       can("manage_schedule")
     )
-      items.push(
-        '<button class="campaign-btn" type="button" data-project-action="extend" data-project-id="' +
+      more.push(
+        '<button type="button" data-project-action="extend" data-project-id="' +
           id +
           '">📅 Prolonger</button>',
       );
     if (["published", "active"].includes(p.status) && can("manage_schedule"))
-      items.push(
-        '<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="unpublish" data-project-id="' +
+      more.push(
+        '<button class="danger" type="button" data-project-action="unpublish" data-project-id="' +
           id +
           '">⏹ Dépublier</button>',
       );
@@ -376,8 +376,8 @@
       !["scheduled", "published", "active"].includes(p.status) &&
       can("edit_campaigns")
     )
-      items.push(
-        '<button class="campaign-btn campaign-btn-danger" type="button" data-project-action="delete" data-project-id="' +
+      more.push(
+        '<button class="danger" type="button" data-project-action="delete" data-project-id="' +
           id +
           '">🗑️ Supprimer</button>',
       );
@@ -392,13 +392,12 @@
       ].includes(p.status) &&
       can("create_campaigns")
     )
-      items.push(
-        '<button class="campaign-btn" type="button" data-project-action="clone" data-project-id="' +
+      more.push(
+        '<button type="button" data-project-action="clone" data-project-id="' +
           id +
           '">🧬 Cloner</button>',
       );
 
-    var more = [];
     if (p.status === "unpublished" && can("manage_schedule"))
       more.push(
         '<button type="button" data-project-action="archive" data-project-id="' +
@@ -407,7 +406,7 @@
       );
 
     var html =
-      '<div class="campaign-row-actions">' + primaryAction(p) + items.join("");
+      '<div class="campaign-row-actions">' + primaryAction(p) + visible.join("");
     if (more.length) {
       html +=
         '<details class="campaign-more"><summary>Autres actions</summary><div class="campaign-more-menu">' +
@@ -585,6 +584,14 @@
       await StudioAPI.request("/api/projects/" + id + "/folder", {
         method: "PATCH",
         body: JSON.stringify({ folderId: folderId || null }),
+      });
+      var selectedFolder = folderById(folderId);
+      await StudioModal.alert({
+        eyebrow: "Classement enregistré",
+        title: selectedFolder ? "Campagne ajoutée à « " + selectedFolder.name + " »" : "Campagne replacée dans « Non classées »",
+        message: "Ce classement est personnel et n’affecte pas celui des autres utilisateurs.",
+        type: "success",
+        confirmLabel: "Fermer",
       });
       return load();
     }
@@ -1012,11 +1019,9 @@
       );
       folders = Array.isArray(folderData.folders) ? folderData.folders : [];
       projects.forEach(function (project) { project.folder_id = null; });
-      folders.forEach(function (folder) {
-        (folder.project_ids || []).forEach(function (projectId) {
-          var project = projects.find(function (item) { return String(item.id) === String(projectId); });
-          if (project) project.folder_id = folder.id;
-        });
+      (folderData.assignments || []).forEach(function (assignment) {
+        var project = projects.find(function (item) { return String(item.id) === String(assignment.project_id); });
+        if (project) project.folder_id = assignment.folder_id;
       });
       await Promise.all(projects.map(enrichCommunication));
       renderAlerts();
