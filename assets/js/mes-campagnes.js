@@ -1011,6 +1011,13 @@
           encodeURIComponent(window.StudioAPI.organizationId()),
       );
       folders = Array.isArray(folderData.folders) ? folderData.folders : [];
+      projects.forEach(function (project) { project.folder_id = null; });
+      folders.forEach(function (folder) {
+        (folder.project_ids || []).forEach(function (projectId) {
+          var project = projects.find(function (item) { return String(item.id) === String(projectId); });
+          if (project) project.folder_id = folder.id;
+        });
+      });
       await Promise.all(projects.map(enrichCommunication));
       renderAlerts();
       renderFolderBar();

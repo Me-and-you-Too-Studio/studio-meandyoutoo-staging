@@ -1127,6 +1127,11 @@
       }
       const folderData = await StudioAPI.request('/api/campaign-folders?organizationId=' + encodeURIComponent(organization.id));
       folders = Array.isArray(folderData.folders) ? folderData.folders : [];
+      orgProjects(organization).forEach((project) => { project.folder_id = null; });
+      folders.forEach((folder) => (folder.project_ids || []).forEach((projectId) => {
+        const project = orgProjects(organization).find((item) => String(item.id) === String(projectId));
+        if (project) project.folder_id = folder.id;
+      }));
       users = new Map(orgUsers(organization).map((u) => [String(u.id), u]));
       render();
       if (
