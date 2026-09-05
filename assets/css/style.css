@@ -10886,3 +10886,34 @@ body.sidebar-collapsed .sidebar-notification-root {
   font-size: 0.72rem;
   line-height: 1.35;
 }
+
+/* Compteur de notifications dans la navigation client. */
+.nav a .nav-notification-count {
+  min-width: 24px;
+  height: 24px;
+  margin-left: auto;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: #e94376;
+  color: #fff;
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 900;
+}
+.nav a .nav-notification-count[hidden] {
+  display: none;
+}
+body.sidebar-collapsed .nav a .nav-notification-count {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-size: 0.58rem;
+}
+body.sidebar-collapsed .nav a {
+  position: relative;
+}
