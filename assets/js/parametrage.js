@@ -89,6 +89,7 @@
   $('launch-date').addEventListener('change',()=>{if(!isReadOnly()){syncCloseMin();updateNextState();}});
   $('close-date').addEventListener('change',()=>{if(!isReadOnly())updateNextState();});
   document.querySelectorAll('[data-example]').forEach(b=>b.onclick=()=>{if(isReadOnly())return;const k=b.dataset.example;if(k==='age'){if(!socio.some(c=>c.kind==='age'||c.q==='Votre âge'))socio.push(clone(AGE));}else{const e=EXAMPLES[+k];socio.push({q:e[0],opts:e[1].map(label=>({label,n:0}))});}renderSocio();});
+  window.StudioParametragePreviewSnapshot=()=>({project:{theme:project?.theme_title||'',title:$('respondent-title')?.value.trim()||project?.respondent_title||baseTitle||'Autodiagnostic',intro:$('intro')?.value.trim()||'',socio:socio}});
   $('nb-respondents').oninput=()=>{if(isReadOnly())return;updateVigilance();renderQuota();};
   $('close-packs').onclick=()=>{const panel=$('inline-packs');panel.hidden=true;const toggle=$('toggle-packs');if(toggle)toggle.textContent='Voir les packs disponibles';};window.addEventListener('studio:pack-requested',loadQuota);bindPackToggle();
   $('settings-form').addEventListener('submit',async event=>{
