@@ -2,7 +2,18 @@
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=h=>{let x=document.createElement('div');x.innerHTML=h||'';return(x.textContent||'').trim()},q=new URLSearchParams(location.search),pid=q.get('projectId'),theme=q.get('theme')||'',mode=q.get('mode')||(pid?'project':'catalog'),root=$('#rp');
 let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[];
 
-async function api(u){let r=await fetch(u,{credentials:'include'});if(!r.ok)throw new Error(`Erreur ${r.status}`);return r.json()}
+async function api(u){
+  if(window.StudioAPI&&typeof window.StudioAPI.request==='function')return window.StudioAPI.request(u);
+  const host=String(location.hostname||'').toLowerCase(),path=String(location.pathname||'').toLowerCase();
+  const staging=host==='localhost'||host==='127.0.0.1'||host.includes('staging')||path.includes('/studio-meandyoutoo-staging/');
+  const base=staging?'https://studio-meandyoutoo-api-staging.osc-fr1.scalingo.io':'https://studio-meandyoutoo-api.osc-fr1.scalingo.io';
+  const token=localStorage.getItem('studio_token')||'';
+  const headers=token?{Authorization:'Bearer '+token}:{};
+  let r=await fetch(base+u,{headers});
+  let data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.error||`Erreur API ${r.status}`);
+  return data
+}
 function num(v,fallback=0){v=Number(v);return Number.isFinite(v)?v:fallback}
 function randomIndex(max){if(max<=1)return 0;try{let a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%max}catch(_){return Math.floor(Math.random()*max)}}
 function shuffle(list){const out=[...(list||[])];for(let i=out.length-1;i>0;i--){const j=randomIndex(i+1);[out[i],out[j]]=[out[j],out[i]]}return out}
