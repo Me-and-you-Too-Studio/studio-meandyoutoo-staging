@@ -6555,6 +6555,12 @@ body.sidebar-collapsed .admin-help-card {
   color: #718497;
   font-size: 12px;
 }
+.notification-panel header > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
 .notification-read-all {
   border: 0;
   background: transparent;
@@ -6566,10 +6572,13 @@ body.sidebar-collapsed .admin-help-card {
   cursor: pointer;
 }
 .notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   max-height: 420px;
   overflow: auto;
-  padding: 6px;
-  background: #fff;
+  padding: 10px;
+  background: #f8fbfd;
   opacity: 1;
 }
 .notification-item {
@@ -6579,7 +6588,7 @@ body.sidebar-collapsed .admin-help-card {
   gap: 10px;
   align-items: start;
   padding: 11px 10px;
-  border: 0;
+  border: 1px solid #e2ebf2;
   border-radius: 15px;
   background: #fff;
   color: #18375d;
@@ -6590,7 +6599,9 @@ body.sidebar-collapsed .admin-help-card {
   background: #f6f9fb;
 }
 .notification-item.unread {
-  background: #eef6fb;
+  border-color: #d5e7f2;
+  background: #eef7fc;
+  box-shadow: 0 2px 8px rgba(24, 55, 93, 0.04);
 }
 .notification-item.treated {
   opacity: 0.72;
