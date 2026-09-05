@@ -10944,3 +10944,22 @@ body.sidebar-collapsed .nav a {
   .rp-colleague-own{grid-template-columns:minmax(72px,auto) 1fr}
   .rp-colleague-own strong{font-size:30px}
 }
+
+
+/* Aperçu campagne — accès persistant dans le parcours */
+.creation-sticky-actions .rp-trigger-sticky{white-space:nowrap}
+#settings-form .top-actions .rp-trigger-bottom{margin-left:auto}
+.result-resources-preview-card{margin-top:18px;padding:18px;border:1px solid #dbe6eb;border-radius:16px;background:#f8fbfc}
+.result-resources-preview-card .eyebrow{margin:0 0 12px}
+.result-preview-report{width:100%;padding:14px 18px;border:0;border-bottom:5px solid #084d57;border-radius:10px;background:#0d6a73;color:#fff;font:800 16px Asap,Arial,sans-serif;opacity:1}
+.result-preview-knowledge{margin-top:14px;border:1px solid #cfdde5;border-radius:12px;background:#fff;overflow:hidden}
+.result-preview-knowledge-head{display:flex;justify-content:center;align-items:center;gap:12px;padding:14px 16px;color:#0d6670;font-size:16px}
+.result-preview-knowledge-head span{margin-left:auto}
+.result-resources-preview{border-top:1px solid #e4ebef}
+.result-preview-resource{display:block;width:100%;padding:13px 16px;border:0;border-bottom:1px solid #e8eef2;background:#fff;color:#18375d;text-align:center;font:700 14px Asap,Arial,sans-serif;opacity:1}
+.result-preview-resource:last-child{border-bottom:0}
+.result-preview-empty{padding:14px 16px;color:#8798a6;text-align:center;font-size:12px}
+@media(max-width:900px){
+  .creation-sticky-actions .rp-trigger-sticky{order:3;width:100%}
+  #settings-form .top-actions .rp-trigger-bottom{margin-left:0}
+}

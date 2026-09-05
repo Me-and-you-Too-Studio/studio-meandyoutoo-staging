@@ -18,11 +18,25 @@
   const validHttpUrl=value=>{try{const u=new URL(String(value||'').trim());return u.protocol==='http:'||u.protocol==='https:'}catch(_){return false}};
   function renderResultResources(){
     const list=$('result-resources-list');if(!list)return;const ro=isReadOnly();
-    if(!resultResources.length){list.innerHTML='<div class="result-resource-empty">Aucune ressource ajoutée pour le moment.</div>';return;}
-    list.innerHTML=resultResources.map((item,i)=>`<article class="result-resource-row"><div class="field"><label>Texte du bouton</label><input data-result-title="${i}" value="${esc(item.title)}" placeholder="Ex. Découvrir notre plan d’action" ${ro?'readonly tabindex="-1"':''}></div><div class="field"><label>Lien vers la ressource</label><input data-result-url="${i}" type="url" value="${esc(item.url)}" placeholder="https://intranet.votreentreprise.fr/..." ${ro?'readonly tabindex="-1"':''}></div>${ro?'':`<button type="button" class="result-resource-remove" data-result-remove="${i}" aria-label="Supprimer cette ressource">×</button>`}</article>`).join('');
-    list.querySelectorAll('[data-result-title]').forEach(el=>el.oninput=()=>{resultResources[Number(el.dataset.resultTitle)].title=el.value;});
-    list.querySelectorAll('[data-result-url]').forEach(el=>el.oninput=()=>{resultResources[Number(el.dataset.resultUrl)].url=el.value;});
-    list.querySelectorAll('[data-result-remove]').forEach(el=>el.onclick=()=>{resultResources.splice(Number(el.dataset.resultRemove),1);renderResultResources();});
+    if(!resultResources.length){
+      list.innerHTML='<div class="result-resource-empty">Aucune ressource ajoutée pour le moment.</div>';
+    }else{
+      list.innerHTML=resultResources.map((item,i)=>`<article class="result-resource-row"><div class="field"><label>Texte du bouton</label><input data-result-title="${i}" value="${esc(item.title)}" placeholder="Ex. Contactez vos référents" ${ro?'readonly tabindex="-1"':''}></div><div class="field"><label>Lien vers la ressource</label><input data-result-url="${i}" type="url" value="${esc(item.url)}" placeholder="https://intranet.votreentreprise.fr/..." ${ro?'readonly tabindex="-1"':''}></div>${ro?'':`<button type="button" class="result-resource-remove" data-result-remove="${i}" aria-label="Supprimer cette ressource">×</button>`}</article>`).join('');
+      list.querySelectorAll('[data-result-title]').forEach(el=>el.oninput=()=>{resultResources[Number(el.dataset.resultTitle)].title=el.value;renderResultResourcesPreview();});
+      list.querySelectorAll('[data-result-url]').forEach(el=>el.oninput=()=>{resultResources[Number(el.dataset.resultUrl)].url=el.value;renderResultResourcesPreview();});
+      list.querySelectorAll('[data-result-remove]').forEach(el=>el.onclick=()=>{resultResources.splice(Number(el.dataset.resultRemove),1);renderResultResources();});
+    }
+    renderResultResourcesPreview();
+  }
+
+  function renderResultResourcesPreview(){
+    const preview=$('result-resources-preview');if(!preview)return;
+    const visible=resultResources.filter(r=>String(r?.title||'').trim());
+    if(!visible.length){
+      preview.innerHTML='<div class="result-preview-empty">Ajoutez une ressource pour voir ici le bouton affiché au répondant.</div>';
+      return;
+    }
+    preview.innerHTML=visible.map(r=>`<button type="button" class="result-preview-resource" disabled>${esc(String(r.title||'').trim())}</button>`).join('');
   }
 
   function normalizeSexismeCriteria(items){

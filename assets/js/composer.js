@@ -365,7 +365,25 @@
     }
     openLibrary('add');
   };
-  window.StudioComposerPreviewSnapshot=()=>({project:{theme:state.project?.theme_title||'',title:state.project?.respondent_title||state.project?.campaign_name||state.project?.theme_title||'Autodiagnostic',intro:(()=>{const d=document.createElement('div');d.innerHTML=state.project?.introduction_html||state.project?.theme_introduction_html||'';return(d.textContent||'').trim()})(),socio:Array.isArray(state.project?.sociodemo)?state.project.sociodemo:[]},chapters:state.chapters.map(ch=>({title:ch.title,situations:(ch.situations||[]).map(si=>({content:si.content||si.original_content||'',answers:si.answers||[]}))}))});
+  window.StudioComposerPreviewSnapshot=()=>({
+    project:{
+      theme:state.project?.theme_title||'',
+      title:state.project?.respondent_title||state.project?.campaign_name||state.project?.theme_title||'Autodiagnostic',
+      intro:(()=>{const d=document.createElement('div');d.innerHTML=state.project?.introduction_html||state.project?.theme_introduction_html||'';return(d.textContent||'').trim()})(),
+      socio:Array.isArray(state.project?.sociodemo)?state.project.sociodemo:[],
+      result_buttons:Array.isArray(state.project?.result_buttons)?state.project.result_buttons:[]
+    },
+    chapters:state.chapters.map((ch,cidx)=>({
+      id:ch.id||ch.source_id||cidx,
+      title:ch.title,
+      profiles:Array.isArray(ch.profiles)?ch.profiles:[],
+      situations:(ch.situations||[]).filter(si=>si.selected!==false).map((si,sidx)=>({
+        id:si.id||si.source_id||`${cidx}-${sidx}`,
+        content:si.content||si.custom_content||si.original_content||'',
+        answers:si.answers||[]
+      }))
+    }))
+  });
   $('library-close').onclick=closeLibrary;$('library-backdrop').onclick=closeLibrary;
   document.body.classList.add('sidebar-collapsed');
   const collapseButton=document.querySelector('[data-sidebar-collapse]');if(collapseButton){collapseButton.setAttribute('aria-expanded','false');collapseButton.setAttribute('aria-label','Déployer le menu');collapseButton.setAttribute('title','Déployer le menu');}
