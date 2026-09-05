@@ -22,6 +22,7 @@ function normalizeSocio(list){return (Array.isArray(list)?list:[]).filter(Boolea
 function fallbackSocio(){return [{key:'gender',label:'Vous êtes :',options:[{label:'Une femme'},{label:'Un homme'},{label:'Non-binaire'},{label:'Autre'}]}]}
 function normalizeProfile(p){return {...p,title:p.title||p.titre||'Profil',summary:clean(p.summary||p.resume||p.phrase||''),content:clean(p.content||p.description||p.desc||''),scoring_min:num(p.scoring_min??p.min,0),scoring_max:num(p.scoring_max??p.max,0),top_score:num(p.top_score,0)}}
 function normalizeAnswer(a,i){return typeof a==='object'?{...a,label:a.text||a.content||a.label||`Réponse ${i+1}`,score:num(a.score,0)}:{label:String(a),score:0}}
+function normalizeResources(list){return (Array.isArray(list)?list:[]).map((r,i)=>({title:String(r?.title||r?.titre||r?.label||r?.text||`Ressource ${i+1}`).trim(),url:String(r?.url||r?.href||r?.link||'').trim()})).filter(r=>r.title&&/^https?:\/\//i.test(r.url))}
 function norm(x){
   let pr=x.project||{},live=mode==='project'?JSON.parse(sessionStorage.getItem('meayt_preview')||'null'):null;
   const sourceSocio=Array.isArray(pr.sociodemo)&&pr.sociodemo.length?pr.sociodemo:(Array.isArray(x.theme?.sociodemo_default)?x.theme.sociodemo_default:[]);
@@ -30,6 +31,7 @@ function norm(x){
     title:pr.respondent_title||pr.campaign_name||pr.theme_title||x.theme?.respondent_title_default||x.theme?.base_title||x.theme?.title||'Autodiagnostic',
     intro:clean(pr.introduction_html||pr.theme_introduction_html||x.theme?.introduction_html)||'Découvrez le parcours proposé aux répondants.',
     socio:normalizeSocio(sourceSocio),
+    resources:normalizeResources(pr.result_buttons||x.theme?.result_buttons||[]),
     chapters:(x.chapters||[]).map((c,cidx)=>({
       id:c.id||c.source_id||cidx,title:c.title||`Partie ${cidx+1}`,
       profiles:(c.profiles||c.profils||[]).map(normalizeProfile),
@@ -40,6 +42,7 @@ function norm(x){
     if(live.project.respondent_title||live.project.title)d.title=live.project.respondent_title||live.project.title;
     if(live.project.introduction_html||live.project.intro)d.intro=clean(live.project.introduction_html||live.project.intro);
     if(Array.isArray(live.project.sociodemo))d.socio=normalizeSocio(live.project.sociodemo);
+    if(Array.isArray(live.project.result_buttons))d.resources=normalizeResources(live.project.result_buttons);
   }
   if(live?.chapters){
     const profileMap=new Map(d.chapters.map(c=>[String(c.id),c.profiles]));
@@ -72,7 +75,7 @@ function socio(){
 function question(){
   let ch=d.chapters[ci],s=ch?.situations?.[qi];if(!s){done();return}
   const selected=answers[answerKey()];
-  root.innerHTML=head(`Partie ${ci+1} sur ${d.chapters.length}`)+`<section class="rp-card"><div class="rp-progress-row"><div><span>Partie ${ci+1}/${d.chapters.length}</span><strong class="rp-chapter-title">${esc(ch.title)}</strong></div><span>Situation ${situationNumber()} / ${totalSituations()}</span></div><div class="rp-bar"><i style="width:${Math.round((situationNumber()-1)/Math.max(1,totalSituations())*100)}%"></i></div><h1>${esc(s.content)}</h1><p class="rp-help">Choisissez la réponse qui correspond le mieux à ce que vous pensez ou feriez spontanément.</p><div class="rp-answers">${(s.answers||[]).map((a,i)=>`<button type="button" class="rp-answer ${selected===i?'selected':''}" data-i="${i}"><span>${String.fromCharCode(65+i)}</span>${esc(a.label)}</button>`).join('')}</div><div class="rp-actions"><button id="prev" class="button button-secondary">Précédent</button><button id="next" class="button button-primary" ${selected===undefined?'disabled':''}>Continuer</button></div></section>`;
+  root.innerHTML=head(`Partie ${ci+1} sur ${d.chapters.length}`)+`<section class="rp-card"><div class="rp-progress-row"><div><span>Partie ${ci+1}/${d.chapters.length}</span><strong class="rp-chapter-title">${esc(ch.title)}</strong></div><span>Situation ${qi+1} / ${ch.situations.length}</span></div><div class="rp-bar"><i style="width:${Math.round(((qi+1)/Math.max(1,ch.situations.length))*100)}%"></i></div><h1>${esc(s.content)}</h1><p class="rp-help">Choisissez la réponse qui correspond le mieux à ce que vous pensez ou feriez spontanément.</p><div class="rp-answers">${(s.answers||[]).map((a,i)=>`<button type="button" class="rp-answer ${selected===i?'selected':''}" data-i="${i}"><span>${String.fromCharCode(65+i)}</span>${esc(a.label)}</button>`).join('')}</div><div class="rp-actions"><button id="prev" class="button button-secondary">Précédent</button><button id="next" class="button button-primary" ${selected===undefined?'disabled':''}>Continuer</button></div></section>`;
   root.querySelectorAll('.rp-answer').forEach(b=>b.onclick=()=>{answers[answerKey()]=Number(b.dataset.i);question()});
   $('#prev').onclick=()=>{if(qi>0)qi--;else if(ci>0){ci--;qi=d.chapters[ci].situations.length-1;step=1}else{step=d.socio.length?0:-1}render()};
   $('#next').onclick=()=>{if(answers[answerKey()]===undefined)return;if(qi+1<ch.situations.length){qi++;render()}else{showChapterResult()}}
@@ -94,9 +97,27 @@ function profileForScore(profiles,avg){
 function profileTone(p){const c=String(p?.color||'').toLowerCase();if(c.includes('77cd8a')||c.includes('green'))return'positive';if(c.includes('ffc744')||c.includes('yellow')||c.includes('orange'))return'mid';if(c.includes('ff847')||c.includes('red'))return'alert';return'neutral'}
 function showChapterResult(){
   const ch=d.chapters[ci],avg=chapterAverage(ci),p=profileForScore(ch.profiles,avg),tone=profileTone(p);chapterResults[ci]={avg,profile:p};step=2;
-  root.innerHTML=head(`Résultat de la partie ${ci+1}`)+`<section class="rp-card rp-profile ${tone}"><div class="rp-kicker rp-kicker-neutral">Votre profil · Partie ${ci+1}/${d.chapters.length}</div><div class="rp-profile-chapter">${esc(ch.title)}</div>${p?`<h1>${esc(p.title)}</h1>${p.summary?`<p class="rp-profile-summary">${esc(p.summary)}</p>`:''}${p.content&&p.content!==p.summary?`<div class="rp-profile-content">${esc(p.content)}</div>`:''}<div class="rp-score-note">Score moyen de cette partie : <strong>${avg.toFixed(2)}</strong></div>`:`<h1>Profil indisponible</h1><p>Le contenu de profil de cette partie n’est pas disponible.</p>`}<div class="rp-actions"><button id="next" class="button button-primary">${ci===d.chapters.length-1?'Voir le récapitulatif':'Continuer vers la partie suivante'}</button></div></section>`;
+  root.innerHTML=head(`Résultat de la partie ${ci+1}`)+`<section class="rp-card rp-profile ${tone}"><div class="rp-kicker rp-kicker-neutral">Votre profil · Partie ${ci+1}/${d.chapters.length}</div><div class="rp-profile-chapter">${esc(ch.title)}</div>${p?`<h1>${esc(p.title)}</h1>${p.summary?`<p class="rp-profile-summary">${esc(p.summary)}</p>`:''}${p.content&&p.content!==p.summary?`<div class="rp-profile-content">${esc(p.content)}</div>`:''}`:`<h1>Profil indisponible</h1><p>Le contenu de profil de cette partie n’est pas disponible.</p>`}<div class="rp-actions"><button id="next" class="button button-primary">${ci===d.chapters.length-1?'Voir le récapitulatif':'Continuer vers la partie suivante'}</button></div></section>`;
   $('#next').onclick=()=>{if(ci<d.chapters.length-1){ci++;qi=0;step=1;render()}else done()}
 }
+
+function hashText(value){let h=2166136261;for(const c of String(value||'')){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
+function colleagueDistribution(chapter,profile,chapterIndex){
+  const profiles=chapter?.profiles||[];if(!profiles.length)return[];const own=Math.max(0,profiles.indexOf(profile));if(profiles.length===1)return[{profile:profiles[0],pct:100,own:true}];
+  const seed=hashText(`${chapterIndex}|${profile?.title||''}|${chapter?.title||''}`),ownPct=45+(seed%19),remaining=100-ownPct;
+  const others=profiles.map((p,i)=>({p,i,w:i===own?0:7+((hashText(`${seed}|${i}|${p.title}`)%24))}));const totalW=others.reduce((n,x)=>n+x.w,0)||1;let used=ownPct;
+  const out=profiles.map((p,i)=>{if(i===own)return{profile:p,pct:ownPct,own:true};const pct=Math.floor(remaining*(others[i].w/totalW));used+=pct;return{profile:p,pct,own:false}});
+  const diff=100-used;if(diff){const target=out.find(x=>!x.own)||out[own];target.pct+=diff}return out;
+}
+function colleaguesHtml(chapter,result,chapterIndex){
+  const dist=colleagueDistribution(chapter,result?.profile,chapterIndex),mine=dist.find(x=>x.own)||dist[0];
+  return `<div class="rp-colleague-wrap"><button type="button" class="rp-colleague-toggle" data-colleague-toggle="${chapterIndex}"><span>Afficher le résultat de mes collègues</span><span aria-hidden="true">⌄</span></button><div class="rp-colleague-body" data-colleague-body="${chapterIndex}" hidden><div class="rp-colleague-own"><strong>${mine?.pct??0}<small>%</small></strong><span>de vos collègues ont le même profil que vous</span></div><div class="rp-colleague-dist">${dist.map(x=>`<div class="rp-colleague-row"><span class="rp-colleague-dot ${profileTone(x.profile)}"></span><strong>${x.pct}%</strong><div><b>${esc(x.profile?.title||'Profil')}</b>${x.own?'<em>Votre profil</em>':''}</div></div>`).join('')}</div><p class="rp-fictive-note">Comparaison fictive affichée uniquement pour simuler la restitution répondant.</p></div></div>`;
+}
+function bindFinalInteractions(){
+  root.querySelectorAll('[data-colleague-toggle]').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.colleagueToggle,body=root.querySelector(`[data-colleague-body="${id}"]`),open=body&&!body.hidden;if(body)body.hidden=open;btn.classList.toggle('open',!open);btn.querySelector('span:last-child').textContent=open?'⌄':'⌃';});
+  const resourceToggle=root.querySelector('[data-resource-toggle]');if(resourceToggle)resourceToggle.onclick=()=>{const body=root.querySelector('[data-resource-body]'),open=body&&!body.hidden;if(body)body.hidden=open;resourceToggle.classList.toggle('open',!open);resourceToggle.querySelector('span:last-child').textContent=open?'⌄':'⌃';};
+}
+function resourcesHtml(){if(!d.resources?.length)return'';return `<section class="rp-resources"><button type="button" class="rp-resource-toggle" data-resource-toggle><span>Approfondissez vos connaissances</span><span aria-hidden="true">⌄</span></button><div class="rp-resource-body" data-resource-body hidden>${d.resources.map((r,i)=>`<a class="rp-resource-link" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer"><span>↗</span>${esc(r.title)}</a>`).join('')}</div></section>`}
 
 function radarValue(result,chapter){
   const avg=result?.avg;if(!Number.isFinite(avg))return 0;
@@ -116,7 +137,8 @@ function radarSvg(){
 }
 function done(){
   chapterResults=d.chapters.map((c,i)=>({avg:chapterAverage(i),profile:profileForScore(c.profiles,chapterAverage(i))}));
-  root.innerHTML=head('Récapitulatif des résultats')+`<section class="rp-card rp-final"><div class="rp-kicker">Vos résultats</div><h1>Récapitulatif de vos profils</h1><p class="rp-help">Ces résultats sont calculés avec les vrais scores et seuils de profils du diagnostic. Ils ne sont pas enregistrés.</p>${radarSvg()}<div class="rp-final-list">${d.chapters.map((c,i)=>{const r=chapterResults[i],p=r.profile,t=profileTone(p);return`<article class="rp-final-profile ${t}"><div><span>Partie ${i+1}</span><strong>${esc(c.title)}</strong></div><h2>${esc(p?.title||'Profil indisponible')}</h2>${p?.summary?`<p>${esc(p.summary)}</p>`:''}${Number.isFinite(r.avg)?`<small>Score moyen : ${r.avg.toFixed(2)}</small>`:''}</article>`}).join('')}</div><div class="rp-actions"><button id="again" class="button button-secondary">Recommencer l’aperçu</button></div></section>`;
+  root.innerHTML=head('Récapitulatif des résultats')+`<section class="rp-card rp-final"><div class="rp-kicker">Vos résultats</div><h1>Récapitulatif de vos profils</h1><p class="rp-help">Voici la restitution que verra le répondant. La comparaison avec les collègues est fictive dans cet aperçu et aucune donnée n’est enregistrée.</p>${radarSvg()}<div class="rp-final-list">${d.chapters.map((c,i)=>{const r=chapterResults[i],p=r.profile,t=profileTone(p);return`<article class="rp-final-profile ${t}"><div class="rp-final-profile-head"><span>Partie ${i+1}</span><strong>${esc(c.title)}</strong></div><h2>${esc(p?.title||'Profil indisponible')}</h2>${p?.summary?`<p>${esc(p.summary)}</p>`:''}${colleaguesHtml(c,r,i)}</article>`}).join('')}</div>${resourcesHtml()}<div class="rp-actions"><button id="again" class="button button-secondary">Recommencer l’aperçu</button></div></section>`;
+  bindFinalInteractions();
   $('#again').onclick=()=>{step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[];norm.lastShuffleSeed=Date.now();render()}
 }
 function render(){if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult()}
