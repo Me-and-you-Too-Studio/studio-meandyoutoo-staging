@@ -49,6 +49,21 @@
     return b;
   }
 
+  function syncSticky(){
+    if(!isProject)return;
+    const sticky=document.querySelector('.creation-sticky-actions');
+    if(!sticky)return;
+    const existing=sticky.querySelector('[data-rp="sticky"]');
+    const onPersonalisation=location.pathname.toLowerCase().endsWith('/personnalisation.html')||location.pathname.toLowerCase().endsWith('personnalisation.html');
+    const allowed=onPersonalisation&&document.body.classList.contains('rp-sticky-preview-enabled');
+    if(!allowed){if(existing)existing.remove();return;}
+    if(existing)return;
+    const stickyButton=makeButton('sticky');
+    stickyButton.classList.add('rp-trigger-sticky');
+    const primary=sticky.querySelector('.button-primary');
+    if(primary)sticky.insertBefore(stickyButton,primary);else sticky.appendChild(stickyButton);
+  }
+
   function add(){
     const start=document.querySelector('.hero-panel [data-start-theme]');
     if(start&&!document.querySelector('[data-rp="catalog"]')){
@@ -66,14 +81,7 @@
         t.appendChild(topButton);
       }
 
-      const sticky=document.querySelector('.creation-sticky-actions');
-      if(sticky&&!document.querySelector('[data-rp="sticky"]')){
-        const stickyButton=makeButton('sticky');
-        stickyButton.classList.add('rp-trigger-sticky');
-        const primary=sticky.querySelector('.button-primary');
-        if(primary)sticky.insertBefore(stickyButton,primary);
-        else sticky.appendChild(stickyButton);
-      }
+      syncSticky();
 
       const bottomActions=document.querySelector('#settings-form .top-actions');
       if(bottomActions&&!document.querySelector('[data-rp="bottom"]')){
@@ -96,5 +104,6 @@
     }
   }
 
+  document.addEventListener('studio:preview-layout-changed',syncSticky);
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',add):add();
 })();

@@ -37,6 +37,9 @@
     $('profile-chapter-desc').textContent=isReadOnly()?'Profils enregistrés pour cette campagne · consultation en lecture seule.':active===chapters.length-1?'Le scoring de cette dernière partie est volontairement plus strict lorsque les situations comportent des enjeux liés à la loi.':'Personnalisez les trois profils issus du référentiel Me&YouToo.';
     $('profiles-root').innerHTML=`<div class="profile-excel-grid">${profiles.map((pr,pi)=>card(ch,pr,pi)).join('')}</div>`;
     $('profile-sticky-label').textContent=`Chapitre ${active+1}/${chapters.length} · ${ch.title}`;
+    const stickyPreviewReady=!project?.review_mode&&!isReadOnly()&&active===chapters.length-1&&firstInvalidIndex()===-1;
+    document.body.classList.toggle('rp-sticky-preview-enabled',stickyPreviewReady);
+    document.dispatchEvent(new CustomEvent('studio:preview-layout-changed'));
     $('back-link').href='composer.html'+q(active);$('questions-step').href='composer.html'+q(active);
     if(project?.review_mode){
       const reviewUrl=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;

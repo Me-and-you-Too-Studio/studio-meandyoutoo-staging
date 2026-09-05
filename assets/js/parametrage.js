@@ -16,27 +16,43 @@
   const clone=v=>JSON.parse(JSON.stringify(v));
   const normalizeResultResources=value=>(Array.isArray(value)?value:[]).map((item,i)=>({title:String(item?.title||item?.titre||item?.label||item?.text||'').trim(),url:String(item?.url||item?.href||item?.link||'').trim()})).filter(item=>item.title||item.url);
   const validHttpUrl=value=>{try{const u=new URL(String(value||'').trim());return u.protocol==='http:'||u.protocol==='https:'}catch(_){return false}};
+  function resourceModal(){
+    let dialog=$('result-resource-modal');
+    if(dialog)return dialog;
+    dialog=document.createElement('dialog');
+    dialog.id='result-resource-modal';
+    dialog.className='studio-modal result-resource-modal';
+    dialog.innerHTML=`<div class="studio-modal-shell"><div class="studio-modal-icon" aria-hidden="true"></div><div class="studio-modal-copy"><p class="eyebrow">Ressource de fin</p><h2 id="result-resource-modal-title">Ajouter une ressource</h2><p class="studio-modal-message">Cette ressource sera proposée aux répondants à la fin de l'autodiagnostic sous « Approfondissez vos connaissances ».</p></div><button class="studio-modal-close" type="button" aria-label="Fermer">×</button><div class="result-resource-modal-fields"><label class="field"><span>Texte du bouton *</span><input id="result-resource-modal-label" maxlength="160" placeholder="Ex. Contactez vos référents"></label><div class="result-resource-examples"><span>Exemples :</span><small>Contactez vos référents · Consultez notre règlement intérieur · Découvrez notre politique diversité · Accédez à notre intranet · Consultez notre guide interne</small></div><label class="field"><span>URL de la ressource *</span><input id="result-resource-modal-url" type="url" inputmode="url" placeholder="https://..."></label><p class="result-resource-modal-error" id="result-resource-modal-error" hidden></p></div><div class="studio-modal-actions"><button class="button button-ghost" type="button" data-resource-cancel>Annuler</button><button class="button button-primary" type="button" data-resource-confirm>Ajouter la ressource</button></div></div>`;
+    document.body.appendChild(dialog);
+    return dialog;
+  }
+  function openResourceModal(index=null){
+    if(isReadOnly())return;
+    if(index===null&&resultResources.length>=10){window.StudioModal.alert({eyebrow:'Ressources de fin',title:'Maximum atteint',message:'Vous pouvez ajouter au maximum 10 ressources de fin de questionnaire.',type:'info',confirmLabel:'Fermer'});return;}
+    const dialog=resourceModal(),editing=index!==null,item=editing?resultResources[index]:{title:'',url:''};
+    const title=dialog.querySelector('#result-resource-modal-title'),label=dialog.querySelector('#result-resource-modal-label'),url=dialog.querySelector('#result-resource-modal-url'),error=dialog.querySelector('#result-resource-modal-error'),confirm=dialog.querySelector('[data-resource-confirm]');
+    title.textContent=editing?'Modifier la ressource':'Ajouter une ressource';label.value=item.title||'';url.value=item.url||'';error.hidden=true;confirm.textContent=editing?'Enregistrer les modifications':'Ajouter la ressource';
+    const close=()=>{document.body.classList.remove('studio-modal-open');if(dialog.open)dialog.close();};
+    dialog.querySelector('.studio-modal-close').onclick=close;dialog.querySelector('[data-resource-cancel]').onclick=close;
+    dialog.onclick=e=>{if(e.target===dialog)close()};dialog.oncancel=e=>{e.preventDefault();close()};
+    confirm.onclick=()=>{const next={title:label.value.trim(),url:url.value.trim()};if(!next.title){error.textContent='Le texte du bouton est obligatoire.';error.hidden=false;label.focus();return;}if(!validHttpUrl(next.url)){error.textContent='Saisissez une URL complète commençant par http:// ou https://.';error.hidden=false;url.focus();return;}if(editing)resultResources[index]=next;else resultResources.push(next);close();renderResultResources();};
+    [label,url].forEach(input=>input.oninput=()=>{error.hidden=true});
+    document.body.classList.add('studio-modal-open');dialog.showModal();setTimeout(()=>label.focus(),0);
+  }
   function renderResultResources(){
     const list=$('result-resources-list');if(!list)return;const ro=isReadOnly();
-    if(!resultResources.length){
-      list.innerHTML='<div class="result-resource-empty">Aucune ressource ajoutée pour le moment.</div>';
-    }else{
-      list.innerHTML=resultResources.map((item,i)=>`<article class="result-resource-row"><div class="field"><label>Texte du bouton</label><input data-result-title="${i}" value="${esc(item.title)}" placeholder="Ex. Contactez vos référents" ${ro?'readonly tabindex="-1"':''}></div><div class="field"><label>Lien vers la ressource</label><input data-result-url="${i}" type="url" value="${esc(item.url)}" placeholder="https://intranet.votreentreprise.fr/..." ${ro?'readonly tabindex="-1"':''}></div>${ro?'':`<button type="button" class="result-resource-remove" data-result-remove="${i}" aria-label="Supprimer cette ressource">×</button>`}</article>`).join('');
-      list.querySelectorAll('[data-result-title]').forEach(el=>el.oninput=()=>{resultResources[Number(el.dataset.resultTitle)].title=el.value;renderResultResourcesPreview();});
-      list.querySelectorAll('[data-result-url]').forEach(el=>el.oninput=()=>{resultResources[Number(el.dataset.resultUrl)].url=el.value;renderResultResourcesPreview();});
-      list.querySelectorAll('[data-result-remove]').forEach(el=>el.onclick=()=>{resultResources.splice(Number(el.dataset.resultRemove),1);renderResultResources();});
-    }
+    if(!resultResources.length)list.innerHTML='<div class="result-resource-empty">Aucune ressource ajoutée pour le moment.</div>';
+    else list.innerHTML=resultResources.map((item,i)=>`<article class="result-resource-row"><div class="result-resource-copy"><strong>${esc(item.title)}</strong><a href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">${esc(item.url)}</a></div>${ro?'':`<div class="result-resource-actions"><button type="button" class="button button-secondary button-small" data-result-edit="${i}">Modifier</button><button type="button" class="button button-ghost button-small result-resource-delete" data-result-remove="${i}">Supprimer</button></div>`}</article>`).join('');
+    list.querySelectorAll('[data-result-edit]').forEach(el=>el.onclick=()=>openResourceModal(Number(el.dataset.resultEdit)));
+    list.querySelectorAll('[data-result-remove]').forEach(el=>el.onclick=async()=>{const i=Number(el.dataset.resultRemove),ok=await window.StudioModal.confirm({eyebrow:'Ressource de fin',title:'Supprimer cette ressource ?',message:`« ${resultResources[i]?.title||'Cette ressource'} » ne sera plus proposée aux répondants.`,type:'danger',cancelLabel:'Conserver',confirmLabel:'Supprimer'});if(ok){resultResources.splice(i,1);renderResultResources();}});
+    const add=$('add-result-resource');if(add){add.disabled=resultResources.length>=10;add.title=resultResources.length>=10?'Maximum de 10 ressources atteint':'';}
     renderResultResourcesPreview();
   }
 
   function renderResultResourcesPreview(){
     const preview=$('result-resources-preview');if(!preview)return;
     const visible=resultResources.filter(r=>String(r?.title||'').trim());
-    if(!visible.length){
-      preview.innerHTML='<div class="result-preview-empty">Ajoutez une ressource pour voir ici le bouton affiché au répondant.</div>';
-      return;
-    }
-    preview.innerHTML=visible.map(r=>`<button type="button" class="result-preview-resource" disabled>${esc(String(r.title||'').trim())}</button>`).join('');
+    preview.innerHTML=visible.length?visible.map(r=>`<div class="result-preview-resource">${esc(String(r.title||'').trim())}</div>`).join(''):'<div class="result-preview-empty">Vos ressources apparaîtront ici dès que vous en ajouterez.</div>';
   }
 
   function normalizeSexismeCriteria(items){
@@ -83,7 +99,7 @@
     document.querySelectorAll('[data-sub-label]').forEach(el=>el.oninput=()=>{const[i,j,k]=el.dataset.subLabel.split(':').map(Number);socio[i].opts[j].subcriterion.opts[k].label=el.value;});
     document.querySelectorAll('[data-sub-n]').forEach(el=>el.oninput=()=>{const[i,j,k]=el.dataset.subN.split(':').map(Number);socio[i].opts[j].subcriterion.opts[k].n=Number(el.value)||0;updateOptionVisual(el);});
     document.querySelectorAll('[data-sub-opt-add]').forEach(el=>el.onclick=()=>{const[i,j]=el.dataset.subOptAdd.split(':').map(Number);socio[i].opts[j].subcriterion.opts.push({label:'Nouvelle sous-réponse',n:0});renderSocio();});
-    document.querySelectorAll('[data-sub-opt-remove],#add-result-resource,[data-result-remove]').forEach(el=>el.onclick=()=>{const[i,j,k]=el.dataset.subOptRemove.split(':').map(Number);socio[i].opts[j].subcriterion.opts.splice(k,1);renderSocio();});
+    document.querySelectorAll('[data-sub-opt-remove]').forEach(el=>el.onclick=()=>{const[i,j,k]=el.dataset.subOptRemove.split(':').map(Number);socio[i].opts[j].subcriterion.opts.splice(k,1);renderSocio();});
   }
   const fmt=n=>Number(n||0).toLocaleString('fr-FR');
   function bindPackToggle(){const toggle=$('toggle-packs'),panel=$('inline-packs');if(!toggle||!panel)return;if(!canOrder){panel.hidden=true;toggle.classList.add('button-locked');toggle.innerHTML='🔒 Commander un pack';toggle.onclick=()=>window.StudioModal.alert({eyebrow:'Accès limité',title:'Commande de passations verrouillée',message:'Le responsable de votre compte peut vous accorder le droit de commander des passations.',type:'warning'});return;}toggle.onclick=()=>{panel.hidden=!panel.hidden;toggle.textContent=panel.hidden?'Voir les packs disponibles':'Masquer les packs';if(!panel.hidden)panel.scrollIntoView({behavior:'smooth',block:'nearest'});};}
@@ -97,7 +113,7 @@
   function applyReadOnlyUI(){
     const alert=$('param-alert');alert.hidden=false;alert.dataset.tone='success';alert.innerHTML='<strong>🔒 Paramétrage en lecture seule.</strong> Cette campagne a déjà été transmise. <button class="button button-secondary button-small" type="button" data-content-adjustment="settings">Demander un ajustement</button>';
     document.querySelectorAll('#settings-form input,#settings-form textarea,#settings-form select').forEach(el=>{el.readOnly=true;el.setAttribute('aria-readonly','true');el.style.background='var(--surface-soft)';el.style.pointerEvents='none';});
-    document.querySelectorAll('[data-example],#add-socio,[data-socio-remove],[data-opt-remove],[data-opt-add],[data-sub-add],[data-sub-remove],[data-sub-opt-add],[data-sub-opt-remove],#add-result-resource,[data-result-remove]').forEach(el=>{el.style.display='none';});
+    document.querySelectorAll('[data-example],#add-socio,#add-result-resource,[data-socio-remove],[data-opt-remove],[data-opt-add],[data-sub-add],[data-sub-remove],[data-sub-opt-add],[data-sub-opt-remove]').forEach(el=>{el.style.display='none';});
     document.querySelectorAll('.socio-card').forEach(el=>el.style.background='var(--royal-blue-tint)');
     updateNextState();
   }
@@ -114,7 +130,8 @@
   $('launch-date').addEventListener('change',()=>{if(!isReadOnly()){syncCloseMin();updateNextState();}});
   $('close-date').addEventListener('change',()=>{if(!isReadOnly())updateNextState();});
   document.querySelectorAll('[data-example]').forEach(b=>b.onclick=()=>{if(isReadOnly())return;const k=b.dataset.example;if(k==='age'){if(!socio.some(c=>c.kind==='age'||c.q==='Votre âge'))socio.push(clone(AGE));}else{const e=EXAMPLES[+k];socio.push({q:e[0],opts:e[1].map(label=>({label,n:0}))});}renderSocio();});
-  $('add-result-resource').onclick=()=>{if(isReadOnly())return;resultResources.push({title:'',url:''});renderResultResources();};
+  $('add-result-resource').onclick=()=>openResourceModal();
+  $('result-preview-toggle').onclick=()=>{const button=$('result-preview-toggle'),body=$('result-resources-preview'),open=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',String(!open));body.hidden=open;button.querySelector('span').textContent=open?'⌄':'⌃';};
   window.StudioParametragePreviewSnapshot=()=>({project:{theme:project?.theme_title||'',title:$('respondent-title')?.value.trim()||project?.respondent_title||baseTitle||'Autodiagnostic',intro:$('intro')?.value.trim()||'',socio:socio,result_buttons:resultResources.filter(r=>r.title.trim()&&validHttpUrl(r.url))}});
   $('nb-respondents').oninput=()=>{if(isReadOnly())return;updateVigilance();renderQuota();};
   $('close-packs').onclick=()=>{const panel=$('inline-packs');panel.hidden=true;const toggle=$('toggle-packs');if(toggle)toggle.textContent='Voir les packs disponibles';};window.addEventListener('studio:pack-requested',loadQuota);bindPackToggle();
