@@ -13,7 +13,12 @@
   var IS_ADMIN = Boolean(CURRENT_USER && CURRENT_USER.role === 'admin');
   var INTERFACE_MODE = IS_ADMIN && sessionStorage.getItem('studio_interface_mode') !== 'client' ? 'admin' : 'client';
   var ADMIN_PAGES = ['admin.html','client.html','notifications.html','kit-communication.html','validation.html','campagne-detail.html','composer.html','personnalisation.html','parametrage.html'];
-  if (IS_ADMIN && ADMIN_PAGES.includes(CURRENT)) {
+  var REQUESTED_NOTIFICATION_AUDIENCE = new URLSearchParams(location.search).get('audience');
+  if (IS_ADMIN && CURRENT === 'notifications.html' && REQUESTED_NOTIFICATION_AUDIENCE === 'client') {
+    INTERFACE_MODE = 'client';
+    sessionStorage.setItem('studio_interface_mode', 'client');
+  }
+  if (IS_ADMIN && ADMIN_PAGES.includes(CURRENT) && !(CURRENT === 'notifications.html' && REQUESTED_NOTIFICATION_AUDIENCE === 'client')) {
     INTERFACE_MODE = 'admin';
     sessionStorage.setItem('studio_interface_mode', 'admin');
   }
@@ -335,6 +340,7 @@
     var escape=function(value){return String(value||'').replace(/[&<>"']/g,function(char){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];});};
     var date=function(value){if(!value)return'';var parsed=new Date(value);return Number.isNaN(parsed.getTime())?'Date indisponible':parsed.toLocaleString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});};
     var notificationAudience=IS_ADMIN?(INTERFACE_MODE==='client'?'client':'admin'):'client';
+    shell.querySelector('.notification-center-link').href='notifications.html?audience='+encodeURIComponent(notificationAudience);
     function notificationUrl(item){var url=String(item.action_url||''),meta=item.metadata||{},type=String(item.type||'').toLowerCase(),title=String(item.title||'').toLowerCase();var projectId=meta.projectId||meta.project_id||'';if((type.includes('submission')||title.includes('configuration'))&&projectId)return 'validation.html?projectId='+encodeURIComponent(projectId);if((type.includes('communication')||type.includes('kit'))&&projectId){var tab=meta.tab?('&tab='+encodeURIComponent(meta.tab)):'';return 'kit-communication.html?projectId='+encodeURIComponent(projectId)+tab;}if(type.includes('pack'))return 'admin.html?tab=clients&filter=pack';if(IS_ADMIN&&INTERFACE_MODE==='admin'&&/^admin\.html\?projectId=/i.test(url))url=url.replace(/^admin\.html/i,'client.html');return url;}
     async function load(){try{var data=await StudioAPI.request('/api/notifications?audience='+notificationAudience);var unread=Number(data.unread)||0;count.textContent=unread>99?'99+':unread;count.hidden=!unread;shell.classList.toggle('has-unread',Boolean(unread));subtitle.textContent=unread?(unread+' non lue'+(unread>1?'s':'')):'Tout est à jour';list.innerHTML=(data.notifications||[]).map(function(item){var read=Boolean(item.read_at);return'<article class="notification-item '+(read?'treated':'unread')+'" data-notification-id="'+item.id+'" data-notification-url="'+escape(notificationUrl(item))+'" data-notification-read="'+(read?'1':'0')+'"><span class="notification-item-icon">'+(String(item.type).includes('approved')?'✅':String(item.type).includes('rejected')?'⚠️':'🎟️')+'</span><button type="button" class="notification-item-main"><strong>'+escape(String(item.title||'').replace(/à vérifier/gi,'à publier'))+'</strong><small>'+escape(String(item.message||'').replace(/à vérifier/gi,'à publier'))+'</small><time>'+escape(date(item.created_at))+'</time></button><button type="button" class="notification-item-check" aria-label="'+(read?'Marquer comme non lue':'Marquer comme lue')+'" title="'+(read?'Marquer comme non lue':'Marquer comme lue')+'">'+(read?'✓':'')+'</button></article>';}).join('')||'<p class="notification-empty">Aucune notification pour le moment.</p>';bindItems();}catch(error){list.innerHTML='<p class="notification-empty">Notifications indisponibles.</p>';}}
     function navigate(item){var url=item.dataset.notificationUrl;if(url)location.href=url;}

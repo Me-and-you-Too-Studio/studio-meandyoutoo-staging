@@ -9741,6 +9741,22 @@ body.sidebar-collapsed .sidebar-notification-root {
 .campaign-filter-tab.active .campaign-filter-icon {
   background: transparent;
 }
+
+/* Séparation définitive des notifications, y compris dans Mes campagnes. */
+.notification-panel header > div:first-child > strong { margin-right: 8px; }
+.notification-panel .notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 10px;
+  background: #f8fbfd;
+}
+.notification-panel .notification-list > .notification-item {
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid #d9e7f0;
+  background-clip: padding-box;
+}
 .campaign-search {
   display: flex;
   align-items: center;
