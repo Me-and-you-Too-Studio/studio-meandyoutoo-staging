@@ -9702,7 +9702,7 @@ body.sidebar-collapsed .sidebar-notification-root {
   align-items: center;
   gap: 7px;
 }
-.campaign-filter-tab span {
+.campaign-filter-tab .campaign-filter-count {
   background: #edf2f7;
   color: #17355f;
   border-radius: 999px;
@@ -9714,9 +9714,21 @@ body.sidebar-collapsed .sidebar-notification-root {
   color: #fff;
   border-color: #17355f;
 }
-.campaign-filter-tab.active span {
+.campaign-filter-tab.active .campaign-filter-count {
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
+}
+.campaign-filter-icon {
+  display: inline-grid;
+  width: 18px;
+  padding: 0;
+  place-items: center;
+  background: transparent;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.campaign-filter-tab.active .campaign-filter-icon {
+  background: transparent;
 }
 .campaign-search {
   display: flex;

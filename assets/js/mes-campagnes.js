@@ -829,6 +829,24 @@
     return statusLabel(key);
   }
 
+  function filterIcon(key) {
+    return (
+      {
+        all: "✨",
+        startingSoon: "🚀",
+        endingSoon: "🔴",
+        validation: "✅",
+        review: "🔎",
+        results: "📊",
+        draft: "✏️",
+        scheduled: "🗓️",
+        published: "🟢",
+        unpublished: "🛑",
+        archived: "📦",
+      }[key] || "•"
+    );
+  }
+
   function countForFilter(key) {
     if (key === "all") return projects.length;
     if (key === "results")
@@ -902,8 +920,11 @@
           '" type="button" data-filter="' +
           esc(key) +
           '">' +
+          '<span class="campaign-filter-icon" aria-hidden="true">' +
+          filterIcon(key) +
+          "</span>" +
           esc(filterLabel(key)) +
-          " <span>" +
+          ' <span class="campaign-filter-count">' +
           countForFilter(key) +
           "</span></button>"
         );
