@@ -116,8 +116,19 @@ function colleaguesHtml(chapter,result,chapterIndex){
 function bindFinalInteractions(){
   root.querySelectorAll('[data-colleague-toggle]').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.colleagueToggle,body=root.querySelector(`[data-colleague-body="${id}"]`),open=body&&!body.hidden;if(body)body.hidden=open;btn.classList.toggle('open',!open);btn.querySelector('span:last-child').textContent=open?'⌄':'⌃';});
   const resourceToggle=root.querySelector('[data-resource-toggle]');if(resourceToggle)resourceToggle.onclick=()=>{const body=root.querySelector('[data-resource-body]'),open=body&&!body.hidden;if(body)body.hidden=open;resourceToggle.classList.toggle('open',!open);resourceToggle.querySelector('span:last-child').textContent=open?'⌄':'⌃';};
+  const reportBtn=root.querySelector('[data-report-download]');if(reportBtn)reportBtn.onclick=()=>{const note=root.querySelector('[data-report-note]');if(note){note.hidden=false;setTimeout(()=>{note.hidden=true},2600)}};
 }
-function resourcesHtml(){if(!d.resources?.length)return'';return `<section class="rp-resources"><button type="button" class="rp-resource-toggle" data-resource-toggle><span>Approfondissez vos connaissances</span><span aria-hidden="true">⌄</span></button><div class="rp-resource-body" data-resource-body hidden>${d.resources.map((r,i)=>`<a class="rp-resource-link" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer"><span>↗</span>${esc(r.title)}</a>`).join('')}</div></section>`}
+function resourcesHtml(){
+  const catalogResources=[
+    {title:'Contactez vos référents',url:''},
+    {title:'Consultez notre règlement intérieur',url:''},
+    {title:'Découvrez nos ressources internes',url:''}
+  ];
+  const list=mode==='catalog'?catalogResources:(d.resources||[]);
+  if(!list.length)return'';
+  return `<section class="rp-resources"><button type="button" class="rp-resource-toggle" data-resource-toggle><span>Approfondissez vos connaissances</span><span aria-hidden="true">⌄</span></button><div class="rp-resource-body" data-resource-body hidden>${list.map((r,i)=>r.url?`<a class="rp-resource-link" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer"><span>↗</span>${esc(r.title)}</a>`:`<button type="button" class="rp-resource-link rp-resource-link-demo" title="Exemple fictif dans l’aperçu"><span>›</span>${esc(r.title)}</button>`).join('')}</div></section>`
+}
+function reportDownloadHtml(){return `<button type="button" class="rp-report-download" data-report-download>Téléchargez ce rapport (PDF)</button><p class="rp-report-preview-note" data-report-note hidden>Aperçu : aucun PDF n’est généré.</p>`}
 
 function radarValue(result,chapter){
   const avg=result?.avg;if(!Number.isFinite(avg))return 0;
@@ -137,7 +148,7 @@ function radarSvg(){
 }
 function done(){
   chapterResults=d.chapters.map((c,i)=>({avg:chapterAverage(i),profile:profileForScore(c.profiles,chapterAverage(i))}));
-  root.innerHTML=head('Récapitulatif des résultats')+`<section class="rp-card rp-final"><div class="rp-kicker">Vos résultats</div><h1>Récapitulatif de vos profils</h1><p class="rp-help">Voici la restitution que verra le répondant. La comparaison avec les collègues est fictive dans cet aperçu et aucune donnée n’est enregistrée.</p>${radarSvg()}<div class="rp-final-list">${d.chapters.map((c,i)=>{const r=chapterResults[i],p=r.profile,t=profileTone(p);return`<article class="rp-final-profile ${t}"><div class="rp-final-profile-head"><span>Partie ${i+1}</span><strong>${esc(c.title)}</strong></div><h2>${esc(p?.title||'Profil indisponible')}</h2>${p?.summary?`<p>${esc(p.summary)}</p>`:''}${colleaguesHtml(c,r,i)}</article>`}).join('')}</div>${resourcesHtml()}<div class="rp-actions"><button id="again" class="button button-secondary">Recommencer l’aperçu</button></div></section>`;
+  root.innerHTML=head('Récapitulatif des résultats')+`<section class="rp-card rp-final"><div class="rp-kicker">Vos résultats</div><h1>Récapitulatif de vos profils</h1><p class="rp-help">Voici la restitution que verra le répondant. La comparaison avec les collègues est fictive dans cet aperçu et aucune donnée n’est enregistrée.</p>${radarSvg()}<div class="rp-final-list">${d.chapters.map((c,i)=>{const r=chapterResults[i],p=r.profile,t=profileTone(p);return`<article class="rp-final-profile ${t}"><div class="rp-final-profile-head"><span>Partie ${i+1}</span><strong>${esc(c.title)}</strong></div><h2>${esc(p?.title||'Profil indisponible')}</h2>${p?.summary?`<p>${esc(p.summary)}</p>`:''}${colleaguesHtml(c,r,i)}</article>`}).join('')}</div><div class="rp-final-tools">${reportDownloadHtml()}${resourcesHtml()}</div><div class="rp-actions"><button id="again" class="button button-secondary">Recommencer l’aperçu</button></div></section>`;
   bindFinalInteractions();
   $('#again').onclick=()=>{step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[];norm.lastShuffleSeed=Date.now();render()}
 }
