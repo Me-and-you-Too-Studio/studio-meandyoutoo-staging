@@ -10969,3 +10969,130 @@ body.rp-sticky-preview-enabled .creation-sticky-actions{grid-template-columns:au
 body.rp-sticky-preview-enabled .creation-sticky-actions .rp-trigger-sticky{grid-column:3;white-space:nowrap}
 body.rp-sticky-preview-enabled .creation-sticky-actions #next-link{grid-column:4;white-space:nowrap}
 @media(max-width:900px){body.rp-sticky-preview-enabled .creation-sticky-actions{grid-template-columns:1fr 1fr}body.rp-sticky-preview-enabled .creation-sticky-actions .creation-sticky-progress{grid-column:1/-1}body.rp-sticky-preview-enabled .creation-sticky-actions .rp-trigger-sticky{grid-column:1;order:3;width:100%}body.rp-sticky-preview-enabled .creation-sticky-actions #next-link{grid-column:2;order:4;width:100%}}
+
+/* Dossier client admin — contacts, gestion du pack et cockpit */
+.admin-client-contacts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+.admin-contact-card {
+  display: grid;
+  gap: 5px;
+  min-height: 150px;
+  padding: 16px;
+  border: 1px solid #dce7ee;
+  border-radius: 16px;
+  background: #f8fbfd;
+}
+.admin-contact-card.principal {
+  background: #eef6fb;
+  border-color: #cfe2ee;
+}
+.admin-contact-card strong {
+  color: #17355f;
+  font-size: 1.05rem;
+}
+.admin-contact-card > span,
+.admin-contact-card small {
+  color: #61798a;
+}
+.admin-contact-card a {
+  color: #0d4c72;
+  font-weight: 800;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.admin-contact-kicker {
+  color: #eb6366 !important;
+  font-size: .76rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.admin-folder-panel.admin-credit-editor {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.admin-pack-heading {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2ebf0;
+}
+.admin-pack-heading h2 {
+  margin: 3px 0 4px;
+}
+.admin-pack-heading p {
+  margin: 0;
+  color: #657b89;
+}
+.admin-pack-status {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: #edf6f1;
+  color: #247653;
+  font-size: .82rem;
+  font-weight: 900;
+}
+.admin-pack-status.is-unlimited {
+  background: #eef3fb;
+  color: #17355f;
+}
+.admin-credit-editor input[readonly] {
+  background: #f3f6f8 !important;
+  color: #647888;
+}
+.admin-pack-unlimited {
+  grid-column: 1 / 2;
+  display: flex !important;
+  grid-template-columns: none !important;
+  flex-direction: row;
+  align-items: center;
+  gap: 9px !important;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid #cad8e1;
+  border-radius: 10px;
+  background: #f8fbfd;
+}
+.admin-pack-unlimited input {
+  min-height: auto !important;
+  width: 18px;
+  height: 18px;
+  padding: 0 !important;
+}
+.admin-client-management-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.admin-client-management-note {
+  margin: 14px 0 0;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: #fff8ec;
+  color: #81531b;
+  font-size: .88rem;
+  line-height: 1.45;
+}
+@media (max-width: 900px) {
+  .admin-folder-panel.admin-credit-editor {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .admin-folder-panel.admin-credit-editor {
+    grid-template-columns: 1fr;
+  }
+  .admin-pack-heading {
+    flex-direction: column;
+  }
+  .admin-pack-unlimited {
+    grid-column: auto;
+  }
+}

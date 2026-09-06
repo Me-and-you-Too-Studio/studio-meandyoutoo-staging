@@ -412,6 +412,44 @@
       '">Supprimer</button></div></article>'
     );
   }
+  function contactDisplayName(u) {
+    return [u?.first_name, u?.last_name].filter(Boolean).join(" ").trim() || u?.email || "Contact";
+  }
+  function renderContacts() {
+    const list = orgUsers(organization);
+    const principal = list.find((u) => u.access_level === "owner" && u.active !== false) ||
+      list.find((u) => u.access_level === "owner") ||
+      list.find((u) => u.active !== false) ||
+      list[0] || null;
+    const others = principal ? list.filter((u) => String(u.id) !== String(principal.id)) : list;
+    const principalHtml = principal
+      ? '<article class="admin-contact-card principal"><span class="admin-contact-kicker">Contact principal</span><strong>' +
+        esc(contactDisplayName(principal)) +
+        '</strong><span>' + esc(principal.job_title || "Fonction non renseignée") +
+        '</span><a href="mailto:' + esc(principal.email || "") + '">' + esc(principal.email || "—") +
+        '</a>' + (principal.phone ? '<span>📞 ' + esc(principal.phone) + '</span>' : '') + '</article>'
+      : '<article class="admin-contact-card principal"><span class="admin-contact-kicker">Contact principal</span><strong>Non renseigné</strong><span>Ajoutez un accès responsable du compte.</span></article>';
+    const associatedHtml = others.length
+      ? others.map((u) => '<article class="admin-contact-card"><span class="admin-contact-kicker">Contact associé</span><strong>' +
+          esc(contactDisplayName(u)) + '</strong><span>' + esc(u.job_title || "Fonction non renseignée") +
+          '</span><a href="mailto:' + esc(u.email || "") + '">' + esc(u.email || "—") +
+          '</a><small>' + esc(accessLabels[u.access_level] || accessLabels.manager) + (u.active === false ? ' · désactivé' : '') + '</small></article>').join("")
+      : '<article class="admin-contact-card"><span class="admin-contact-kicker">Contacts associés</span><strong>Aucun autre contact</strong><span>Le contact principal est le seul compte rattaché.</span></article>';
+    $("#client-contacts").innerHTML = principalHtml + associatedHtml;
+  }
+  function renderCockpitManagement() {
+    const hasProjects = orgProjects(organization).length > 0;
+    const deleteBtn = $("#delete-client-cockpit");
+    const archiveBtn = $("#archive-client-cockpit");
+    $("#open-client-folder").href = "client.html?organizationId=" + encodeURIComponent(organization.id);
+    archiveBtn.textContent = organization.active === false ? "Réactiver le cockpit" : "Archiver le cockpit";
+    archiveBtn.dataset.nextActive = organization.active === false ? "true" : "false";
+    $("#client-delete-note").textContent = hasProjects
+      ? "Suppression protégée : ce cockpit contient des campagnes. Archivez-le si vous souhaitez le retirer de la vue active sans perdre les données."
+      : "La suppression sera également refusée par l’API si un historique de commandes ou de packs existe.";
+    deleteBtn.disabled = false;
+  }
+
   function sortProjects(rows) {
     return [...rows].sort((a, b) => {
       const nameA = a.campaign_name || a.title || "",
@@ -567,19 +605,24 @@
     $("#client-ads").innerHTML =
       ps.map(card).join("") ||
       '<p class="admin-empty">Aucun autodiagnostic.</p>';
+    renderContacts();
     $("#client-users").innerHTML =
       orgUsers(organization).map(userRow).join("") ||
       '<p class="admin-empty">Aucun compte.</p>';
     $("#client-credits").innerHTML =
+      '<div class="admin-pack-heading"><div><span class="eyebrow">Gestion du pack</span><h2>Crédits et validité</h2><p>Ajustez uniquement les valeurs réellement validées pour ce client.</p></div><span class="admin-pack-status ' + (organization.pack_unlimited ? 'is-unlimited' : '') + '">' + (organization.pack_unlimited ? 'Pack illimité' : fmt(rem) + ' restants') + '</span></div>' +
       '<label>Crédits attribués<input id="client-quota" type="number" min="0" value="' +
       (organization.passations_quota || 0) +
       '"></label><label>Crédits utilisés<input id="client-used" type="number" min="0" value="' +
       (organization.passations_used || 0) +
-      '"></label><label>Validité<input id="client-expiry" type="date" value="' +
+      '"></label><label>Crédits restants<input id="client-remaining" type="text" readonly value="' +
+      (organization.pack_unlimited ? 'Illimité' : fmt(rem)) +
+      '"></label><label>Date de fin de validité<input id="client-expiry" type="date" value="' +
       (organization.pack_expires_at
         ? String(organization.pack_expires_at).slice(0, 10)
         : "") +
-      '"></label><button class="button button-primary" id="save-client-credits">Enregistrer</button>';
+      '"></label><label class="admin-pack-unlimited"><input id="client-unlimited" type="checkbox" ' + (organization.pack_unlimited ? 'checked' : '') + '> Pack illimité</label><button class="button button-primary" id="save-client-credits">Enregistrer les ajustements</button>';
+    renderCockpitManagement();
     bind();
     if (requestedProject) {
       const ad = document.getElementById("admin-ad-" + requestedProject);
@@ -943,6 +986,8 @@
       render();
     };
     $("#save-client-credits").onclick = saveCredits;
+    $("#archive-client-cockpit").onclick = toggleCockpitArchive;
+    $("#delete-client-cockpit").onclick = deleteCockpit;
     bindUserActions();
     bindProjectActions();
   }
@@ -1056,6 +1101,7 @@
           passationsQuota: Number($("#client-quota").value) || 0,
           passationsUsed: Number($("#client-used").value) || 0,
           packExpiresAt: $("#client-expiry").value || null,
+          packUnlimited: $("#client-unlimited").checked,
         }),
       });
       await load();
@@ -1063,6 +1109,35 @@
       showError(e.message);
     }
   }
+  async function toggleCockpitArchive() {
+    const nextActive = $("#archive-client-cockpit").dataset.nextActive === "true";
+    const verb = nextActive ? "réactiver" : "archiver";
+    if (!window.confirm((nextActive ? "Réactiver" : "Archiver") + " le cockpit de " + (organization.name || "ce client") + " ?\n\n" + (nextActive ? "Les accès pourront de nouveau être utilisés." : "Aucune campagne ni donnée ne sera supprimée."))) return;
+    try {
+      await StudioAPI.request("/api/admin/organizations/" + organization.id, {
+        method: "PATCH",
+        body: JSON.stringify({ active: nextActive }),
+      });
+      await load();
+    } catch (e) {
+      showError("Impossible de " + verb + " le cockpit : " + e.message);
+    }
+  }
+  async function deleteCockpit() {
+    const name = organization.name || "ce client";
+    const typed = window.prompt(
+      "Suppression définitive du cockpit « " + name + " ».\n\nCette action n’est possible que s’il ne contient aucune campagne, commande ou historique de pack. Les données métier ne seront jamais supprimées en cascade.\n\nTapez SUPPRIMER pour confirmer.",
+      "",
+    );
+    if (typed !== "SUPPRIMER") return;
+    try {
+      await StudioAPI.request("/api/admin/organizations/" + organization.id, { method: "DELETE" });
+      window.location.href = "admin.html";
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
   async function saveUser() {
     const f = $("#user-form");
     if (!f.reportValidity()) return;

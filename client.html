@@ -8,7 +8,7 @@
     <link rel="icon" href="assets/img/brand/favicon.png" />
     <link
       rel="stylesheet"
-      href="assets/css/style.css?v=20260904-theme-filter-position-1"
+      href="assets/css/style.css?v=20260906-client-folder-admin-1"
     />
   </head>
   <body>
@@ -34,6 +34,15 @@
         </section>
         <div id="client-alert" class="composer-alert" hidden></div>
         <section id="client-summary" class="admin-client-summary"></section>
+        <section class="admin-folder-panel admin-client-contacts-panel">
+          <div class="admin-section-title">
+            <div>
+              <h2>Contacts associés</h2>
+              <p>Contact principal du dossier et personnes rattachées à cette entreprise.</p>
+            </div>
+          </div>
+          <div id="client-contacts" class="admin-client-contacts"></div>
+        </section>
         <section class="admin-client-folder-page">
           <div class="admin-section-title">
             <div>
@@ -51,8 +60,8 @@
         <section class="admin-folder-accounts admin-folder-panel">
           <div class="admin-section-title">
             <div>
-              <h2>Comptes clients</h2>
-              <p>Accès des personnes rattachées à cette entreprise.</p>
+              <h2>Comptes utilisateurs</h2>
+              <p>Accès, rôles et droits des personnes rattachées à cette entreprise.</p>
             </div>
           </div>
           <div id="client-users"></div>
@@ -61,6 +70,20 @@
           class="admin-credit-editor admin-folder-panel"
           id="client-credits"
         ></section>
+        <section class="admin-folder-panel admin-client-management" id="client-management">
+          <div class="admin-section-title">
+            <div>
+              <h2>Gestion du cockpit</h2>
+              <p>Archiver conserve toutes les données. La suppression définitive n’est autorisée que pour un cockpit sans historique métier.</p>
+            </div>
+          </div>
+          <div class="admin-client-management-actions">
+            <a class="button button-primary" id="open-client-folder" href="#">Ouvrir le dossier client</a>
+            <button class="button button-secondary" type="button" id="archive-client-cockpit">Archiver le cockpit</button>
+            <button class="button button-danger" type="button" id="delete-client-cockpit">Supprimer le cockpit</button>
+          </div>
+          <p class="admin-client-management-note" id="client-delete-note"></p>
+        </section>
       </main>
     </div>
     <dialog id="user-dialog" class="admin-dialog">
@@ -197,6 +220,6 @@
     </dialog>
     <script src="assets/js/api.js?v=20260823-roles-1"></script>
     <script src="assets/js/app.js?v=20260902-notification-refresh-1"></script>
-    <script src="assets/js/client.js?v=20260904-theme-filter-position-1"></script>
+    <script src="assets/js/client.js?v=20260906-client-folder-admin-1"></script>
   </body>
 </html>
