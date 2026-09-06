@@ -11281,3 +11281,96 @@ body.rp-sticky-preview-enabled .creation-sticky-actions #next-link{grid-column:4
     grid-template-columns: 1fr;
   }
 }
+
+/* Cockpit clients — synthèse de pilotage et finitions de présentation */
+.admin-client-pilot-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin: 2px 0 18px;
+}
+.admin-client-pilot-kpi {
+  min-width: 0;
+  min-height: 112px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px;
+  border: 1px solid rgba(13, 76, 114, .08);
+  border-radius: 20px;
+  box-shadow: 0 10px 26px rgba(13, 76, 114, .055);
+}
+.admin-client-pilot-kpi > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.admin-client-pilot-kpi strong {
+  color: #173f64;
+  font-size: 1.75rem;
+  line-height: 1;
+  font-weight: 900;
+}
+.admin-client-pilot-kpi > div > span {
+  color: #526b7f;
+  font-size: .78rem;
+  line-height: 1.25;
+  font-weight: 800;
+}
+.admin-client-pilot-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .78);
+  font-size: 1rem;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 1px rgba(23, 63, 100, .06);
+}
+.admin-client-pilot-kpi.is-active { background: #edf8f2; }
+.admin-client-pilot-kpi.is-active .admin-client-pilot-icon { color: #2f805d; }
+.admin-client-pilot-kpi.is-publish { background: #fff4e9; }
+.admin-client-pilot-kpi.is-publish .admin-client-pilot-icon { color: #c5702d; }
+.admin-client-pilot-kpi.is-live { background: #eaf7f8; }
+.admin-client-pilot-kpi.is-live .admin-client-pilot-icon { color: #0d7d86; }
+.admin-client-pilot-kpi.is-low { background: #fff0f1; }
+.admin-client-pilot-kpi.is-low .admin-client-pilot-icon { color: #c84d58; }
+.admin-client-pilot-kpi.is-request { background: #eef3fb; }
+.admin-client-pilot-kpi.is-request .admin-client-pilot-icon { color: #476ea4; }
+.admin-client-pilot-kpi.is-underused { background: #f4effb; }
+.admin-client-pilot-kpi.is-underused .admin-client-pilot-icon { color: #7655a6; }
+
+/* Le badge de statut ne doit jamais être étiré par le header flex. */
+.admin-client-card-rich > header > .badge {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 6px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+  line-height: 1.15;
+}
+
+/* Zone d'actions distincte et respirante sous la fiche client. */
+.admin-client-card-rich .admin-client-open-row {
+  margin-top: 0;
+  padding: 20px 22px 22px;
+  border-top: 1px solid #e1e9ef;
+  align-items: center;
+}
+
+@media (max-width: 1280px) {
+  .admin-client-pilot-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .admin-client-pilot-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-client-card-rich .admin-client-open-row { padding: 18px 16px 20px; }
+}
+@media (max-width: 480px) {
+  .admin-client-pilot-kpis { grid-template-columns: 1fr; }
+  .admin-client-pilot-kpi { min-height: 92px; }
+}
