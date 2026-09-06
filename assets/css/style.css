@@ -11374,3 +11374,23 @@ body.rp-sticky-preview-enabled .creation-sticky-actions #next-link{grid-column:4
   .admin-client-pilot-kpis { grid-template-columns: 1fr; }
   .admin-client-pilot-kpi { min-height: 92px; }
 }
+
+/* Classement administratif des clients */
+.admin-client-classification {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 20px;
+  border-top: 1px solid #e5edf6;
+  background: #fbfdff;
+}
+.admin-client-classification > span { color: #4b6382; font-weight: 700; }
+.admin-client-classification > div { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-folder-bar { margin: 18px 0; }
+.admin-folder-bar .campaign-folder-list { align-items: center; }
+@media (max-width: 700px) {
+  .admin-client-classification { align-items: flex-start; flex-direction: column; }
+  .admin-client-classification > div,
+  .admin-client-classification .button { width: 100%; }
+}
