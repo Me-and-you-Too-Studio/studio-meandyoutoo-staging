@@ -83,17 +83,9 @@ function mediaVideoHtml(media,headingTag='h3'){
   const src=apiBase()+media.playback_path;
   return `<div class="rp-video-block"><${headingTag}>${esc(media.title)}</${headingTag}><video class="rp-video-player" controls controlsList="nodownload" disablePictureInPicture preload="metadata" playsinline src="${esc(src)}"></video><p class="rp-video-note">Cette vidéo est diffusée directement dans le Studio.</p></div>`;
 }
-function afterChapterMedia(ch){return (ch?.media||[]).filter(m=>m.placement==='after_chapter')}
 function profileMedia(ch,p){
   const profileIndex=Math.max(0,(ch?.profiles||[]).indexOf(p));
   return (ch?.media||[]).filter(m=>m.placement==='profile_result'&&(m.profile_position===null||Number(m.profile_position)===profileIndex));
-}
-function showAfterChapterMedia(){
-  const ch=d.chapters[ci],list=afterChapterMedia(ch);
-  if(!list.length){showChapterResult();return}
-  step=3;
-  root.innerHTML=head(`À retenir · Partie ${ci+1}`)+`<section class="rp-card rp-video-interstitial"><div class="rp-kicker">Complément vidéo</div><h1>${esc(ch.title)}</h1>${list.map(m=>mediaVideoHtml(m,'h2')).join('')}<div class="rp-actions"><button id="next" class="button button-primary">Voir mon profil pour cette partie</button></div></section>`;
-  $('#next').onclick=()=>showChapterResult();
 }
 function question(){
   let ch=d.chapters[ci],s=ch?.situations?.[qi];if(!s){done();return}
@@ -120,7 +112,7 @@ function profileForScore(profiles,avg){
 function profileTone(p){const c=String(p?.color||'').toLowerCase();if(c.includes('77cd8a')||c.includes('green'))return'positive';if(c.includes('ffc744')||c.includes('yellow')||c.includes('orange'))return'mid';if(c.includes('ff847')||c.includes('red'))return'alert';return'neutral'}
 function showChapterResult(){
   const ch=d.chapters[ci],avg=chapterAverage(ci),p=profileForScore(ch.profiles,avg),tone=profileTone(p);chapterResults[ci]={avg,profile:p};step=2;
-  root.innerHTML=head(`Résultat de la partie ${ci+1}`)+`<section class="rp-card rp-profile ${tone}"><div class="rp-kicker rp-kicker-neutral">Votre profil · Partie ${ci+1}/${d.chapters.length}</div><div class="rp-profile-chapter">${esc(ch.title)}</div>${p?`<h1>${esc(p.title)}</h1>${p.summary?`<p class="rp-profile-summary">${esc(p.summary)}</p>`:''}${p.content&&p.content!==p.summary?`<div class="rp-profile-content">${esc(p.content)}</div>`:''}${profileMedia(ch,p).map(m=>mediaVideoHtml(m)).join('')}`:`<h1>Profil indisponible</h1><p>Le contenu de profil de cette partie n’est pas disponible.</p>`}<div class="rp-actions"><button id="next" class="button button-primary">${ci===d.chapters.length-1?'Voir le récapitulatif':'Continuer vers la partie suivante'}</button></div></section>`;
+  root.innerHTML=head(`Résultat de la partie ${ci+1}`)+`<section class="rp-card rp-profile ${tone}"><div class="rp-kicker rp-kicker-neutral">Votre profil · Partie ${ci+1}/${d.chapters.length}</div><div class="rp-profile-chapter">${esc(ch.title)}</div>${p?`${profileMedia(ch,p).map(m=>mediaVideoHtml(m)).join('')}<h1>${esc(p.title)}</h1>${p.summary?`<p class="rp-profile-summary">${esc(p.summary)}</p>`:''}${p.content&&p.content!==p.summary?`<div class="rp-profile-content">${esc(p.content)}</div>`:''}`:`<h1>Profil indisponible</h1><p>Le contenu de profil de cette partie n’est pas disponible.</p>`}<div class="rp-actions"><button id="next" class="button button-primary">${ci===d.chapters.length-1?'Voir le récapitulatif':'Continuer vers la partie suivante'}</button></div></section>`;
   $('#next').onclick=()=>{if(ci<d.chapters.length-1){ci++;qi=0;step=1;render()}else done()}
 }
 
