@@ -11499,3 +11499,30 @@ body.rp-sticky-preview-enabled .creation-sticky-actions #next-link{grid-column:4
   .admin-library-situation-filters{align-items:stretch}
   .admin-library-filter-chip{justify-content:space-between;flex:1 1 calc(50% - 8px)}
 }
+
+
+/* Bibliothèque admin — médias vidéo */
+.admin-library-media-panel{margin:18px 0;padding:18px;border:1px solid #d9e7ed;border-radius:18px;background:#fbfdfe}
+.admin-library-media-list{display:grid;gap:10px;margin-top:14px}
+.admin-library-media-card{border:1px solid #d9e7ed;border-radius:14px;background:#fff;overflow:hidden}
+.admin-library-media-card-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 15px}
+.admin-library-media-card-head>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.admin-library-media-tag{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:#eaf7f8;color:#087786;font-size:.76rem;font-weight:700}
+.admin-library-media-tag.is-off{background:#f1f3f5;color:#788893}
+.admin-library-media-form{padding:16px;border-top:1px solid #e2edf1;background:#f8fbfc}
+.admin-library-media-new{margin-top:12px;border:1px solid #a9dfe3;border-radius:16px}
+.admin-library-media-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.admin-library-media-grid label{display:flex;flex-direction:column;gap:6px;font-weight:700;color:#173d61}
+.admin-library-media-grid label:nth-child(2){grid-column:1/-1}
+.admin-library-media-grid input,.admin-library-media-grid select{width:100%;min-height:43px;padding:9px 11px;border:1px solid #cbdde5;border-radius:10px;background:#fff}
+.admin-library-media-grid small{font-weight:400;color:#6e8495}
+.admin-library-media-active{justify-content:flex-end;flex-direction:row!important;align-items:center;gap:8px!important}
+.admin-library-media-active input{width:auto;min-height:auto}
+
+/* Aperçu répondant — vidéos catalogue */
+.rp-video-block{margin:22px 0;padding:18px;border:1px solid #dbe7ec;border-radius:18px;background:#f8fbfc}
+.rp-video-block h2,.rp-video-block h3{margin:0 0 12px;color:#0d4c72}
+.rp-video-player{display:block;width:100%;max-height:520px;border-radius:14px;background:#0b2233}
+.rp-video-note{margin:10px 0 0;color:#718392;font-size:.88rem}
+.rp-video-interstitial .rp-actions{margin-top:18px}
+@media(max-width:760px){.admin-library-media-grid{grid-template-columns:1fr}.admin-library-media-grid label:nth-child(2){grid-column:auto}}

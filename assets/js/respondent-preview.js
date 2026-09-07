@@ -2,11 +2,14 @@
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=h=>{let x=document.createElement('div');x.innerHTML=h||'';return(x.textContent||'').trim()},q=new URLSearchParams(location.search),pid=q.get('projectId'),theme=q.get('theme')||'',mode=q.get('mode')||(pid?'project':'catalog'),root=$('#rp');
 let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[];
 
-async function api(u){
-  if(window.StudioAPI&&typeof window.StudioAPI.request==='function')return window.StudioAPI.request(u);
+function apiBase(){
   const host=String(location.hostname||'').toLowerCase(),path=String(location.pathname||'').toLowerCase();
   const staging=host==='localhost'||host==='127.0.0.1'||host.includes('staging')||path.includes('/studio-meandyoutoo-staging/');
-  const base=staging?'https://studio-meandyoutoo-api-staging.osc-fr1.scalingo.io':'https://studio-meandyoutoo-api.osc-fr1.scalingo.io';
+  return staging?'https://studio-meandyoutoo-api-staging.osc-fr1.scalingo.io':'https://studio-meandyoutoo-api.osc-fr1.scalingo.io';
+}
+async function api(u){
+  if(window.StudioAPI&&typeof window.StudioAPI.request==='function')return window.StudioAPI.request(u);
+  const base=apiBase();
   const token=localStorage.getItem('studio_token')||'';
   const headers=token?{Authorization:'Bearer '+token}:{};
   let r=await fetch(base+u,{headers});
@@ -23,6 +26,7 @@ function fallbackSocio(){return [{key:'gender',label:'Vous êtes :',options:[{la
 function normalizeProfile(p){return {...p,title:p.title||p.titre||'Profil',summary:clean(p.summary||p.resume||p.phrase||''),content:clean(p.content||p.description||p.desc||''),scoring_min:num(p.scoring_min??p.min,0),scoring_max:num(p.scoring_max??p.max,0),top_score:num(p.top_score,0)}}
 function normalizeAnswer(a,i){return typeof a==='object'?{...a,label:a.text||a.content||a.label||`Réponse ${i+1}`,score:num(a.score,0)}:{label:String(a),score:0}}
 function normalizeResources(list){return (Array.isArray(list)?list:[]).map((r,i)=>({title:String(r?.title||r?.titre||r?.label||r?.text||`Ressource ${i+1}`).trim(),url:String(r?.url||r?.href||r?.link||'').trim()})).filter(r=>r.title&&/^https?:\/\//i.test(r.url))}
+function normalizeMedia(list){return (Array.isArray(list)?list:[]).map(m=>({id:m.id,title:String(m.title||'Vidéo'),placement:m.placement,profile_position:m.profile_position===null||m.profile_position===undefined?null:Number(m.profile_position),playback_path:String(m.playback_path||'')})).filter(m=>m.id&&m.playback_path)}
 function norm(x){
   let pr=x.project||{},live=mode==='project'?JSON.parse(sessionStorage.getItem('meayt_preview')||'null'):null;
   const sourceSocio=Array.isArray(pr.sociodemo)&&pr.sociodemo.length?pr.sociodemo:(Array.isArray(x.theme?.sociodemo_default)?x.theme.sociodemo_default:[]);
@@ -35,6 +39,7 @@ function norm(x){
     chapters:(x.chapters||[]).map((c,cidx)=>({
       id:c.id||c.source_id||cidx,title:c.title||`Partie ${cidx+1}`,
       profiles:(c.profiles||c.profils||[]).map(normalizeProfile),
+      media:normalizeMedia(c.media||[]),
       situations:(c.situations||c.questions||[]).map((s,sidx)=>({id:s.id||s.source_id||`${cidx}-${sidx}`,content:s.content||s.original_content||s.text||'',answers:shuffle((s.answers||[]).map(normalizeAnswer))}))
     }))
   };
@@ -49,6 +54,7 @@ function norm(x){
     d.chapters=live.chapters.map((c,cidx)=>({
       id:c.id||c.source_id||cidx,title:c.title||`Partie ${cidx+1}`,
       profiles:(c.profiles||profileMap.get(String(c.id))||[]).map(normalizeProfile),
+      media:normalizeMedia(c.media||d.chapters.find(x=>String(x.id)===String(c.id))?.media||[]),
       situations:(c.situations||[]).map((s,sidx)=>({id:s.id||s.source_id||`${cidx}-${sidx}`,content:s.content||s.original_content||'',answers:shuffle((s.answers||[]).map(normalizeAnswer))}))
     }));
   }
@@ -72,13 +78,30 @@ function socio(){
   $('#next').onclick=()=>{if(!d.socio.every((_,i)=>socioChoices[i]!==undefined))return;step=1;render()}
 }
 
+
+function mediaVideoHtml(media,headingTag='h3'){
+  const src=apiBase()+media.playback_path;
+  return `<div class="rp-video-block"><${headingTag}>${esc(media.title)}</${headingTag}><video class="rp-video-player" controls controlsList="nodownload" disablePictureInPicture preload="metadata" playsinline src="${esc(src)}"></video><p class="rp-video-note">Cette vidéo est diffusée directement dans le Studio.</p></div>`;
+}
+function afterChapterMedia(ch){return (ch?.media||[]).filter(m=>m.placement==='after_chapter')}
+function profileMedia(ch,p){
+  const profileIndex=Math.max(0,(ch?.profiles||[]).indexOf(p));
+  return (ch?.media||[]).filter(m=>m.placement==='profile_result'&&(m.profile_position===null||Number(m.profile_position)===profileIndex));
+}
+function showAfterChapterMedia(){
+  const ch=d.chapters[ci],list=afterChapterMedia(ch);
+  if(!list.length){showChapterResult();return}
+  step=3;
+  root.innerHTML=head(`À retenir · Partie ${ci+1}`)+`<section class="rp-card rp-video-interstitial"><div class="rp-kicker">Complément vidéo</div><h1>${esc(ch.title)}</h1>${list.map(m=>mediaVideoHtml(m,'h2')).join('')}<div class="rp-actions"><button id="next" class="button button-primary">Voir mon profil pour cette partie</button></div></section>`;
+  $('#next').onclick=()=>showChapterResult();
+}
 function question(){
   let ch=d.chapters[ci],s=ch?.situations?.[qi];if(!s){done();return}
   const selected=answers[answerKey()];
   root.innerHTML=head(`Partie ${ci+1} sur ${d.chapters.length}`)+`<section class="rp-card"><div class="rp-progress-row"><div><span>Partie ${ci+1}/${d.chapters.length}</span><strong class="rp-chapter-title">${esc(ch.title)}</strong></div><span>Situation ${qi+1} / ${ch.situations.length}</span></div><div class="rp-bar"><i style="width:${Math.round(((qi+1)/Math.max(1,ch.situations.length))*100)}%"></i></div><h1>${esc(s.content)}</h1><p class="rp-help">Choisissez la réponse qui correspond le mieux à ce que vous pensez ou feriez spontanément.</p><div class="rp-answers">${(s.answers||[]).map((a,i)=>`<button type="button" class="rp-answer ${selected===i?'selected':''}" data-i="${i}"><span>${String.fromCharCode(65+i)}</span>${esc(a.label)}</button>`).join('')}</div><div class="rp-actions"><button id="prev" class="button button-secondary">Précédent</button><button id="next" class="button button-primary" ${selected===undefined?'disabled':''}>Continuer</button></div></section>`;
   root.querySelectorAll('.rp-answer').forEach(b=>b.onclick=()=>{answers[answerKey()]=Number(b.dataset.i);question()});
   $('#prev').onclick=()=>{if(qi>0)qi--;else if(ci>0){ci--;qi=d.chapters[ci].situations.length-1;step=1}else{step=d.socio.length?0:-1}render()};
-  $('#next').onclick=()=>{if(answers[answerKey()]===undefined)return;if(qi+1<ch.situations.length){qi++;render()}else{showChapterResult()}}
+  $('#next').onclick=()=>{if(answers[answerKey()]===undefined)return;if(qi+1<ch.situations.length){qi++;render()}else{showAfterChapterMedia()}}
 }
 
 function chapterAverage(chapterIndex){
@@ -97,7 +120,7 @@ function profileForScore(profiles,avg){
 function profileTone(p){const c=String(p?.color||'').toLowerCase();if(c.includes('77cd8a')||c.includes('green'))return'positive';if(c.includes('ffc744')||c.includes('yellow')||c.includes('orange'))return'mid';if(c.includes('ff847')||c.includes('red'))return'alert';return'neutral'}
 function showChapterResult(){
   const ch=d.chapters[ci],avg=chapterAverage(ci),p=profileForScore(ch.profiles,avg),tone=profileTone(p);chapterResults[ci]={avg,profile:p};step=2;
-  root.innerHTML=head(`Résultat de la partie ${ci+1}`)+`<section class="rp-card rp-profile ${tone}"><div class="rp-kicker rp-kicker-neutral">Votre profil · Partie ${ci+1}/${d.chapters.length}</div><div class="rp-profile-chapter">${esc(ch.title)}</div>${p?`<h1>${esc(p.title)}</h1>${p.summary?`<p class="rp-profile-summary">${esc(p.summary)}</p>`:''}${p.content&&p.content!==p.summary?`<div class="rp-profile-content">${esc(p.content)}</div>`:''}`:`<h1>Profil indisponible</h1><p>Le contenu de profil de cette partie n’est pas disponible.</p>`}<div class="rp-actions"><button id="next" class="button button-primary">${ci===d.chapters.length-1?'Voir le récapitulatif':'Continuer vers la partie suivante'}</button></div></section>`;
+  root.innerHTML=head(`Résultat de la partie ${ci+1}`)+`<section class="rp-card rp-profile ${tone}"><div class="rp-kicker rp-kicker-neutral">Votre profil · Partie ${ci+1}/${d.chapters.length}</div><div class="rp-profile-chapter">${esc(ch.title)}</div>${p?`<h1>${esc(p.title)}</h1>${p.summary?`<p class="rp-profile-summary">${esc(p.summary)}</p>`:''}${p.content&&p.content!==p.summary?`<div class="rp-profile-content">${esc(p.content)}</div>`:''}${profileMedia(ch,p).map(m=>mediaVideoHtml(m)).join('')}`:`<h1>Profil indisponible</h1><p>Le contenu de profil de cette partie n’est pas disponible.</p>`}<div class="rp-actions"><button id="next" class="button button-primary">${ci===d.chapters.length-1?'Voir le récapitulatif':'Continuer vers la partie suivante'}</button></div></section>`;
   $('#next').onclick=()=>{if(ci<d.chapters.length-1){ci++;qi=0;step=1;render()}else done()}
 }
 
@@ -152,5 +175,5 @@ function done(){
   bindFinalInteractions();
   $('#again').onclick=()=>{step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[];norm.lastShuffleSeed=Date.now();render()}
 }
-function render(){if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult()}
+function render(){if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult();else if(step===3)showAfterChapterMedia()}
 (async()=>{try{let x=mode==='project'&&pid?await api(`/api/projects/${pid}/composer`):await api(`/api/catalog/themes/${theme}/template`);norm(x);render()}catch(e){root.innerHTML=head()+`<section class="rp-card"><h1>Aperçu indisponible</h1><p>${esc(e.message)}</p></section>`}})()})();
