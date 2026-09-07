@@ -30,6 +30,69 @@
     dialog.showModal();
   }
 
+  function themeVideoDialog(){
+    var dialog=document.getElementById('theme-video-dialog');
+    if(dialog)return dialog;
+    dialog=document.createElement('dialog');
+    dialog.id='theme-video-dialog';
+    dialog.className='theme-video-dialog';
+    dialog.innerHTML='<div class="theme-video-dialog-head"><div><p class="eyebrow">Ressource intégrée</p><h2 data-theme-video-title>Vidéo</h2><p class="section-desc" data-theme-video-chapter></p></div><button type="button" class="theme-preview-close" aria-label="Fermer">×</button></div><div class="theme-video-dialog-body"><div class="theme-video-player-shell"><video controls controlsList="nodownload" disablePictureInPicture playsinline></video><div class="theme-video-loading">Chargement de la vidéo…</div></div><p class="theme-video-dialog-note">Cette vidéo fait partie de la restitution répondant de ce diagnostic.</p></div>';
+    document.body.appendChild(dialog);
+    var close=function(){
+      var video=dialog.querySelector('video'),blobUrl=video.dataset.blobUrl;
+      video.pause();video.removeAttribute('src');video.load();
+      if(blobUrl)URL.revokeObjectURL(blobUrl);
+      video.dataset.blobUrl='';
+      dialog.close();
+    };
+    dialog.querySelector('.theme-preview-close').onclick=close;
+    dialog.addEventListener('click',function(event){if(event.target===dialog)close();});
+    dialog.addEventListener('cancel',function(event){event.preventDefault();close();});
+    return dialog;
+  }
+
+  async function openThemeVideo(media,chapter){
+    var dialog=themeVideoDialog(),video=dialog.querySelector('video'),loading=dialog.querySelector('.theme-video-loading');
+    dialog.querySelector('[data-theme-video-title]').textContent=media.title||'Vidéo';
+    dialog.querySelector('[data-theme-video-chapter]').textContent='Chapitre · '+(chapter.title||'');
+    loading.textContent='Chargement de la vidéo…';loading.classList.remove('is-error');loading.hidden=false;
+    dialog.showModal();
+    try{
+      var response=await fetch(window.StudioAPI.baseUrl()+media.playback_path,{cache:'no-store'});
+      if(!response.ok)throw new Error('Vidéo indisponible ('+response.status+')');
+      var blob=await response.blob();
+      if(!String(blob.type||'').startsWith('video/'))throw new Error('Format vidéo invalide');
+      var blobUrl=URL.createObjectURL(blob);
+      video.dataset.blobUrl=blobUrl;video.src=blobUrl;video.load();loading.hidden=true;
+    }catch(error){
+      loading.textContent='La vidéo ne peut pas être chargée pour le moment.';
+      loading.classList.add('is-error');
+      console.error('[MEAYT] Aperçu vidéo thématique impossible',error);
+    }
+  }
+
+  function renderThemeVideos(chapters){
+    var existing=document.getElementById('theme-video-showcase');
+    if(existing)existing.remove();
+    var items=[];
+    chapters.forEach(function(chapter,chapterIndex){
+      (Array.isArray(chapter.media)?chapter.media:[]).forEach(function(media){
+        if(media&&media.playback_path)items.push({media:media,chapter:chapter,chapterIndex:chapterIndex});
+      });
+    });
+    if(!items.length)return;
+    var tableCard=document.querySelector('.table-card');
+    if(!tableCard)return;
+    var section=document.createElement('section');
+    section.id='theme-video-showcase';
+    section.className='theme-video-showcase';
+    section.innerHTML='<div class="theme-video-showcase-head"><div><p class="eyebrow">Contenus enrichis</p><h2 class="section-title">Ressources vidéo intégrées au diagnostic</h2><p class="section-desc">Certaines restitutions sont enrichies par des vidéos Me&YouToo. Découvrez-les avant de déployer cette thématique.</p></div><span class="theme-video-count">'+items.length+' vidéo'+(items.length>1?'s':'')+'</span></div><div class="theme-video-showcase-grid">'+items.map(function(item,index){return '<article class="theme-video-card"><div class="theme-video-card-visual"><span class="theme-video-play">▶</span><span>Vidéo</span></div><div class="theme-video-card-body"><span class="theme-video-chapter-tag">Chapitre '+(item.chapterIndex+1)+'</span><h3>'+esc(item.media.title||'Vidéo')+'</h3><p>'+esc(item.chapter.title||'')+'</p><div class="theme-video-card-footer"><span>Intégrée à la restitution répondant</span><button class="button button-secondary button-small" type="button" data-theme-video="'+index+'">Voir un aperçu</button></div></div></article>';}).join('')+'</div>';
+    tableCard.insertAdjacentElement('afterend',section);
+    section.querySelectorAll('[data-theme-video]').forEach(function(button){
+      button.onclick=function(){var item=items[Number(button.dataset.themeVideo)];if(item)openThemeVideo(item.media,item.chapter);};
+    });
+  }
+
   async function loadReadOnlyCatalog(){
     var startButton=document.querySelector('.hero-panel [data-start-theme]');
     var themeSlug=(startButton&&startButton.dataset.startTheme)||existingTheme;
@@ -45,6 +108,7 @@
         return '<tr><td><strong>'+esc(chapter.title)+'</strong></td><td>'+count+'</td><td>'+esc(usage)+'</td><td><button class="button button-secondary" type="button" data-preview-chapter="'+index+'">Voir les situations</button></td></tr>';
       }).join('');
       table.querySelectorAll('[data-preview-chapter]').forEach(function(button){button.onclick=function(){showChapterPreview(chapters[Number(button.dataset.previewChapter)],Number(button.dataset.previewChapter));};});
+      renderThemeVideos(chapters);
     }catch(error){
       var section=document.querySelector('.table-card');
       if(section){var alert=document.createElement('p');alert.className='composer-alert';alert.textContent='Impossible de charger le détail des situations : '+error.message;section.appendChild(alert);}
