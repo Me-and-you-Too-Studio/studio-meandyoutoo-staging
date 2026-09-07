@@ -58,7 +58,7 @@
     loading.textContent='Chargement de la vidéo…';loading.classList.remove('is-error');loading.hidden=false;
     dialog.showModal();
     try{
-      var response=await fetch(window.StudioAPI.baseUrl()+media.playback_path,{cache:'no-store'});
+      var response=await fetch(window.StudioAPI.base()+media.playback_path,{cache:'no-store'});
       if(!response.ok)throw new Error('Vidéo indisponible ('+response.status+')');
       var blob=await response.blob();
       if(!String(blob.type||'').startsWith('video/'))throw new Error('Format vidéo invalide');
@@ -74,10 +74,14 @@
   function renderThemeVideos(chapters){
     var existing=document.getElementById('theme-video-showcase');
     if(existing)existing.remove();
-    var items=[];
+    var items=[],seen=new Set();
     chapters.forEach(function(chapter,chapterIndex){
       (Array.isArray(chapter.media)?chapter.media:[]).forEach(function(media){
-        if(media&&media.playback_path)items.push({media:media,chapter:chapter,chapterIndex:chapterIndex});
+        if(!media||!media.playback_path)return;
+        var key=String(chapter.id||chapterIndex)+'|'+String(media.video_id||media.title||media.id||'').trim().toLowerCase();
+        if(seen.has(key))return;
+        seen.add(key);
+        items.push({media:media,chapter:chapter,chapterIndex:chapterIndex});
       });
     });
     if(!items.length)return;
