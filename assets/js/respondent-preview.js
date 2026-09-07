@@ -93,7 +93,7 @@ function question(){
   root.innerHTML=head(`Partie ${ci+1} sur ${d.chapters.length}`)+`<section class="rp-card"><div class="rp-progress-row"><div><span>Partie ${ci+1}/${d.chapters.length}</span><strong class="rp-chapter-title">${esc(ch.title)}</strong></div><span>Situation ${qi+1} / ${ch.situations.length}</span></div><div class="rp-bar"><i style="width:${Math.round(((qi+1)/Math.max(1,ch.situations.length))*100)}%"></i></div><h1>${esc(s.content)}</h1><p class="rp-help">Choisissez la réponse qui correspond le mieux à ce que vous pensez ou feriez spontanément.</p><div class="rp-answers">${(s.answers||[]).map((a,i)=>`<button type="button" class="rp-answer ${selected===i?'selected':''}" data-i="${i}"><span>${String.fromCharCode(65+i)}</span>${esc(a.label)}</button>`).join('')}</div><div class="rp-actions"><button id="prev" class="button button-secondary">Précédent</button><button id="next" class="button button-primary" ${selected===undefined?'disabled':''}>Continuer</button></div></section>`;
   root.querySelectorAll('.rp-answer').forEach(b=>b.onclick=()=>{answers[answerKey()]=Number(b.dataset.i);question()});
   $('#prev').onclick=()=>{if(qi>0)qi--;else if(ci>0){ci--;qi=d.chapters[ci].situations.length-1;step=1}else{step=d.socio.length?0:-1}render()};
-  $('#next').onclick=()=>{if(answers[answerKey()]===undefined)return;if(qi+1<ch.situations.length){qi++;render()}else{showAfterChapterMedia()}}
+  $('#next').onclick=()=>{if(answers[answerKey()]===undefined)return;if(qi+1<ch.situations.length){qi++;render()}else{showChapterResult()}}
 }
 
 function chapterAverage(chapterIndex){
@@ -167,5 +167,5 @@ function done(){
   bindFinalInteractions();
   $('#again').onclick=()=>{step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[];norm.lastShuffleSeed=Date.now();render()}
 }
-function render(){if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult();else if(step===3)showAfterChapterMedia()}
+function render(){if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult();else if(step===3)showChapterResult()}
 (async()=>{try{let x=mode==='project'&&pid?await api(`/api/projects/${pid}/composer`):await api(`/api/catalog/themes/${theme}/template`);norm(x);render()}catch(e){root.innerHTML=head()+`<section class="rp-card"><h1>Aperçu indisponible</h1><p>${esc(e.message)}</p></section>`}})()})();
