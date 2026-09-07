@@ -11894,3 +11894,187 @@ body.rp-sticky-preview-enabled .creation-sticky-actions #next-link{grid-column:4
   .admin-media-library-description{grid-column:auto;}
   .admin-media-tag-entry{max-width:none;}
 }
+
+
+/* Bibliothèque admin — profils : édition éditoriale */
+.admin-profile-card-v2{
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid #d7e5ec;
+  background:#fff;
+}
+.admin-profile-card-v2>details>summary{
+  padding:16px 18px;
+  background:linear-gradient(180deg,#fbfdfe 0%,#f5fafc 100%);
+  border:0;
+}
+.admin-profile-card-v2>details[open]>summary{
+  background:#edf7f8;
+  border-bottom:1px solid #d8e8ed;
+}
+.admin-profile-summary-copy{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.admin-profile-editor-v2{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  padding:18px;
+  background:#f7fafc;
+}
+.admin-profile-editor-card{
+  padding:20px;
+  border:1px solid #dbe8ee;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 7px 20px rgba(13,76,114,.035);
+}
+.admin-profile-editor-card-head{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:17px;
+}
+.admin-profile-editor-card-icon{
+  display:grid;
+  place-items:center;
+  flex:0 0 34px;
+  height:34px;
+  border-radius:11px;
+  background:#e7f6f7;
+  color:#087f8c;
+  font-weight:900;
+}
+.admin-profile-editor-card-head h4{
+  margin:1px 0 3px;
+  color:#0d4c72;
+  font-size:15px;
+}
+.admin-profile-editor-card-head p{
+  margin:0;
+  color:#718897;
+  font-size:12px;
+}
+.admin-profile-identity-fields{
+  display:grid;
+  grid-template-columns:minmax(260px,1fr) minmax(190px,.42fr);
+  gap:16px;
+}
+.admin-profile-identity-fields label,
+.admin-profile-copy-fields label,
+.admin-profile-video-select{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+.admin-profile-identity-fields label>span,
+.admin-profile-copy-fields label>span,
+.admin-profile-video-select>span{
+  color:#365b72;
+  font-size:12px;
+  font-weight:800;
+}
+.admin-profile-identity-fields input,
+.admin-profile-copy-fields textarea,
+.admin-profile-video-select select{
+  width:100%;
+  border:1px solid #cbdde6;
+  border-radius:13px;
+  background:#fbfdfe;
+  padding:12px 13px;
+}
+.admin-profile-identity-fields input:focus,
+.admin-profile-copy-fields textarea:focus,
+.admin-profile-video-select select:focus,
+.admin-profile-score-pills input:focus{
+  outline:3px solid rgba(14,151,163,.12);
+  border-color:#55b6bf;
+  background:#fff;
+}
+.admin-profile-color-input{
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.admin-profile-color-input i{
+  flex:0 0 32px;
+  height:32px;
+  border-radius:10px;
+  background:var(--profile-current-color,#dce6ec);
+  border:3px solid #fff;
+  box-shadow:0 0 0 1px #cbdde6;
+}
+.admin-profile-copy-fields{
+  display:grid;
+  grid-template-columns:1.45fr .75fr;
+  gap:16px;
+}
+.admin-profile-copy-fields textarea{
+  min-height:150px;
+  resize:vertical;
+  line-height:1.55;
+}
+.admin-profile-summary-copy textarea{
+  min-height:150px;
+  background:#f8fbfd;
+}
+.admin-profile-score-pills{
+  display:flex;
+  align-items:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.admin-profile-score-pills label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:145px;
+}
+.admin-profile-score-pills label span{
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  color:#6b8292;
+}
+.admin-profile-score-pills input{
+  width:145px;
+  min-height:46px;
+  border:1px solid #cbdde6;
+  border-radius:14px;
+  background:#f8fbfd;
+  padding:10px 12px;
+  color:#0d4c72;
+  font-size:17px;
+  font-weight:800;
+  text-align:center;
+}
+.admin-profile-score-arrow{
+  align-self:center;
+  margin-top:20px;
+  color:#8ca0ad;
+  font-weight:900;
+}
+.admin-profile-top-score{
+  margin-left:auto;
+}
+.admin-profile-video-card{
+  background:#f8fcfd;
+  border-color:#cfe7eb;
+}
+.admin-profile-video-select{
+  max-width:560px;
+}
+.admin-profile-video-card .admin-library-video-present{
+  margin-top:12px;
+}
+@media(max-width:850px){
+  .admin-profile-identity-fields,
+  .admin-profile-copy-fields{grid-template-columns:1fr;}
+  .admin-profile-top-score{margin-left:0;}
+  .admin-profile-score-arrow{display:none;}
+  .admin-profile-score-pills label,
+  .admin-profile-score-pills input{width:100%;min-width:0;}
+}

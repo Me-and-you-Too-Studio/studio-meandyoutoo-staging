@@ -241,8 +241,71 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   }
   function answerInlineRow(answer={},index=0,readonly=false){return `<div class="admin-library-answer-row"><span class="admin-library-answer-number">${Number(index)+1}</span><label class="admin-library-answer-content"><span>Réponse</span><input data-answer-content placeholder="Texte de la réponse" value="${esc(answer.content||'')}" required ${readonly?'disabled':''}></label><label class="admin-library-answer-score"><span>Score</span><input data-answer-score type="number" step="0.01" value="${answer.score??''}" required ${readonly?'disabled':''}></label><label class="admin-library-best-answer" title="Réponse attendue / la plus inclusive"><input data-answer-best type="checkbox" ${answer.is_best?'checked':''} ${readonly?'disabled':''}><span>Meilleure réponse</span></label>${readonly?'':`<button type="button" class="admin-library-answer-remove" data-remove-inline-answer aria-label="Supprimer la réponse">×</button>`}</div>`;}
   function profileInlineRow(ch,profile={},index=0){
-    const media=(ch.media||[]).find(m=>m.placement==='profile_result'&&Number(m.profile_position)===index)||null;
-    return `<article class="admin-library-profile-inline-card"><details><summary><div class="admin-library-profile-summary"><span class="admin-library-profile-index">Profil ${index+1}</span><div><strong>${esc(profile.title||'Profil à renseigner')}</strong><small>${profile.content?'Restitution renseignée':'Restitution à compléter'} · ${profile.scoring_min??'—'} à ${profile.scoring_max??'—'}${media?' · 🎬 '+esc(media.title):''}</small></div></div><span class="admin-library-profile-summary-right"><span class="admin-library-profile-color" style="--profile-color:${esc(profile.color||'#dce6ec')}"></span><span class="admin-library-summary-action">Voir / modifier <span class="admin-library-profile-chevron" aria-hidden="true">⌄</span></span></span></summary><div class="admin-library-profile-inline-body"><section class="admin-library-editor-section admin-library-profile-editor"><div class="admin-library-editor-section-title"><span class="admin-library-editor-icon">◎</span><div><h4>Identité du profil</h4><p>Libellé et couleur utilisés dans la restitution répondant.</p></div></div><div class="parameter-grid"><label>Titre<input data-profile-title value="${esc(profile.title||'')}" required></label><label>Couleur<input data-profile-color value="${esc(profile.color||'')}" placeholder="#0d4c72"></label></div></section><section class="admin-library-editor-section admin-library-profile-editor"><div class="admin-library-editor-section-title"><span class="admin-library-editor-icon">✎</span><div><h4>Textes de restitution</h4><p>Contenu détaillé puis résumé affiché au répondant.</p></div></div><label>Restitution<textarea data-profile-content rows="5" required>${esc(profile.content||'')}</textarea></label><label>Résumé<textarea data-profile-summary rows="3">${esc(profile.summary||'')}</textarea></label></section><section class="admin-library-editor-section admin-library-profile-editor"><div class="admin-library-editor-section-title"><span class="admin-library-editor-icon">#</span><div><h4>Seuils de scoring</h4><p>Définissez la plage de score correspondant à ce profil.</p></div></div><div class="admin-library-profile-scores"><label>Score min<input data-profile-min type="number" step="0.01" value="${profile.scoring_min??''}"></label><label>Score max<input data-profile-max type="number" step="0.01" value="${profile.scoring_max??''}"></label><label>Score plafond<input data-profile-top type="number" step="0.01" value="${profile.top_score??''}"></label></div></section><section class="admin-library-editor-section admin-library-profile-video"><div class="admin-library-editor-section-title"><span class="admin-library-editor-icon">▶</span><div><h4>Vidéo du profil <span class="admin-library-optional">facultatif</span></h4><p>Sélectionnez une vidéo de la Médiathèque. Son URL HB reste gérée à un seul endroit.</p></div></div><input type="hidden" data-profile-video-id value="${media?.id||''}"><label class="admin-library-video-select">Vidéo associée<select data-profile-video-library>${mediaLibraryOptions(media?.video_id||'')}</select></label>${media?`<span class="admin-library-video-present">🎬 ${esc(media.title)}</span>`:'<small class="admin-library-video-help">Aucune vidéo : laissez « Aucune vidéo ».</small>'}</section></div></details></article>`;
+    const profileMedia=(ch.media||[]).filter(m=>m.placement==='profile_result');
+    const ownMedia=profileMedia.find(m=>Number(m.profile_position)===index)||null;
+    const effectiveMedia=ownMedia||profileMedia[0]||null;
+    const color=esc(profile.color||'#dce6ec');
+    return `<article class="admin-library-profile-inline-card admin-profile-card-v2"><details><summary>
+      <div class="admin-library-profile-summary">
+        <span class="admin-library-profile-index">Profil ${index+1}</span>
+        <div class="admin-profile-summary-copy">
+          <strong>${esc(profile.title||'Profil à renseigner')}</strong>
+          <small>${profile.content?'Restitution renseignée':'Restitution à compléter'} · ${profile.scoring_min??'—'} à ${profile.scoring_max??'—'}${effectiveMedia?' · 🎬 '+esc(effectiveMedia.title):''}</small>
+        </div>
+      </div>
+      <span class="admin-library-profile-summary-right">
+        <span class="admin-library-profile-color" style="--profile-color:${color}"></span>
+        <span class="admin-library-summary-action">Voir / modifier <span class="admin-library-profile-chevron" aria-hidden="true">⌄</span></span>
+      </span>
+    </summary>
+    <div class="admin-library-profile-inline-body admin-profile-editor-v2">
+
+      <section class="admin-profile-editor-card admin-profile-identity-card">
+        <div class="admin-profile-editor-card-head">
+          <span class="admin-profile-editor-card-icon">◎</span>
+          <div><h4>Identité du profil</h4><p>Le libellé et la couleur visibles dans la restitution répondant.</p></div>
+        </div>
+        <div class="admin-profile-identity-fields">
+          <label><span>Titre du profil</span><input data-profile-title value="${esc(profile.title||'')}" required></label>
+          <label class="admin-profile-color-field"><span>Couleur</span><div class="admin-profile-color-input"><i style="--profile-current-color:${color}"></i><input data-profile-color value="${color}" placeholder="#0d4c72"></div></label>
+        </div>
+      </section>
+
+      <section class="admin-profile-editor-card admin-profile-copy-card">
+        <div class="admin-profile-editor-card-head">
+          <span class="admin-profile-editor-card-icon">✎</span>
+          <div><h4>Restitution répondant</h4><p>Rédigez le contenu principal puis le résumé qui présente ce profil.</p></div>
+        </div>
+        <div class="admin-profile-copy-fields">
+          <label class="admin-profile-main-copy"><span>Texte détaillé</span><textarea data-profile-content rows="6" required>${esc(profile.content||'')}</textarea></label>
+          <label class="admin-profile-summary-copy"><span>Résumé</span><textarea data-profile-summary rows="3">${esc(profile.summary||'')}</textarea></label>
+        </div>
+      </section>
+
+      <section class="admin-profile-editor-card admin-profile-score-card">
+        <div class="admin-profile-editor-card-head">
+          <span class="admin-profile-editor-card-icon">#</span>
+          <div><h4>Plage de scoring</h4><p>Définissez les seuils qui orientent le répondant vers ce profil.</p></div>
+        </div>
+        <div class="admin-profile-score-pills">
+          <label><span>Minimum</span><input data-profile-min type="number" step="0.01" value="${profile.scoring_min??''}"></label>
+          <span class="admin-profile-score-arrow">→</span>
+          <label><span>Maximum</span><input data-profile-max type="number" step="0.01" value="${profile.scoring_max??''}"></label>
+          <label class="admin-profile-top-score"><span>Score plafond</span><input data-profile-top type="number" step="0.01" value="${profile.top_score??''}"></label>
+        </div>
+      </section>
+
+      <section class="admin-profile-editor-card admin-library-profile-video admin-profile-video-card">
+        <div class="admin-profile-editor-card-head">
+          <span class="admin-profile-editor-card-icon">▶</span>
+          <div><h4>Vidéo de restitution <span class="admin-library-optional">facultatif</span></h4><p>Une vidéo choisie ici est automatiquement appliquée aux trois profils de ce chapitre.</p></div>
+        </div>
+        <input type="hidden" data-profile-video-id value="${ownMedia?.id||''}">
+        <label class="admin-library-video-select admin-profile-video-select"><span>Vidéo associée</span><select data-profile-video-library>${mediaLibraryOptions(effectiveMedia?.video_id||'')}</select></label>
+        ${effectiveMedia?`<span class="admin-library-video-present">🎬 ${esc(effectiveMedia.title)} · appliquée aux 3 profils</span>`:'<small class="admin-library-video-help">Aucune vidéo associée à ce chapitre.</small>'}
+      </section>
+
+    </div></details></article>`;
   }
   function mediaPlacementLabel(media){if(media.placement==='after_chapter')return'Après le chapitre';if(media.profile_position===null||media.profile_position===undefined)return'Dans tous les profils';return`Dans le profil ${Number(media.profile_position)+1}`;}
   function mediaInlineRow(ch,media={}){return `<article class="admin-library-media-card"><div class="admin-library-media-card-head"><div><strong>${esc(media.title||'Vidéo')}</strong><span class="admin-library-media-tag">${esc(mediaPlacementLabel(media))}</span></div><button type="button" class="button button-ghost button-small" data-edit-media="${media.id}">Modifier</button></div><form class="admin-library-media-form" data-media-form="${media.id}" hidden><input type="hidden" data-media-placement value="${esc(media.placement||'after_chapter')}"><div class="admin-library-media-grid"><label>Vidéo de la médiathèque<select data-media-video-id required>${mediaLibraryOptions(media.video_id||'')}</select></label><label class="admin-library-media-active"><input data-media-active type="checkbox" ${media.active!==false?'checked':''}> Association active</label></div><div class="admin-library-inline-actions"><button type="button" class="button button-danger-soft" data-delete-media="${media.id}">Retirer du chapitre</button><span class="admin-library-action-spacer"></span><button type="button" class="button button-secondary" data-cancel-media>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form></article>`;}
@@ -303,7 +366,18 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     $$('[data-delete-situation]').forEach(b=>b.onclick=async e=>{e.preventDefault();e.stopPropagation();const si=findSituation(b.dataset.deleteSituation);if(!confirm(`Déplacer cette situation dans les supprimées ?\n\n« ${si?.content||'Cette situation'} »\n\nElle ne sera plus proposée dans les nouvelles campagnes et pourra être restaurée depuis le filtre « Supprimées ».`))return;try{await StudioAPI.request('/api/admin/catalog/situations/'+b.dataset.deleteSituation,{method:'DELETE'});await refreshLibrary();renderLibraryAdmin();}catch(error){showError(error.message);}});
     $$('[data-undelete-situation]').forEach(b=>b.onclick=async e=>{e.preventDefault();e.stopPropagation();try{await StudioAPI.request('/api/admin/catalog/situations/'+b.dataset.undeleteSituation+'/undelete',{method:'POST'});await refreshLibrary();renderLibraryAdmin();}catch(error){showError(error.message);}});
     $$('[data-delete-situation-permanent]').forEach(b=>b.onclick=async e=>{e.preventDefault();e.stopPropagation();const si=findSituation(b.dataset.deleteSituationPermanent);if(!confirm(`Supprimer DÉFINITIVEMENT cette situation ?\n\n« ${si?.content||'Cette situation'} »\n\nCette action est irréversible. Si la situation a déjà été utilisée dans une campagne, le Studio refusera la suppression définitive.`))return;try{await StudioAPI.request('/api/admin/catalog/situations/'+b.dataset.deleteSituationPermanent+'/permanent',{method:'DELETE'});await refreshLibrary();renderLibraryAdmin();}catch(error){showError(error.message);}});
-    $$('[data-profile-inline-form]').forEach(form=>{form.querySelector('[data-cancel-inline]').onclick=()=>{const d=form.closest('details');if(d)d.open=false;};form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;const chapterId=form.dataset.profileInlineForm,rows=[...form.querySelectorAll('.admin-library-profile-inline-card')],profiles=rows.map(row=>({title:row.querySelector('[data-profile-title]').value.trim(),content:row.querySelector('[data-profile-content]').value.trim(),summary:row.querySelector('[data-profile-summary]').value.trim(),scoringMin:row.querySelector('[data-profile-min]').value,scoringMax:row.querySelector('[data-profile-max]').value,topScore:row.querySelector('[data-profile-top]').value,color:row.querySelector('[data-profile-color]').value.trim()}));try{await StudioAPI.request('/api/admin/catalog/chapters/'+chapterId+'/profiles',{method:'PUT',body:JSON.stringify({profiles})});for(let index=0;index<rows.length;index++)await syncProfileVideo(chapterId,rows[index],index);await refreshLibrary();state.libraryExpandedChapters.add(String(chapterId));renderLibraryAdmin();}catch(error){showError(error.message);}};});
+    $$('[data-profile-inline-form]').forEach(form=>{bindProfileVideoSync(form);form.querySelector('[data-cancel-inline]').onclick=()=>{const d=form.closest('details');if(d)d.open=false;};form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;const chapterId=form.dataset.profileInlineForm,rows=[...form.querySelectorAll('.admin-library-profile-inline-card')],profiles=rows.map(row=>({title:row.querySelector('[data-profile-title]').value.trim(),content:row.querySelector('[data-profile-content]').value.trim(),summary:row.querySelector('[data-profile-summary]').value.trim(),scoringMin:row.querySelector('[data-profile-min]').value,scoringMax:row.querySelector('[data-profile-max]').value,topScore:row.querySelector('[data-profile-top]').value,color:row.querySelector('[data-profile-color]').value.trim()}));try{await StudioAPI.request('/api/admin/catalog/chapters/'+chapterId+'/profiles',{method:'PUT',body:JSON.stringify({profiles})});for(let index=0;index<rows.length;index++)await syncProfileVideo(chapterId,rows[index],index);await refreshLibrary();state.libraryExpandedChapters.add(String(chapterId));renderLibraryAdmin();}catch(error){showError(error.message);}};});
+  }
+  function bindProfileVideoSync(form){
+    const selects=[...form.querySelectorAll('[data-profile-video-library]')];
+    selects.forEach(select=>select.onchange=()=>{
+      const value=select.value;
+      selects.forEach(other=>{if(other!==select)other.value=value;});
+      form.querySelectorAll('.admin-library-video-present').forEach(el=>el.remove());
+      form.querySelectorAll('.admin-library-video-help').forEach(el=>{
+        el.textContent=value?'La même vidéo sera enregistrée sur les 3 profils.':'Aucune vidéo associée à ce chapitre.';
+      });
+    });
   }
   async function syncProfileVideo(chapterId,row,index){
     const assignmentId=row.querySelector('[data-profile-video-id]').value;
