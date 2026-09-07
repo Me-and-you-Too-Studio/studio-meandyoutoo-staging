@@ -155,6 +155,7 @@
     { href: 'admin.html?tab=campaigns&status=configuration_submitted', label: 'À publier', icon: '<path d="M4 12h12"/><path d="m12 6 6 6-6 6"/>' },
     { href: 'admin.html?tab=clients&filter=pack', label: 'Demandes de passations', icon: '<path d="M3 7h18v12H3z"/><path d="M6 7V5h12v2"/>' },
     { href: 'admin.html?tab=accounts', label: 'Comptes & accès', icon: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 3-7 6-7"/><path d="M16 11v6M13 14h6"/>' },
+    { href: 'admin.html?tab=library', label: 'Bibliothèque', icon: '<path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M8 8v8M16 8v8"/>' },
     { href: 'notifications.html', label: 'Notifications', icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>' }
   ];
 
