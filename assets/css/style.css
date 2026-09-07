@@ -12285,3 +12285,46 @@ body.rp-sticky-preview-enabled .creation-sticky-actions #next-link{grid-column:4
   object-fit: contain;
 }
 body.sidebar-collapsed .profile-company-logo { display: none; }
+
+
+/* Sidebar client : identité du contact et de l’entreprise hiérarchisée sous l’aide. */
+.sidebar-footer .help-card { margin-bottom: 6px; }
+.profile {
+  display: grid;
+  align-items: stretch;
+  gap: 8px;
+}
+.profile-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.profile-person-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--royal-blue);
+}
+.profile-copy {
+  display: grid;
+  gap: 5px;
+  padding-left: 48px;
+}
+.profile-company-logo {
+  width: 58px;
+  height: 40px;
+  margin: 1px 0 2px;
+}
+.profile-copy .sidebar-logout {
+  justify-self: start;
+}
+body.sidebar-collapsed .profile {
+  display: flex;
+  justify-content: center;
+}
+body.sidebar-collapsed .profile-person-name,
+body.sidebar-collapsed .profile-copy {
+  display: none;
+}
