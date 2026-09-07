@@ -45,15 +45,15 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function bindAdminActions(){$$('[data-admin-edit]').forEach(b=>b.onclick=()=>openAdminForm(state.adminUsers.get(b.dataset.adminEdit)));$$('[data-admin-resend]').forEach(b=>b.onclick=async()=>{try{await StudioAPI.request('/api/admin/users/'+b.dataset.adminResend+'/resend-invitation',{method:'POST',body:'{}'});}catch(e){showError(e.message);}});$$('[data-admin-active]').forEach(b=>b.onclick=async()=>{try{await StudioAPI.request('/api/admin/administrators/'+b.dataset.adminActive,{method:'PATCH',body:JSON.stringify({active:b.dataset.active==='true'})});load();}catch(e){showError(e.message);}});$$('[data-admin-delete]').forEach(b=>b.onclick=async()=>{const ok=await StudioModal.confirm({type:'danger',title:'Supprimer cet administrateur ?',message:'Cet accès sera définitivement supprimé.',confirmLabel:'Supprimer'});if(!ok)return;try{await StudioAPI.request('/api/admin/administrators/'+b.dataset.adminDelete,{method:'DELETE'});load();}catch(e){showError(e.message);}});}
   async function loadLibraryAdmin(){
     const root=$('#admin-library');if(!root)return;root.innerHTML='<div class="admin-library-loading">Chargement de la bibliothèque…</div>';
-    try{const[data,media]=await Promise.all([StudioAPI.request('/api/admin/catalog/themes'),StudioAPI.request('/api/admin/media-library')]);state.catalogThemes=data.themes||[];state.mediaLibrary=media.videos||[];state.mediaThemes=media.themes||[];state.mediaLibraryLoaded=true;state.catalogLoaded=true;renderLibraryAdmin();}catch(e){root.innerHTML=`<div class="composer-alert">${esc(e.message)}</div>`;}
+    try{const[data,media]=await Promise.all([StudioAPI.request('/api/admin/catalog/themes'),StudioAPI.request('/api/admin/media-library')]);state.catalogThemes=data.themes||[];state.mediaLibrary=media.videos||[];state.mediaThemes=media.themeOptions||[];state.mediaLibraryLoaded=true;state.catalogLoaded=true;renderLibraryAdmin();}catch(e){root.innerHTML=`<div class="composer-alert">${esc(e.message)}</div>`;}
   }
   function mediaLibraryOptions(selectedId=''){
     const active=state.mediaLibrary.filter(v=>v.active!==false||String(v.id)===String(selectedId));
     return '<option value="">Aucune vidéo</option>'+active.map(v=>`<option value="${v.id}" ${String(v.id)===String(selectedId)?'selected':''}>${esc(v.title)}</option>`).join('');
   }
   function mediaLibraryForm(video=null){
-    const selectedThemes=new Set((video?.themes||[]).map(t=>String(t.id)));
-    const themeChoices=state.mediaThemes.map(t=>`<label class="admin-media-theme-choice"><input type="checkbox" data-media-lib-theme value="${t.id}" ${selectedThemes.has(String(t.id))?'checked':''}><span>${esc(t.title)}</span></label>`).join('');
+    const selectedThemes=new Set((video?.theme_keys||[]).map(String));
+    const themeChoices=state.mediaThemes.map(t=>`<label class="admin-media-theme-choice"><input type="checkbox" data-media-lib-theme value="${esc(t.key)}" ${selectedThemes.has(String(t.key))?'checked':''}><span>${esc(t.title)}</span></label>`).join('');
     const tags=(video?.admin_tags||[]);
     const existingTags=[...new Set(state.mediaLibrary.flatMap(v=>v.admin_tags||[]))].filter(t=>!tags.includes(t)).slice(0,12);
     return `<form class="admin-media-library-form admin-media-library-form-v2" data-media-library-form="${video?.id||''}">
@@ -98,7 +98,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   }
   async function loadMediaLibrary(){
     const root=$('#admin-media-library');if(root)root.innerHTML='<div class="admin-library-loading">Chargement de la médiathèque…</div>';
-    try{const data=await StudioAPI.request('/api/admin/media-library');state.mediaLibrary=data.videos||[];state.mediaThemes=data.themes||[];state.mediaLibraryLoaded=true;renderMediaLibrary();}catch(e){if(root)root.innerHTML=`<div class="composer-alert">${esc(e.message)}</div>`;}
+    try{const data=await StudioAPI.request('/api/admin/media-library');state.mediaLibrary=data.videos||[];state.mediaThemes=data.themeOptions||[];state.mediaLibraryLoaded=true;renderMediaLibrary();}catch(e){if(root)root.innerHTML=`<div class="composer-alert">${esc(e.message)}</div>`;}
   }
   function renderMediaLibrary(){
     const root=$('#admin-media-library');if(!root)return;
@@ -106,7 +106,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const themeSelect=$('#media-library-theme'),tagSelect=$('#media-library-tag');
     if(themeSelect){
       const current=themeSelect.value;
-      themeSelect.innerHTML='<option value="">Toutes les thématiques</option>'+state.mediaThemes.map(t=>`<option value="${t.id}">${esc(t.title)}</option>`).join('');
+      themeSelect.innerHTML='<option value="">Toutes les thématiques</option>'+state.mediaThemes.map(t=>`<option value="${esc(t.key)}">${esc(t.title)}</option>`).join('');
       themeSelect.value=current;
     }
     const allTags=[...new Set(state.mediaLibrary.flatMap(v=>v.admin_tags||[]))].sort((a,b)=>a.localeCompare(b,'fr'));
@@ -116,13 +116,13 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       tagSelect.value=current;
     }
     const videos=state.mediaLibrary.filter(v=>{
-      const searchable=`${v.title||''} ${v.description||''} ${v.source_url||''} ${(v.admin_tags||[]).join(' ')} ${(v.themes||[]).map(t=>t.title).join(' ')}`.toLowerCase();
+      const themeTitles=(v.theme_keys||[]).map(key=>state.mediaThemes.find(t=>t.key===key)?.title||key);const searchable=`${v.title||''} ${v.description||''} ${v.source_url||''} ${(v.admin_tags||[]).join(' ')} ${themeTitles.join(' ')}`.toLowerCase();
       return (!q||searchable.includes(q))
         &&(!status||(status==='active'?v.active!==false:v.active===false))
-        &&(!themeId||(v.themes||[]).some(t=>String(t.id)===String(themeId)))
+        &&(!themeId||(v.theme_keys||[]).includes(themeId))
         &&(!tag||(v.admin_tags||[]).includes(tag));
     });
-    root.innerHTML=videos.length?videos.map(v=>`<article class="admin-media-library-card ${v.active===false?'is-inactive':''}"><div class="admin-media-library-card-head"><span class="admin-media-library-play">▶</span><div><h3>${esc(v.title)}</h3><div class="admin-media-library-tags"><span class="${v.active===false?'is-off':'is-on'}">${v.active===false?'Inactive':'Active'}</span><span>${Number(v.usage_count||0)} utilisation${Number(v.usage_count||0)>1?'s':''}</span></div></div></div><div class="admin-media-classification">${(v.themes||[]).map(t=>`<span class="admin-media-theme-tag">${esc(t.title)}</span>`).join('')}${(v.admin_tags||[]).map(t=>`<span class="admin-media-free-tag">${esc(t)}</span>`).join('')}</div>${v.description?`<p>${esc(v.description)}</p>`:''}<div class="admin-media-library-url"><span>URL HB</span><code>${esc(v.source_url)}</code></div><div class="admin-media-library-card-actions"><button class="button button-secondary button-small" type="button" data-edit-media-library="${v.id}">Modifier</button><button class="button button-danger-soft button-small" type="button" data-delete-media-library="${v.id}" ${Number(v.usage_count||0)>0?'disabled title="Vidéo utilisée : retirez d’abord ses associations"':''}>Supprimer</button></div></article>`).join(''):'<p class="admin-library-empty-line">Aucune vidéo ne correspond à ces filtres.</p>';
+    root.innerHTML=videos.length?videos.map(v=>`<article class="admin-media-library-card ${v.active===false?'is-inactive':''}"><div class="admin-media-library-card-head"><span class="admin-media-library-play">▶</span><div><h3>${esc(v.title)}</h3><div class="admin-media-library-tags"><span class="${v.active===false?'is-off':'is-on'}">${v.active===false?'Inactive':'Active'}</span><span>${Number(v.usage_count||0)} utilisation${Number(v.usage_count||0)>1?'s':''}</span></div></div></div><div class="admin-media-classification">${(v.theme_keys||[]).map(key=>`<span class="admin-media-theme-tag">${esc(state.mediaThemes.find(t=>t.key===key)?.title||key)}</span>`).join('')}${(v.admin_tags||[]).map(t=>`<span class="admin-media-free-tag">${esc(t)}</span>`).join('')}</div>${v.description?`<p>${esc(v.description)}</p>`:''}<div class="admin-media-library-url"><span>URL HB</span><code>${esc(v.source_url)}</code></div><div class="admin-media-library-card-actions"><button class="button button-secondary button-small" type="button" data-edit-media-library="${v.id}">Modifier</button><button class="button button-danger-soft button-small" type="button" data-delete-media-library="${v.id}" ${Number(v.usage_count||0)>0?'disabled title="Vidéo utilisée : retirez d’abord ses associations"':''}>Supprimer</button></div></article>`).join(''):'<p class="admin-library-empty-line">Aucune vidéo ne correspond à ces filtres.</p>';
     $$('[data-edit-media-library]').forEach(b=>b.onclick=()=>openMediaLibraryForm(state.mediaLibrary.find(v=>String(v.id)===String(b.dataset.editMediaLibrary))));
     $$('[data-delete-media-library]').forEach(b=>b.onclick=async()=>{const v=state.mediaLibrary.find(x=>String(x.id)===String(b.dataset.deleteMediaLibrary));if(!confirm(`Supprimer définitivement « ${v?.title||'cette vidéo'} » de la médiathèque ?`))return;try{await StudioAPI.request('/api/admin/media-library/'+b.dataset.deleteMediaLibrary,{method:'DELETE'});await loadMediaLibrary();state.catalogLoaded=false;}catch(error){showError(error.message);}});
   }
@@ -167,7 +167,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         title:form.querySelector('[data-media-lib-title]').value.trim(),
         sourceUrl:form.querySelector('[data-media-lib-url]').value.trim(),
         description:form.querySelector('[data-media-lib-description]').value.trim(),
-        themeIds:[...form.querySelectorAll('[data-media-lib-theme]:checked')].map(i=>Number(i.value)),
+        themeKeys:[...form.querySelectorAll('[data-media-lib-theme]:checked')].map(i=>i.value),
         tags:mediaFormTags(form),
         active:form.querySelector('[data-media-lib-active]').checked
       };
