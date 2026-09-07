@@ -55,7 +55,7 @@
   function requireAuth(requiredRole){
     var current=user();
     if(!token()||!current){location.href='login.html';return false;}
-    if(requiredRole&&current.role!==requiredRole){location.href='index.html';return false;}
+    if(requiredRole&&current.role!==requiredRole){location.href='accueil.html';return false;}
     return true;
   }
   function logout(){clearSession();sessionStorage.removeItem('studio_interface_mode');location.href='login.html';}

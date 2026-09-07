@@ -7,7 +7,7 @@
     location.href='login.html';
     return;
   }
-  var CURRENT = location.pathname.split('/').pop() || 'index.html';
+  var CURRENT = location.pathname.split('/').pop() || 'accueil.html';
   var CURRENT_USER = null;
   try { CURRENT_USER = JSON.parse(localStorage.getItem('studio_user') || 'null'); } catch (e) {}
   var IS_ADMIN = Boolean(CURRENT_USER && CURRENT_USER.role === 'admin');
@@ -143,7 +143,7 @@
   setupSharedModal();
 
   var NAV_MAIN = [
-    { href: 'index.html', label: 'Accueil', icon: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/>' },
+    { href: 'accueil.html', label: 'Accueil', icon: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/>' },
     { href: 'mes-campagnes.html', label: 'Mes campagnes', icon: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/>' },
     { href: 'notifications.html?audience=client', label: 'Notifications', notificationBadge: true, icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>' },
     { href: 'bibliotheque.html', label: 'Bibliothèque', icon: '<path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M8 8v8M16 8v8"/>' },
@@ -166,7 +166,7 @@
   ];
 
   var NAV_BOTTOM = [
-    { href: 'index.html', label: 'Accueil' },
+    { href: 'accueil.html', label: 'Accueil' },
     { href: 'mes-campagnes.html', label: 'Campagnes' },
     { href: 'bibliotheque.html', label: 'Bibliothèque' },
     { href: 'packs.html', label: 'Passations' }
@@ -208,7 +208,7 @@
     }[CURRENT];
     if(!required||CURRENT_USER&&CURRENT_USER.permissions&&CURRENT_USER.permissions[required])return;
     var main=document.querySelector('main.main');
-    if(main)main.innerHTML='<section class="card permission-denied"><div class="permission-denied-icon">🔒</div><p class="eyebrow">Accès limité</p><h1>Cette fonctionnalité ne vous est pas autorisée</h1><p>Le responsable de votre compte peut modifier vos droits d’accès.</p><a class="button button-secondary" href="index.html">Retour à l’accueil</a></section>';
+    if(main)main.innerHTML='<section class="card permission-denied"><div class="permission-denied-icon">🔒</div><p class="eyebrow">Accès limité</p><h1>Cette fonctionnalité ne vous est pas autorisée</h1><p>Le responsable de votre compte peut modifier vos droits d’accès.</p><a class="button button-secondary" href="accueil.html">Retour à l’accueil</a></section>';
   }
 
   function enforceActionAccess(){
@@ -378,7 +378,7 @@
   if (interfaceButton) interfaceButton.addEventListener('click', function(){
     var next = interfaceButton.dataset.interfaceSwitch;
     StudioAPI.setInterfaceMode(next);
-    location.href = next === 'admin' ? 'admin.html' : 'index.html';
+    location.href = next === 'admin' ? 'admin.html' : 'accueil.html';
   });
   var logoutButton = document.querySelector('[data-logout]');
   if (logoutButton) logoutButton.addEventListener('click', function(){
