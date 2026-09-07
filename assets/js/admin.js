@@ -54,7 +54,47 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function mediaLibraryForm(video=null){
     const selectedThemes=new Set((video?.themes||[]).map(t=>String(t.id)));
     const themeChoices=state.mediaThemes.map(t=>`<label class="admin-media-theme-choice"><input type="checkbox" data-media-lib-theme value="${t.id}" ${selectedThemes.has(String(t.id))?'checked':''}><span>${esc(t.title)}</span></label>`).join('');
-    return `<form class="admin-media-library-form" data-media-library-form="${video?.id||''}"><div class="admin-library-editor-section-title"><span class="admin-library-editor-icon">▶</span><div><h4>${video?'Modifier la vidéo':'Ajouter une vidéo'}</h4><p>L’URL HB reste centralisée ici. Classez la vidéo par thématique et ajoutez vos propres tags si nécessaire.</p></div></div><div class="admin-media-library-form-grid"><label>Titre<input data-media-lib-title value="${esc(video?.title||'')}" placeholder="Ex. Rappel à la loi" required></label><label>URL publique HB<input data-media-lib-url type="url" value="${esc(video?.source_url||'')}" placeholder="https://…" required></label><label class="admin-media-library-description">Description<textarea data-media-lib-description rows="3" placeholder="Usage, contenu, consignes internes…">${esc(video?.description||'')}</textarea></label><fieldset class="admin-media-library-themes"><legend>Thématiques</legend><p>Associez une ou plusieurs thématiques du Studio.</p><div class="admin-media-theme-choices">${themeChoices||'<span class="admin-library-empty-line">Aucune thématique disponible.</span>'}</div></fieldset><label class="admin-media-library-tags-field">Tags libres<input data-media-lib-tags value="${esc((video?.admin_tags||[]).join(', '))}" placeholder="Ex. Rappel à la loi, Introduction, Obligatoire"><small>Séparez les tags par des virgules. Vous pouvez créer librement de nouveaux tags.</small></label><label class="admin-media-library-active"><input data-media-lib-active type="checkbox" ${video?.active===false?'':'checked'}> Vidéo active et sélectionnable</label></div><div class="admin-library-inline-actions"><button class="button button-secondary" type="button" data-cancel-media-library>Annuler</button><button class="button button-primary" type="submit">${video?'Enregistrer':'Ajouter à la médiathèque'}</button></div></form>`;
+    const tags=(video?.admin_tags||[]);
+    const existingTags=[...new Set(state.mediaLibrary.flatMap(v=>v.admin_tags||[]))].filter(t=>!tags.includes(t)).slice(0,12);
+    return `<form class="admin-media-library-form admin-media-library-form-v2" data-media-library-form="${video?.id||''}">
+      <div class="admin-media-form-head">
+        <div class="admin-media-form-title"><span class="admin-media-library-play">▶</span><div><h3>${video?'Modifier la vidéo':'Ajouter une vidéo'}</h3><p>Centralisez la vidéo ici, puis classez-la pour la retrouver rapidement dans les profils et les chapitres.</p></div></div>
+      </div>
+
+      <section class="admin-media-form-card">
+        <div class="admin-media-form-card-head"><span class="admin-media-form-step">1</span><div><h4>Informations</h4><p>Le titre et le lien d’hébergement de la vidéo.</p></div></div>
+        <div class="admin-media-info-grid">
+          <label><span>Titre</span><input data-media-lib-title value="${esc(video?.title||'')}" placeholder="Ex. Stéréotypes de genre" required></label>
+          <label><span>URL publique HB</span><input data-media-lib-url type="url" value="${esc(video?.source_url||'')}" placeholder="https://…" required><small>Cette URL reste côté admin/API et n’est pas affichée au client.</small></label>
+          <label class="admin-media-library-description"><span>Description</span><textarea data-media-lib-description rows="3" placeholder="Ex. France en français">${esc(video?.description||'')}</textarea></label>
+        </div>
+      </section>
+
+      <section class="admin-media-form-card">
+        <div class="admin-media-form-card-head"><span class="admin-media-form-step">2</span><div><h4>Thématiques</h4><p>Associez la vidéo aux thématiques du Studio concernées.</p></div></div>
+        <div class="admin-media-theme-choices">${themeChoices||'<span class="admin-library-empty-line">Aucune thématique disponible.</span>'}</div>
+      </section>
+
+      <section class="admin-media-form-card">
+        <div class="admin-media-form-card-head"><span class="admin-media-form-step">3</span><div><h4>Mots-clés</h4><p>Créez librement vos propres tags : stéréotypes, France, français, rappel à la loi…</p></div></div>
+        <div class="admin-media-tag-editor">
+          <div class="admin-media-tag-entry">
+            <input data-media-tag-input placeholder="Saisir un mot-clé puis Entrée" autocomplete="off">
+            <button class="button button-secondary button-small" type="button" data-add-media-tag>+ Ajouter</button>
+          </div>
+          <div class="admin-media-tag-chips" data-media-tag-chips>${tags.map(t=>`<button type="button" class="admin-media-edit-tag" data-media-tag="${esc(t)}"><span>${esc(t)}</span><b aria-hidden="true">×</b></button>`).join('')}</div>
+          ${existingTags.length?`<div class="admin-media-tag-suggestions"><span>Tags déjà utilisés :</span>${existingTags.map(t=>`<button type="button" data-suggest-media-tag="${esc(t)}">${esc(t)}</button>`).join('')}</div>`:''}
+          <small>Un tag peut être retiré en cliquant sur ×. Les tags servent aussi de filtres dans la Médiathèque.</small>
+        </div>
+      </section>
+
+      <section class="admin-media-form-card admin-media-status-card">
+        <div class="admin-media-form-card-head"><span class="admin-media-form-step">4</span><div><h4>Disponibilité</h4><p>Une vidéo inactive reste conservée mais n’est plus proposée dans les sélecteurs.</p></div></div>
+        <label class="admin-media-status-toggle"><input data-media-lib-active type="checkbox" ${video?.active===false?'':'checked'}><span><strong>Vidéo active et sélectionnable</strong><small>Disponible dans les profils et les chapitres.</small></span></label>
+      </section>
+
+      <div class="admin-library-inline-actions admin-media-form-actions"><button class="button button-secondary" type="button" data-cancel-media-library>Annuler</button><button class="button button-primary" type="submit">${video?'Enregistrer les modifications':'Ajouter à la médiathèque'}</button></div>
+    </form>`;
   }
   async function loadMediaLibrary(){
     const root=$('#admin-media-library');if(root)root.innerHTML='<div class="admin-library-loading">Chargement de la médiathèque…</div>';
@@ -86,8 +126,57 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     $$('[data-edit-media-library]').forEach(b=>b.onclick=()=>openMediaLibraryForm(state.mediaLibrary.find(v=>String(v.id)===String(b.dataset.editMediaLibrary))));
     $$('[data-delete-media-library]').forEach(b=>b.onclick=async()=>{const v=state.mediaLibrary.find(x=>String(x.id)===String(b.dataset.deleteMediaLibrary));if(!confirm(`Supprimer définitivement « ${v?.title||'cette vidéo'} » de la médiathèque ?`))return;try{await StudioAPI.request('/api/admin/media-library/'+b.dataset.deleteMediaLibrary,{method:'DELETE'});await loadMediaLibrary();state.catalogLoaded=false;}catch(error){showError(error.message);}});
   }
+  function mediaFormTags(form){
+    return [...form.querySelectorAll('[data-media-tag]')].map(el=>String(el.dataset.mediaTag||'').trim()).filter(Boolean);
+  }
+  function addMediaFormTag(form,raw){
+    const value=String(raw||'').replace(/\s+/g,' ').trim();
+    if(!value)return;
+    if(value.length>40){showError('Un tag ne peut pas dépasser 40 caractères');return;}
+    const current=mediaFormTags(form);
+    if(current.some(t=>t.toLocaleLowerCase('fr')===value.toLocaleLowerCase('fr')))return;
+    const chips=form.querySelector('[data-media-tag-chips]');
+    const button=document.createElement('button');
+    button.type='button';button.className='admin-media-edit-tag';button.dataset.mediaTag=value;
+    const label=document.createElement('span');label.textContent=value;
+    const close=document.createElement('b');close.setAttribute('aria-hidden','true');close.textContent='×';
+    button.append(label,close);
+    button.onclick=()=>button.remove();
+    chips.appendChild(button);
+  }
+  function bindMediaTagEditor(form){
+    const input=form.querySelector('[data-media-tag-input]'),add=form.querySelector('[data-add-media-tag]');
+    form.querySelectorAll('[data-media-tag]').forEach(b=>b.onclick=()=>b.remove());
+    const commit=()=>{addMediaFormTag(form,input.value);input.value='';input.focus();};
+    add.onclick=commit;
+    input.onkeydown=e=>{
+      if(e.key==='Enter'||e.key===','){e.preventDefault();commit();}
+      if(e.key==='Backspace'&&!input.value){const tags=form.querySelectorAll('[data-media-tag]');tags[tags.length-1]?.remove();}
+    };
+    form.querySelectorAll('[data-suggest-media-tag]').forEach(b=>b.onclick=()=>addMediaFormTag(form,b.dataset.suggestMediaTag));
+  }
   function openMediaLibraryForm(video=null){
-    const slot=$('#admin-media-library-form-slot');if(!slot)return;slot.innerHTML=mediaLibraryForm(video);const form=slot.querySelector('form');form.querySelector('[data-cancel-media-library]').onclick=()=>slot.innerHTML='';form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;const payload={title:form.querySelector('[data-media-lib-title]').value.trim(),sourceUrl:form.querySelector('[data-media-lib-url]').value.trim(),description:form.querySelector('[data-media-lib-description]').value.trim(),themeIds:[...form.querySelectorAll('[data-media-lib-theme]:checked')].map(i=>Number(i.value)),tags:[...new Set(form.querySelector('[data-media-lib-tags]').value.split(',').map(t=>t.trim()).filter(Boolean))],active:form.querySelector('[data-media-lib-active]').checked};try{await StudioAPI.request(video?'/api/admin/media-library/'+video.id:'/api/admin/media-library',{method:video?'PATCH':'POST',body:JSON.stringify(payload)});slot.innerHTML='';await loadMediaLibrary();state.catalogLoaded=false;}catch(error){showError(error.message);}};form.querySelector('[data-media-lib-title]')?.focus();
+    const slot=$('#admin-media-library-form-slot');if(!slot)return;
+    slot.innerHTML=mediaLibraryForm(video);
+    const form=slot.querySelector('form');
+    bindMediaTagEditor(form);
+    form.querySelector('[data-cancel-media-library]').onclick=()=>slot.innerHTML='';
+    form.onsubmit=async e=>{
+      e.preventDefault();if(!form.reportValidity())return;
+      const payload={
+        title:form.querySelector('[data-media-lib-title]').value.trim(),
+        sourceUrl:form.querySelector('[data-media-lib-url]').value.trim(),
+        description:form.querySelector('[data-media-lib-description]').value.trim(),
+        themeIds:[...form.querySelectorAll('[data-media-lib-theme]:checked')].map(i=>Number(i.value)),
+        tags:mediaFormTags(form),
+        active:form.querySelector('[data-media-lib-active]').checked
+      };
+      try{
+        await StudioAPI.request(video?'/api/admin/media-library/'+video.id:'/api/admin/media-library',{method:video?'PATCH':'POST',body:JSON.stringify(payload)});
+        slot.innerHTML='';await loadMediaLibrary();state.catalogLoaded=false;
+      }catch(error){showError(error.message);}
+    };
+    form.querySelector('[data-media-lib-title]')?.focus();
   }
   const findTheme=id=>state.catalogThemes.find(t=>String(t.id)===String(id));
   const findChapter=id=>state.catalogThemes.flatMap(t=>t.chapters||[]).find(c=>String(c.id)===String(id));
