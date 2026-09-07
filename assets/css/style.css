@@ -11458,3 +11458,44 @@ body.rp-sticky-preview-enabled .creation-sticky-actions #next-link{grid-column:4
 .admin-library-archives-list{padding:0 12px 12px}
 .admin-library-situation-row.is-archived{opacity:.82;background:#f7f8f9}
 .admin-library-situation-meta .is-archived{background:#eceff2;color:#667786}
+
+
+/* Bibliothèque admin — typologie, filtres et corbeille */
+.admin-library-situation-filters{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0 16px;
+  padding:10px 12px;border:1px solid #e1ebef;border-radius:15px;background:#f8fbfc;
+}
+.admin-library-filter-chip{
+  appearance:none;border:1px solid #d8e5ea;background:#fff;color:#426074;border-radius:999px;
+  padding:7px 10px;display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:.78rem;font-weight:700;
+  cursor:pointer;transition:border-color .15s ease,background .15s ease,transform .15s ease;
+}
+.admin-library-filter-chip:hover{transform:translateY(-1px);border-color:#a9c8d1}
+.admin-library-filter-chip b{
+  display:inline-grid;place-items:center;min-width:21px;height:21px;padding:0 5px;border-radius:999px;background:#eef4f6;
+  color:#5d7180;font-size:.72rem;
+}
+.admin-library-filter-chip.is-selected{border-color:#0d4c72;box-shadow:0 0 0 2px rgba(13,76,114,.07)}
+.admin-library-filter-chip.is-base{color:#267144}.admin-library-filter-chip.is-base.is-selected{background:#e9f7ee;border-color:#9fd4b2}
+.admin-library-filter-chip.is-base b{background:#dff2e7;color:#267144}
+.admin-library-filter-chip.is-library{color:#245f98}.admin-library-filter-chip.is-library.is-selected{background:#edf5fd;border-color:#aacbea}
+.admin-library-filter-chip.is-library b{background:#e2effb;color:#245f98}
+.admin-library-filter-chip.is-archived{color:#916018}.admin-library-filter-chip.is-archived.is-selected{background:#fff6e8;border-color:#e6c486}
+.admin-library-filter-chip.is-archived b{background:#faecd2;color:#916018}
+.admin-library-filter-chip.is-deleted{color:#9b4141}.admin-library-filter-chip.is-deleted.is-selected{background:#fff0f0;border-color:#e6b1b1}
+.admin-library-filter-chip.is-deleted b{background:#f8dddd;color:#9b4141}
+
+.admin-library-type-tag{font-weight:700!important;border:1px solid transparent}
+.admin-library-situation-meta .admin-library-type-tag.is-base{background:#e7f7ed;color:#207341;border-color:#c5e9d1}
+.admin-library-situation-meta .admin-library-type-tag.is-library{background:#eaf4ff;color:#25669f;border-color:#cfe4f7}
+.admin-library-situation-meta .admin-library-type-tag.is-archived{background:#fff3df;color:#8b5d1e;border-color:#f1dbb5}
+.admin-library-situation-meta .admin-library-type-tag.is-deleted{background:#fdecec;color:#9b4141;border-color:#efcaca}
+.admin-library-situation-row.is-deleted{opacity:.78;background:#fbf8f8}
+.admin-library-situation-row.is-deleted>summary{background:#fffafa}
+.admin-library-filtered-list{display:grid;gap:8px}
+.admin-library-filtered-list .admin-library-situation-row+.admin-library-situation-row{margin-top:0}
+
+@media(max-width:700px){
+  .admin-library-situation-filters{align-items:stretch}
+  .admin-library-filter-chip{justify-content:space-between;flex:1 1 calc(50% - 8px)}
+}
