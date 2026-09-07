@@ -11431,3 +11431,18 @@ body.rp-sticky-preview-enabled .creation-sticky-actions #next-link{grid-column:4
 .admin-library-inline-actions{padding-top:2px}.admin-library-inline-actions .button{min-width:145px}
 @media(max-width:900px){.admin-library-answer-row{grid-template-columns:32px minmax(0,1fr) 95px}.admin-library-best-answer{grid-column:2/3}.admin-library-answer-remove{grid-column:3/4;grid-row:2}}
 @media(max-width:650px){.admin-library-answer-row{grid-template-columns:30px 1fr}.admin-library-answer-score{grid-column:2}.admin-library-best-answer{grid-column:2}.admin-library-answer-remove{grid-column:1;grid-row:3}.admin-library-availability-note{align-items:flex-start;flex-direction:column}.admin-library-summary-action{align-self:flex-start}.admin-library-inline-form.admin-library-situation-form{padding:12px}.admin-library-editor-section{padding:14px}}
+
+/* Bibliothèque admin — profils accordéon + clarification des statuts */
+.admin-library-profiles-panel{margin:16px 0 22px;padding:16px;border:1px solid #dfe9ee;border-radius:18px;background:#fbfcfd}
+.admin-library-profiles-head{margin-bottom:12px}.admin-library-profiles-form{display:grid;gap:12px}.admin-library-profiles-actions{padding-top:2px}
+.admin-library-profile-inline-card{border:1px solid #dbe7ec;border-radius:16px;background:#fff;box-shadow:0 5px 16px rgba(13,76,114,.035);overflow:hidden}
+.admin-library-profile-inline-card+.admin-library-profile-inline-card{margin-top:10px}
+.admin-library-profile-inline-card summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 17px;background:#fff;cursor:pointer;transition:background .16s ease}
+.admin-library-profile-inline-card summary:hover{background:#f8fbfc}.admin-library-profile-inline-card details[open]>summary{background:#f3f9fa;border-bottom:1px solid #dfeaed}
+.admin-library-profile-summary{display:flex;align-items:center;gap:12px;min-width:0}.admin-library-profile-summary>div{display:grid;gap:4px;min-width:0}.admin-library-profile-summary strong{color:#173b67;font-size:.94rem}.admin-library-profile-summary small{color:#748894;font-size:.78rem;font-weight:400}
+.admin-library-profile-index{flex:none;padding:5px 9px;border-radius:999px;background:#eef5f8;color:#0d4c72;font-size:.76rem;font-weight:800}
+.admin-library-profile-summary-right{display:flex;align-items:center;gap:10px;flex:none}.admin-library-profile-color{width:16px;height:16px;border:2px solid #fff;border-radius:50%;background:var(--profile-color);box-shadow:0 0 0 1px #dbe4e9}
+.admin-library-profile-chevron{display:inline-block;font-size:.9rem;transition:transform .18s ease}.admin-library-profile-inline-card details[open] .admin-library-profile-chevron{transform:rotate(180deg)}
+.admin-library-profile-inline-body{display:grid;gap:14px;padding:16px;background:#fff}.admin-library-profile-inline-body .admin-library-editor-section{margin:0}.admin-library-profile-editor>label{display:grid;gap:6px;font-size:.86rem;font-weight:700;color:#263e57}.admin-library-profile-editor textarea,.admin-library-profile-editor input{font-weight:400}
+.admin-library-situation-meta .is-hidden{background:#f2f3f5!important;color:#6f7880!important}.admin-library-situation-meta .is-available{background:#eaf8ef!important;color:#167444!important}
+@media(max-width:800px){.admin-library-profile-inline-card summary{align-items:flex-start;flex-direction:column}.admin-library-profile-summary-right{width:100%;justify-content:space-between}.admin-library-profile-summary{align-items:flex-start}.admin-library-profiles-panel{padding:12px}}
