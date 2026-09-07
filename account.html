@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="canonical" href="https://studio.meandyoutoo.app/account.html">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20260904-campaign-folders-1">
+<link rel="stylesheet" href="assets/css/style.css?v=20260907-account-branding-1">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -31,7 +31,11 @@
     <section class="account-grid" aria-label="Informations du compte">
       <article class="card account-card account-card-profile">
         <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></span><p class="eyebrow">Informations personnelles</p></div>
-        <h2 id="account-name">Chargement…</h2>
+        <div class="account-identity-row">
+          <div class="account-photo account-photo-person" id="profile-photo-preview" aria-label="Photo du contact"><span>?</span></div>
+          <div><h2 id="account-name">Chargement…</h2><p class="account-media-help">Ajoutez votre photo pour personnaliser votre espace.</p></div>
+        </div>
+        <div class="account-media-actions"><input id="profile-photo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden><button class="button button-secondary" id="upload-profile-photo" type="button">Ajouter / remplacer ma photo</button><button class="button button-ghost" id="remove-profile-photo" type="button" hidden>Supprimer la photo</button></div>
         <dl class="info-list">
           <div><dt>Fonction</dt><dd id="account-job">—</dd></div>
           <div><dt>Email</dt><dd id="account-email">—</dd></div>
@@ -42,7 +46,11 @@
 
       <article class="card account-card account-card-organization">
         <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21V7l8-4 8 4v14"/><path d="M8 11h2M14 11h2M8 15h2M14 15h2M10 21v-3h4v3"/></svg></span><p class="eyebrow">Organisation</p></div>
-        <h2 id="organization-name">Chargement…</h2>
+        <div class="account-identity-row">
+          <div class="account-photo account-photo-logo" id="organization-logo-preview" aria-label="Logo de l’entreprise"><span>Logo</span></div>
+          <div><h2 id="organization-name">Chargement…</h2><p class="account-media-help" id="organization-logo-help">Le logo est partagé avec tous les utilisateurs de votre organisation.</p></div>
+        </div>
+        <div class="account-media-actions" id="organization-logo-actions"><input id="organization-logo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden><button class="button button-secondary" id="upload-organization-logo" type="button">Ajouter / remplacer le logo</button><button class="button button-ghost" id="remove-organization-logo" type="button" hidden>Supprimer le logo</button></div>
         <dl class="info-list">
           <div><dt>Offre</dt><dd>Studio D&I — accès client</dd></div>
           <div><dt>Utilisateurs actifs</dt><dd id="organization-users-count">—</dd></div>
@@ -92,6 +100,6 @@
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20260713-2"></script>
 <script src="assets/js/app.js?v=20260824-navigation-popup-8"></script>
-<script src="assets/js/account.js?v=20260904-campaign-folders-1"></script>
+<script src="assets/js/account.js?v=20260907-account-branding-1"></script>
 </body>
 </html>

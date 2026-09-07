@@ -12233,3 +12233,34 @@ body.rp-sticky-preview-enabled .creation-sticky-actions #next-link{grid-column:4
   .theme-video-showcase-grid{grid-template-columns:1fr;}
   .theme-video-showcase-head,.theme-video-card-footer{align-items:flex-start;flex-direction:column;}
 }
+
+.account-identity-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+.account-identity-row h2 { margin-bottom: 4px !important; }
+.account-photo {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: rgba(255,255,255,.82);
+  border: 1px solid rgba(36,59,105,.14);
+  color: #6a7891;
+  font-weight: 800;
+}
+.account-photo-person { width: 72px; height: 72px; border-radius: 50%; }
+.account-photo-logo { width: 104px; height: 72px; border-radius: 14px; padding: 8px; }
+.account-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.account-photo-logo img { object-fit: contain; }
+.account-media-help { margin: 0; color: var(--muted); font-size: .86rem; line-height: 1.35; }
+.account-media-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 12px; }
+.account-media-actions .button { min-height: 38px; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
+.sidebar-client-logo { max-width: 92px; max-height: 34px; object-fit: contain; margin-left: auto; border-radius: 7px; background: #fff; padding: 3px 5px; border: 1px solid var(--line); }
+@media (max-width: 620px) {
+  .account-identity-row { align-items: flex-start; }
+  .account-photo-logo { width: 88px; }
+}

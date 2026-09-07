@@ -225,6 +225,8 @@
     var adminInterface = IS_ADMIN && INTERFACE_MODE === 'admin';
     var mainNavigation = adminInterface ? NAV_ADMIN : NAV_MAIN.concat(NAV_SECONDARY);
     var roleLabel = adminInterface ? 'Administratrice' : 'Espace client';
+    var avatarHtml=(CURRENT_USER&&CURRENT_USER.profileImageData)?'<img src="'+CURRENT_USER.profileImageData+'" alt="">':((CURRENT_USER && (CURRENT_USER.firstName || CURRENT_USER.email)) ? String(CURRENT_USER.firstName || CURRENT_USER.email).charAt(0).toUpperCase() : 'C');
+    var clientLogoHtml=(!adminInterface&&CURRENT_USER&&CURRENT_USER.organizationLogoData)?'<img class="sidebar-client-logo" src="'+CURRENT_USER.organizationLogoData+'" alt="Logo '+String(CURRENT_USER.organizationName||'entreprise').replace(/["<>]/g,'')+'">':'';
     var switchButton = IS_ADMIN ? '<button class="interface-switch" type="button" data-interface-switch="' + (adminInterface ? 'client' : 'admin') + '">' + (adminInterface ? 'Voir mon espace client' : 'Revenir à l’administration') + '</button>' : '';
     root.classList.toggle('sidebar-admin', adminInterface);
     root.innerHTML =
@@ -235,14 +237,14 @@
         '</button>' +
       '</div>' +
       '<div class="sidebar-interface-row">' +
-        '<div class="interface-badge ' + (adminInterface ? 'interface-badge-admin' : 'interface-badge-client') + '">' + roleLabel + '</div>' +
+        '<div class="interface-badge ' + (adminInterface ? 'interface-badge-admin' : 'interface-badge-client') + '">' + roleLabel + '</div>' + clientLogoHtml +
         '<div id="notification-root" class="sidebar-notification-root" aria-label="Notifications"></div>' +
       '</div>' +
       '<nav class="nav">' + mainNavigation.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
       '<div class="sidebar-footer">' +
         (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><strong>Besoin d’aide&nbsp;?</strong><p>Une question sur votre campagne, vos contenus ou le fonctionnement du Studio&nbsp;?</p><a class="button button-primary" href="contact.html">Contacter Me&YouToo</a></div>') +
         switchButton +
-        '<div class="profile"><div class="avatar">' + ((CURRENT_USER && (CURRENT_USER.firstName || CURRENT_USER.email)) ? String(CURRENT_USER.firstName || CURRENT_USER.email).charAt(0).toUpperCase() : 'C') + '</div><div class="profile-copy"><strong>' + (CURRENT_USER ? ((CURRENT_USER.firstName || '') + ' ' + (CURRENT_USER.lastName || '')).trim() || CURRENT_USER.email : 'Compte') + '</strong><small>' + roleLabel + ' · ' + (CURRENT_USER ? (CURRENT_USER.organizationName || 'Me&YouToo') : '') + '</small><button class="sidebar-logout" type="button" data-logout>Se déconnecter</button></div></div>' +
+        '<div class="profile"><div class="avatar">' + avatarHtml + '</div><div class="profile-copy"><strong>' + (CURRENT_USER ? ((CURRENT_USER.firstName || '') + ' ' + (CURRENT_USER.lastName || '')).trim() || CURRENT_USER.email : 'Compte') + '</strong><small>' + roleLabel + ' · ' + (CURRENT_USER ? (CURRENT_USER.organizationName || 'Me&YouToo') : '') + '</small><button class="sidebar-logout" type="button" data-logout>Se déconnecter</button></div></div>' +
       '</div>';
   }
 
