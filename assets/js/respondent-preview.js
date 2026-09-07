@@ -81,7 +81,30 @@ function socio(){
 
 function mediaVideoHtml(media,headingTag='h3'){
   const src=apiBase()+media.playback_path;
-  return `<div class="rp-video-block"><${headingTag}>${esc(media.title)}</${headingTag}><video class="rp-video-player" controls controlsList="nodownload" disablePictureInPicture preload="metadata" playsinline src="${esc(src)}"></video><p class="rp-video-note">Cette vidéo est diffusée directement dans le Studio.</p></div>`;
+  return `<div class="rp-video-block"><${headingTag}>${esc(media.title)}</${headingTag}><div class="rp-video-shell"><video class="rp-video-player" controls controlsList="nodownload" disablePictureInPicture preload="metadata" playsinline data-proxy-src="${esc(src)}"></video><div class="rp-video-loading" data-video-loading>Chargement de la vidéo…</div></div><p class="rp-video-note">Cette vidéo est diffusée directement dans le Studio.</p></div>`;
+}
+async function hydrateProfileVideos(scope=root){
+  const videos=[...scope.querySelectorAll('video[data-proxy-src]:not([data-blob-ready])')];
+  for(const video of videos){
+    video.dataset.blobReady='loading';
+    const loading=video.parentElement?.querySelector('[data-video-loading]');
+    try{
+      const response=await fetch(video.dataset.proxySrc,{cache:'no-store'});
+      if(!response.ok)throw new Error(`Vidéo indisponible (${response.status})`);
+      const blob=await response.blob();
+      if(!String(blob.type||'').startsWith('video/'))throw new Error('Format vidéo invalide');
+      const blobUrl=URL.createObjectURL(blob);
+      video.dataset.blobUrl=blobUrl;
+      video.src=blobUrl;
+      video.dataset.blobReady='true';
+      video.load();
+      if(loading)loading.remove();
+    }catch(error){
+      video.dataset.blobReady='error';
+      if(loading){loading.textContent='La vidéo ne peut pas être chargée.';loading.classList.add('is-error');}
+      console.error('[MEAYT] Chargement vidéo impossible',error);
+    }
+  }
 }
 function profileMedia(ch,p){
   const profileIndex=Math.max(0,(ch?.profiles||[]).indexOf(p));
@@ -113,6 +136,7 @@ function profileTone(p){const c=String(p?.color||'').toLowerCase();if(c.includes
 function showChapterResult(){
   const ch=d.chapters[ci],avg=chapterAverage(ci),p=profileForScore(ch.profiles,avg),tone=profileTone(p);chapterResults[ci]={avg,profile:p};step=2;
   root.innerHTML=head(`Résultat de la partie ${ci+1}`)+`<section class="rp-card rp-profile ${tone}"><div class="rp-kicker rp-kicker-neutral">Votre profil · Partie ${ci+1}/${d.chapters.length}</div><div class="rp-profile-chapter">${esc(ch.title)}</div>${p?`${profileMedia(ch,p).map(m=>mediaVideoHtml(m)).join('')}<h1>${esc(p.title)}</h1>${p.summary?`<p class="rp-profile-summary">${esc(p.summary)}</p>`:''}${p.content&&p.content!==p.summary?`<div class="rp-profile-content">${esc(p.content)}</div>`:''}`:`<h1>Profil indisponible</h1><p>Le contenu de profil de cette partie n’est pas disponible.</p>`}<div class="rp-actions"><button id="next" class="button button-primary">${ci===d.chapters.length-1?'Voir le récapitulatif':'Continuer vers la partie suivante'}</button></div></section>`;
+  hydrateProfileVideos(root);
   $('#next').onclick=()=>{if(ci<d.chapters.length-1){ci++;qi=0;step=1;render()}else done()}
 }
 
