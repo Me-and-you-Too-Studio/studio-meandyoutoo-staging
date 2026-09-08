@@ -41,7 +41,7 @@
     </div>
 
     <section class="team-grid" aria-label="Équipe Me&YouToo">
-      <article class="card team-card tone-a">
+      <article class="card team-card tone-a" data-team-contact="ines">
         <img class="team-avatar" src="assets/img/Ines%20Dauvergne%20basse%20def%20V2%20.jpg" alt="Inès Dauvergne" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'team-avatar',textContent:'ID'}))">
         <h2>Inès Dauvergne</h2>
         <p class="team-role">CEO, Co-fondatrice — Experte Diversité &amp; Inclusion</p>
@@ -54,7 +54,7 @@
         </div>
       </article>
 
-      <article class="card team-card tone-b">
+      <article class="card team-card tone-b" data-team-contact="soraya">
         <img class="team-avatar" src="assets/img/Soraya%20Khadir.jpg" alt="Soraya Khadir" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'team-avatar',textContent:'SK'}))">
         <h2>Soraya Khadir</h2>
         <p class="team-role">Associée, Experte DE&amp;I — Directrice des Contenus France &amp; International</p>
@@ -67,7 +67,7 @@
         </div>
       </article>
 
-      <article class="card team-card tone-c">
+      <article class="card team-card tone-c" data-team-contact="carole">
         <img class="team-avatar" src="assets/img/Carole%20Cr%C3%A9dit%20Thomas%20Decamps%20r%C3%A9duite%2084px.jpg" alt="Carole Michelon" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'team-avatar',textContent:'CM'}))">
         <h2>Carole Michelon</h2>
         <p class="team-role">COO, Co-fondatrice</p>
@@ -86,21 +86,48 @@
 <footer class="public-contact-only">
   <div class="public-wrap"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo"><p>Diagnostics comportementaux diversité &amp; inclusion</p><a href="login.html">Espace client</a></div>
 </footer>
+<script src="assets/js/api.js?v=20260713-2"></script>
 <script>
 (function(){
+  // La page Contact garde le même design public, connectée ou non.
+  // Les coordonnées personnelles ne sont jamais présentes dans le HTML public :
+  // elles sont chargées depuis l’API uniquement après authentification.
+  document.body.classList.add('public-contact');
+
   var authenticated = Boolean(localStorage.getItem('studio_token'));
-  if (!authenticated) {
-    document.body.classList.add('public-contact');
-    return;
+  var sessionButton = document.querySelector('.public-header > a.btn.secondary');
+  if (!authenticated) return;
+
+  if (sessionButton) {
+    sessionButton.textContent = 'Retour au Studio';
+    sessionButton.href = 'accueil.html';
   }
-  var api = document.createElement('script');
-  api.src = 'assets/js/api.js?v=20260713-2';
-  api.onload = function(){
-    var app = document.createElement('script');
-    app.src = 'assets/js/app.js?v=20260907-public-vitrine-1';
-    document.body.appendChild(app);
-  };
-  document.body.appendChild(api);
+
+  window.StudioAPI.request('/api/contact-team').then(function(data){
+    var contacts = Array.isArray(data && data.contacts) ? data.contacts : [];
+    contacts.forEach(function(contact){
+      var card = document.querySelector('[data-team-contact="' + contact.key + '"]');
+      if (!card) return;
+      var links = card.querySelector('.team-links');
+      if (!links) return;
+
+      links.replaceChildren();
+      if (contact.email) {
+        var email = document.createElement('a');
+        email.href = 'mailto:' + contact.email;
+        email.textContent = '✉️ ' + contact.email;
+        links.appendChild(email);
+      }
+      if (contact.phone) {
+        var phone = document.createElement('a');
+        phone.href = 'tel:' + String(contact.phone).replace(/\s+/g, '');
+        phone.textContent = '📞 ' + contact.phone;
+        links.appendChild(phone);
+      }
+    });
+  }).catch(function(error){
+    console.warn('Coordonnées équipe indisponibles', error);
+  });
 })();
 </script>
 </body>
