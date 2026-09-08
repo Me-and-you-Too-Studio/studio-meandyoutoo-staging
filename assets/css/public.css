@@ -320,3 +320,81 @@ body.public-contact footer.public-contact-only .public-wrap{display:flex}
   .theme-actions .theme-preview-cta,
   .theme-actions .theme-cta{justify-content:center;}
 }
+
+
+/* Tarification SaaS Studio Me&YouToo */
+.pricing-saas{padding:90px 0;background:linear-gradient(180deg,#f8fbfc 0%,#fff 34%,#f5f7fb 100%);color:var(--public-ink);border-block:1px solid var(--public-line)}
+.pricing-saas:after{width:420px;height:420px;right:-180px;top:-170px;background:rgba(255,192,0,.13)}
+.pricing-saas:before{content:"";position:absolute;width:360px;height:360px;border-radius:50%;left:-190px;bottom:-190px;background:rgba(0,120,131,.08)}
+.pricing-saas .kicker{color:var(--public-green-dark)}
+.pricing-saas h2{color:var(--public-royal)}
+.pricing-saas p{color:var(--public-muted)}
+.pricing-heading{position:relative;z-index:1;text-align:center;max-width:900px;margin:0 auto 42px}
+.pricing-heading h2{margin-bottom:16px}
+.pricing-heading>p:last-child{font-size:1.08rem;line-height:1.7}
+.pricing-layout{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:28px;align-items:start}
+.pricing-plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:stretch}
+.saas-plan{position:relative;display:flex;flex-direction:column;min-height:660px;padding:30px;border:1px solid var(--public-line);border-radius:26px;background:#fff;box-shadow:0 14px 34px rgba(39,58,100,.08)}
+.saas-plan-featured{border:2px solid var(--public-green);box-shadow:0 20px 44px rgba(0,120,131,.14);background:linear-gradient(180deg,#eef9f9 0%,#fff 24%)}
+.saas-recommended{margin:-30px -30px 24px;padding:10px 18px;border-radius:24px 24px 0 0;background:var(--public-green);color:#fff;text-align:center;text-transform:uppercase;font-size:.75rem;font-weight:900;letter-spacing:.08em}
+.saas-plan-label{display:inline-flex;margin-bottom:8px;color:var(--public-green-dark);font-size:.75rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.saas-plan h3{margin:0 0 18px;color:var(--public-royal);font-size:1.55rem}
+.saas-price{display:flex;align-items:flex-end;gap:10px;margin-bottom:18px}
+.saas-price strong{color:var(--public-brand-blue);font-size:3rem;line-height:.95;letter-spacing:-.04em}
+.saas-price span{padding-bottom:5px;color:var(--public-muted);font-weight:700}
+.saas-plan-head>p{min-height:72px;margin:0;line-height:1.55}
+.saas-features{display:grid;gap:12px;margin:26px 0 28px;padding:24px 0;border-block:1px solid var(--public-line);list-style:none}
+.saas-features li{position:relative;padding-left:29px;color:var(--public-ink);font-size:.93rem}
+.saas-features li:before{content:"✓";position:absolute;left:0;top:-1px;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--public-green);color:#fff;font-size:.73rem;font-weight:900}
+.saas-plan-foot{display:grid;gap:10px;margin-top:auto}
+.saas-plan-foot>p{display:grid;gap:1px;margin:0 0 6px}
+.saas-plan-foot>p strong{color:var(--public-royal)}
+.saas-plan-foot>p span{font-size:.88rem}
+.saas-buy{width:100%}
+.saas-quote-link{display:block;text-align:center;color:var(--public-brand-blue);font-weight:800;text-decoration:none;font-size:.9rem;padding:7px 0}
+.saas-quote-link:hover{text-decoration:underline}
+.pricing-value{padding:30px 28px;border:1px solid var(--public-line);border-radius:24px;background:#fff;box-shadow:0 14px 34px rgba(39,58,100,.07)}
+.pricing-value h3{margin:0 0 26px;color:var(--public-royal);font-size:1.35rem;line-height:1.2}
+.pricing-value-item{display:grid;grid-template-columns:46px 1fr;gap:14px;margin:0 0 24px}
+.pricing-value-item:last-child{margin-bottom:0}
+.pricing-value-item i{display:grid;place-items:center;width:46px;height:46px;border-radius:14px;background:var(--public-green-soft);color:var(--public-green-dark);font-style:normal;font-size:1.25rem;font-weight:900}
+.pricing-value-item:nth-of-type(3) i{background:var(--public-yellow-soft);color:#7a4b00}
+.pricing-value-item:nth-of-type(4) i{background:var(--public-royal-soft);color:var(--public-royal)}
+.pricing-value-item strong{display:block;margin-bottom:4px;color:var(--public-royal)}
+.pricing-value-item p{margin:0;font-size:.9rem;line-height:1.5}
+.pricing-passations{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:28px;margin-top:24px;padding:24px 28px;border:1px solid #d8e8ea;border-radius:22px;background:linear-gradient(135deg,var(--public-green-soft),#fff);box-shadow:0 10px 24px rgba(39,58,100,.05)}
+.pricing-passations>div{display:flex;align-items:center;gap:18px}
+.pricing-passations-icon{display:grid;place-items:center;flex:0 0 52px;width:52px;height:52px;border-radius:16px;background:#fff;color:var(--public-green-dark);font-size:1.35rem;font-weight:900;box-shadow:0 7px 18px rgba(0,120,131,.1)}
+.pricing-passations strong{display:block;margin-bottom:3px;color:var(--public-royal);font-size:1.08rem}
+.pricing-passations p{margin:0;max-width:690px;font-size:.92rem}
+.existing-client-light{position:relative;z-index:1;margin-top:18px;padding:18px 22px;border:1px solid #ead795;border-radius:18px;background:var(--public-yellow-soft);color:var(--public-ink)}
+.existing-client-light strong{color:#7a4b00}
+.existing-client-light p{display:inline;margin:0 8px;color:var(--public-muted)}
+.existing-client-light a{color:var(--public-brand-blue);font-weight:900;text-decoration:none}
+
+/* Pages achat / devis Studio */
+.studio-commerce{padding:68px 0 92px;background:linear-gradient(180deg,#fff,var(--public-soft))}
+.studio-commerce-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,.72fr);gap:34px;align-items:start}
+.studio-commerce-copy h1{margin:8px 0 18px;color:var(--public-royal);font-size:clamp(2.45rem,5vw,4rem);line-height:1.02;letter-spacing:-.035em}
+.studio-commerce-copy>.intro{font-size:1.08rem;line-height:1.65}
+.commerce-summary{margin-top:28px;padding:24px;border:1px solid var(--public-line);border-radius:22px;background:#fff;box-shadow:var(--public-shadow)}
+.commerce-summary-price{display:flex;align-items:end;gap:10px;margin:8px 0 16px}
+.commerce-summary-price strong{font-size:2.7rem;color:var(--public-brand-blue);line-height:1}
+.commerce-summary-price span{padding-bottom:4px;color:var(--public-muted);font-weight:700}
+.commerce-summary ul{display:grid;gap:9px;padding-left:20px;color:var(--public-muted)}
+.commerce-secure{display:flex;gap:10px;align-items:flex-start;margin-top:20px;padding:16px;border-radius:16px;background:var(--public-green-soft);color:var(--public-green-dark);font-size:.9rem;font-weight:700}
+.commerce-action-card{padding:28px;border:1px solid var(--public-line);border-radius:24px;background:#fff;box-shadow:var(--public-shadow)}
+.commerce-action-card h2{margin:0 0 10px;color:var(--public-royal);font-size:1.55rem}
+.commerce-action-card>p{color:var(--public-muted)}
+.commerce-action-card .btn{width:100%;margin-top:10px}
+.commerce-config-warning{margin-top:16px;padding:14px 16px;border:1px solid #ead795;border-radius:14px;background:var(--public-yellow-soft);color:#6d5915;font-size:.88rem;line-height:1.5}
+.quote-form{display:grid;gap:15px;margin-top:22px}
+.quote-form label{display:grid;gap:6px;color:var(--public-royal);font-size:.9rem;font-weight:800}
+.quote-form input,.quote-form select,.quote-form textarea{width:100%;padding:12px 13px;border:1px solid #ccd6e4;border-radius:12px;background:#fff;color:var(--public-ink);font:inherit}
+.quote-form textarea{min-height:110px;resize:vertical}
+.quote-form input:focus,.quote-form select:focus,.quote-form textarea:focus{outline:3px solid rgba(0,120,131,.12);border-color:var(--public-green)}
+.quote-status{margin-top:14px;padding:12px 14px;border-radius:12px;font-size:.9rem}
+.quote-status.error{background:#fff3d7;color:#705b17;border:1px solid #efd994}
+.quote-status.success{background:#e9f7ef;color:#17643c;border:1px solid #b9e4ca}
+@media(max-width:1040px){.pricing-layout{grid-template-columns:1fr}.pricing-value{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.pricing-value h3{grid-column:1/-1;margin-bottom:4px}.pricing-value-item{margin:0}.studio-commerce-grid{grid-template-columns:1fr}}
+@media(max-width:760px){.pricing-plans{grid-template-columns:1fr}.saas-plan{min-height:auto}.pricing-value{grid-template-columns:1fr}.pricing-value h3{grid-column:auto}.pricing-passations{align-items:stretch;flex-direction:column}.pricing-passations>div{align-items:flex-start}.pricing-passations .btn{width:100%}.existing-client-light p{display:block;margin:5px 0}.studio-commerce{padding-top:48px}}
