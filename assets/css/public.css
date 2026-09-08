@@ -230,3 +230,28 @@ body.public-contact footer.public-contact-only .public-wrap{display:flex}
 .test-rdv-cta .btn{flex:0 0 auto}
 @media (max-width:900px){.public-header-actions{gap:6px}.public-header .header-rdv{padding-inline:12px}.test-rdv-cta{align-items:flex-start;flex-direction:column}.test-rdv-cta .btn{width:100%;text-align:center}}
 @media (max-width:720px){.public-header .header-rdv{display:none}}
+
+/* Header public : CTA rendez-vous volontairement secondaire pour préserver la navigation */
+@media (min-width:1021px){
+  .public-header{gap:18px}
+  .public-header nav{gap:2px}
+  .public-header nav a{padding:9px 8px;font-size:.89rem}
+  .public-header-actions{gap:8px}
+  .public-header .header-rdv{
+    min-height:42px;
+    padding:9px 13px;
+    border:1px solid rgba(0,120,131,.32);
+    background:#fff;
+    color:var(--public-green-dark);
+    box-shadow:none;
+    font-size:.88rem;
+    border-radius:12px;
+  }
+  .public-header .header-rdv:hover{
+    background:var(--public-green-soft);
+    border-color:rgba(0,120,131,.5);
+    color:var(--public-green-dark);
+    box-shadow:none;
+  }
+  .public-header-actions .btn.ghost{padding-inline:14px}
+}
