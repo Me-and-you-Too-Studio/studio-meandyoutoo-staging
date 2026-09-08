@@ -398,3 +398,19 @@ body.public-contact footer.public-contact-only .public-wrap{display:flex}
 .quote-status.success{background:#e9f7ef;color:#17643c;border:1px solid #b9e4ca}
 @media(max-width:1040px){.pricing-layout{grid-template-columns:1fr}.pricing-value{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.pricing-value h3{grid-column:1/-1;margin-bottom:4px}.pricing-value-item{margin:0}.studio-commerce-grid{grid-template-columns:1fr}}
 @media(max-width:760px){.pricing-plans{grid-template-columns:1fr}.saas-plan{min-height:auto}.pricing-value{grid-template-columns:1fr}.pricing-value h3{grid-column:auto}.pricing-passations{align-items:stretch;flex-direction:column}.pricing-passations>div{align-items:flex-start}.pricing-passations .btn{width:100%}.existing-client-light p{display:block;margin:5px 0}.studio-commerce{padding-top:48px}}
+
+
+/* Confirmation Stripe / onboarding automatique Studio */
+.studio-onboarding{min-height:70vh;padding:76px 0 100px;background:radial-gradient(circle at 85% 10%,rgba(255,192,0,.14),transparent 26%),linear-gradient(180deg,#fff,#f4f9fa)}
+.onboarding-card{max-width:760px;margin:0 auto;padding:42px;border:1px solid var(--public-line);border-radius:28px;background:#fff;box-shadow:0 22px 55px rgba(39,58,100,.12);text-align:center}
+.onboarding-icon{display:grid;place-items:center;width:70px;height:70px;margin:0 auto 18px;border-radius:22px;background:var(--public-green);color:#fff;font-size:2rem;font-weight:900;box-shadow:0 12px 24px rgba(0,120,131,.18)}
+.onboarding-card h1{margin:8px 0 14px;color:var(--public-royal);font-size:clamp(2.2rem,5vw,3.4rem);line-height:1.02}
+.onboarding-lead{max-width:610px;margin:0 auto;color:var(--public-muted);font-size:1.08rem;line-height:1.65}
+.onboarding-progress,.onboarding-ready,.onboarding-help{margin-top:30px;padding:22px;border-radius:18px;text-align:left}
+.onboarding-progress{display:flex;align-items:center;gap:16px;background:var(--public-green-soft);color:var(--public-green-dark)}
+.onboarding-progress strong,.onboarding-progress small{display:block}.onboarding-progress small{margin-top:4px;color:var(--public-muted)}
+.onboarding-spinner{flex:0 0 28px;width:28px;height:28px;border:3px solid rgba(0,120,131,.2);border-top-color:var(--public-green);border-radius:50%;animation:studioSpin .8s linear infinite}
+@keyframes studioSpin{to{transform:rotate(360deg)}}
+.onboarding-ready{background:#f4fbf8;border:1px solid #cfe8dc;text-align:center}.onboarding-ready h2{margin:0 0 8px;color:var(--public-royal)}.onboarding-ready p{color:var(--public-muted)}.onboarding-ready .btn{margin-top:10px}.onboarding-note{font-size:.84rem}
+.onboarding-help{background:var(--public-yellow-soft);border:1px solid #ead795;color:#6d5915}.onboarding-help p{margin:7px 0 0;color:#6d5915}.onboarding-help a{color:var(--public-brand-blue);font-weight:800}
+@media(max-width:680px){.studio-onboarding{padding:44px 0 70px}.onboarding-card{padding:28px 20px;border-radius:22px}.onboarding-progress{align-items:flex-start}}

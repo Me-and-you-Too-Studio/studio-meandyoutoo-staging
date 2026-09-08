@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Abonnement confirmé — Studio Me&YouToo</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" href="assets/img/brand/favicon.png">
+  <link rel="stylesheet" href="assets/css/public.css?v=20260908-stripe-onboarding-1">
+</head>
+<body class="public-site">
+  <header class="public-header">
+    <a class="brand" href="index.html"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo"><span>STUDIO</span></a>
+    <div class="public-header-actions"><a class="btn ghost" href="index.html">Retour au site</a></div>
+  </header>
+  <main class="studio-onboarding">
+    <div class="public-wrap">
+      <section class="onboarding-card" aria-live="polite">
+        <div class="onboarding-icon" id="statusIcon">✓</div>
+        <p class="kicker">Abonnement Studio</p>
+        <h1 id="statusTitle">Paiement confirmé</h1>
+        <p class="onboarding-lead" id="statusLead">Nous finalisons la création de votre espace Studio Me&YouToo.</p>
+        <div class="onboarding-progress" id="progressBox">
+          <span class="onboarding-spinner" aria-hidden="true"></span>
+          <div><strong>Création de votre compte en cours</strong><small>Cette étape prend généralement quelques secondes.</small></div>
+        </div>
+        <div class="onboarding-ready" id="readyBox" hidden>
+          <h2>Votre espace Studio est prêt</h2>
+          <p id="emailMessage">Un email vient de vous être envoyé pour créer votre mot de passe.</p>
+          <a class="btn primary" href="login.html">Accéder à la connexion</a>
+          <p class="onboarding-note">Vous devez d’abord utiliser le lien reçu par email pour définir votre mot de passe.</p>
+        </div>
+        <div class="onboarding-help" id="helpBox" hidden>
+          <strong>La création prend un peu plus de temps que prévu.</strong>
+          <p>Votre paiement est bien enregistré. Actualisez cette page dans quelques instants. Si besoin, contactez <a href="mailto:contact@meandyoutoo.app">contact@meandyoutoo.app</a>.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer><div class="public-wrap"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo"><p>Studio Me&YouToo · Diagnostics comportementaux diversité & inclusion</p><a href="contact.html">Contact</a></div></footer>
+  <script src="assets/js/api.js?v=20260908-stripe-onboarding-1"></script>
+  <script>
+  (function(){
+    var params=new URLSearchParams(location.search),sessionId=params.get('session_id')||'';
+    var title=document.getElementById('statusTitle'),lead=document.getElementById('statusLead'),progress=document.getElementById('progressBox'),ready=document.getElementById('readyBox'),help=document.getElementById('helpBox'),emailMessage=document.getElementById('emailMessage'),icon=document.getElementById('statusIcon');
+    if(!sessionId){
+      title.textContent='Confirmation de paiement';
+      lead.textContent='Le paiement a été confirmé par Stripe. Le lien de retour ne contient pas l’identifiant de session nécessaire pour suivre la création du compte.';
+      progress.hidden=true;help.hidden=false;icon.textContent='!';return;
+    }
+    var attempts=0,maxAttempts=12;
+    async function check(){
+      attempts++;
+      try{
+        var response=await fetch(StudioAPI.base()+'/api/public/stripe/onboarding-status?sessionId='+encodeURIComponent(sessionId),{headers:{'Accept':'application/json'}});
+        var data=await response.json().catch(function(){return {}});
+        if(response.ok&&data.state==='ready'){
+          progress.hidden=true;ready.hidden=false;help.hidden=true;icon.textContent='✓';
+          title.textContent='Bienvenue dans le Studio Me&YouToo';
+          lead.textContent=data.plan==='annual'?'Votre abonnement annuel est activé.':'Votre abonnement mensuel est activé.';
+          if(data.invitationEmailSent){emailMessage.textContent='Un email vient d’être envoyé à '+(data.emailMasked||'votre adresse')+' pour créer votre mot de passe.';}
+          else if(data.accountReady){emailMessage.textContent='Votre compte existe déjà. Vous pouvez vous connecter avec vos identifiants habituels.';document.querySelector('.onboarding-note').hidden=true;}
+          else{emailMessage.textContent='Votre abonnement est enregistré. La création de votre accès est en cours de finalisation.';}
+          return;
+        }
+      }catch(e){}
+      if(attempts<maxAttempts){setTimeout(check,2500);return;}
+      progress.hidden=true;help.hidden=false;icon.textContent='…';
+      title.textContent='Paiement confirmé';
+      lead.textContent='Stripe a bien enregistré votre paiement. La création automatique de l’espace est toujours en cours.';
+    }
+    check();
+  })();
+  </script>
+</body>
+</html>
