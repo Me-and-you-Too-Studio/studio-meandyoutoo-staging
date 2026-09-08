@@ -72,6 +72,11 @@
     var q=projectQuery(p);
     return q ? 'composer.html'+q : null;
   }
+  function respondentPreviewPage(p){
+    var slug=String(p.theme_slug||'').trim();
+    if(!slug||p.id===undefined||p.id===null)return null;
+    return 'apercu-repondant.html?mode=project&source=saved&projectId='+encodeURIComponent(p.id)+'&theme='+encodeURIComponent(slug);
+  }
   function renderError(message){
     root.innerHTML='<div class="composer-alert">'+esc(message)+'</div><p><a class="button button-secondary" href="mes-campagnes.html" style="margin-top:12px">Retour à Mes campagnes</a></p>';
   }
@@ -79,6 +84,7 @@
     var q=projectQuery(p);
     if(!q)return renderError('Le thème réel de cette campagne est absent des données API. Aucun thème de remplacement n’est utilisé.');
     var content=contentPage(p);
+    var respondentPreview=respondentPreviewPage(p);
     var name=p.campaign_name||p.respondent_title||p.title||p.theme_title||'Campagne sans nom';
     var results=String(p.communication_results_url||'').trim();
     var resultsRestricted=Boolean(p.results_restricted);
@@ -139,7 +145,7 @@
     }
 
     root.innerHTML=''+
-      '<div class="topbar compact-topbar"><div><p class="eyebrow"><a href="mes-campagnes.html">Mes campagnes</a></p><div class="badge-row"><span class="badge '+statusClass(p.status)+'">'+esc(statusLabel(p.status))+'</span><span class="tag-chip">'+esc(themeLabel(p))+'</span></div><h1 class="page-title">'+esc(name)+'</h1><p class="lead">Suivez les informations réelles de cette campagne et accédez aux éléments disponibles.</p></div>'+(can('manage_kit')?'<div class="top-actions"><a class="button button-primary" href="kit-communication.html'+q+'">Kit de communication</a></div>':'')+'</div>'+
+      '<div class="topbar compact-topbar"><div><p class="eyebrow"><a href="mes-campagnes.html">Mes campagnes</a></p><div class="badge-row"><span class="badge '+statusClass(p.status)+'">'+esc(statusLabel(p.status))+'</span><span class="tag-chip">'+esc(themeLabel(p))+'</span></div><h1 class="page-title">'+esc(name)+'</h1><p class="lead">Suivez les informations réelles de cette campagne et accédez aux éléments disponibles.</p></div><div class="top-actions">'+(respondentPreview?'<a class="button button-secondary" href="'+respondentPreview+'" target="_blank" rel="noopener" title="Voir le parcours répondant avec le contenu réel enregistré pour cette campagne">👁 Aperçu répondant</a>':'')+(can('manage_kit')?'<a class="button button-primary" href="kit-communication.html'+q+'">Kit de communication</a>':'')+'</div></div>'+
       scheduleNote+
       '<section class="stats-grid" aria-label="Informations de la campagne">'+
         '<article class="stat-card"><div class="stat-icon">'+ICONS.status+'</div><p class="stat-label">Statut</p><p class="stat-value" style="font-size:1.5rem">'+esc(statusLabel(p.status))+'</p></article>'+

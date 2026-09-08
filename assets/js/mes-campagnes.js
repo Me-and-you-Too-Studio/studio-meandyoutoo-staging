@@ -148,6 +148,17 @@
     return q ? "composer.html" + q : null;
   }
 
+  function respondentPreviewPage(p) {
+    var slug = themeSlug(p);
+    if (!slug || !p || p.id === undefined || p.id === null) return null;
+    return (
+      "apercu-repondant.html?mode=project&source=saved&projectId=" +
+      encodeURIComponent(p.id) +
+      "&theme=" +
+      encodeURIComponent(slug)
+    );
+  }
+
   function campaignName(p) {
     return (
       p.campaign_name ||
@@ -328,6 +339,14 @@
           '">✏️ Renommer</button>',
       );
     var content = contentPage(p);
+    var respondentPreview = respondentPreviewPage(p);
+    if (respondentPreview) {
+      visible.push(
+        '<a class="campaign-btn" href="' +
+          respondentPreview +
+          '" target="_blank" rel="noopener" title="Voir exactement le parcours répondant avec le contenu réel enregistré pour cette campagne">👁 Aperçu répondant</a>',
+      );
+    }
     if (p.status !== "draft") {
       more.push(
         content

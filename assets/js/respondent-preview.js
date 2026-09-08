@@ -1,4 +1,5 @@
 (()=>{
+const previewSource=new URLSearchParams(location.search).get('source')||'live';
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=h=>{let x=document.createElement('div');x.innerHTML=h||'';return(x.textContent||'').trim()},q=new URLSearchParams(location.search),pid=q.get('projectId'),theme=q.get('theme')||'',mode=q.get('mode')||(pid?'project':'catalog'),root=$('#rp');
 let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[];
 
@@ -28,7 +29,7 @@ function normalizeAnswer(a,i){return typeof a==='object'?{...a,label:a.text||a.c
 function normalizeResources(list){return (Array.isArray(list)?list:[]).map((r,i)=>({title:String(r?.title||r?.titre||r?.label||r?.text||`Ressource ${i+1}`).trim(),url:String(r?.url||r?.href||r?.link||'').trim()})).filter(r=>r.title&&/^https?:\/\//i.test(r.url))}
 function normalizeMedia(list){return (Array.isArray(list)?list:[]).map(m=>({id:m.id,title:String(m.title||'Vidéo'),placement:m.placement,profile_position:m.profile_position===null||m.profile_position===undefined?null:Number(m.profile_position),playback_path:String(m.playback_path||'')})).filter(m=>m.id&&m.playback_path)}
 function norm(x){
-  let pr=x.project||{},live=mode==='project'?JSON.parse(sessionStorage.getItem('meayt_preview')||'null'):null;
+  let pr=x.project||{},live=mode==='project'&&previewSource!=='saved'?JSON.parse(sessionStorage.getItem('meayt_preview')||'null'):null;
   const sourceSocio=Array.isArray(pr.sociodemo)&&pr.sociodemo.length?pr.sociodemo:(Array.isArray(x.theme?.sociodemo_default)?x.theme.sociodemo_default:[]);
   d={
     theme:pr.theme_title||x.theme?.title||theme||'Autodiagnostic',
