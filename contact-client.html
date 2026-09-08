@@ -57,20 +57,20 @@
 </div>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20260713-2"></script>
-<script src="assets/js/app.js?v=20260908-contact-split-1"></script>
+<script src="assets/js/app.js?v=20260908-contact-client-fix-2"></script>
 <script>
 (function(){
-  if(!window.StudioAPI || !StudioAPI.requireAuth()) return;
+  if(!window.StudioAPI || !StudioAPI.token()) return;
   function safe(value){return String(value||'').replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
   function telHref(value){return 'tel:'+String(value||'').replace(/[^+\d]/g,'');}
-  StudioAPI.request('/api/support-contacts').then(function(data){
-    (data.contacts||[]).forEach(function(contact){
+  StudioAPI.request('/api/me/account').then(function(data){
+    (data.supportContacts||[]).forEach(function(contact){
       var card=document.querySelector('[data-contact="'+contact.id+'"]');
       if(!card)return;
       var links=card.querySelector('[data-contact-links]');
       links.innerHTML='<a href="mailto:'+safe(contact.email)+'">✉️ '+safe(contact.email)+'</a><a href="'+telHref(contact.phone)+'">📞 '+safe(contact.phone)+'</a>';
     });
-  }).catch(function(){
+  }).catch(function(error){
     document.querySelectorAll('[data-contact-links]').forEach(function(el){el.innerHTML='<span>Coordonnées indisponibles. Utilisez contact@meandyoutoo.app.</span>';});
   });
 })();
