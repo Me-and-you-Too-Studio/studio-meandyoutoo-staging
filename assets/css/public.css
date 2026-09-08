@@ -274,3 +274,49 @@ body.public-contact footer.public-contact-only .public-wrap{display:flex}
 .respondent-band{padding:84px 0;background:linear-gradient(180deg,#fbfdfe,#f4f8fb);border-block:1px solid #e4ebf1}.respondent-heading{display:grid;grid-template-columns:.9fr 1.1fr;gap:50px;align-items:end;margin-bottom:40px}.respondent-heading h2{margin:7px 0 0;color:var(--public-brand-blue);font-size:clamp(2.1rem,3.5vw,3rem);line-height:1.05}.respondent-heading>p{margin:0;color:var(--public-muted);font-size:1.02rem;line-height:1.7}.respondent-showcase{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;align-items:start}.respondent-step{min-width:0}.respondent-step-raised{margin-top:34px}.screen-card{position:relative;height:470px;overflow:hidden;padding:13px;border-radius:30px;background:#fff;border:1px solid #dce5ed;box-shadow:0 22px 54px rgba(29,61,97,.13)}.screen-card:before{content:"";position:absolute;z-index:2;top:10px;left:50%;width:52px;height:5px;border-radius:99px;background:#d5dde5;transform:translateX(-50%)}.screen-card img{display:block;width:100%;height:100%;object-fit:cover;object-position:top center;border-radius:20px}.screen-step{position:absolute;z-index:3;top:22px;left:22px;display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:var(--public-brand-blue);color:#fff;font-size:.8rem;font-weight:900;box-shadow:0 8px 18px rgba(13,76,114,.22)}.respondent-copy{padding:21px 8px 0}.respondent-copy>span{display:inline-block;color:var(--public-green-dark);font-size:.68rem;letter-spacing:.07em;font-weight:900}.respondent-copy h3{margin:7px 0 8px;color:var(--public-brand-blue);font-size:1.22rem;line-height:1.25}.respondent-copy p{margin:0;color:var(--public-muted);font-size:.91rem;line-height:1.58}.respondent-footer{display:flex;align-items:center;justify-content:space-between;gap:28px;margin-top:44px;padding:24px 28px;border:1px solid #dce6ed;border-radius:22px;background:#fff}.respondent-footer strong{display:block;color:var(--public-brand-blue);font-size:1.03rem}.respondent-footer p{margin:5px 0 0;color:var(--public-muted)}
 @media(max-width:1020px){.themes-editorial{grid-template-columns:repeat(2,minmax(0,1fr))}.theme-card.featured{grid-column:span 2}.respondent-heading{grid-template-columns:1fr;gap:14px}.respondent-showcase{gap:18px}.screen-card{height:410px}}
 @media(max-width:720px){.themes-editorial{grid-template-columns:1fr}.theme-card,.theme-card.featured{grid-column:auto;min-height:auto}.theme-card.featured{grid-template-columns:1fr}.theme-card.featured .theme-visual{min-height:190px;padding:20px}.theme-card.featured .theme-visual img{max-height:160px}.theme-card.featured .theme-content{padding:23px}.theme-card{padding:22px}.respondent-band{padding:62px 0}.respondent-showcase{grid-template-columns:1fr}.respondent-step-raised{margin-top:0}.screen-card{height:480px;max-width:430px;margin:0 auto}.respondent-copy{max-width:430px;margin:0 auto}.respondent-footer{align-items:flex-start;flex-direction:column}.respondent-footer .btn{width:100%;text-align:center}}
+
+/* Aperçu répondant public : CTA distinct du formulaire d'accès test. */
+.theme-card-actions .theme-preview-cta,
+.theme-actions .theme-preview-cta{
+  display:inline-flex;
+  align-items:center;
+  padding:8px 11px;
+  border-radius:11px;
+  background:var(--public-green-dark);
+  border:1px solid var(--public-green-dark);
+  color:#fff;
+  text-decoration:none;
+}
+.theme-card-actions .theme-preview-cta:hover,
+.theme-actions .theme-preview-cta:hover{
+  color:#fff;
+  text-decoration:none;
+  filter:brightness(.96);
+}
+.theme-card-actions .theme-access-cta,
+.theme-actions .theme-cta{
+  display:inline-flex;
+  padding:8px 11px;
+  border:1px solid #cde4e6;
+  border-radius:11px;
+  background:#fff;
+}
+.theme-card-actions a:last-child:not(:only-child){
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+.theme-card-actions .theme-access-cta:last-child{
+  padding:8px 11px;
+  border:1px solid #cde4e6;
+  border-radius:11px;
+  background:#fff;
+}
+@media(max-width:760px){
+  .theme-card-actions,.theme-actions{align-items:stretch;}
+  .theme-card-actions .theme-preview-cta,
+  .theme-card-actions .theme-access-cta,
+  .theme-actions .theme-preview-cta,
+  .theme-actions .theme-cta{justify-content:center;}
+}

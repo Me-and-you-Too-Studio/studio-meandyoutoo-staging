@@ -1,5 +1,5 @@
 (()=>{
-const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=h=>{let x=document.createElement('div');x.innerHTML=h||'';return(x.textContent||'').trim()},q=new URLSearchParams(location.search),pid=q.get('projectId'),theme=q.get('theme')||'',mode=q.get('mode')||(pid?'project':'catalog'),root=$('#rp');
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=h=>{let x=document.createElement('div');x.innerHTML=h||'';return(x.textContent||'').trim()},q=new URLSearchParams(location.search),pid=q.get('projectId'),theme=q.get('theme')||'',mode=q.get('mode')||(pid?'project':'catalog'),root=$('#rp'),publicExcerpt=q.get('public')==='1'||q.get('excerpt')==='1';
 let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[];
 
 function apiBase(){
@@ -59,17 +59,29 @@ function norm(x){
     }));
   }
   d.chapters=d.chapters.filter(c=>c.situations.length);
-  // Un aperçu catalogue doit toujours illustrer l'étape de données d'analyse.
-  if(mode==='catalog'&&!d.socio.length)d.socio=fallbackSocio();
+  // L'aperçu public est volontairement court : une seule situation par partie,
+  // sans données socio-démographiques. Il montre l'expérience sans se substituer au diagnostic complet.
+  if(publicExcerpt){
+    d.socio=[];
+    d.chapters=d.chapters.map(c=>({...c,situations:c.situations.slice(0,1)})).filter(c=>c.situations.length);
+  }
+  // L'aperçu catalogue interne doit toujours illustrer l'étape de données d'analyse.
+  if(mode==='catalog'&&!publicExcerpt&&!d.socio.length)d.socio=fallbackSocio();
 }
 
-const modeLabel=()=>mode==='project'?'Votre campagne composée':'Version catalogue Me&YouToo';
+const modeLabel=()=>publicExcerpt?'Extrait public · 1 situation par partie':(mode==='project'?'Votre campagne composée':'Version catalogue Me&YouToo');
 const head=t=>`<header class="rp-head"><img src="assets/img/brand/logo-meayt-color.png"><div><b>${mode==='project'?'Aperçu de ma campagne':'Aperçu répondant'}</b><span>${esc(t||modeLabel())}</span></div></header>`;
 const totalSituations=()=>d.chapters.reduce((n,c)=>n+c.situations.length,0);
 const situationNumber=()=>d.chapters.slice(0,ci).reduce((n,c)=>n+c.situations.length,0)+qi+1;
 const answerKey=(c=ci,s=qi)=>`${c}:${s}`;
 
-function intro(){root.innerHTML=head()+`<section class="rp-card rp-intro"><em>${esc(modeLabel())}</em><h1>${esc(d.title)}</h1><p class="rp-intro-copy">${esc(d.intro)}</p><aside>${mode==='project'?'Cet aperçu reprend le contenu actuellement composé et paramétré pour cette campagne.':'Cet aperçu présente le parcours standard proposé dans le catalogue, avant personnalisation.'} Les réponses utilisées ici servent uniquement à calculer le rendu de l’aperçu et ne sont jamais enregistrées.</aside><button id="start" class="button button-primary">Commencer l’autodiagnostic</button></section>`;$('#start').onclick=()=>{step=0;render()}}
+function intro(){
+  const excerptAside=publicExcerpt
+    ?`Vous allez découvrir un <strong>extrait du parcours répondant</strong> : une seule situation par partie, suivie d'un exemple de restitution. Cet aperçu ne constitue pas un diagnostic complet et aucune réponse n'est enregistrée.`
+    :(mode==='project'?'Cet aperçu reprend le contenu actuellement composé et paramétré pour cette campagne.':'Cet aperçu présente le parcours standard proposé dans le catalogue, avant personnalisation.')+' Les réponses utilisées ici servent uniquement à calculer le rendu de l’aperçu et ne sont jamais enregistrées.';
+  root.innerHTML=head()+`<section class="rp-card rp-intro ${publicExcerpt?'rp-public-excerpt':''}"><em>${esc(modeLabel())}</em><h1>${esc(d.title)}</h1><p class="rp-intro-copy">${esc(d.intro)}</p><aside>${excerptAside}</aside>${publicExcerpt?'<p class="rp-excerpt-steps"><b>1 situation</b> → <b>aperçu du profil</b> → <b>partie suivante</b> → <b>récapitulatif</b></p>':''}<button id="start" class="button button-primary">${publicExcerpt?'Commencer l’aperçu':'Commencer l’autodiagnostic'}</button></section>`;
+  $('#start').onclick=()=>{step=publicExcerpt?1:0;render()}
+}
 
 function socio(){
   if(!d.socio.length){step=1;render();return}
@@ -135,7 +147,7 @@ function profileForScore(profiles,avg){
 function profileTone(p){const c=String(p?.color||'').toLowerCase();if(c.includes('77cd8a')||c.includes('green'))return'positive';if(c.includes('ffc744')||c.includes('yellow')||c.includes('orange'))return'mid';if(c.includes('ff847')||c.includes('red'))return'alert';return'neutral'}
 function showChapterResult(){
   const ch=d.chapters[ci],avg=chapterAverage(ci),p=profileForScore(ch.profiles,avg),tone=profileTone(p);chapterResults[ci]={avg,profile:p};step=2;
-  root.innerHTML=head(`Résultat de la partie ${ci+1}`)+`<section class="rp-card rp-profile ${tone}"><div class="rp-kicker rp-kicker-neutral">Votre profil · Partie ${ci+1}/${d.chapters.length}</div><div class="rp-profile-chapter">${esc(ch.title)}</div>${p?`${profileMedia(ch,p).map(m=>mediaVideoHtml(m)).join('')}<h1>${esc(p.title)}</h1>${p.summary?`<p class="rp-profile-summary">${esc(p.summary)}</p>`:''}${p.content&&p.content!==p.summary?`<div class="rp-profile-content">${esc(p.content)}</div>`:''}`:`<h1>Profil indisponible</h1><p>Le contenu de profil de cette partie n’est pas disponible.</p>`}<div class="rp-actions"><button id="next" class="button button-primary">${ci===d.chapters.length-1?'Voir le récapitulatif':'Continuer vers la partie suivante'}</button></div></section>`;
+  root.innerHTML=head(publicExcerpt?`Aperçu de restitution · Partie ${ci+1}`:`Résultat de la partie ${ci+1}`)+`<section class="rp-card rp-profile ${tone} ${publicExcerpt?'rp-public-excerpt':''}"><div class="rp-kicker rp-kicker-neutral">${publicExcerpt?'Aperçu du profil':'Votre profil'} · Partie ${ci+1}/${d.chapters.length}</div><div class="rp-profile-chapter">${esc(ch.title)}</div>${publicExcerpt?'<div class="rp-excerpt-note">Dans cet extrait, le profil ci-dessous illustre le type de restitution proposé. Le diagnostic complet s’appuie sur plusieurs situations par partie.</div>':''}${p?`${profileMedia(ch,p).map(m=>mediaVideoHtml(m)).join('')}<h1>${esc(p.title)}</h1>${p.summary?`<p class="rp-profile-summary">${esc(p.summary)}</p>`:''}${p.content&&p.content!==p.summary?`<div class="rp-profile-content">${esc(p.content)}</div>`:''}`:`<h1>Profil indisponible</h1><p>Le contenu de profil de cette partie n’est pas disponible.</p>`}<div class="rp-actions"><button id="next" class="button button-primary">${ci===d.chapters.length-1?'Voir le récapitulatif':'Continuer vers la partie suivante'}</button></div></section>`;
   hydrateProfileVideos(root);
   $('#next').onclick=()=>{if(ci<d.chapters.length-1){ci++;qi=0;step=1;render()}else done()}
 }
@@ -185,11 +197,33 @@ function radarSvg(){
   const labels=pts(r+28).map((p,i)=>`<text x="${p[0]}" y="${p[1]}" text-anchor="middle" dominant-baseline="middle" class="rp-radar-label">${esc((d.chapters[i].title||`Partie ${i+1}`).length>22?`Partie ${i+1}`:d.chapters[i].title)}</text>`).join('');
   return `<div class="rp-radar-wrap"><h2>Vue d’ensemble</h2><p>Position de vos scores sur l’échelle propre à chaque partie.</p><svg class="rp-radar" viewBox="0 0 360 340" role="img" aria-label="Graphique radar des scores par partie">${rings}${axes}<polygon points="${dataPts.map(p=>p.join(',')).join(' ')}" class="rp-radar-data"/>${dataPts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" class="rp-radar-dot"/>`).join('')}${labels}</svg></div>`
 }
+function publicTestPage(){
+  const map={
+    sexisme:'tester-sexisme.html',
+    handicap:'tester-handicap.html',
+    lgbt:'tester-lgbt.html',
+    collaborateur:'tester-collegue-inclusif.html',
+    intergenerationnel:'tester-intergenerationnel.html',
+    mixite:'tester-allie-mixite.html',
+    'allie-mixite':'tester-allie-mixite.html',
+    'harcelement-moral':'tester-harcelement-moral.html',
+    harcelement:'tester-harcelement-moral.html'
+  };
+  return map[String(theme||'').toLowerCase()]||'';
+}
+function publicFinalActions(){
+  const test=publicTestPage();
+  return `<div class="rp-public-cta"><div><b>Vous venez de découvrir un extrait.</b><p>Le diagnostic complet comporte plusieurs situations par partie et une restitution plus complète.</p></div><div class="rp-public-cta-actions">${test?`<a class="button button-primary" href="${test}">Recevoir un accès test</a>`:''}<a class="button button-secondary" href="contact.html">Prendre rendez-vous</a></div></div>`;
+}
+
 function done(){
   chapterResults=d.chapters.map((c,i)=>({avg:chapterAverage(i),profile:profileForScore(c.profiles,chapterAverage(i))}));
-  root.innerHTML=head('Récapitulatif des résultats')+`<section class="rp-card rp-final"><div class="rp-kicker">Vos résultats</div><h1>Récapitulatif de vos profils</h1><p class="rp-help">Voici la restitution que verra le répondant. La comparaison avec les collègues est fictive dans cet aperçu et aucune donnée n’est enregistrée.</p>${radarSvg()}<div class="rp-final-list">${d.chapters.map((c,i)=>{const r=chapterResults[i],p=r.profile,t=profileTone(p);return`<article class="rp-final-profile ${t}"><div class="rp-final-profile-head"><span>Partie ${i+1}</span><strong>${esc(c.title)}</strong></div><h2>${esc(p?.title||'Profil indisponible')}</h2>${p?.summary?`<p>${esc(p.summary)}</p>`:''}${colleaguesHtml(c,r,i)}</article>`}).join('')}</div><div class="rp-final-tools">${reportDownloadHtml()}${resourcesHtml()}</div><div class="rp-actions"><button id="again" class="button button-secondary">Recommencer l’aperçu</button></div></section>`;
-  bindFinalInteractions();
+  const finalIntro=publicExcerpt
+    ?`Vous avez parcouru une situation par partie. Le graphique et les profils ci-dessous sont un <strong>aperçu de la forme de restitution</strong> : ils ne doivent pas être interprétés comme le résultat d’un diagnostic complet.`
+    :`Voici la restitution que verra le répondant. La comparaison avec les collègues est fictive dans cet aperçu et aucune donnée n’est enregistrée.`;
+  root.innerHTML=head(publicExcerpt?'Récapitulatif de l’extrait':'Récapitulatif des résultats')+`<section class="rp-card rp-final ${publicExcerpt?'rp-public-excerpt':''}"><div class="rp-kicker">${publicExcerpt?'Extrait · fin du parcours':'Vos résultats'}</div><h1>${publicExcerpt?'Aperçu du récapitulatif':'Récapitulatif de vos profils'}</h1><p class="rp-help">${finalIntro}</p>${radarSvg()}<div class="rp-final-list">${d.chapters.map((c,i)=>{const r=chapterResults[i],p=r.profile,t=profileTone(p);return`<article class="rp-final-profile ${t}"><div class="rp-final-profile-head"><span>Partie ${i+1}</span><strong>${esc(c.title)}</strong></div><h2>${esc(p?.title||'Profil indisponible')}</h2>${p?.summary?`<p>${esc(p.summary)}</p>`:''}${publicExcerpt?'':colleaguesHtml(c,r,i)}</article>`}).join('')}</div>${publicExcerpt?publicFinalActions():`<div class="rp-final-tools">${reportDownloadHtml()}${resourcesHtml()}</div>`}<div class="rp-actions"><button id="again" class="button button-secondary">Recommencer l’aperçu</button></div></section>`;
+  if(!publicExcerpt)bindFinalInteractions();
   $('#again').onclick=()=>{step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[];norm.lastShuffleSeed=Date.now();render()}
 }
 function render(){if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult();else if(step===3)showChapterResult()}
-(async()=>{try{let x=mode==='project'&&pid?await api(`/api/projects/${pid}/composer`):await api(`/api/catalog/themes/${theme}/template`);norm(x);render()}catch(e){root.innerHTML=head()+`<section class="rp-card"><h1>Aperçu indisponible</h1><p>${esc(e.message)}</p></section>`}})()})();
+(async()=>{try{let x=mode==='project'&&pid?await api(`/api/projects/${pid}/composer`):await api(`/api/catalog/themes/${theme}/template`);norm(x);render()}catch(e){root.innerHTML=head()+`<section class="rp-card ${publicExcerpt?'rp-public-excerpt':''}"><div class="rp-kicker">Aperçu répondant</div><h1>${publicExcerpt?'Cet aperçu est en cours de préparation':'Aperçu indisponible'}</h1><p>${publicExcerpt?'Le parcours public de cette thématique n’est pas encore disponible. Vous pouvez néanmoins nous contacter pour découvrir le diagnostic complet.':esc(e.message)}</p>${publicExcerpt?'<div class="rp-actions"><a class="button button-primary" href="contact.html">Prendre rendez-vous</a><a class="button button-secondary" href="index.html#diagnostics">Retour aux diagnostics</a></div>':''}</section>`}})()})();

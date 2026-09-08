@@ -12328,3 +12328,39 @@ body.sidebar-collapsed .profile-person-name,
 body.sidebar-collapsed .profile-copy {
   display: none;
 }
+
+/* Aperçu répondant public : extrait court, distinct du diagnostic complet. */
+.rp-public-excerpt .rp-excerpt-note{
+  margin:0 0 20px;
+  padding:12px 14px;
+  border:1px solid #d7e7eb;
+  border-radius:13px;
+  background:#f4fafb;
+  color:#536b7f;
+  font-size:13px;
+  line-height:1.55;
+}
+.rp-excerpt-steps{
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:18px 0 6px;
+  color:#0d4c72;
+  font-size:13px;
+}
+.rp-public-cta{
+  margin-top:26px;
+  padding:20px;
+  border-radius:18px;
+  background:#eef8f8;
+  border:1px solid #d2e8e9;
+}
+.rp-public-cta b{color:#0d4c72;font-size:17px;}
+.rp-public-cta p{margin:7px 0 0;color:#5d7284;line-height:1.55;}
+.rp-public-cta-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+.rp-public-cta-actions .button{text-decoration:none;}
+@media(max-width:650px){
+  .rp-public-cta-actions{flex-direction:column;}
+  .rp-public-cta-actions .button{width:100%;}
+}
