@@ -136,6 +136,8 @@ body.public-contact footer.public-contact-only .public-wrap{display:flex}
 .expert-card span{font-size:.72rem;letter-spacing:.08em;font-weight:900;color:var(--public-green-dark)}
 .expert-card h3{font-size:1.45rem;margin:5px 0 8px;color:var(--public-brand-blue)}
 .expert-card p{margin:0;color:var(--public-muted);font-size:.94rem}
+.expertise-intro>p:last-child{margin-top:14px}
+.expert-tags{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 12px}.expert-tags b{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:#eef6fa;border:1px solid #d9e8f0;color:var(--public-brand-blue);font-size:.72rem;line-height:1.15;font-weight:800}
 .expertise-method{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px 36px}
 .expertise-method hr{display:none}
 .expertise-method b:nth-of-type(2),.expertise-method b:nth-of-type(2)+p{grid-column:2}
