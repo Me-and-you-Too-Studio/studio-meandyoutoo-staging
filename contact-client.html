@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contacter Me&YouToo — Studio</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="assets/img/brand/favicon.png">
+<link rel="stylesheet" href="assets/css/style.css?v=20260908-contact-split-1">
+</head>
+<body>
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+<header class="mobile-header">
+  <img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo Studio">
+  <button class="icon-button" aria-label="Ouvrir le menu" aria-expanded="false" data-menu-toggle><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+</header>
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Navigation principale" id="sidebar-root"></aside>
+  <main class="main" id="contenu">
+    <div class="topbar compact-topbar">
+      <div>
+        <p class="eyebrow">Contact</p>
+        <h1 class="page-title">Votre équipe Me&amp;YouToo</h1>
+        <p class="lead">Retrouvez les coordonnées directes de l’équipe pour vos questions sur les contenus, vos campagnes, le Studio ou votre accompagnement.</p>
+      </div>
+    </div>
+
+    <section class="team-grid contact-client-team" aria-label="Contacts Me&YouToo" id="support-contacts" aria-live="polite">
+      <article class="card team-card tone-a" data-contact="ines">
+        <img class="team-avatar" src="assets/img/Ines%20Dauvergne%20basse%20def%20V2%20.jpg" alt="Inès Dauvergne">
+        <h2>Inès Dauvergne</h2>
+        <p class="team-role">CEO, Co-fondatrice — Experte Diversité &amp; Inclusion</p>
+        <p class="team-note">Pour toutes les demandes sur le contenu et l'expertise.</p>
+        <div class="team-links" data-contact-links><span>Chargement des coordonnées…</span></div>
+        <div class="team-actions"><a class="button button-secondary" href="https://meandyoutoo.app/ines-dauvergne-experte-inclusion-diversite?hsLang=fr" target="_blank" rel="noopener">Voir son profil ↗</a></div>
+      </article>
+
+      <article class="card team-card tone-b" data-contact="soraya">
+        <img class="team-avatar" src="assets/img/Soraya%20Khadir.jpg" alt="Soraya Khadir">
+        <h2>Soraya Khadir</h2>
+        <p class="team-role">Associée, Experte DE&amp;I — Directrice des Contenus France &amp; International</p>
+        <p class="team-note">Pour toutes les demandes sur le contenu et l'expertise.</p>
+        <div class="team-links" data-contact-links><span>Chargement des coordonnées…</span></div>
+        <div class="team-actions"><a class="button button-primary" href="https://meandyoutoo.app/meetings/soraya-khadir" target="_blank" rel="noopener">📅 Prendre rendez-vous</a></div>
+      </article>
+
+      <article class="card team-card tone-c" data-contact="carole">
+        <img class="team-avatar" src="assets/img/Carole%20Cr%C3%A9dit%20Thomas%20Decamps%20r%C3%A9duite%2084px.jpg" alt="Carole Michelon">
+        <h2>Carole Michelon</h2>
+        <p class="team-role">COO, Co-fondatrice</p>
+        <p class="team-note">Pour toute question commerciale, technique et sur les fonctionnalités du Studio.</p>
+        <div class="team-links" data-contact-links><span>Chargement des coordonnées…</span></div>
+        <div class="team-actions"><a class="button button-primary" href="https://meandyoutoo.app/meetings/carole-michelon" target="_blank" rel="noopener">📅 Prendre rendez-vous</a></div>
+      </article>
+    </section>
+  </main>
+</div>
+<nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
+<script src="assets/js/api.js?v=20260713-2"></script>
+<script src="assets/js/app.js?v=20260908-contact-split-1"></script>
+<script>
+(function(){
+  if(!window.StudioAPI || !StudioAPI.requireAuth()) return;
+  function safe(value){return String(value||'').replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
+  function telHref(value){return 'tel:'+String(value||'').replace(/[^+\d]/g,'');}
+  StudioAPI.request('/api/support-contacts').then(function(data){
+    (data.contacts||[]).forEach(function(contact){
+      var card=document.querySelector('[data-contact="'+contact.id+'"]');
+      if(!card)return;
+      var links=card.querySelector('[data-contact-links]');
+      links.innerHTML='<a href="mailto:'+safe(contact.email)+'">✉️ '+safe(contact.email)+'</a><a href="'+telHref(contact.phone)+'">📞 '+safe(contact.phone)+'</a>';
+    });
+  }).catch(function(){
+    document.querySelectorAll('[data-contact-links]').forEach(function(el){el.innerHTML='<span>Coordonnées indisponibles. Utilisez contact@meandyoutoo.app.</span>';});
+  });
+})();
+</script>
+</body>
+</html>
