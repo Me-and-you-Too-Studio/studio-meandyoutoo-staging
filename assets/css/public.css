@@ -435,3 +435,10 @@ body.public-contact footer.public-contact-only .public-wrap{display:flex}
 /* 2026-09-09 — CTA accès test soumis à validation + contraste catalogue */
 .theme-test-badge{background:#fff3c4!important;color:#0d4c72!important;border-color:#f0cf54!important}
 .theme-meta:has(.theme-test-badge){justify-content:flex-start}
+
+/* Formulaire HubSpot Studio complet — affichage pleine largeur sur les pages tester */
+.test-layout{grid-template-columns:1fr;}
+.test-copy{max-width:980px;}
+.test-form-card{grid-column:1/-1;position:static;top:auto;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible;}
+.test-form-card:before{display:none;}
+.test-form-card .hs-form-frame{width:100%;min-height:620px;}
