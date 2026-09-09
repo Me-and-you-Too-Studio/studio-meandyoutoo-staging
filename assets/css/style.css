@@ -12364,3 +12364,18 @@ body.sidebar-collapsed .profile-copy {
   .rp-public-cta-actions{flex-direction:column;}
   .rp-public-cta-actions .button{width:100%;}
 }
+
+/* Aperçu répondant — densité desktop : une situation standard (jusqu'à 5 réponses)
+   doit rester visible à 100 % sur un écran 1080p sans tasser la typographie. */
+@media (min-width: 651px) {
+  .rp-page .rp-head { height: 62px; }
+  .rp-page .rp-card:has(.rp-answers) { margin: 18px auto; padding: 24px 30px; }
+  .rp-page .rp-card:has(.rp-answers) .rp-progress-row { margin-bottom: 9px; }
+  .rp-page .rp-card:has(.rp-answers) .rp-bar { margin-bottom: 15px; }
+  .rp-page .rp-card:has(.rp-answers) h1 { margin: 10px 0 8px; }
+  .rp-page .rp-card:has(.rp-answers) .rp-help { margin: 6px 0 12px; }
+  .rp-page .rp-card:has(.rp-answers) .rp-answers { gap: 7px; margin: 12px 0; }
+  .rp-page .rp-card:has(.rp-answers) .rp-answer { padding: 9px 12px; align-items: center; }
+  .rp-page .rp-card:has(.rp-answers) .rp-answer > span { flex-basis: 28px; height: 28px; }
+  .rp-page .rp-card:has(.rp-answers) .rp-actions { margin-top: 14px; }
+}
