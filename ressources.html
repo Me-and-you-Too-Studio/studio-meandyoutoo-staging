@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ressources — Studio Me&YouToo</title>
-<meta name="description" content="Retrouvez les articles experts du blog Me&YouToo pour préparer vos campagnes de sensibilisation D&I.">
+<meta name="description" content="Retrouvez les derniers articles et analyses des experts Me&YouToo sur la diversité et l'inclusion au travail.">
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20260824-navigation-popup-8">
+<link rel="stylesheet" href="assets/css/style.css?v=20260910-resources-rss-1">
 </head>
-<body>
+<body class="resources-page">
 <a class="skip-link" href="#contenu">Aller au contenu</a>
 <header class="mobile-header">
   <img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo Studio">
@@ -18,65 +18,72 @@
 <div class="app-shell">
   <aside class="sidebar" aria-label="Navigation principale" id="sidebar-root" data-help-title="Besoin d'inspiration&nbsp;?" data-help-text="Découvrez tous les sujets de sensibilisation disponibles." data-help-href="bibliotheque.html" data-help-cta="Explorer la bibliothèque"></aside>
   <main class="main" id="contenu">
-    <div class="topbar">
-      <div>
-        <p class="eyebrow">Ressources</p>
-        <h1 class="page-title">Ressources expertes Me&YouToo</h1>
-        <p class="lead">Nourrissez vos démarches de sensibilisation avec les articles et analyses de nos experts D&I, publiés sur le blog Me&YouToo.</p>
+    <section class="resources-hero">
+      <div class="resources-hero-copy">
+        <p class="eyebrow">Ressources & expertise</p>
+        <h1 class="page-title">Pour aller plus loin sur la diversité & l’inclusion</h1>
+        <p class="lead">Retrouvez directement dans le Studio les derniers articles, études et décryptages publiés par les experts Me&YouToo.</p>
+        <div class="resources-hero-actions">
+          <a class="button button-primary" href="https://meandyoutoo.app/news" target="_blank" rel="noopener">Voir tout le blog <span aria-hidden="true">↗</span></a>
+          <span class="resources-live-label"><span aria-hidden="true"></span> Actualisé depuis le blog Me&YouToo</span>
+        </div>
       </div>
-      <div class="top-illustration" aria-hidden="true"><img src="assets/img/illustrations/ressources.png" alt=""></div>
-    </div>
-
-    <section class="topics-grid" aria-label="Ressources par thématique">
-      <article class="card topic-card">
-        <div class="topic-body">
-          <h3>Management inclusif</h3>
-          <p>Articles et repères pour accompagner les managers vers des pratiques plus inclusives.</p>
-          <a class="button button-secondary" href="https://www.meandyoutoo.app/" target="_blank" rel="noopener">Voir les articles ↗</a>
-        </div>
-      </article>
-      <article class="card topic-card">
-        <div class="topic-body">
-          <h3>Handicap</h3>
-          <p>Comprendre les situations de travail et les leviers d'inclusion des personnes en situation de handicap.</p>
-          <a class="button button-secondary" href="https://www.meandyoutoo.app/" target="_blank" rel="noopener">Voir les articles ↗</a>
-        </div>
-      </article>
-      <article class="card topic-card">
-        <div class="topic-body">
-          <h3>Sexisme au travail</h3>
-          <p>Contenus pour prévenir les comportements sexistes ordinaires et sensibiliser les équipes.</p>
-          <a class="button button-secondary" href="https://www.meandyoutoo.app/" target="_blank" rel="noopener">Voir les articles ↗</a>
-        </div>
-      </article>
-      <article class="card topic-card">
-        <div class="topic-body">
-          <h3>Diversité des origines</h3>
-          <p>Analyses sur les préjugés et les leviers d'une inclusion réelle au quotidien.</p>
-          <a class="button button-secondary" href="https://www.meandyoutoo.app/" target="_blank" rel="noopener">Voir les articles ↗</a>
-        </div>
-      </article>
-      <article class="card topic-card">
-        <div class="topic-body">
-          <h3>LGBT+</h3>
-          <p>Ressources pour une meilleure inclusion des personnes LGBT+ en entreprise.</p>
-          <a class="button button-secondary" href="https://www.meandyoutoo.app/" target="_blank" rel="noopener">Voir les articles ↗</a>
-        </div>
-      </article>
-      <article class="card topic-card">
-        <div class="topic-body">
-          <h3>Intergénérationnel</h3>
-          <p>Repères pour renforcer la coopération entre générations au travail.</p>
-          <a class="button button-secondary" href="https://www.meandyoutoo.app/" target="_blank" rel="noopener">Voir les articles ↗</a>
-        </div>
-      </article>
+      <div class="resources-hero-visual" aria-hidden="true">
+        <img src="assets/img/illustrations/ressources.png" alt="">
+      </div>
     </section>
 
-    <p class="section-desc" style="margin-top:24px">Ces contenus sont publiés et maintenus sur le site meandyoutoo.app. Nous ne dupliquons pas ces articles dans le Studio afin d'éviter toute duplication de contenu.</p>
+    <section class="resources-toolbar" aria-label="Filtrer les ressources">
+      <div class="resources-search-wrap">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+        <label class="sr-only" for="resources-search">Rechercher une ressource</label>
+        <input id="resources-search" type="search" placeholder="Rechercher un sujet, un mot-clé…" autocomplete="off">
+      </div>
+      <div class="resources-filter-wrap">
+        <label for="resources-category">Thématique</label>
+        <select id="resources-category">
+          <option value="">Toutes les thématiques</option>
+        </select>
+      </div>
+    </section>
+
+    <div class="resources-status-row">
+      <div>
+        <p class="eyebrow">Dernières publications</p>
+        <h2 class="section-title">Les ressources de nos experts</h2>
+      </div>
+      <p id="resources-count" class="resources-count" aria-live="polite"></p>
+    </div>
+
+    <section id="resources-loading" class="resources-grid resources-skeleton-grid" aria-label="Chargement des ressources" aria-busy="true">
+      <article class="resource-card resource-skeleton"></article>
+      <article class="resource-card resource-skeleton"></article>
+      <article class="resource-card resource-skeleton"></article>
+    </section>
+
+    <section id="resources-grid" class="resources-grid" aria-label="Articles Me&YouToo" hidden></section>
+
+    <section id="resources-empty" class="resources-empty card" hidden>
+      <div class="resources-empty-icon" aria-hidden="true">⌕</div>
+      <h2>Aucune ressource ne correspond à votre recherche</h2>
+      <p>Essayez un autre mot-clé ou affichez toutes les thématiques.</p>
+      <button class="button button-secondary" type="button" id="resources-reset">Réinitialiser les filtres</button>
+    </section>
+
+    <section id="resources-error" class="resources-empty card" hidden>
+      <div class="resources-empty-icon" aria-hidden="true">!</div>
+      <h2>Les ressources sont momentanément indisponibles</h2>
+      <p>Vous pouvez continuer à consulter directement le blog Me&YouToo.</p>
+      <div class="resources-empty-actions">
+        <button class="button button-secondary" type="button" id="resources-retry">Réessayer</button>
+        <a class="button button-primary" href="https://meandyoutoo.app/news" target="_blank" rel="noopener">Ouvrir le blog ↗</a>
+      </div>
+    </section>
   </main>
 </div>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20260713-2"></script>
 <script src="assets/js/app.js?v=20260824-navigation-popup-8"></script>
+<script src="assets/js/ressources.js?v=20260910-1"></script>
 </body>
 </html>
