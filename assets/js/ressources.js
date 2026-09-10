@@ -117,7 +117,7 @@
   async function load(){
     loading.hidden=false;loading.setAttribute('aria-busy','true');grid.hidden=true;empty.hidden=true;errorBox.hidden=true;count.textContent='';
     try{
-      var data=await StudioAPI.request('/api/resources?limit=30');
+      var data=await StudioAPI.request('/api/resources?limit=50');
       state.items=Array.isArray(data&&data.items)?data.items:[];
       category.innerHTML='<option value="">Toutes les thématiques</option>';
       fillCategories();
