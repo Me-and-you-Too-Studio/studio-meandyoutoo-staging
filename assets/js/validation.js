@@ -8,7 +8,7 @@
     for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)dp[i][j]=a[i]===b[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
     let i=0,j=0,out='';while(i<n||j<m){if(i<n&&j<m&&a[i]===b[j]){out+=esc(a[i]);i++;j++;}else if(j<m&&(i===n||dp[i][j+1]>=(dp[i+1]?.[j]||0))){out+=`<ins class="${admin?'is-admin':''}">${esc(b[j])}</ins>`;j++;}else{out+=`<del>${esc(a[i])}</del>`;i++;}}return out;
   }
-  let project=null,currentUser=null,reviewEvents=[],currentChapters=[];
+  let project=null,currentUser=null,studioSubscription=null,reviewEvents=[],currentChapters=[];
   const date=v=>{if(!v)return 'À définir';const raw=String(v),day=raw.slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(day))return 'À définir';const parsed=new Date(day+'T12:00:00');return Number.isNaN(parsed.getTime())?'À définir':parsed.toLocaleDateString('fr-FR');};
   const statusLabel=status=>({configuration_submitted:'À relire par Me&YouToo',review_pending:'À relire par Me&YouToo',in_review:'En cours de relecture',client_validation_required:'Votre validation est requise',ready_to_publish:'Prête à publier',scheduled:'Campagne programmée',published:'Campagne publiée',active:'Campagne publiée',unpublished:'Campagne dépubliée',closed:'Campagne terminée',completed:'Campagne terminée',archived:'Campagne archivée'}[status]||'Configuration verrouillée');
   const isoDate=value=>String(value||'').slice(0,10);
@@ -27,6 +27,26 @@
       $('validation-pack-pending-detail').textContent=`Demande envoyée${dateLabel}. Votre solde actuel restera affiché jusqu’à sa validation par Me&YouToo.`;
       pendingBox.hidden=false;
     }else if(pendingBox)pendingBox.hidden=true;
+  }
+  function renderMonthlyCampaignAllowance(){
+    const existing=document.getElementById('monthly-campaign-allowance');
+    if(existing)existing.remove();
+    if(currentUser?.role==='admin'||studioSubscription?.plan!=='monthly'||project?.status!=='draft')return;
+    const remaining=Number(studioSubscription.monthlyCampaignRemaining);
+    const alreadyTransmitted=Boolean(project?.first_submitted_at);
+    const container=$('submit-project')?.closest('.top-actions')||$('submit-project')?.parentElement;
+    if(!container)return;
+    const note=document.createElement('div');note.id='monthly-campaign-allowance';note.className='composer-alert';
+    if(alreadyTransmitted){
+      note.textContent='Formule mensuelle : cette campagne a déjà utilisé son droit de première transmission. Les corrections ou retransmissions de cette même campagne ne consomment pas un nouveau droit.';
+    }else if(remaining<=0){
+      note.dataset.tone='warning';
+      note.innerHTML='<strong>Limite mensuelle atteinte.</strong> Votre formule permet de transmettre 1 nouvelle campagne par période mensuelle d’abonnement. Vous pourrez transmettre une nouvelle campagne à la prochaine période ou passer à la formule annuelle.';
+      const button=$('submit-project');if(button){button.disabled=true;button.classList.add('is-disabled');button.title='Limite mensuelle atteinte';}
+    }else{
+      note.textContent='Formule mensuelle : 1 nouvelle campagne transmissible par période mensuelle. Cette transmission utilisera votre droit du mois.';
+    }
+    container.before(note);
   }
   async function refreshValidationQuota(){
     if(document.hidden||!project||currentUser?.role==='admin'||Date.now()-lastQuotaRefresh<800)return;
@@ -156,11 +176,12 @@
     try{
       if(!projectId){location.href='mes-campagnes.html';return;}
       const [d,quotaData,me]=await Promise.all([api(`/api/projects/${projectId}/composer`),api('/api/me/organization-quota').catch(()=>({organization:null})),api('/api/me')]);
-      project=d.project;reviewEvents=d.reviewEvents||[];currentChapters=d.chapters||[];currentUser=me.user;if(!theme)theme=project?.theme_slug||'';const chapters=currentChapters,quota=quotaData.organization;
+      project=d.project;reviewEvents=d.reviewEvents||[];currentChapters=d.chapters||[];currentUser=me.user;studioSubscription=me.studioSubscription||null;if(!theme)theme=project?.theme_slug||'';const chapters=currentChapters,quota=quotaData.organization;
       if(project.status!=='draft'){document.querySelector('.page-title').textContent='Relecture de la configuration';document.querySelector('.topbar .lead').textContent=currentUser?.role==='admin'?'Contrôlez et corrigez la configuration avant sa publication.':'Suivez la relecture Me&YouToo et validez les modifications importantes si nécessaire.';}if(currentUser?.role==='admin')$('validation-credit').hidden=true;
       const socioLabels=(project.sociodemo||[]).flatMap(item=>[item.q,...(item.opts||[]).filter(option=>option.subcriterion).map(option=>`${option.subcriterion.q} (si « ${option.label} »)`)]);
       $('validation-theme').textContent=project.theme_title||'Autodiagnostic';$('validation-campaign').value=project.campaign_name||project.title||'';$('validation-title').value=project.respondent_title||'';$('validation-launch-date').value=isoDate(project.launch_date);$('validation-close-date').value=isoDate(project.close_date);$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').textContent=socioLabels.join(', ')||'Aucune';
       renderValidationQuota(quota);
+      renderMonthlyCampaignAllowance();
       $('validation-back').href=`parametrage.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;
       if(project.status!=='draft'){
         lockSubmittedState();
