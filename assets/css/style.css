@@ -12440,6 +12440,9 @@ body.sidebar-collapsed .profile-copy {
 @media(max-width:720px){.resources-page .main{padding:8px 4px 84px;}.resources-hero{grid-template-columns:1fr;padding:25px 22px;}.resources-hero-visual{display:none;}.resources-toolbar{align-items:stretch;flex-direction:column;padding:12px;}.resources-filter-wrap{min-width:0;}.resources-grid{grid-template-columns:1fr;}.resources-status-row{align-items:flex-start;}.resources-count{margin-top:3px;}.resource-card-media{aspect-ratio:1.95/1;}.resources-hero-actions{align-items:flex-start;flex-direction:column;gap:13px;}}
 
 
+/* Ressources — visibilité des états (évite que display:grid neutralise l’attribut hidden) */
+.resources-page [hidden]{display:none!important;}
+
 /* Ressources — pagination */
 .resources-pagination{display:flex;justify-content:center;align-items:center;gap:10px;margin:30px 0 8px;flex-wrap:wrap}
 .resources-page-button{min-width:42px;height:42px;padding:0 12px;border:1px solid #d7e0e5;border-radius:10px;background:#fff;color:#123b54;font:inherit;font-weight:700;cursor:pointer}
