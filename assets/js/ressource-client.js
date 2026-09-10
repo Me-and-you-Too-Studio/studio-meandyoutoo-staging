@@ -1,0 +1,8 @@
+(function(){
+'use strict';
+if(!window.StudioAPI||!StudioAPI.requireAuth())return;
+var params=new URLSearchParams(location.search),id=params.get('id');var loading=document.getElementById('private-resource-loading'),errorBox=document.getElementById('private-resource-error'),article=document.getElementById('private-resource');
+function formatDate(value){if(!value)return '';var d=new Date(value);if(Number.isNaN(d.getTime()))return '';return new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'long',year:'numeric'}).format(d);}
+async function load(){if(!/^\d+$/.test(String(id||''))){loading.hidden=true;errorBox.hidden=false;return;}try{var data=await StudioAPI.request('/api/resources/client/'+encodeURIComponent(id));var item=data&&data.item;if(!item)throw new Error('Ressource introuvable');document.title=item.title+' — Studio Me&YouToo';document.getElementById('private-resource-title').textContent=item.title||'';var meta=[];if(item.author)meta.push('Par '+item.author);var date=formatDate(item.publishedAt);if(date)meta.push(date);document.getElementById('private-resource-meta').textContent=meta.join(' · ');var excerpt=document.getElementById('private-resource-excerpt');excerpt.textContent=item.excerpt||'';excerpt.hidden=!item.excerpt;document.getElementById('private-resource-body').innerHTML=item.bodyHtml||'<p>Cette ressource ne contient pas de contenu affichable dans le Studio.</p>';loading.hidden=true;article.hidden=false;}catch(err){console.error(err);loading.hidden=true;errorBox.hidden=false;}}
+load();
+})();
