@@ -13,10 +13,11 @@
   function saveSession(data){
     localStorage.setItem('studio_token',data.token);
     localStorage.setItem('studio_user',JSON.stringify(data.user));
+    if(Object.prototype.hasOwnProperty.call(data,'studioSubscription'))localStorage.setItem('studio_subscription',JSON.stringify(data.studioSubscription));
     if(data.user&&data.user.organizationId)localStorage.setItem('studio_organization_id',data.user.organizationId);
   }
   function clearSession(){
-    localStorage.removeItem('studio_token');localStorage.removeItem('studio_user');localStorage.removeItem('studio_organization_id');
+    localStorage.removeItem('studio_token');localStorage.removeItem('studio_user');localStorage.removeItem('studio_organization_id');localStorage.removeItem('studio_subscription');
   }
   async function request(path,options){
     options=options||{};
@@ -30,7 +31,8 @@
       location.href='login.html?expired=1';
       throw new Error('Session expirée');
     }
-    if(!response.ok)throw new Error(data.error||('Erreur API '+response.status));
+    if(path==='/api/me'&&Object.prototype.hasOwnProperty.call(data,'studioSubscription'))localStorage.setItem('studio_subscription',JSON.stringify(data.studioSubscription));
+    if(!response.ok){var err=new Error(data.error||('Erreur API '+response.status));err.code=data.code||null;err.studioSubscription=data.studioSubscription||null;throw err;}
     return data;
   }
   function organizationId(){

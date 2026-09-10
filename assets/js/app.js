@@ -369,6 +369,58 @@
     StudioAPI.request('/api/me/activity',{method:'POST',body:JSON.stringify({page:CURRENT,eventType:'page_view',projectId:/^\d+$/.test(String(projectId||''))?Number(projectId):null})}).catch(function(){});
   }
 
+
+  function studioSubscriptionCached(){
+    try{return JSON.parse(localStorage.getItem('studio_subscription')||'null');}catch(e){return null;}
+  }
+  function showSubscriptionRequired(){
+    return StudioModal.alert({eyebrow:'Abonnement Studio',title:'Abonnement Studio requis',message:'Votre abonnement Studio est arrivé à échéance. Vous pouvez continuer à consulter vos campagnes et vos passations, mais la création et la modification de campagnes nécessitent un abonnement actif.',type:'warning',confirmLabel:'Fermer'});
+  }
+  function disableForExpiredSubscription(subscription){
+    if(IS_ADMIN||!subscription||subscription.accessActive!==false)return;
+    document.body.classList.add('studio-subscription-readonly');
+    if(!document.querySelector('.studio-subscription-banner')){
+      var main=document.querySelector('main.main')||document.querySelector('main');
+      if(main){
+        var banner=document.createElement('section');
+        banner.className='studio-subscription-banner';
+        banner.innerHTML='<div><strong>Votre abonnement Studio est arrivé à échéance.</strong><p>Vous conservez l’accès à vos campagnes existantes et vos passations non utilisées restent valables jusqu’à la date d’expiration de votre pack. Pour créer ou modifier une campagne, réactivez votre abonnement Studio.</p></div><a class="button button-primary" href="paiement-studio.html">Réactiver mon abonnement</a>';
+        main.insertBefore(banner,main.firstChild);
+      }
+    }
+    document.querySelectorAll('[data-start-theme]').forEach(function(el){el.setAttribute('aria-disabled','true');el.classList.add('subscription-disabled');el.title='Abonnement Studio requis';});
+    if(CURRENT==='mes-campagnes.html')document.querySelectorAll('a[href="bibliotheque.html"]').forEach(function(el){if(el.textContent.includes('Nouvelle campagne')){el.setAttribute('aria-disabled','true');el.classList.add('subscription-disabled');el.title='Abonnement Studio requis';}});
+    var selectors=[];
+    if(CURRENT==='composer.html')selectors=['[data-situation-input]','[data-answer-input]','[data-replace]','[data-remove]','[data-reset]','[data-add]','[data-library]'];
+    if(CURRENT==='personnalisation.html')selectors=['textarea','input','select','button:not([data-menu-toggle]):not(.composer-toggle):not(.field-help-button)'];
+    if(CURRENT==='parametrage.html')selectors=['form input','form textarea','form select','#param-next','#add-socio','#add-result-resource','[data-example]'];
+    if(CURRENT==='validation.html')selectors=['#save-validation-settings','#submit-project','[data-validation-check]'];
+    function applyReadonlyControls(){
+      document.querySelectorAll('[data-start-theme]').forEach(function(el){el.setAttribute('aria-disabled','true');el.classList.add('subscription-disabled');el.title='Abonnement Studio requis';});
+      if(CURRENT==='mes-campagnes.html')document.querySelectorAll('a[href="bibliotheque.html"]').forEach(function(el){if(el.textContent.includes('Nouvelle campagne')){el.setAttribute('aria-disabled','true');el.classList.add('subscription-disabled');el.title='Abonnement Studio requis';}});
+      selectors.forEach(function(sel){document.querySelectorAll(sel).forEach(function(el){el.disabled=true;el.setAttribute('aria-disabled','true');el.title='Abonnement Studio requis';});});
+    }
+    applyReadonlyControls();
+    if(!window.__studioSubscriptionObserver){
+      window.__studioSubscriptionObserver=new MutationObserver(function(){applyReadonlyControls();});
+      window.__studioSubscriptionObserver.observe(document.body,{childList:true,subtree:true});
+      document.addEventListener('click',function(event){var locked=event.target.closest('.subscription-disabled');if(!locked)return;event.preventDefault();showSubscriptionRequired();},true);
+    }
+  }
+  async function setupStudioSubscriptionAccess(){
+    if(IS_ADMIN)return;
+    var cached=studioSubscriptionCached();
+    if(cached)disableForExpiredSubscription(cached);
+    if(!window.StudioAPI||!StudioAPI.token())return;
+    try{
+      var data=await StudioAPI.request('/api/me');
+      if(data&&data.studioSubscription){
+        localStorage.setItem('studio_subscription',JSON.stringify(data.studioSubscription));
+        disableForExpiredSubscription(data.studioSubscription);
+      }
+    }catch(e){}
+  }
+
   renderSidebar();
   enforcePageAccess();
   enforceActionAccess();
@@ -392,5 +444,6 @@
   setupMobileToggle();
   setupSidebarCollapse();
   setupActionMenus();
+  setupStudioSubscriptionAccess();
   setTimeout(trackProductActivity,0);
 })();
