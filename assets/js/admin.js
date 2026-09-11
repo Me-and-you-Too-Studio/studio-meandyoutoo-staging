@@ -388,6 +388,28 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const cards=$$('[data-review-card]');
       const chaptersEls=$$('[data-review-chapter]');
       const empty=$('[data-review-empty]');
+      const saveBtn=$('#migration-review-save');
+      const saveState=$('#migration-review-save-state');
+      const dirty=new Map();
+
+      function refreshNestedVisibility(){
+        $$('.migration-review-subgroup').forEach(group=>{
+          const hasVisible=[...group.querySelectorAll('[data-review-card]')].some(c=>!c.hidden);
+          group.hidden=!hasVisible;
+        });
+        $$('.migration-review-situation-group').forEach(group=>{
+          const own=[...group.children].find(el=>el.matches?.('[data-review-card]'));
+          const subgroup=[...group.querySelectorAll('.migration-review-subgroup')].some(g=>!g.hidden);
+          group.hidden=!!own?.hidden && !subgroup;
+        });
+        let visibleChapters=0;
+        chaptersEls.forEach(ch=>{
+          const hasVisible=[...ch.querySelectorAll('[data-review-card]')].some(c=>!c.hidden);
+          ch.hidden=!hasVisible;
+          if(hasVisible){visibleChapters++;ch.open=true;}
+        });
+        if(empty) empty.hidden=visibleChapters>0;
+      }
 
       function applyReviewFilter(f){
         filterButtons.forEach(x=>x.classList.toggle('active',x.dataset.reviewFilter===f));
@@ -401,41 +423,62 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
             (f==='translations'&&c.dataset.translations==='1');
           c.hidden=!show;
         });
-        let visibleChapters=0;
-        chaptersEls.forEach(ch=>{
-          const visible=[...ch.querySelectorAll('[data-review-card]')].some(c=>!c.hidden);
-          ch.hidden=!visible;
-          if(visible){
-            visibleChapters++;
-            ch.open=true;
-          }
-        });
-        if(empty) empty.hidden=visibleChapters>0;
+        refreshNestedVisibility();
       }
 
       filterButtons.forEach(b=>b.addEventListener('click',ev=>{
-        ev.preventDefault();
-        ev.stopPropagation();
-        applyReviewFilter(b.dataset.reviewFilter);
+        ev.preventDefault();ev.stopPropagation();applyReviewFilter(b.dataset.reviewFilter);
       }));
 
       $$('[data-review-expand]').forEach(b=>b.addEventListener('click',ev=>{
-        ev.preventDefault();
-        ev.stopPropagation();
-        $$('[data-review-chapter],.migration-review-subgroup').forEach(x=>x.open=b.dataset.reviewExpand==='1');
+        ev.preventDefault();ev.stopPropagation();
+        $$('[data-review-chapter],.migration-review-subgroup').filter(x=>!x.hidden).forEach(x=>x.open=b.dataset.reviewExpand==='1');
       }));
 
-      $$('[data-review-status]').forEach(sel=>sel.onchange=async()=>{
-        try{
-          await StudioAPI.request('/api/admin/migrations/'+batchId+'/review/'+sel.dataset.reviewStatus,{
-            method:'PATCH',
-            body:JSON.stringify({reviewStatus:sel.value})
-          });
-          sel.closest('[data-review-card]')?.setAttribute('data-pending',sel.value==='pending'?'1':'0');
-        }catch(e){showError(e.message);}
+      function updateSaveUi(){
+        const count=dirty.size;
+        if(saveBtn)saveBtn.disabled=!count;
+        if(saveState)saveState.textContent=count?`${count} décision${count>1?'s':''} à enregistrer`:'Aucune modification à enregistrer';
+      }
+
+      $$('[data-review-status]').forEach(sel=>{
+        const initial=sel.value;
+        sel.dataset.initialValue=initial;
+        sel.classList.toggle('is-decided',initial!=='pending');
+        sel.onchange=()=>{
+          const value=sel.value;
+          const id=sel.dataset.reviewStatus;
+          sel.classList.toggle('is-decided',value!=='pending');
+          sel.closest('[data-review-card]')?.setAttribute('data-pending',value==='pending'?'1':'0');
+          if(value===sel.dataset.initialValue)dirty.delete(id); else dirty.set(id,value);
+          updateSaveUi();
+        };
       });
 
-      // Première utilisation : on arrive directement sur ce qui nécessite une décision.
+      if(saveBtn)saveBtn.onclick=async()=>{
+        if(!dirty.size)return;
+        saveBtn.disabled=true;
+        if(saveState)saveState.textContent='Enregistrement…';
+        try{
+          for(const [id,value] of dirty){
+            await StudioAPI.request('/api/admin/migrations/'+batchId+'/review/'+id,{
+              method:'PATCH',body:JSON.stringify({reviewStatus:value})
+            });
+            const sel=$(`[data-review-status="${id}"]`);
+            if(sel)sel.dataset.initialValue=value;
+          }
+          dirty.clear();
+          if(saveState)saveState.textContent='Décisions enregistrées';
+          setTimeout(()=>{if(saveState&&!dirty.size)saveState.textContent='Aucune modification à enregistrer';},1600);
+        }catch(e){
+          showError(e.message);
+          if(saveState)saveState.textContent='Échec de l’enregistrement';
+        }finally{
+          updateSaveUi();
+        }
+      };
+
+      updateSaveUi();
       applyReviewFilter(n.pending>0?'pending':(n.variant>0?'variant':(n.new>0?'new':'all')));
       d.showModal();
     }catch(e){showError(e.message);}

@@ -12622,3 +12622,13 @@ body.sidebar-collapsed .profile-copy {
 .migration-review-translation-warning{font-size:.72rem;font-weight:800;border-radius:999px;padding:.25rem .45rem;background:#fff5d9;color:#835e00}
 .migration-review-empty{border:1px dashed #cbdde5;border-radius:14px;padding:1.2rem;text-align:center;color:#5e7480;display:grid;gap:.2rem}
 @media(max-width:800px){.migration-review-steps{grid-template-columns:1fr}.migration-review-auto-note .migration-review-info{margin-left:0}}
+
+/* Migration review v4 — explicit decisions and reliable filtering */
+.migration-review-row select.is-decided{background:#e8f4fa;border-color:#0d4c72;color:#0d4c72;font-weight:800;box-shadow:0 0 0 2px rgba(13,76,114,.08)}
+.migration-review-row select:focus{outline:2px solid rgba(13,76,114,.18);outline-offset:2px}
+.migration-review-footer{position:sticky;bottom:0;z-index:6;background:#fff;border-top:1px solid #dfe9ed;padding:.75rem 0;margin-top:.6rem;align-items:center}
+.migration-review-save-state{margin-right:auto;color:#607582;font-size:.9rem}
+.migration-review-footer #migration-review-save:disabled{opacity:.48;cursor:not-allowed}
+.migration-review-subgroup[hidden],.migration-review-situation-group[hidden],.migration-review-chapter[hidden]{display:none!important}
+.migration-review-compare>div{min-width:0}
+.migration-review-compare p{overflow-wrap:anywhere}
