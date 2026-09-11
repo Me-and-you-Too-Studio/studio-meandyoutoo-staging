@@ -12469,3 +12469,17 @@ body.sidebar-collapsed .profile-copy {
 .migration-review-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,290px);gap:1rem;align-items:center;padding:.9rem 1rem;border:1px solid #d8e4ea;border-radius:14px;background:#fff}
 .migration-review-row>div{min-width:0;display:grid;gap:.3rem}.migration-review-row strong{color:#0d4c72;line-height:1.35}.migration-review-row small{color:#6a7b85}.migration-review-row select{width:100%;min-height:42px;border:1px solid #bfd1d9;border-radius:10px;background:#fff;padding:.55rem .65rem}
 @media(max-width:760px){.migration-review-row{grid-template-columns:1fr}}
+
+
+/* Migration batches: open / archive / delete */
+.admin-migration-card{cursor:pointer;transition:box-shadow .18s ease,transform .18s ease,opacity .18s ease}
+.admin-migration-card:hover{box-shadow:0 12px 28px rgba(13,76,114,.10);transform:translateY(-1px)}
+.admin-migration-card:focus-visible{outline:3px solid rgba(0,132,145,.25);outline-offset:2px}
+.admin-migration-card.is-archived{opacity:.72;background:#f7f9fa}
+.admin-migration-card.is-archived:hover{opacity:1}
+.admin-migration-status.is-archived{background:#eef1f3;color:#54616a}
+.admin-migration-archives{margin-top:18px;border:1px solid #dfe8ed;border-radius:16px;background:#fafcfd}
+.admin-migration-archives>summary{cursor:pointer;padding:16px 18px;font-weight:700;color:#0d4c72;list-style:none;display:flex;gap:8px;align-items:center}
+.admin-migration-archives>summary::-webkit-details-marker{display:none}
+.admin-migration-archive-list{padding:0 14px 14px;display:grid;gap:12px}
+.admin-migration-archive-list .admin-migration-card{margin:0}
