@@ -12502,3 +12502,16 @@ body.sidebar-collapsed .profile-copy {
 .migration-detail-children,.migration-profile-group{margin-top:10px;border-top:1px dashed #dfe7eb;padding-top:8px}.migration-detail-children>summary,.migration-profile-group>summary{cursor:pointer;color:#0d4c72;font-size:.85rem;font-weight:800;list-style:none}.migration-detail-children>summary::-webkit-details-marker,.migration-profile-group>summary::-webkit-details-marker{display:none}.migration-detail-children>summary::before,.migration-profile-group>summary::before{content:'▸';display:inline-block;margin-right:6px;transition:transform .15s}.migration-detail-children[open]>summary::before,.migration-profile-group[open]>summary::before{transform:rotate(90deg)}
 .migration-profile-group{background:#f5f9fb;border-radius:12px;padding:10px 12px;border-top:0}.migration-profile-group>.migration-detail-item{margin-left:0}
 @media(max-width:820px){.migration-detail-dialog{width:98vw;height:96vh}.migration-detail-header,.migration-detail-content,.migration-detail-actions{padding-left:18px;padding-right:18px}.migration-detail-kpis,.migration-detail-overview{grid-template-columns:1fr}.migration-detail-item-head{flex-direction:column}.migration-detail-badges{justify-content:flex-start}.migration-side-by-side{grid-template-columns:1fr}}
+
+/* Migration dry-run: interactive languages, scoring and fold controls */
+.migration-lang-badge{appearance:none;border:1px solid rgba(13,76,114,.18);background:#f4f8fb;color:#0d4c72;border-radius:999px;padding:.28rem .55rem;font:inherit;font-size:.75rem;font-weight:800;cursor:pointer;line-height:1}
+.migration-lang-badge:hover,.migration-lang-badge.is-active{background:#0d4c72;color:#fff;border-color:#0d4c72}
+.migration-score-badge{display:inline-flex;align-items:center;border-radius:999px;padding:.28rem .55rem;background:#fff4d7;color:#775500;border:1px solid #efd78e;font-size:.75rem;font-weight:800;white-space:nowrap}
+.migration-score-badge.is-range{background:#eef7f4;color:#17644f;border-color:#b9dfd3}
+.migration-lang-panel{margin:.7rem 0 0;padding:.85rem 1rem;border:1px solid #dbe7ee;border-radius:12px;background:#f8fbfd;display:grid;grid-template-columns:minmax(0,1fr);gap:.8rem}
+.migration-lang-panel[hidden]{display:none}
+.migration-lang-panel>div>span{display:block;margin-bottom:.35rem;color:#557080;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.migration-lang-panel p{margin:0;white-space:pre-wrap}
+.migration-fold-actions{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
+.migration-chapter-block>summary{cursor:pointer}
+@media(min-width:900px){.migration-lang-panel:has(>div+div){grid-template-columns:1fr 1fr}}
