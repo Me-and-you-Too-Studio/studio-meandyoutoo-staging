@@ -12569,3 +12569,39 @@ body.sidebar-collapsed .profile-copy {
 .migration-profile-studio-current{margin-top:.75rem;background:#f4faf7;border-color:#d5e8dd}
 .migration-profile-studio-current strong{display:block;color:#24543a;margin-bottom:.35rem}
 @media(max-width:800px){.migration-profile-copy-grid{grid-template-columns:1fr}}
+
+
+/* Migration review — chapter chevrons must sit inside the circular control */
+.migration-chapter-summary-main{
+  display:flex;
+  align-items:center;
+  gap:.8rem;
+  min-width:0;
+}
+.migration-chapter-chevron{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  box-sizing:border-box;
+  flex:0 0 32px;
+  width:32px;
+  height:32px;
+  line-height:1;
+  padding:0;
+  margin:0;
+  border-radius:50%;
+  background:#edf5f8;
+  color:#0d4c72;
+  font-size:1.35rem;
+  font-weight:800;
+  font-family:Arial,sans-serif;
+  transform:rotate(0deg);
+  transform-origin:center;
+  transition:transform .16s ease,background .16s ease;
+  overflow:hidden;
+}
+.migration-chapter-block[open]>.migration-chapter-summary .migration-chapter-chevron,
+.migration-chapter-block[open]>summary .migration-chapter-chevron{
+  transform:rotate(90deg);
+  background:#dff0f3;
+}
