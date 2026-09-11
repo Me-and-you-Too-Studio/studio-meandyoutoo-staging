@@ -182,28 +182,37 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
 
   const reviewCmpLabel=s=>s==='exact_match'?'Déjà présent':s==='possible_variant'?'Variante':'Nouveau';
 
-  function activeTranslationMissing(e){
-    const p=e.source_payload||{};
-    const active=(p.activeLocales||[]).map(String).filter(Boolean);
-    const tr=p.translations||{};
-    if(!active.length || ['theme','survey_meta'].includes(e.entity_type)) return false;
-    const required=loc=>{
-      const row=tr[loc]||{};
+  function translationMissingInfo(e){
+    const p=e.source_payload||{},active=(p.activeLocales||[]).map(String).filter(Boolean),tr=p.translations||{};
+    if(!active.length || ['theme','survey_meta'].includes(e.entity_type))return [];
+    const out=[];
+    for(const loc of active){
+      const row=tr[loc]||{},missing=[];
       if(e.entity_type==='profile'){
-        if(loc==='fr') return !(p.title&&p.summary&&p.content);
-        return !(row.title && row.summary && row.content);
+        if(loc==='fr'){
+          if(!p.title)missing.push('titre');if(!p.summary)missing.push('résumé');if(!p.content)missing.push('texte détaillé');
+        }else{
+          if(!row.title)missing.push('titre');if(!row.summary)missing.push('résumé');if(!row.content)missing.push('texte détaillé');
+        }
+      }else if(e.entity_type==='chapter'){
+        if(!(loc==='fr'?(p.title||row.title):row.title))missing.push('titre');
+      }else if(['situation','answer'].includes(e.entity_type)){
+        if(!(loc==='fr'?(p.content||row.content):row.content))missing.push('texte');
       }
-      if(e.entity_type==='chapter'){
-        if(loc==='fr') return !(p.title || row.title);
-        return !row.title;
-      }
-      if(['situation','answer'].includes(e.entity_type)){
-        if(loc==='fr') return !(p.content || row.content);
-        return !row.content;
-      }
-      return false;
-    };
-    return active.some(required);
+      if(missing.length)out.push({locale:loc,missing,availableTitle:row.title||'',availableContent:row.content||''});
+    }
+    return out;
+  }
+  function activeTranslationMissing(e){return translationMissingInfo(e).length>0;}
+  function translationReviewHtml(e){
+    const p=e.source_payload||{},missing=translationMissingInfo(e),tr=p.translations||{};
+    if(!missing.length)return'';
+    const clean=v=>String(v||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+    return `<div class="migration-review-translation-detail">${missing.map(m=>{
+      const loc=m.locale.toUpperCase(),row=tr[m.locale]||{};
+      const refTitle=p.title||tr.fr?.title||'',refSummary=clean(p.summary||tr.fr?.summary||''),refContent=clean(p.content||tr.fr?.content||'');
+      return `<div class="migration-review-translation-card"><div class="migration-review-translation-head"><span>${esc(loc)}</span><strong>${m.locale==='en'?'English':m.locale==='fr'?'Français':esc(m.locale)}</strong><em>${m.missing.map(x=>esc(x)).join(' · ')} manquant${m.missing.length>1?'s':''}</em></div><div class="migration-review-translation-grid"><div><span>FR — référence</span><strong>${esc(refTitle||'—')}</strong>${e.entity_type==='profile'?`<small><b>Résumé :</b> ${esc(refSummary||'—')}</small><small><b>Texte :</b> ${esc(refContent||'—')}</small>`:''}</div><div><span>${esc(loc)} — historique</span><strong>${esc(row.title||row.content||'—')}</strong>${e.entity_type==='profile'?`<small><b>Résumé :</b> ${row.summary?esc(clean(row.summary)):'<mark>À compléter</mark>'}</small><small><b>Texte :</b> ${row.content?esc(clean(row.content)):'<mark>À compléter</mark>'}</small>`:''}</div></div></div>`;
+    }).join('')}</div>`;
   }
 
   function reviewInfo(text){
@@ -233,6 +242,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
 
     const decision=e.review_status||(exact?'keep_current':'pending');
     const missing=activeTranslationMissing(e);
+    const answerContext=e.entity_type==='answer'&&Array.isArray(c.currentSiblingAnswers)&&c.currentSiblingAnswers.length
+      ? `<div class="migration-review-answer-context"><span>Réponses actuellement rattachées à cette situation dans Studio</span><ul>${c.currentSiblingAnswers.map(a=>`<li>${esc(a.content||'—')} <b>— score ${esc(a.score??'—')}</b></li>`).join('')}</ul></div>`:'';
 
     return `<article class="migration-review-row"
       data-review-card
@@ -243,13 +254,15 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         <div class="migration-review-heading">
           <span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}</span>
           <span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>
-          ${missing?`<span class="migration-review-translation-warning">Traduction active à compléter</span>`:''}
+          ${missing?`<span class="migration-review-translation-warning">Traduction active à compléter</span>`:''}<span class="migration-review-context-note">Contexte parent</span>
         </div>
         <strong>${esc(title)}</strong>
         <small>Ancien ID ${esc(e.legacy_id)}</small>
         ${compare}
+        ${answerContext}
+        ${translationReviewHtml(e)}
       </div>
-      <select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision)}</select>
+      <div class="migration-review-decision"><select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision)}</select></div>
     </article>`;
   }
 
@@ -366,6 +379,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           </div>
         </div>
 
+        <div class="migration-review-filter-summary" id="migration-review-filter-summary"></div>
+
         <div class="migration-review-auto-note">
           <strong>${n.existing} éléments déjà rapprochés automatiquement</strong>
           <span>Ils sont réglés sur « Garder le Studio actuel ». Tu peux les contrôler ou modifier la décision si nécessaire.</span>
@@ -392,38 +407,67 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const saveState=$('#migration-review-save-state');
       const dirty=new Map();
 
+      const filterSummary=$('#migration-review-filter-summary');
+      function filterExplanation(f){
+        const matching=businessEntities.filter(e=>{
+          if(f==='pending')return e.review_status==='pending'&&e.comparison?.status!=='exact_match';
+          if(f==='variant')return e.comparison?.status==='possible_variant';
+          if(f==='new')return e.comparison?.status==='new';
+          if(f==='existing')return e.comparison?.status==='exact_match';
+          if(f==='translations')return activeTranslationMissing(e);
+          return true;
+        });
+        const byType={};matching.forEach(e=>byType[e.entity_type]=(byType[e.entity_type]||0)+1);
+        const parts=[];
+        if(byType.situation)parts.push(`${byType.situation} situation${byType.situation>1?'s':''}`);
+        if(byType.answer)parts.push(`${byType.answer} réponse${byType.answer>1?'s':''}`);
+        if(byType.profile)parts.push(`${byType.profile} profil${byType.profile>1?'s':''}`);
+        if(byType.chapter)parts.push(`${byType.chapter} chapitre${byType.chapter>1?'s':''}`);
+        if(f==='translations'){
+          const locales=[...new Set(matching.flatMap(e=>translationMissingInfo(e).map(x=>x.locale.toUpperCase())))];
+          return `<strong>${matching.length} contenu${matching.length>1?'s':''} avec traduction active incomplète</strong><span>Langue${locales.length>1?'s':''} concernée${locales.length>1?'s':''} : ${locales.join(', ')||'—'}. ${parts.join(' · ')}</span>`;
+        }
+        const labels={pending:'Décisions restantes',variant:'Variantes à examiner',new:'Nouveautés détectées',existing:'Contenus déjà rapprochés',all:'Tous les contenus métier'};
+        return `<strong>${labels[f]||'Résultats'}</strong><span>${parts.join(' · ')||'Aucun contenu'}. Les situations parentes restent visibles comme contexte lorsque seules leurs réponses correspondent au filtre.</span>`;
+      }
       function refreshNestedVisibility(){
+        $$('.migration-review-situation-group').forEach(group=>{
+          const own=[...group.children].find(el=>el.matches?.('[data-review-card]'));
+          const childCards=[...group.querySelectorAll('.migration-review-subgroup [data-review-card]')];
+          const visibleChildren=childCards.some(c=>!c.hidden);
+          const ownMatched=own && own.dataset.filterMatched==='1';
+          if(own){
+            own.classList.toggle('is-context-only',visibleChildren&&!ownMatched);
+            if(visibleChildren&&!ownMatched)own.hidden=false;
+          }
+        });
         $$('.migration-review-subgroup').forEach(group=>{
-          const hasVisible=[...group.querySelectorAll('[data-review-card]')].some(c=>!c.hidden);
+          const hasVisible=[...group.querySelectorAll('[data-review-card]')].some(c=>!c.hidden&&!c.classList.contains('is-context-only'));
           group.hidden=!hasVisible;
         });
         $$('.migration-review-situation-group').forEach(group=>{
           const own=[...group.children].find(el=>el.matches?.('[data-review-card]'));
           const subgroup=[...group.querySelectorAll('.migration-review-subgroup')].some(g=>!g.hidden);
-          group.hidden=!!own?.hidden && !subgroup;
+          const ownReal=own&&!own.hidden&&!own.classList.contains('is-context-only');
+          group.hidden=!ownReal&&!subgroup;
         });
         let visibleChapters=0;
         chaptersEls.forEach(ch=>{
-          const hasVisible=[...ch.querySelectorAll('[data-review-card]')].some(c=>!c.hidden);
-          ch.hidden=!hasVisible;
-          if(hasVisible){visibleChapters++;ch.open=true;}
+          const hasVisible=[...ch.querySelectorAll('.migration-review-situation-group')].some(g=>!g.hidden)||[...ch.querySelectorAll(':scope > .migration-review-chapter-body > [data-review-card]')].some(c=>!c.hidden);
+          ch.hidden=!hasVisible;if(hasVisible){visibleChapters++;ch.open=true;}
         });
-        if(empty) empty.hidden=visibleChapters>0;
+        if(empty)empty.hidden=visibleChapters>0;
       }
-
       function applyReviewFilter(f){
+        root.dataset.activeFilter=f;
         filterButtons.forEach(x=>x.classList.toggle('active',x.dataset.reviewFilter===f));
         cards.forEach(c=>{
-          const show=
-            f==='all' ||
-            (f==='pending'&&c.dataset.pending==='1') ||
-            (f==='variant'&&c.dataset.cmp==='variant') ||
-            (f==='new'&&c.dataset.cmp==='new') ||
-            (f==='existing'&&c.dataset.cmp==='existing') ||
-            (f==='translations'&&c.dataset.translations==='1');
-          c.hidden=!show;
+          c.classList.remove('is-context-only');
+          const show=f==='all'||(f==='pending'&&c.dataset.pending==='1')||(f==='variant'&&c.dataset.cmp==='variant')||(f==='new'&&c.dataset.cmp==='new')||(f==='existing'&&c.dataset.cmp==='existing')||(f==='translations'&&c.dataset.translations==='1');
+          c.dataset.filterMatched=show?'1':'0';c.hidden=!show;
         });
         refreshNestedVisibility();
+        if(filterSummary)filterSummary.innerHTML=filterExplanation(f);
       }
 
       filterButtons.forEach(b=>b.addEventListener('click',ev=>{

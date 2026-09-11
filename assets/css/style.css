@@ -12632,3 +12632,15 @@ body.sidebar-collapsed .profile-copy {
 .migration-review-subgroup[hidden],.migration-review-situation-group[hidden],.migration-review-chapter[hidden]{display:none!important}
 .migration-review-compare>div{min-width:0}
 .migration-review-compare p{overflow-wrap:anywhere}
+
+/* Migration review v5 — parent context and language-specific translation review */
+.migration-review-empty[hidden]{display:none!important}
+.migration-review-filter-summary{display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;background:#f7fafc;border:1px solid #dbe7ec;border-radius:12px;padding:.65rem .8rem;color:#4f6978}
+.migration-review-filter-summary strong{color:#0d4c72}.migration-review-filter-summary span{font-size:.88rem}
+.migration-review-context-note{display:none;font-size:.7rem;font-weight:800;border-radius:999px;padding:.25rem .45rem;background:#eef3f5;color:#58717e}
+.migration-review-row.is-context-only{background:#f9fbfc;border-style:dashed}.migration-review-row.is-context-only .migration-review-context-note{display:inline-flex}.migration-review-row.is-context-only .migration-review-decision{display:none}.migration-review-row.is-context-only .migration-review-status{opacity:.75}
+.migration-review-translation-detail{display:grid;gap:.55rem;margin-top:.6rem}.migration-review-translation-card{border:1px solid #dce8ed;border-radius:12px;background:#fbfdfe;padding:.7rem}.migration-review-translation-head{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin-bottom:.55rem}.migration-review-translation-head>span{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:26px;border-radius:8px;background:#0d4c72;color:#fff;font-size:.7rem;font-weight:900}.migration-review-translation-head em{margin-left:auto;font-style:normal;font-size:.75rem;font-weight:800;color:#8a6500;background:#fff3ce;border-radius:999px;padding:.3rem .5rem}.migration-review-translation-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}.migration-review-translation-grid>div{display:grid;gap:.3rem;border:1px solid #e0e9ed;border-radius:10px;background:#fff;padding:.65rem}.migration-review-translation-grid>div>span{font-size:.7rem;font-weight:800;color:#657b87}.migration-review-translation-grid small{display:block;line-height:1.45}.migration-review-translation-grid mark{background:#fff0bd;color:#7c5c00;padding:.08rem .25rem;border-radius:4px}
+.migration-review-answer-context{margin-top:.45rem;border:1px solid #dbe7ec;border-radius:10px;padding:.6rem;background:#f7fafc}.migration-review-answer-context>span{display:block;font-size:.72rem;font-weight:800;color:#617985;margin-bottom:.35rem}.migration-review-answer-context ul{margin:.25rem 0 0;padding-left:1.1rem}.migration-review-answer-context li{margin:.2rem 0;color:#334f60}
+@media(max-width:800px){.migration-review-translation-grid{grid-template-columns:1fr}}
+
+.migration-review-list[data-active-filter="translations"] .migration-review-compare{display:none}
