@@ -12515,3 +12515,37 @@ body.sidebar-collapsed .profile-copy {
 .migration-fold-actions{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
 .migration-chapter-block>summary{cursor:pointer}
 @media(min-width:900px){.migration-lang-panel:has(>div+div){grid-template-columns:1fr 1fr}}
+
+/* Migration review — languages, country scope and collapsible chapters */
+.migration-lang-switch{display:inline-flex;gap:.4rem;flex-wrap:wrap;justify-content:flex-end}
+.migration-lang-badge{min-width:72px;padding:.42rem .58rem;border:1px solid #c8dce7;border-radius:10px;background:#fff;color:#0d4c72;display:grid;grid-template-columns:auto;gap:.08rem;text-align:center;box-shadow:0 1px 2px rgba(13,76,114,.04)}
+.migration-lang-badge>span{font-size:.76rem;font-weight:900;letter-spacing:.04em;line-height:1}
+.migration-lang-badge>small{font-size:.62rem;font-weight:700;color:#68808d;line-height:1.05}
+.migration-lang-badge:hover,.migration-lang-badge.is-active{background:#eaf5f8;color:#0d4c72;border-color:#0d8291;box-shadow:0 0 0 2px rgba(13,130,145,.10)}
+.migration-lang-badge.is-active>small{color:#0d4c72}
+.migration-lang-panel{background:#f7fafc;border-color:#d9e6ec;padding:0;overflow:hidden}
+.migration-lang-version{padding:1rem 1.05rem}
+.migration-lang-version+.migration-lang-version{border-top:1px solid #dce8ed}
+.migration-lang-panel-head{display:flex;align-items:center;gap:.55rem;margin-bottom:.65rem}
+.migration-lang-panel-head strong{font-size:.9rem;color:#173a52}
+.migration-lang-panel-head em{margin-left:auto;font-style:normal;font-size:.72rem;color:#71828c}
+.migration-lang-code{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:27px;padding:0 .4rem;border-radius:8px;background:#0d4c72;color:#fff;font-size:.7rem;font-weight:900;letter-spacing:.04em}
+.migration-lang-code.is-studio{background:#eef3f6;color:#496472;min-width:auto}
+.migration-lang-panel>div>span{display:inline-flex;margin:0;text-transform:none;letter-spacing:normal}
+.migration-country-variant{margin-top:.75rem;padding:.65rem .8rem;border-radius:10px;background:#fff8e7;border:1px solid #f0dfae;display:flex;gap:.55rem;align-items:center;flex-wrap:wrap;color:#684e10}
+.migration-country-variant span{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.migration-country-variant strong{font-size:.84rem}
+.migration-detail-overview>div small{display:block;margin-top:.25rem;color:#75858e;font-size:.73rem;line-height:1.35}
+.migration-chapter-block{box-shadow:0 2px 7px rgba(13,76,114,.035)}
+.migration-chapter-block>summary{padding:17px 18px}
+.migration-chapter-summary-main{display:flex;gap:.7rem;align-items:center;min-width:0}
+.migration-chapter-chevron{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#edf5f8;color:#0d4c72;font-size:1.35rem;font-weight:700;transform:rotate(0deg);transition:transform .18s ease,background .18s ease;flex:0 0 auto}
+.migration-chapter-block[open] .migration-chapter-chevron{transform:rotate(90deg);background:#dff0f3}
+.migration-chapter-summary-actions{display:flex;align-items:center;gap:.65rem}
+.migration-fold-label{font-size:.76rem!important;font-weight:800!important;color:#0d4c72!important;white-space:nowrap;margin:0!important}
+.migration-chapter-block[open]>summary .migration-fold-label{font-size:0!important}
+.migration-chapter-block[open]>summary .migration-fold-label:after{content:'Replier';font-size:.76rem}
+.migration-detail-children>summary,.migration-profile-group>summary{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.migration-detail-children[open]>summary .migration-fold-label,.migration-profile-group[open]>summary .migration-fold-label{font-size:0!important}
+.migration-detail-children[open]>summary .migration-fold-label:after,.migration-profile-group[open]>summary .migration-fold-label:after{content:'Masquer';font-size:.76rem}
+@media(min-width:900px){.migration-lang-version+.migration-lang-version{border-top:0;border-left:1px solid #dce8ed}.migration-lang-panel:has(>div+div){grid-template-columns:1fr 1fr}}
