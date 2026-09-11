@@ -162,33 +162,281 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       d.showModal();
     }catch(e){showError(e.message);}
   }
-  function reviewDecisionOptions(current){const opts=[['pending','À décider'],['keep_current','Garder le Studio actuel'],['use_legacy','Utiliser la version historique'],['add_complementary','Ajouter en complémentaire'],['country_variant','Créer variante pays'],['translation_only','Récupérer la traduction uniquement'],['ignore','Ignorer']];return opts.map(([v,l])=>`<option value="${v}" ${v===current?'selected':''}>${l}</option>`).join('');}
-  const reviewTypeLabel=t=>({theme:'THÉMATIQUE',chapter:'CHAPITRE',situation:'SITUATION',answer:'RÉPONSE',profile:'PROFIL',survey_meta:'INFORMATIONS DU DIAGNOSTIC',translation:'TRADUCTION'})[t]||String(t||'ÉLÉMENT').toUpperCase();
+  function reviewDecisionOptions(current){
+    const opts=[
+      ['pending','À décider'],
+      ['keep_current','Garder le Studio actuel'],
+      ['use_legacy','Utiliser la version historique'],
+      ['add_complementary','Ajouter en complémentaire'],
+      ['country_variant','Créer variante pays'],
+      ['translation_only','Récupérer la traduction uniquement'],
+      ['ignore','Ignorer']
+    ];
+    return opts.map(([v,l])=>`<option value="${v}" ${v===current?'selected':''}>${l}</option>`).join('');
+  }
+  const reviewTypeLabel=t=>({
+    theme:'THÉMATIQUE',chapter:'CHAPITRE',situation:'SITUATION',
+    answer:'RÉPONSE',profile:'PROFIL',survey_meta:'INFORMATIONS DU DIAGNOSTIC',
+    translation:'TRADUCTION'
+  })[t]||String(t||'ÉLÉMENT').toUpperCase();
+
   const reviewCmpLabel=s=>s==='exact_match'?'Déjà présent':s==='possible_variant'?'Variante':'Nouveau';
+
+  function activeTranslationMissing(e){
+    const p=e.source_payload||{};
+    const active=(p.activeLocales||[]).map(String).filter(Boolean);
+    const tr=p.translations||{};
+    if(!active.length || ['theme','survey_meta'].includes(e.entity_type)) return false;
+    const required=loc=>{
+      const row=tr[loc]||{};
+      if(e.entity_type==='profile'){
+        if(loc==='fr') return !(p.title&&p.summary&&p.content);
+        return !(row.title && row.summary && row.content);
+      }
+      if(e.entity_type==='chapter'){
+        if(loc==='fr') return !(p.title || row.title);
+        return !row.title;
+      }
+      if(['situation','answer'].includes(e.entity_type)){
+        if(loc==='fr') return !(p.content || row.content);
+        return !row.content;
+      }
+      return false;
+    };
+    return active.some(required);
+  }
+
+  function reviewInfo(text){
+    return `<span class="migration-review-info" tabindex="0" aria-label="${esc(text)}" title="${esc(text)}">i</span>`;
+  }
+
   function reviewCard(e,compact=false){
-    const p=e.source_payload||{},c=e.comparison||{},cur=c.targetPayload||{},title=p.content||p.title||p.label||`${reviewTypeLabel(e.entity_type)} #${e.legacy_id}`,exact=c.status==='exact_match',variant=c.status==='possible_variant',status=exact?'existing':variant?'variant':'new';
+    const p=e.source_payload||{},c=e.comparison||{},cur=c.targetPayload||{};
+    const title=p.content||p.title||p.label||`${reviewTypeLabel(e.entity_type)} #${e.legacy_id}`;
+    const exact=c.status==='exact_match',variant=c.status==='possible_variant';
+    const status=exact?'existing':variant?'variant':'new';
     const clean=v=>String(v||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+
     let compare='';
     if(!compact&&c.targetEntityId&&['situation','answer','profile'].includes(e.entity_type)){
-      const hist=e.entity_type==='profile'?`${p.title||''}\n${clean(p.summary)}\n${clean(p.content)}`:clean(p.content||p.title);
-      const studio=e.entity_type==='profile'?`${cur.title||''}\n${clean(cur.summary)}\n${clean(cur.content)}`:clean(cur.content||cur.title);
-      compare=`<div class="migration-review-compare"><div><span>HISTORIQUE</span><p>${esc(hist||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(p.scoreValue??p.score??'—')}</small>`:''}</div><div><span>STUDIO ACTUEL</span><p>${esc(studio||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(cur.score??'—')}</small>`:''}</div></div>`;
+      const hist=e.entity_type==='profile'
+        ? `${p.title||''}\n${clean(p.summary)}\n${clean(p.content)}`
+        : clean(p.content||p.title);
+      const studio=e.entity_type==='profile'
+        ? `${cur.title||''}\n${clean(cur.summary)}\n${clean(cur.content)}`
+        : clean(cur.content||cur.title);
+      compare=`<div class="migration-review-compare">
+        <div><span>HISTORIQUE</span><p>${esc(hist||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(p.scoreValue??p.score??'—')}</small>`:''}</div>
+        <div><span>STUDIO ACTUEL</span><p>${esc(studio||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(cur.score??'—')}</small>`:''}</div>
+      </div>`;
     }
+
     const decision=e.review_status||(exact?'keep_current':'pending');
-    return `<article class="migration-review-row" data-review-card data-cmp="${status}" data-pending="${decision==='pending'?'1':'0'}" data-translations="${Object.keys(p.dormantTranslations||{}).length?'1':'0'}"><div class="migration-review-main"><div class="migration-review-heading"><span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}</span><span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span></div><strong>${esc(title)}</strong><small>Ancien ID ${esc(e.legacy_id)}</small>${compare}</div><select data-review-status="${e.id}">${reviewDecisionOptions(decision)}</select></article>`;
+    const missing=activeTranslationMissing(e);
+
+    return `<article class="migration-review-row"
+      data-review-card
+      data-cmp="${status}"
+      data-pending="${decision==='pending'?'1':'0'}"
+      data-translations="${missing?'1':'0'}">
+      <div class="migration-review-main">
+        <div class="migration-review-heading">
+          <span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}</span>
+          <span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>
+          ${missing?`<span class="migration-review-translation-warning">Traduction active à compléter</span>`:''}
+        </div>
+        <strong>${esc(title)}</strong>
+        <small>Ancien ID ${esc(e.legacy_id)}</small>
+        ${compare}
+      </div>
+      <select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision)}</select>
+    </article>`;
   }
+
+  function reviewTechnicalCard(e){
+    const p=e.source_payload||{};
+    const title=e.entity_type==='theme'
+      ? (p.originalTitle||p.title||'Thématique source')
+      : `Diagnostic historique #${esc(e.legacy_id)}`;
+    const desc=e.entity_type==='theme'
+      ? 'Cette ligne sert à rattacher le contenu importé à la bonne thématique. Elle n’est pas une décision métier.'
+      : 'Ces métadonnées conservent la provenance du diagnostic (ancien ID, langues, périmètre, source). Elles ne modifient pas le contenu du catalogue.';
+    return `<article class="migration-review-technical">
+      <div><span>${reviewTypeLabel(e.entity_type)}</span><strong>${esc(title)}</strong><small>${esc(desc)}</small></div>
+      <span class="migration-review-auto">Géré automatiquement</span>
+    </article>`;
+  }
+
   async function openMigrationReview(batchId){
     try{
-      const data=await StudioAPI.request('/api/admin/migrations/'+batchId+'/review'),d=$('#migration-review-dialog'),root=$('#migration-review-list'),entities=data.entities||[];
-      d.dataset.batchId=batchId;$('#migration-review-title').textContent=(data.batch?.name||data.batch?.source_customer_name||'Import historique')+' — revue';
-      const children=new Map();entities.forEach(x=>{const k=String(x.legacy_parent_id||'');if(!children.has(k))children.set(k,[]);children.get(k).push(x);});
-      const chapters=entities.filter(x=>x.entity_type==='chapter'),roots=entities.filter(x=>['theme','survey_meta'].includes(x.entity_type));
-      const n={pending:entities.filter(x=>x.review_status==='pending'&&x.comparison?.status!=='exact_match').length,variant:entities.filter(x=>x.comparison?.status==='possible_variant').length,new:entities.filter(x=>x.comparison?.status==='new').length,existing:entities.filter(x=>x.comparison?.status==='exact_match').length,translations:entities.filter(x=>Object.keys(x.source_payload?.dormantTranslations||{}).length).length};
-      const chapterHtml=chapters.map(ch=>{const direct=children.get(String(ch.legacy_id))||[],situations=direct.filter(x=>x.entity_type==='situation'),profiles=direct.filter(x=>x.entity_type==='profile');return `<details class="migration-review-chapter" data-review-chapter><summary><span class="migration-review-round">›</span><div><strong>${esc(ch.source_payload?.title||'Chapitre')}</strong><small>${situations.length} situations · ${profiles.length} profils</small></div></summary><div class="migration-review-chapter-body">${reviewCard(ch,true)}${situations.map(si=>{const answers=(children.get(String(si.legacy_id))||[]).filter(x=>x.entity_type==='answer');return `<div class="migration-review-situation-group">${reviewCard(si)}${answers.length?`<details class="migration-review-subgroup"><summary><span class="migration-review-round">›</span>${answers.length} réponses</summary><div>${answers.map(x=>reviewCard(x,true)).join('')}</div></details>`:''}</div>`;}).join('')}${profiles.length?`<details class="migration-review-subgroup"><summary><span class="migration-review-round">›</span>${profiles.length} profils du chapitre</summary><div>${profiles.map(x=>reviewCard(x)).join('')}</div></details>`:''}</div></details>`;}).join('');
-      root.innerHTML=`<div class="migration-review-toolbar"><div class="migration-review-filters"><button class="active" data-review-filter="all">Tous <b>${entities.length}</b></button><button data-review-filter="pending">À décider <b>${n.pending}</b></button><button data-review-filter="variant">Variantes <b>${n.variant}</b></button><button data-review-filter="new">Nouveaux <b>${n.new}</b></button><button data-review-filter="existing">Déjà présents <b>${n.existing}</b></button><button data-review-filter="translations">Traductions à compléter <b>${n.translations}</b></button></div><div class="migration-review-expand"><button data-review-expand="1">Tout déplier</button><button data-review-expand="0">Tout replier</button></div></div><div class="migration-review-auto-note"><strong>${n.existing} éléments déjà présents</strong><span>Pré-positionnés sur « Garder le Studio actuel ».</span></div>${roots.map(x=>reviewCard(x,true)).join('')}${chapterHtml}`;
-      $$('[data-review-status]').forEach(sel=>sel.onchange=async()=>{try{await StudioAPI.request('/api/admin/migrations/'+batchId+'/review/'+sel.dataset.reviewStatus,{method:'PATCH',body:JSON.stringify({reviewStatus:sel.value})});}catch(e){showError(e.message);}});
-      $$('[data-review-filter]').forEach(b=>b.onclick=()=>{$$('[data-review-filter]').forEach(x=>x.classList.remove('active'));b.classList.add('active');const f=b.dataset.reviewFilter;$$('[data-review-card]').forEach(c=>{c.hidden=!(f==='all'||(f==='pending'&&c.dataset.pending==='1')||(f==='variant'&&c.dataset.cmp==='variant')||(f==='new'&&c.dataset.cmp==='new')||(f==='existing'&&c.dataset.cmp==='existing')||(f==='translations'&&c.dataset.translations==='1'));});$$('[data-review-chapter]').forEach(ch=>{if(f==='all'){ch.hidden=false;return;}ch.hidden=![...ch.querySelectorAll('[data-review-card]')].some(c=>!c.hidden);if(!ch.hidden)ch.open=true;});});
-      $$('[data-review-expand]').forEach(b=>b.onclick=()=>$$('[data-review-chapter],.migration-review-subgroup').forEach(x=>x.open=b.dataset.reviewExpand==='1'));
+      const data=await StudioAPI.request('/api/admin/migrations/'+batchId+'/review');
+      const d=$('#migration-review-dialog'),root=$('#migration-review-list'),entities=data.entities||[];
+      d.dataset.batchId=batchId;
+      $('#migration-review-title').textContent=(data.batch?.name||data.batch?.source_customer_name||'Import historique')+' — revue';
+
+      const businessEntities=entities.filter(x=>!['theme','survey_meta'].includes(x.entity_type));
+      const technicalEntities=entities.filter(x=>['theme','survey_meta'].includes(x.entity_type));
+
+      const children=new Map();
+      entities.forEach(x=>{
+        const k=String(x.legacy_parent_id||'');
+        if(!children.has(k)) children.set(k,[]);
+        children.get(k).push(x);
+      });
+
+      const chapters=entities.filter(x=>x.entity_type==='chapter');
+      const n={
+        pending:businessEntities.filter(x=>x.review_status==='pending'&&x.comparison?.status!=='exact_match').length,
+        variant:businessEntities.filter(x=>x.comparison?.status==='possible_variant').length,
+        new:businessEntities.filter(x=>x.comparison?.status==='new').length,
+        existing:businessEntities.filter(x=>x.comparison?.status==='exact_match').length,
+        translations:businessEntities.filter(activeTranslationMissing).length,
+        total:businessEntities.length
+      };
+
+      const chapterHtml=chapters.map(ch=>{
+        const direct=children.get(String(ch.legacy_id))||[];
+        const situations=direct.filter(x=>x.entity_type==='situation');
+        const profiles=direct.filter(x=>x.entity_type==='profile');
+        return `<details class="migration-review-chapter" data-review-chapter>
+          <summary>
+            <span class="migration-review-round">›</span>
+            <div><strong>${esc(ch.source_payload?.title||'Chapitre')}</strong><small>${situations.length} situations · ${profiles.length} profils</small></div>
+          </summary>
+          <div class="migration-review-chapter-body">
+            ${reviewCard(ch,true)}
+            ${situations.map(si=>{
+              const answers=(children.get(String(si.legacy_id))||[]).filter(x=>x.entity_type==='answer');
+              return `<div class="migration-review-situation-group">
+                ${reviewCard(si)}
+                ${answers.length?`<details class="migration-review-subgroup">
+                  <summary><span class="migration-review-round">›</span>${answers.length} réponses</summary>
+                  <div>${answers.map(x=>reviewCard(x,true)).join('')}</div>
+                </details>`:''}
+              </div>`;
+            }).join('')}
+            ${profiles.length?`<details class="migration-review-subgroup">
+              <summary><span class="migration-review-round">›</span>${profiles.length} profils du chapitre</summary>
+              <div>${profiles.map(x=>reviewCard(x)).join('')}</div>
+            </details>`:''}
+          </div>
+        </details>`;
+      }).join('');
+
+      root.innerHTML=`
+        <section class="migration-review-welcome">
+          <div class="migration-review-welcome-head">
+            <div>
+              <span class="migration-review-step-label">REVUE AVANT INTÉGRATION</span>
+              <h3>${n.pending} décision${n.pending>1?'s':''} réellement à prendre</h3>
+              <p>Studio a déjà rapproché automatiquement l’historique du catalogue actuel. Commence par les différences : tu n’as pas à relire tout le diagnostic.</p>
+            </div>
+          </div>
+          <div class="migration-review-steps">
+            <div><b>1</b><span><strong>Examiner</strong><small>Variantes, nouveautés et traductions manquantes.</small></span></div>
+            <div><b>2</b><span><strong>Choisir</strong><small>Tu indiques ce qu’il faut conserver, récupérer ou ignorer.</small></span></div>
+            <div><b>3</b><span><strong>Intégrer plus tard</strong><small>Aucune décision ici ne modifie encore le catalogue.</small></span></div>
+          </div>
+        </section>
+
+        <div class="migration-review-toolbar">
+          <div class="migration-review-filters" role="group" aria-label="Filtres de revue">
+            <button type="button" data-review-filter="pending">
+              À décider <b>${n.pending}</b>${reviewInfo('Les éléments qui nécessitent une décision humaine. C’est le meilleur point de départ.')}
+            </button>
+            <button type="button" data-review-filter="variant">
+              Variantes <b>${n.variant}</b>${reviewInfo('Le contenu historique ressemble au Studio actuel mais une différence a été détectée.')}
+            </button>
+            <button type="button" data-review-filter="new">
+              Nouveaux <b>${n.new}</b>${reviewInfo('Aucun équivalent n’a été retrouvé dans le Studio actuel.')}
+            </button>
+            <button type="button" data-review-filter="translations">
+              Traductions à compléter <b>${n.translations}</b>${reviewInfo('Uniquement les langues actives du diagnostic pour lesquelles un contenu requis manque. Les traductions historiques hors diffusion ne sont pas comptées.')}
+            </button>
+            <button type="button" data-review-filter="existing">
+              Déjà présents <b>${n.existing}</b>${reviewInfo('Studio a retrouvé un équivalent. Ces éléments sont pré-positionnés sur « Garder le Studio actuel ».')}
+            </button>
+            <button type="button" data-review-filter="all">
+              Tout voir <b>${n.total}</b>${reviewInfo('Affiche tous les contenus métier du diagnostic. À utiliser surtout pour contrôler un rapprochement.')}
+            </button>
+          </div>
+          <div class="migration-review-expand">
+            <button type="button" data-review-expand="1">Tout déplier</button>
+            <button type="button" data-review-expand="0">Tout replier</button>
+          </div>
+        </div>
+
+        <div class="migration-review-auto-note">
+          <strong>${n.existing} éléments déjà rapprochés automatiquement</strong>
+          <span>Ils sont réglés sur « Garder le Studio actuel ». Tu peux les contrôler ou modifier la décision si nécessaire.</span>
+          ${reviewInfo('Un rapprochement automatique n’intègre rien. Il prépare uniquement la décision finale.')}
+        </div>
+
+        ${technicalEntities.length?`<details class="migration-review-technical-block">
+          <summary><span class="migration-review-round">›</span>Informations techniques de migration ${reviewInfo('Provenance, ancien ID, langues et métadonnées nécessaires à la traçabilité. Aucune décision métier à prendre ici.')}</summary>
+          <div>${technicalEntities.map(reviewTechnicalCard).join('')}</div>
+        </details>`:''}
+
+        <div class="migration-review-empty" data-review-empty hidden>
+          <strong>Aucun élément dans ce filtre.</strong>
+          <span>Choisis un autre filtre pour poursuivre la revue.</span>
+        </div>
+
+        ${chapterHtml}`;
+
+      const filterButtons=$$('[data-review-filter]');
+      const cards=$$('[data-review-card]');
+      const chaptersEls=$$('[data-review-chapter]');
+      const empty=$('[data-review-empty]');
+
+      function applyReviewFilter(f){
+        filterButtons.forEach(x=>x.classList.toggle('active',x.dataset.reviewFilter===f));
+        cards.forEach(c=>{
+          const show=
+            f==='all' ||
+            (f==='pending'&&c.dataset.pending==='1') ||
+            (f==='variant'&&c.dataset.cmp==='variant') ||
+            (f==='new'&&c.dataset.cmp==='new') ||
+            (f==='existing'&&c.dataset.cmp==='existing') ||
+            (f==='translations'&&c.dataset.translations==='1');
+          c.hidden=!show;
+        });
+        let visibleChapters=0;
+        chaptersEls.forEach(ch=>{
+          const visible=[...ch.querySelectorAll('[data-review-card]')].some(c=>!c.hidden);
+          ch.hidden=!visible;
+          if(visible){
+            visibleChapters++;
+            ch.open=true;
+          }
+        });
+        if(empty) empty.hidden=visibleChapters>0;
+      }
+
+      filterButtons.forEach(b=>b.addEventListener('click',ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        applyReviewFilter(b.dataset.reviewFilter);
+      }));
+
+      $$('[data-review-expand]').forEach(b=>b.addEventListener('click',ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        $$('[data-review-chapter],.migration-review-subgroup').forEach(x=>x.open=b.dataset.reviewExpand==='1');
+      }));
+
+      $$('[data-review-status]').forEach(sel=>sel.onchange=async()=>{
+        try{
+          await StudioAPI.request('/api/admin/migrations/'+batchId+'/review/'+sel.dataset.reviewStatus,{
+            method:'PATCH',
+            body:JSON.stringify({reviewStatus:sel.value})
+          });
+          sel.closest('[data-review-card]')?.setAttribute('data-pending',sel.value==='pending'?'1':'0');
+        }catch(e){showError(e.message);}
+      });
+
+      // Première utilisation : on arrive directement sur ce qui nécessite une décision.
+      applyReviewFilter(n.pending>0?'pending':(n.variant>0?'variant':(n.new>0?'new':'all')));
       d.showModal();
     }catch(e){showError(e.message);}
   }
