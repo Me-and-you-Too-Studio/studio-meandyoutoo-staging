@@ -211,7 +211,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     return `<div class="migration-review-translation-detail">${missing.map(m=>{
       const loc=m.locale.toUpperCase(),row=tr[m.locale]||{};
       const refTitle=p.title||tr.fr?.title||'',refSummary=clean(p.summary||tr.fr?.summary||''),refContent=clean(p.content||tr.fr?.content||'');
-      return `<div class="migration-review-translation-card"><div class="migration-review-translation-head"><span>${esc(loc)}</span><strong>${m.locale==='en'?'English':m.locale==='fr'?'Français':esc(m.locale)}</strong><em>${m.missing.map(x=>esc(x)).join(' · ')} manquant${m.missing.length>1?'s':''}</em></div><div class="migration-review-translation-grid"><div><span>FR — référence</span><strong>${esc(refTitle||'—')}</strong>${e.entity_type==='profile'?`<small><b>Résumé :</b> ${esc(refSummary||'—')}</small><small><b>Texte :</b> ${esc(refContent||'—')}</small>`:''}</div><div><span>${esc(loc)} — historique</span><strong>${esc(row.title||row.content||'—')}</strong>${e.entity_type==='profile'?`<small><b>Résumé :</b> ${row.summary?esc(clean(row.summary)):'<mark>À compléter</mark>'}</small><small><b>Texte :</b> ${row.content?esc(clean(row.content)):'<mark>À compléter</mark>'}</small>`:''}</div></div></div>`;
+      return `<div class="migration-review-translation-card"><div class="migration-review-translation-head"><span>${esc(loc)}</span><strong>${m.locale==='en'?'English':m.locale==='fr'?'Français':esc(m.locale)}</strong><em>${m.missing.map(x=>esc(x)).join(' · ')} manquant${m.missing.length>1?'s':''}</em></div><div class="migration-review-translation-grid"><div><span>FR — référence</span><strong>${esc(refTitle||'—')}</strong>${e.entity_type==='profile'?`<small><b>Résumé :</b> ${esc(refSummary||'—')}</small><small><b>Texte :</b> ${esc(refContent||'—')}</small>`:''}</div><div><span>${esc(loc)} — historique</span><strong>${esc(row.title||row.content||'—')}</strong>${e.entity_type==='profile'?`<small><b>Résumé :</b> ${row.summary?esc(clean(row.summary)):'<mark>À compléter</mark>'}</small><small><b>Texte :</b> ${row.content?esc(clean(row.content)):'<mark>À compléter</mark>'}</small>`:''}</div></div><button type="button" class="button button-secondary migration-translation-edit" data-translation-edit="${e.id}" data-locale="${esc(m.locale)}">Compléter la traduction</button></div>`;
     }).join('')}</div>`;
   }
 
@@ -284,6 +284,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     try{
       const data=await StudioAPI.request('/api/admin/migrations/'+batchId+'/review');
       const d=$('#migration-review-dialog'),root=$('#migration-review-list'),entities=data.entities||[];
+      const translationDrafts=data.translationDrafts||[],draftsByKey=new Map(translationDrafts.map(x=>[`${x.staged_entity_id}:${x.locale}`,x]));
       d.dataset.batchId=batchId;
       $('#migration-review-title').textContent=(data.batch?.name||data.batch?.source_customer_name||'Import historique')+' — revue';
 
@@ -303,7 +304,11 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         variant:businessEntities.filter(x=>x.comparison?.status==='possible_variant').length,
         new:businessEntities.filter(x=>x.comparison?.status==='new').length,
         existing:businessEntities.filter(x=>x.comparison?.status==='exact_match').length,
-        translations:businessEntities.filter(activeTranslationMissing).length,
+        translations:businessEntities.filter(x=>{
+          if(!activeTranslationMissing(x))return false;
+          const p=x.source_payload||{},active=(p.activeLocales||[]).map(String);
+          return active.some(loc=>draftsByKey.get(`${x.id}:${loc}`)?.status!=='validated');
+        }).length,
         total:businessEntities.length
       };
 
@@ -524,6 +529,18 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
 
       updateSaveUi();
       applyReviewFilter(n.pending>0?'pending':(n.variant>0?'variant':(n.new>0?'new':'all')));
+      $$('[data-translation-edit]').forEach(btn=>btn.onclick=()=>{
+        const entity=entities.find(x=>String(x.id)===String(btn.dataset.translationEdit)),locale=btn.dataset.locale;
+        if(!entity)return;
+        const p=entity.source_payload||{},hist=p.translations?.[locale]||{},saved=draftsByKey.get(`${entity.id}:${locale}`)||{};
+        const clean=v=>String(v||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim(),td=$('#migration-translation-dialog');
+        $('#migration-translation-title').textContent=`${p.title||hist.title||'Profil'} — ${locale.toUpperCase()}`;
+        $('#migration-translation-intro').textContent='Le français est affiché comme référence. Le titre historique est prérempli ; complète les champs manquants.';
+        $('#migration-translation-body').innerHTML=`<div class="migration-translation-editor"><section><span>FR — référence</span><h3>${esc(p.title||p.translations?.fr?.title||'—')}</h3><label>Résumé</label><div class="migration-translation-reference">${esc(clean(p.summary)||'—')}</div><label>Texte détaillé</label><div class="migration-translation-reference">${esc(clean(p.content)||'—')}</div></section><section><span>${locale.toUpperCase()} — à compléter</span><label>Titre</label><input id="migration-translation-field-title" value="${esc(saved.title||hist.title||'')}"><label>Résumé</label><textarea id="migration-translation-field-summary" rows="5">${esc(saved.summary||hist.summary||'')}</textarea><label>Texte détaillé</label><textarea id="migration-translation-field-content" rows="10">${esc(saved.content||hist.content||'')}</textarea></section></div>`;
+        $('#migration-translation-state').textContent=saved.status==='validated'?'Traduction validée':saved.status==='draft'?'Brouillon enregistré':'';
+        const save=async status=>{try{await StudioAPI.request(`/api/admin/migrations/${batchId}/review/${entity.id}/translation/${locale}`,{method:'PUT',body:JSON.stringify({title:$('#migration-translation-field-title').value,summary:$('#migration-translation-field-summary').value,content:$('#migration-translation-field-content').value,status})});td.close();await openMigrationReview(batchId);}catch(err){showError(err.message);}};
+        $('#migration-translation-draft').onclick=()=>save('draft');$('#migration-translation-validate').onclick=()=>save('validated');td.showModal();
+      });
       d.showModal();
     }catch(e){showError(e.message);}
   }
