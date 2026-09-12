@@ -575,6 +575,28 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         if(message){saveState.textContent=message;return;}
         saveState.textContent=count?`${count} décision${count>1?'s':''} à enregistrer`:'Aucune modification en attente';
       }
+      function syncDecisionControlsFromData(){
+        $$('[data-review-status]').forEach(sel=>{
+          const id=sel.dataset.reviewStatus;
+          const entity=businessEntities.find(x=>String(x.id)===String(id));
+          if(!entity)return;
+          const exact=entity.comparison?.status==='exact_match';
+          const expected=entity.review_status||(exact?'keep_current':'pending');
+          sel.value=expected;
+          sel.dataset.initialValue=expected;
+          sel.classList.toggle('is-decided',expected!=='pending');
+          const card=sel.closest('[data-review-card]');
+          card?.setAttribute('data-pending',expected==='pending'?'1':'0');
+          const current=card?.querySelector('[data-decision-current]');
+          const def=reviewDecisionDefinitions[expected]||reviewDecisionDefinitions.pending;
+          if(current)current.innerHTML=`<strong>${esc(def.label)}</strong><span>${esc(def.short)}</span>`;
+          card?.querySelectorAll('[data-decision-help-item]').forEach(item=>item.classList.toggle('is-current',item.dataset.decisionHelpItem===expected));
+          const helpPanel=card?.querySelector('[data-decision-help-panel]');
+          const helpBtn=card?.querySelector('[data-decision-help]');
+          if(helpPanel)helpPanel.hidden=true;
+          if(helpBtn){helpBtn.classList.remove('is-open');helpBtn.setAttribute('aria-expanded','false');}
+        });
+      }
 
       $$('[data-review-status]').forEach(sel=>{
         const initial=sel.value;
@@ -626,6 +648,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
             if(entity)entity.review_status=value;
           }
           dirty.clear();
+          syncDecisionControlsFromData();
           const counts=refreshReviewCounters();
           const activeFilter=root.dataset.activeFilter||'pending';
           applyReviewFilter(activeFilter);
@@ -651,6 +674,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         }
       };
 
+      syncDecisionControlsFromData();
       updateSaveUi();
       applyReviewFilter(n.pending>0?'pending':(n.variant>0?'variant':(n.new>0?'new':'all')));
       $$('[data-translation-edit]').forEach(btn=>btn.onclick=()=>{
