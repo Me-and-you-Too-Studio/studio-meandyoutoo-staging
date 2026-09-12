@@ -285,6 +285,18 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const data=await StudioAPI.request('/api/admin/migrations/'+batchId+'/review');
       const d=$('#migration-review-dialog'),root=$('#migration-review-list'),entities=data.entities||[];
       const translationDrafts=data.translationDrafts||[],draftsByKey=new Map(translationDrafts.map(x=>[`${x.staged_entity_id}:${x.locale}`,x]));
+      // Une traduction validée devient la version de référence de la revue : elle ne doit plus rester comptée comme « à compléter ».
+      entities.forEach(entity=>{
+        const p=entity.source_payload||{},translations={...(p.translations||{})};
+        let changed=false;
+        for(const [key,draft] of draftsByKey){
+          if(String(draft.staged_entity_id)!==String(entity.id)||draft.status!=='validated')continue;
+          const locale=String(draft.locale||'').toLowerCase();if(!locale)continue;
+          translations[locale]={...(translations[locale]||{}),title:draft.title||translations[locale]?.title||'',summary:draft.summary||translations[locale]?.summary||'',content:draft.content||translations[locale]?.content||''};
+          changed=true;
+        }
+        if(changed)entity.source_payload={...p,translations};
+      });
       d.dataset.batchId=batchId;
       $('#migration-review-title').textContent=(data.batch?.name||data.batch?.source_customer_name||'Import historique')+' — revue';
 
@@ -542,7 +554,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         const p=entity.source_payload||{},hist=p.translations?.[locale]||{},saved=draftsByKey.get(`${entity.id}:${locale}`)||{};
         const clean=v=>String(v||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim(),td=$('#migration-translation-dialog');
         $('#migration-translation-title').textContent=`${p.title||hist.title||'Profil'} — ${locale.toUpperCase()}`;
-        $('#migration-translation-intro').textContent='Le français est affiché comme référence. Le titre historique est prérempli ; complète les champs manquants.';
+        $('#migration-translation-intro').textContent='Le français est affiché comme référence. Les champs historiques disponibles sont préremplis. « Enregistrer comme brouillon » conserve ton travail sans le considérer terminé ; « Valider la traduction » la marque comme complète et la retire du filtre des traductions à compléter.';
         $('#migration-translation-body').innerHTML=`<div class="migration-translation-editor"><section><span>FR — référence</span><h3>${esc(p.title||p.translations?.fr?.title||'—')}</h3><label>Résumé</label><div class="migration-translation-reference">${esc(clean(p.summary)||'—')}</div><label>Texte détaillé</label><div class="migration-translation-reference">${esc(clean(p.content)||'—')}</div></section><section><span>${locale.toUpperCase()} — à compléter</span><label>Titre</label><input id="migration-translation-field-title" value="${esc(saved.title||hist.title||'')}"><label>Résumé</label><textarea id="migration-translation-field-summary" rows="5">${esc(saved.summary||hist.summary||'')}</textarea><label>Texte détaillé</label><textarea id="migration-translation-field-content" rows="10">${esc(saved.content||hist.content||'')}</textarea></section></div>`;
         $('#migration-translation-state').textContent=saved.status==='validated'?'Traduction validée':saved.status==='draft'?'Brouillon enregistré':'';
         const save=async status=>{try{await StudioAPI.request(`/api/admin/migrations/${batchId}/review/${entity.id}/translation/${locale}`,{method:'PUT',body:JSON.stringify({title:$('#migration-translation-field-title').value,summary:$('#migration-translation-field-summary').value,content:$('#migration-translation-field-content').value,status})});td.close();await openMigrationReview(batchId);}catch(err){showError(err.message);}};
