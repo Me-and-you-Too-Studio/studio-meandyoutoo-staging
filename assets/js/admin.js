@@ -231,12 +231,15 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     translation_only:{label:'Récupérer la traduction uniquement',short:'Garder le contenu Studio et ne reprendre que la traduction.',detail:'Le contenu principal du Studio n’est pas remplacé. Seules les traductions historiques utiles seront préparées pour être rattachées à l’élément Studio correspondant.'},
     ignore:{label:'Ignorer',short:'Ne rien intégrer pour cet élément.',detail:'L’élément reste visible dans l’historique du lot pour traçabilité, mais il sera exclu de l’intégration finale.'}
   };
-  function reviewDecisionOptions(current){
-    return Object.entries(reviewDecisionDefinitions).map(([v,d])=>`<option value="${v}" ${v===current?'selected':''}>${d.label}</option>`).join('');
+  function reviewDecisionEntries(entityType){
+    return Object.entries(reviewDecisionDefinitions).filter(([value])=>!(entityType==='profile'&&value==='add_complementary'));
   }
-  function reviewDecisionHelpHtml(current){
+  function reviewDecisionOptions(current,entityType){
+    return reviewDecisionEntries(entityType).map(([v,d])=>`<option value="${v}" ${v===current?'selected':''}>${d.label}</option>`).join('');
+  }
+  function reviewDecisionHelpHtml(current,entityType){
     const currentDef=reviewDecisionDefinitions[current]||reviewDecisionDefinitions.pending;
-    return `<div class="migration-review-decision-current" data-decision-current><strong>${esc(currentDef.label)}</strong><span>${esc(currentDef.short)}</span></div><div class="migration-review-decision-help-panel" data-decision-help-panel hidden><div class="migration-review-decision-help-head"><strong>Que signifie chaque choix ?</strong><span>Aucune de ces décisions ne modifie le catalogue maintenant. Elles seront appliquées uniquement lors de l’étape finale d’intégration.</span></div>${Object.entries(reviewDecisionDefinitions).map(([value,d])=>`<div class="migration-review-decision-help-item" data-decision-help-item="${value}"><strong>${esc(d.label)}</strong><span>${esc(d.detail)}</span></div>`).join('')}</div>`;
+    return `<div class="migration-review-decision-current" data-decision-current><strong>${esc(currentDef.label)}</strong><span>${esc(currentDef.short)}</span></div><div class="migration-review-decision-help-panel" data-decision-help-panel hidden><div class="migration-review-decision-help-head"><strong>Que signifie chaque choix ?</strong><span>Aucune de ces décisions ne modifie le catalogue maintenant. Elles seront appliquées uniquement lors de l’étape finale d’intégration.</span></div>${reviewDecisionEntries(entityType).map(([value,d])=>`<div class="migration-review-decision-help-item" data-decision-help-item="${value}"><strong>${esc(d.label)}</strong><span>${esc(d.detail)}</span></div>`).join('')}</div>`;
   }
   const reviewTypeLabel=t=>({
     theme:'THÉMATIQUE',chapter:'CHAPITRE',situation:'SITUATION',
@@ -342,7 +345,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       }
     }
     const decision=e.review_status||(exact?'keep_current':'pending'),missing=activeTranslationMissing(e),answerContext=e.entity_type==='answer'&&Array.isArray(c.currentSiblingAnswers)&&c.currentSiblingAnswers.length?`<div class="migration-review-answer-context"><span>Réponses actuellement rattachées à cette situation dans Studio</span><ul>${c.currentSiblingAnswers.map(a=>`<li>${esc(a.content||'—')} <b>— score ${esc(a.score??'—')}</b></li>`).join('')}</ul></div>`:'';
-    return `<article class="migration-review-row" data-review-card data-cmp="${status}" data-pending="${decision==='pending'?'1':'0'}" data-translations="${missing?'1':'0'}"><div class="migration-review-main"><div class="migration-review-heading"><span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}${isProfile&&p.position!=null?' '+esc(p.position):''}</span><span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>${missing?`<span class="migration-review-translation-warning">Traduction active à compléter</span>`:''}<span class="migration-review-context-note">Contexte parent</span></div><strong>${esc(title)}</strong><small>Ancien ID ${esc(e.legacy_id)}</small>${compare}${answerContext}${translationReviewHtml(e)}</div><div class="migration-review-decision"><div class="migration-review-decision-control"><select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision)}</select><button type="button" class="migration-review-decision-help" data-decision-help aria-label="Aide sur les décisions">?</button></div>${reviewDecisionHelpHtml(decision)}</div></article>`;
+    return `<article class="migration-review-row" data-review-card data-cmp="${status}" data-pending="${decision==='pending'?'1':'0'}" data-translations="${missing?'1':'0'}"><div class="migration-review-main"><div class="migration-review-heading"><span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}${isProfile&&p.position!=null?' '+esc(p.position):''}</span><span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>${missing?`<span class="migration-review-translation-warning">Traduction active à compléter</span>`:''}<span class="migration-review-context-note">Contexte parent</span></div><strong>${esc(title)}</strong><small>Ancien ID ${esc(e.legacy_id)}</small>${compare}${answerContext}${translationReviewHtml(e)}</div><div class="migration-review-decision"><div class="migration-review-decision-control"><select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision,e.entity_type)}</select><button type="button" class="migration-review-decision-help" data-decision-help aria-label="Aide sur les décisions">?</button></div>${reviewDecisionHelpHtml(decision,e.entity_type)}</div></article>`;
   }
 
 
@@ -382,6 +385,16 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
 
       const businessEntities=entities.filter(x=>!['theme','survey_meta'].includes(x.entity_type));
       const technicalEntities=entities.filter(x=>['theme','survey_meta'].includes(x.entity_type));
+      // Un profil doit rester l'un des 3 niveaux de scoring du chapitre : il ne peut jamais
+      // être ajouté comme 4e profil complémentaire. Les anciennes décisions incompatibles
+      // sont remises à "À décider" et seront resauvegardées explicitement.
+      const invalidProfileComplementaryIds=[];
+      businessEntities.forEach(entity=>{
+        if(entity.entity_type==='profile'&&entity.review_status==='add_complementary'){
+          invalidProfileComplementaryIds.push(String(entity.id));
+          entity.review_status='pending';
+        }
+      });
 
       const children=new Map();
       entities.forEach(x=>{
@@ -512,6 +525,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const saveBtn=$('#migration-review-save');
       const saveState=$('#migration-review-save-state');
       const dirty=new Map();
+      invalidProfileComplementaryIds.forEach(id=>dirty.set(id,'pending'));
 
       const filterSummary=$('#migration-review-filter-summary');
       function filterExplanation(f){
@@ -673,7 +687,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           const entity=businessEntities.find(x=>String(x.id)===String(id));
           if(!entity)return;
           const exact=entity.comparison?.status==='exact_match';
-          const expected=entity.review_status||(exact?'keep_current':'pending');
+          const expected=(entity.entity_type==='profile'&&entity.review_status==='add_complementary')?'pending':(entity.review_status||(exact?'keep_current':'pending'));
           sel.value=expected;
           sel.dataset.initialValue=expected;
           sel.classList.toggle('is-decided',expected!=='pending');
