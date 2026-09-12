@@ -458,8 +458,15 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         });
         let visibleChapters=0;
         chaptersEls.forEach(ch=>{
-          const hasVisible=[...ch.querySelectorAll('.migration-review-situation-group')].some(g=>!g.hidden)||[...ch.querySelectorAll(':scope > .migration-review-chapter-body > [data-review-card]')].some(c=>!c.hidden);
-          ch.hidden=!hasVisible;if(hasVisible){visibleChapters++;ch.open=true;}
+          // Un chapitre doit rester visible dès qu'il contient AU MOINS
+          // une carte réellement visible, y compris un profil dans le bloc profils.
+          const visibleCards=[...ch.querySelectorAll('[data-review-card]')]
+            .filter(c=>!c.hidden&&!c.classList.contains('is-context-only'));
+          const visibleGroups=[...ch.querySelectorAll('.migration-review-subgroup')]
+            .filter(g=>!g.hidden);
+          const hasVisible=visibleCards.length>0||visibleGroups.length>0;
+          ch.hidden=!hasVisible;
+          if(hasVisible){visibleChapters++;ch.open=true;}
         });
         if(empty)empty.hidden=visibleChapters>0;
       }
