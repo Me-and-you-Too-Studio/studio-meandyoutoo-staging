@@ -215,17 +215,21 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       d.showModal();
     }catch(e){showError(e.message);}
   }
+  const reviewDecisionDefinitions={
+    pending:{label:'À décider',short:'Aucune décision n’est encore prise.',detail:'L’élément reste en attente dans la revue. Rien ne sera prévu pour l’intégration finale tant qu’une décision n’aura pas été choisie.'},
+    keep_current:{label:'Garder le Studio actuel',short:'Conserver la version déjà présente dans Studio.',detail:'La version historique reste traçable dans le lot, mais elle ne remplacera pas le contenu actuel du Studio lors de l’intégration finale.'},
+    use_legacy:{label:'Utiliser la version historique',short:'Remplacer la version Studio par la version historique.',detail:'Lors de l’intégration finale, le contenu historique validé deviendra la version de référence pour l’élément correspondant dans Studio.'},
+    add_complementary:{label:'Ajouter en complémentaire',short:'Conserver Studio et ajouter l’historique en plus.',detail:'La version actuelle reste intacte et la version historique sera créée comme contenu complémentaire distinct. C’est particulièrement utile lorsqu’il s’agit d’une vraie alternative métier et non d’une correction.'},
+    country_variant:{label:'Créer variante pays',short:'Conserver la base Studio et créer une version spécifique à un pays.',detail:'La version historique sera conservée comme variante pays rattachée au contenu Studio de référence. Pour le survey #44, le périmètre historique est la France.'},
+    translation_only:{label:'Récupérer la traduction uniquement',short:'Garder le contenu Studio et ne reprendre que la traduction.',detail:'Le contenu principal du Studio n’est pas remplacé. Seules les traductions historiques utiles seront préparées pour être rattachées à l’élément Studio correspondant.'},
+    ignore:{label:'Ignorer',short:'Ne rien intégrer pour cet élément.',detail:'L’élément reste visible dans l’historique du lot pour traçabilité, mais il sera exclu de l’intégration finale.'}
+  };
   function reviewDecisionOptions(current){
-    const opts=[
-      ['pending','À décider'],
-      ['keep_current','Garder le Studio actuel'],
-      ['use_legacy','Utiliser la version historique'],
-      ['add_complementary','Ajouter en complémentaire'],
-      ['country_variant','Créer variante pays'],
-      ['translation_only','Récupérer la traduction uniquement'],
-      ['ignore','Ignorer']
-    ];
-    return opts.map(([v,l])=>`<option value="${v}" ${v===current?'selected':''}>${l}</option>`).join('');
+    return Object.entries(reviewDecisionDefinitions).map(([v,d])=>`<option value="${v}" ${v===current?'selected':''}>${d.label}</option>`).join('');
+  }
+  function reviewDecisionHelpHtml(current){
+    const currentDef=reviewDecisionDefinitions[current]||reviewDecisionDefinitions.pending;
+    return `<div class="migration-review-decision-current" data-decision-current><strong>${esc(currentDef.label)}</strong><span>${esc(currentDef.short)}</span></div><div class="migration-review-decision-help-panel" data-decision-help-panel hidden><div class="migration-review-decision-help-head"><strong>Que signifie chaque choix ?</strong><span>Aucune de ces décisions ne modifie le catalogue maintenant. Elles seront appliquées uniquement lors de l’étape finale d’intégration.</span></div>${Object.entries(reviewDecisionDefinitions).map(([value,d])=>`<div class="migration-review-decision-help-item" data-decision-help-item="${value}"><strong>${esc(d.label)}</strong><span>${esc(d.detail)}</span></div>`).join('')}</div>`;
   }
   const reviewTypeLabel=t=>({
     theme:'THÉMATIQUE',chapter:'CHAPITRE',situation:'SITUATION',
@@ -289,7 +293,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       }
     }
     const decision=e.review_status||(exact?'keep_current':'pending'),missing=activeTranslationMissing(e),answerContext=e.entity_type==='answer'&&Array.isArray(c.currentSiblingAnswers)&&c.currentSiblingAnswers.length?`<div class="migration-review-answer-context"><span>Réponses actuellement rattachées à cette situation dans Studio</span><ul>${c.currentSiblingAnswers.map(a=>`<li>${esc(a.content||'—')} <b>— score ${esc(a.score??'—')}</b></li>`).join('')}</ul></div>`:'';
-    return `<article class="migration-review-row" data-review-card data-cmp="${status}" data-pending="${decision==='pending'?'1':'0'}" data-translations="${missing?'1':'0'}"><div class="migration-review-main"><div class="migration-review-heading"><span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}${isProfile&&p.position!=null?' '+esc(p.position):''}</span><span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>${missing?`<span class="migration-review-translation-warning">Traduction active à compléter</span>`:''}<span class="migration-review-context-note">Contexte parent</span></div><strong>${esc(title)}</strong><small>Ancien ID ${esc(e.legacy_id)}</small>${compare}${answerContext}${translationReviewHtml(e)}</div><div class="migration-review-decision"><select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision)}</select></div></article>`;
+    return `<article class="migration-review-row" data-review-card data-cmp="${status}" data-pending="${decision==='pending'?'1':'0'}" data-translations="${missing?'1':'0'}"><div class="migration-review-main"><div class="migration-review-heading"><span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}${isProfile&&p.position!=null?' '+esc(p.position):''}</span><span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>${missing?`<span class="migration-review-translation-warning">Traduction active à compléter</span>`:''}<span class="migration-review-context-note">Contexte parent</span></div><strong>${esc(title)}</strong><small>Ancien ID ${esc(e.legacy_id)}</small>${compare}${answerContext}${translationReviewHtml(e)}</div><div class="migration-review-decision"><div class="migration-review-decision-control"><select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision)}</select><button type="button" class="migration-review-decision-help" data-decision-help aria-label="Comprendre les choix de décision" title="Comprendre les choix">?</button></div>${reviewDecisionHelpHtml(decision)}</div></article>`;
   }
 
 
@@ -556,10 +560,29 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           const value=sel.value;
           const id=sel.dataset.reviewStatus;
           sel.classList.toggle('is-decided',value!=='pending');
-          sel.closest('[data-review-card]')?.setAttribute('data-pending',value==='pending'?'1':'0');
+          const card=sel.closest('[data-review-card]');
+          card?.setAttribute('data-pending',value==='pending'?'1':'0');
+          const current=card?.querySelector('[data-decision-current]');
+          const def=reviewDecisionDefinitions[value]||reviewDecisionDefinitions.pending;
+          if(current)current.innerHTML=`<strong>${esc(def.label)}</strong><span>${esc(def.short)}</span>`;
+          card?.querySelectorAll('[data-decision-help-item]').forEach(item=>item.classList.toggle('is-current',item.dataset.decisionHelpItem===value));
           if(value===sel.dataset.initialValue)dirty.delete(id); else dirty.set(id,value);
           updateSaveUi();
         };
+      });
+
+      $$('[data-decision-help]').forEach(btn=>{
+        const card=btn.closest('[data-review-card]');
+        const panel=card?.querySelector('[data-decision-help-panel]');
+        const sel=card?.querySelector('[data-review-status]');
+        if(panel&&sel){
+          panel.querySelectorAll('[data-decision-help-item]').forEach(item=>item.classList.toggle('is-current',item.dataset.decisionHelpItem===sel.value));
+          btn.onclick=()=>{
+            panel.hidden=!panel.hidden;
+            btn.classList.toggle('is-open',!panel.hidden);
+            btn.setAttribute('aria-expanded',panel.hidden?'false':'true');
+          };
+        }
       });
 
       if(saveBtn)saveBtn.onclick=async()=>{

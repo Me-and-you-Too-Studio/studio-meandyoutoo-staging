@@ -12750,3 +12750,23 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
   #migration-review-dialog.admin-dialog-wide{width:calc(100vw - 16px);max-width:calc(100vw - 16px)}
   .migration-profile-structured-compare,.migration-review-profile-compare{grid-template-columns:1fr}
 }
+
+/* Migration review — aide contextuelle sur les décisions */
+.migration-review-decision{min-width:280px;display:grid;gap:.55rem;align-content:start}
+.migration-review-decision-control{display:grid;grid-template-columns:minmax(0,1fr) 36px;gap:.45rem;align-items:center}
+.migration-review-decision-control select{min-width:0;width:100%}
+.migration-review-decision-help{width:36px;height:36px;border-radius:50%;border:1px solid #b8d1dc;background:#fff;color:#0d4c72;font-weight:900;font-size:1rem;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s ease}
+.migration-review-decision-help:hover,.migration-review-decision-help:focus-visible,.migration-review-decision-help.is-open{background:#eaf6f8;border-color:#0b8793;outline:none}
+.migration-review-decision-current{display:grid;gap:.1rem;padding:.55rem .65rem;border:1px solid #dce8ed;border-radius:10px;background:#f8fbfc}
+.migration-review-decision-current strong{font-size:.78rem;color:#0d4c72}
+.migration-review-decision-current span{font-size:.76rem;color:#5d7480;line-height:1.35}
+.migration-review-decision-help-panel{display:grid;gap:.45rem;padding:.7rem;border:1px solid #cfe1e8;border-radius:12px;background:#fff;box-shadow:0 10px 24px rgba(21,65,84,.08)}
+.migration-review-decision-help-panel[hidden]{display:none!important}
+.migration-review-decision-help-head{display:grid;gap:.15rem;padding-bottom:.45rem;border-bottom:1px solid #e4ecef}
+.migration-review-decision-help-head strong{font-size:.86rem;color:#0d4c72}
+.migration-review-decision-help-head span{font-size:.74rem;color:#607784;line-height:1.4}
+.migration-review-decision-help-item{display:grid;gap:.08rem;padding:.45rem .5rem;border-radius:9px}
+.migration-review-decision-help-item strong{font-size:.78rem;color:#284b5e}
+.migration-review-decision-help-item span{font-size:.74rem;color:#627986;line-height:1.4}
+.migration-review-decision-help-item.is-current{background:#eaf6f8;box-shadow:inset 3px 0 0 #0b8793}
+@media(max-width:900px){.migration-review-decision{min-width:0}.migration-review-decision-control{grid-template-columns:minmax(0,1fr) 40px}}
