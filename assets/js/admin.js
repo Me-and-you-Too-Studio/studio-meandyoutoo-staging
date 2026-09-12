@@ -124,10 +124,13 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const raw=String(field||'différence');
     if(raw.startsWith('translation_missing:'))return `traduction ${raw.split(':')[1]?.toUpperCase()||''} absente du Studio`;
     if(raw.startsWith('translation_differs:'))return `traduction ${raw.split(':')[1]?.toUpperCase()||''} différente`;
-    return ({content:'texte',score:'score',is_best:'meilleure réponse',position:'position',title:'titre',summary:'résumé',scoring_min:'score minimum',scoring_max:'score maximum',top_score:'score plafond',color:'couleur'})[raw]||raw;
+    return ({content:'texte',introduction:'introduction',score:'score',is_best:'meilleure réponse',position:'position',title:'titre',summary:'résumé',scoring_min:'score minimum',scoring_max:'score maximum',top_score:'score plafond',color:'couleur'})[raw]||raw;
   }
   function migrationDifferencesText(cmp){const rows=Array.isArray(cmp?.differences)?cmp.differences:[];return rows.map(migrationDifferenceLabel).join(' · ');}
   function migrationDifferencesHtml(cmp){const text=migrationDifferencesText(cmp);return text?`<div class="migration-difference-note"><strong>Différences détectées :</strong> ${esc(text)}</div>`:'';}
+  function migrationLanguageDifferences(cmp){return Array.isArray(cmp?.translationDifferences)?cmp.translationDifferences:[];}
+  function migrationLanguageDiffLocales(cmp){return [...new Set(migrationLanguageDifferences(cmp).map(x=>String(x||'').split(':')[1]).filter(Boolean))];}
+  function migrationLanguageDiffBadge(cmp){const locales=migrationLanguageDiffLocales(cmp);return locales.length?`<span class="migration-review-language-warning">Langue${locales.length>1?'s':''} à récupérer : ${esc(locales.map(x=>x.toUpperCase()).join(' · '))}</span>`:'';}
   function migrationTranslations(payload){const all=Object.keys(payload?.translations||{}).map(x=>String(x).toLowerCase()).filter(Boolean);const active=(payload?.activeLocales||[]).map(x=>String(x).toLowerCase()).filter(Boolean);const selected=active.length?active.filter(x=>all.includes(x)):all;return [...new Set(selected)].sort((a,b)=>a.localeCompare(b,'fr'));}
   function migrationDormantTranslations(payload){const all=Object.keys(payload?.translations||{}).map(x=>String(x).toLowerCase()).filter(Boolean);const active=new Set((payload?.activeLocales||[]).map(x=>String(x).toLowerCase()).filter(Boolean));return [...new Set(all.filter(x=>!active.has(x)))].sort((a,b)=>a.localeCompare(b,'fr'));}
   function migrationLanguageLabel(locale){const l=String(locale||'').toLowerCase();return({fr:'Français',en:'English',es:'Español',de:'Deutsch',it:'Italiano',pt:'Português',ar:'العربية',ja:'日本語','ko-kr':'한국어',zh:'中文',pl:'Polski',ru:'Русский',tr:'Türkçe'})[l]||String(locale||'').toUpperCase();}
@@ -154,11 +157,11 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function migrationDiffLegend(changed=true){return changed?'<div class="migration-diff-legend"><span><i class="is-old"></i>Historique : supprimé / remplacé</span><span><i class="is-new"></i>Studio : ajouté / remplacé</span></div>':'';}
   function migrationPayloadTitle(m){const p=m?.source_payload||{};if(m?.entity_type==='profile')return p.title||p.raw?.title||`Profil #${m.legacy_id}`;if(m?.entity_type==='chapter')return p.title||p.originalTitle||`Chapitre #${m.legacy_id}`;if(m?.entity_type==='theme')return p.title||p.originalTitle||`Thématique #${m.legacy_id}`;return p.content||p.title||p.originalTitle||p.label||`${migrationEntityLabel(m.entity_type)} #${m.legacy_id}`;}
   function dryRunTypeStats(mappings,type){const rows=mappings.filter(m=>m.entity_type===type);const stat={total:rows.length,exact:0,variant:0,new:0};rows.forEach(m=>{const st=(m.comparison||m.source_payload?._comparison||{}).status||'new';if(st==='exact_match')stat.exact++;else if(st==='possible_variant')stat.variant++;else stat.new++;});return stat;}
-  function migrationTranslationText(payload,locale){const t=payload?.translations?.[locale]||{};return t.content||t.title||t.summary||t.label||'';}
+  function migrationTranslationText(payload,locale){const t=payload?.translations?.[locale]||{};return t.introduction||t.content||t.title||t.summary||t.label||'';}
   function migrationStudioTranslationText(target,locale){
     const l=String(locale||'').toLowerCase();
     const translated=target?.translations?.[l]||{};
-    const translatedText=translated.content||translated.title||translated.summary||translated.label||'';
+    const translatedText=translated.introduction||translated.content||translated.title||translated.summary||translated.label||'';
     if(translatedText)return translatedText;
     if(l==='fr')return target?.content||target?.title||target?.summary||target?.label||'';
     return '';
@@ -238,7 +241,11 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     ignore:{label:'Ignorer',short:'Ne rien intégrer pour cet élément.',detail:'L’élément reste visible dans l’historique du lot pour traçabilité, mais il sera exclu de l’intégration finale.'}
   };
   function reviewDecisionEntries(entityType){
-    return Object.entries(reviewDecisionDefinitions).filter(([value])=>!(entityType==='profile'&&value==='add_complementary'));
+    return Object.entries(reviewDecisionDefinitions).filter(([value])=>{
+      if(entityType==='profile'&&value==='add_complementary')return false;
+      if(entityType==='theme'&&['add_complementary','country_variant'].includes(value))return false;
+      return true;
+    });
   }
   function reviewDecisionOptions(current,entityType){
     return reviewDecisionEntries(entityType).map(([v,d])=>`<option value="${v}" ${v===current?'selected':''}>${d.label}</option>`).join('');
@@ -330,18 +337,60 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     }).join('')}</div>`;
   }
 
+  function migrationReviewLanguageHtml(e){
+    const p=e.source_payload||{},c=e.comparison||{},target=c.targetPayload||{},tr=p.translations||{},active=new Set((p.activeLocales||[]).map(x=>String(x).toLowerCase()));
+    const locales=[...new Set([...Object.keys(tr).map(x=>String(x).toLowerCase()),...active])].filter(Boolean).sort((a,b)=>a==='fr'?-1:b==='fr'?1:a.localeCompare(b,'fr'));
+    if(!locales.length)return '';
+    const diffs=new Set(migrationLanguageDifferences(c));
+    const clean=v=>migrationPlainText(v);
+    const histFor=loc=>{
+      const row=tr[loc]||{};
+      if(e.entity_type==='profile')return{title:loc==='fr'?(p.title||row.title):row.title,summary:loc==='fr'?(p.summary||row.summary):row.summary,content:loc==='fr'?(p.content||row.content):row.content};
+      if(e.entity_type==='theme')return{introduction:loc==='fr'?(p.introduction||row.introduction||row.content):(row.introduction||row.content)};
+      if(e.entity_type==='chapter')return{title:loc==='fr'?(p.title||row.title):row.title};
+      return{content:loc==='fr'?(p.content||row.content):row.content};
+    };
+    const studioFor=loc=>{
+      if(loc==='fr'){
+        if(e.entity_type==='profile')return{title:target.title,summary:target.summary,content:target.content};
+        if(e.entity_type==='theme')return{introduction:target.introduction_html};
+        if(e.entity_type==='chapter')return{title:target.title};
+        return{content:target.content};
+      }
+      return target.translations?.[loc]||{};
+    };
+    const panels=locales.map((loc,index)=>{
+      const h=histFor(loc),st=studioFor(loc),code=loc.toUpperCase(),missing=diffs.has(`translation_missing:${loc}`),different=diffs.has(`translation_differs:${loc}`),dormant=!active.has(loc);
+      let body='';
+      if(e.entity_type==='profile'){
+        body=`<div class="migration-review-language-fields"><div><span>Titre</span><p>${esc(clean(h.title)||'—')}</p></div><div><span>Résumé</span><p>${esc(clean(h.summary)||'—')}</p></div><div><span>Texte détaillé</span><p>${esc(clean(h.content)||'—')}</p></div></div><div class="migration-review-language-fields is-studio"><div><span>Titre Studio</span><p>${esc(clean(st.title)||'—')}</p></div><div><span>Résumé Studio</span><p>${esc(clean(st.summary)||'—')}</p></div><div><span>Texte Studio</span><p>${esc(clean(st.content)||'—')}</p></div></div>`;
+      }else if(e.entity_type==='theme'){
+        body=`<div class="migration-review-language-columns"><div><span>Introduction historique</span><p>${esc(clean(h.introduction)||'—')}</p></div><div><span>Introduction Studio</span><p>${esc(clean(st.introduction)||'—')}</p></div></div>`;
+      }else{
+        const hv=clean(h.title||h.content),sv=clean(st.title||st.content);
+        body=`<div class="migration-review-language-columns"><div><span>Historique</span><p>${esc(hv||'—')}</p></div><div><span>Studio</span><p>${esc(sv||'—')}</p></div></div>`;
+      }
+      const status=missing?'À récupérer : absente du Studio':different?'À récupérer : version différente':dormant?'Historique hors diffusion':'Disponible';
+      return `<div class="migration-review-language-panel" data-review-lang-panel="${esc(e.id)}:${esc(loc)}" ${index?'hidden':''}><div class="migration-review-language-status"><strong>${esc(code)} · ${esc(migrationLanguageLabel(loc))}</strong><span class="${missing||different?'is-action':dormant?'is-dormant':''}">${esc(status)}</span></div>${body}${(missing||different)?`<p class="hint">${e.review_status==='translation_only'?'Cette langue sera récupérée sans modifier la version FR du Studio.':'Si tu veux uniquement ajouter cette langue sans modifier le FR, choisis « Récupérer la traduction uniquement ».'}</p>`:''}</div>`;
+    }).join('');
+    return `<details class="migration-review-languages" ${migrationLanguageDifferences(c).length?'open':''}><summary><strong>Langues</strong>${migrationLanguageDiffBadge(c)}<span class="hint">${locales.map(x=>x.toUpperCase()).join(' · ')}</span></summary><div class="migration-review-language-tabs">${locales.map((loc,index)=>`<button type="button" class="${index?'':'is-active'}" data-review-lang-tab="${esc(e.id)}:${esc(loc)}">${esc(loc.toUpperCase())}</button>`).join('')}</div>${panels}</details>`;
+  }
+
   function reviewInfo(text){
     return `<span class="migration-review-info" tabindex="0" aria-label="${esc(text)}" title="${esc(text)}">i</span>`;
   }
 
   function reviewCard(e,compact=false){
     const p=e.source_payload||{},c=e.comparison||{},cur=c.targetPayload||{},clean=v=>migrationPlainText(v);
-    const isProfile=e.entity_type==='profile';
-    const title=isProfile?clean(p.title||p.raw?.title)||`Profil #${e.legacy_id}`:clean(p.content||p.title||p.label)||`${reviewTypeLabel(e.entity_type)} #${e.legacy_id}`;
+    const isProfile=e.entity_type==='profile',isTheme=e.entity_type==='theme';
+    const title=isProfile?clean(p.title||p.raw?.title)||`Profil #${e.legacy_id}`:isTheme?'Introduction du diagnostic':clean(p.content||p.title||p.label)||`${reviewTypeLabel(e.entity_type)} #${e.legacy_id}`;
     const exact=c.status==='exact_match',variant=c.status==='possible_variant',status=exact?'existing':variant?'variant':'new';
     let compare='';
-    if(!compact&&c.targetEntityId&&['situation','answer','profile'].includes(e.entity_type)){
-      if(isProfile){
+    if(!compact&&c.targetEntityId&&['theme','situation','answer','profile'].includes(e.entity_type)){
+      if(isTheme){
+        const histIntro=clean(p.introduction||p.translations?.fr?.introduction||p.translations?.fr?.content),studioIntro=clean(cur.introduction_html),diff=migrationTextDiff(histIntro,studioIntro);
+        compare=`${migrationDifferencesHtml(c)}${migrationDiffLegend(diff.changed)}<div class="migration-review-compare"><div><span>INTRODUCTION HISTORIQUE</span><p class="migration-diff-text">${diff.oldHtml}</p></div><div><span>INTRODUCTION STUDIO ACTUELLE</span><p class="migration-diff-text">${diff.newHtml}</p></div></div>`;
+      }else if(isProfile){
         const histTitle=clean(p.title||p.raw?.title),histSummary=clean(p.summary||p.raw?.summary),histContent=clean(p.content||p.raw?.content),studioTitle=clean(cur.title),studioSummary=clean(cur.summary),studioContent=clean(cur.content);
         const dTitle=migrationTextDiff(histTitle,studioTitle),dSummary=migrationTextDiff(histSummary,studioSummary),dContent=migrationTextDiff(histContent,studioContent),changed=dTitle.changed||dSummary.changed||dContent.changed;
         compare=`${migrationDifferencesHtml(c)}${migrationDiffLegend(changed)}<div class="migration-review-profile-compare"><div class="migration-review-profile-version is-history"><div class="migration-review-profile-version-head"><span>HISTORIQUE</span><strong>${p.position!=null?'Profil '+esc(p.position)+' · ':''}${esc(histTitle||'Profil historique')}</strong></div><div class="migration-review-profile-field"><span>Titre du profil</span><p class="migration-diff-text">${dTitle.oldHtml}</p></div><div class="migration-review-profile-field"><span>Résumé</span><p class="migration-diff-text">${dSummary.oldHtml}</p></div><div class="migration-review-profile-field is-detail"><span>Texte détaillé</span><p class="migration-diff-text">${dContent.oldHtml}</p></div><small>Score ${esc(p.scoringRangeMin??p.scoring_min??'—')} → ${esc(p.scoringRangeMax??p.scoring_max??'—')}${p.topScore!=null?' · plafond '+esc(p.topScore):''}${p.color?' · couleur '+esc(p.color):''}</small></div><div class="migration-review-profile-version is-studio"><div class="migration-review-profile-version-head"><span>STUDIO ACTUEL</span><strong>${esc(studioTitle||'Profil actuel')}</strong></div><div class="migration-review-profile-field"><span>Titre du profil</span><p class="migration-diff-text">${dTitle.newHtml}</p></div><div class="migration-review-profile-field"><span>Résumé</span><p class="migration-diff-text">${dSummary.newHtml}</p></div><div class="migration-review-profile-field is-detail"><span>Texte détaillé</span><p class="migration-diff-text">${dContent.newHtml}</p></div><small>Score ${esc(cur.scoring_min??'—')} → ${esc(cur.scoring_max??'—')}${cur.top_score!=null?' · plafond '+esc(cur.top_score):''}${cur.color?' · couleur '+esc(cur.color):''}</small></div></div>`;
@@ -351,7 +400,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       }
     }
     const decision=e.review_status||(exact?'keep_current':'pending'),missing=activeTranslationMissing(e),answerContext=e.entity_type==='answer'&&Array.isArray(c.currentSiblingAnswers)&&c.currentSiblingAnswers.length?`<div class="migration-review-answer-context"><span>Réponses actuellement rattachées à cette situation dans Studio</span><ul>${c.currentSiblingAnswers.map(a=>`<li>${esc(a.content||'—')} <b>— score ${esc(a.score??'—')}</b></li>`).join('')}</ul></div>`:'';
-    return `<article class="migration-review-row" data-review-card data-cmp="${status}" data-pending="${decision==='pending'?'1':'0'}" data-translations="${missing?'1':'0'}"><div class="migration-review-main"><div class="migration-review-heading"><span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}${isProfile&&p.position!=null?' '+esc(p.position):''}</span><span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>${missing?`<span class="migration-review-translation-warning">Traduction active à compléter</span>`:''}<span class="migration-review-context-note">Contexte parent</span></div><strong>${esc(title)}</strong><small>Ancien ID ${esc(e.legacy_id)}</small>${compare}${answerContext}${translationReviewHtml(e)}</div><div class="migration-review-decision"><div class="migration-review-decision-control"><select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision,e.entity_type)}</select><button type="button" class="migration-review-decision-help" data-decision-help aria-label="Aide sur les décisions">?</button></div>${reviewDecisionHelpHtml(decision,e.entity_type)}</div></article>`;
+    const languageDiff=migrationLanguageDifferences(c).length>0;
+    return `<article class="migration-review-row" data-review-card data-cmp="${status}" data-pending="${decision==='pending'?'1':'0'}" data-translations="${missing?'1':'0'}" data-language-recover="${languageDiff?'1':'0'}"><div class="migration-review-main"><div class="migration-review-heading"><span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}${isProfile&&p.position!=null?' '+esc(p.position):''}</span><span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>${migrationLanguageDiffBadge(c)}${missing?`<span class="migration-review-translation-warning">Traduction active à compléter</span>`:''}${isTheme?'':`<span class="migration-review-context-note">Contexte parent</span>`}</div><strong>${esc(title)}</strong><small>Ancien ID ${esc(e.legacy_id)}</small>${compare}${migrationReviewLanguageHtml(e)}${answerContext}${translationReviewHtml(e)}</div><div class="migration-review-decision"><div class="migration-review-decision-control"><select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision,e.entity_type)}</select><button type="button" class="migration-review-decision-help" data-decision-help aria-label="Aide sur les décisions">?</button></div>${reviewDecisionHelpHtml(decision,e.entity_type)}</div></article>`;
   }
 
 
@@ -389,8 +439,10 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       d.dataset.batchId=batchId;
       $('#migration-review-title').textContent='Revue des décisions — '+(data.batch?.name||data.batch?.source_customer_name||'Import historique');
 
-      const businessEntities=entities.filter(x=>!['theme','survey_meta'].includes(x.entity_type));
-      const technicalEntities=entities.filter(x=>['theme','survey_meta'].includes(x.entity_type));
+      const contentEntities=entities.filter(x=>!['theme','survey_meta'].includes(x.entity_type));
+      const themeEntity=entities.find(x=>x.entity_type==='theme')||null;
+      const businessEntities=themeEntity?[themeEntity,...contentEntities]:contentEntities;
+      const technicalEntities=entities.filter(x=>x.entity_type==='survey_meta');
       // Un profil doit rester l'un des 3 niveaux de scoring du chapitre : il ne peut jamais
       // être ajouté comme 4e profil complémentaire. Les anciennes décisions incompatibles
       // sont remises à "À décider" et seront resauvegardées explicitement.
@@ -414,13 +466,14 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         pending:businessEntities.filter(x=>x.review_status==='pending'&&x.comparison?.status!=='exact_match').length,
         variant:businessEntities.filter(x=>x.comparison?.status==='possible_variant'&&x.review_status==='pending').length,
         new:businessEntities.filter(x=>x.comparison?.status==='new'&&x.review_status==='pending').length,
-        existing:businessEntities.filter(x=>x.comparison?.status==='exact_match').length,
+        existing:contentEntities.filter(x=>x.comparison?.status==='exact_match').length,
         translations:businessEntities.filter(x=>{
           if(!activeTranslationMissing(x))return false;
           const p=x.source_payload||{},active=(p.activeLocales||[]).map(String);
           return active.some(loc=>draftsByKey.get(`${x.id}:${loc}`)?.status!=='validated');
         }).length,
-        total:businessEntities.length
+        languageRecover:businessEntities.filter(x=>migrationLanguageDifferences(x.comparison).length>0).length,
+        total:contentEntities.length
       };
 
       const chapterHtml=chapters.map(ch=>{
@@ -482,8 +535,11 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
             <button type="button" data-review-filter="new">
               Nouveaux à décider <b>${n.new}</b>${reviewInfo('Nouveaux contenus sans décision enregistrée. Une fois décidés, ils sortent de ce compteur et restent consultables dans « Tout voir ».')}
             </button>
+            <button type="button" data-review-filter="languages">
+              Langues à récupérer <b>${n.languageRecover}</b>${reviewInfo('Langues présentes dans l’historique mais absentes ou différentes dans Studio. Elles ne transforment plus tous les contenus en variantes : elles sont traitées séparément sous l’onglet Langues.')}
+            </button>
             <button type="button" data-review-filter="translations">
-              Traductions à compléter <b>${n.translations}</b>${reviewInfo('Uniquement les langues actives du diagnostic pour lesquelles un contenu requis manque. Les traductions historiques hors diffusion ne sont pas comptées.')}
+              Traductions à compléter <b>${n.translations}</b>${reviewInfo('Uniquement les langues actives du diagnostic pour lesquelles le contenu historique lui-même est incomplet. Les traductions historiques hors diffusion ne sont pas comptées.')}
             </button>
             <button type="button" data-review-filter="existing">
               Déjà présents <b>${n.existing}</b>${reviewInfo('Studio a retrouvé un équivalent. Ces éléments sont pré-positionnés sur « Garder le Studio actuel ».')}
@@ -502,11 +558,13 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
 
         <div class="migration-review-auto-note">
           <strong>${n.existing} éléments déjà rapprochés automatiquement</strong>
-          <span>Ils sont réglés sur « Garder le Studio actuel ». Tu peux les contrôler ou modifier la décision si nécessaire.</span>
+          <span>Le contenu FR est conservé. Quand seule une langue manque dans Studio, « Récupérer la traduction uniquement » est pré-sélectionné automatiquement : cela ne crée plus une variante métier.</span>
           ${reviewInfo('Un rapprochement automatique n’intègre rien. Il prépare uniquement la décision finale.')}
         </div>
 
         <div id="migration-review-decision-history-slot">${migrationDecisionHistoryHtml(businessEntities)}</div>
+
+        ${themeEntity?`<section class="migration-review-diagnostic-section"><div class="migration-review-diagnostic-head"><strong>Introduction du diagnostic</strong><span>Comparée séparément du contenu des 153 éléments métier.</span></div>${reviewCard(themeEntity)}</section>`:''}
 
         ${technicalEntities.length?`<details class="migration-review-technical-block">
           <summary><span class="migration-review-round">›</span>Informations techniques de migration ${reviewInfo('Provenance, ancien ID, langues et métadonnées nécessaires à la traçabilité. Aucune décision métier à prendre ici.')}</summary>
@@ -540,6 +598,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           if(f==='variant')return e.comparison?.status==='possible_variant'&&e.review_status==='pending';
           if(f==='new')return e.comparison?.status==='new'&&e.review_status==='pending';
           if(f==='existing')return e.comparison?.status==='exact_match';
+          if(f==='languages')return migrationLanguageDifferences(e.comparison).length>0;
           if(f==='translations')return activeTranslationMissing(e);
           return true;
         });
@@ -549,9 +608,13 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         if(byType.answer)parts.push(`${byType.answer} réponse${byType.answer>1?'s':''}`);
         if(byType.profile)parts.push(`${byType.profile} profil${byType.profile>1?'s':''}`);
         if(byType.chapter)parts.push(`${byType.chapter} chapitre${byType.chapter>1?'s':''}`);
+        if(f==='languages'){
+          const locales=[...new Set(matching.flatMap(e=>migrationLanguageDiffLocales(e.comparison).map(x=>x.toUpperCase())))];
+          return `<strong>${matching.length} élément${matching.length>1?'s':''} avec langue à récupérer</strong><span>Langue${locales.length>1?'s':''} concernée${locales.length>1?'s':''} : ${locales.join(', ')||'—'}. Ces écarts linguistiques sont séparés des variantes de contenu.</span>`;
+        }
         if(f==='translations'){
           const locales=[...new Set(matching.flatMap(e=>translationMissingInfo(e).map(x=>x.locale.toUpperCase())))];
-          return `<strong>${matching.length} contenu${matching.length>1?'s':''} avec traduction active incomplète</strong><span>Langue${locales.length>1?'s':''} concernée${locales.length>1?'s':''} : ${locales.join(', ')||'—'}. ${parts.join(' · ')}</span>`;
+          return `<strong>${matching.length} contenu${matching.length>1?'s':''} avec traduction historique incomplète</strong><span>Langue${locales.length>1?'s':''} concernée${locales.length>1?'s':''} : ${locales.join(', ')||'—'}. ${parts.join(' · ')}</span>`;
         }
         const labels={pending:'Décisions restantes',variant:'Variantes restant à décider',new:'Nouveaux contenus restant à décider',existing:'Contenus déjà rapprochés',all:'Tous les contenus métier'};
         return `<strong>${labels[f]||'Résultats'}</strong><span>${parts.join(' · ')||'Aucun contenu'}. Les situations parentes restent visibles comme contexte lorsque seules leurs réponses correspondent au filtre.</span>`;
@@ -577,6 +640,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           if(activeFilter==='pending')return `${visible} ${kind}${plural} à décider sur ${total}`;
           if(activeFilter==='variant')return `${visible} ${kind}${plural} variante${plural} sur ${total}`;
           if(activeFilter==='new')return `${visible} nouveau${visible>1?'x':''} ${kind}${plural} sur ${total}`;
+          if(activeFilter==='languages')return `${visible} ${kind}${plural} avec langue à récupérer sur ${total}`;
           if(activeFilter==='translations')return `${visible} ${kind}${plural} à compléter sur ${total}`;
           if(activeFilter==='existing')return `${visible} ${kind}${plural} déjà présent${plural} sur ${total}`;
           return `${total} ${kind}${total>1?'s':''}`;
@@ -625,7 +689,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         filterButtons.forEach(x=>x.classList.toggle('active',x.dataset.reviewFilter===f));
         cards.forEach(c=>{
           c.classList.remove('is-context-only');
-          const show=f==='all'||(f==='pending'&&c.dataset.pending==='1')||(f==='variant'&&c.dataset.cmp==='variant'&&c.dataset.pending==='1')||(f==='new'&&c.dataset.cmp==='new'&&c.dataset.pending==='1')||(f==='existing'&&c.dataset.cmp==='existing')||(f==='translations'&&c.dataset.translations==='1');
+          const show=f==='all'||(f==='pending'&&c.dataset.pending==='1')||(f==='variant'&&c.dataset.cmp==='variant'&&c.dataset.pending==='1')||(f==='new'&&c.dataset.cmp==='new'&&c.dataset.pending==='1')||(f==='existing'&&c.dataset.cmp==='existing')||(f==='languages'&&c.dataset.languageRecover==='1')||(f==='translations'&&c.dataset.translations==='1');
           c.dataset.filterMatched=show?'1':'0';c.hidden=!show;
         });
         refreshNestedVisibility();
@@ -634,6 +698,13 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
 
       filterButtons.forEach(b=>b.addEventListener('click',ev=>{
         ev.preventDefault();ev.stopPropagation();applyReviewFilter(b.dataset.reviewFilter);
+      }));
+
+      $$('[data-review-lang-tab]').forEach(b=>b.addEventListener('click',ev=>{
+        ev.preventDefault();ev.stopPropagation();
+        const [entityId,locale]=String(b.dataset.reviewLangTab||'').split(':');
+        $$(`[data-review-lang-tab^="${entityId}:"]`).forEach(x=>x.classList.toggle('is-active',x===b));
+        $$(`[data-review-lang-panel^="${entityId}:"]`).forEach(panel=>{panel.hidden=panel.dataset.reviewLangPanel!==`${entityId}:${locale}`;});
       }));
 
       $$('[data-review-expand]').forEach(b=>b.addEventListener('click',ev=>{
@@ -646,9 +717,10 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           pending:businessEntities.filter(x=>x.review_status==='pending'&&x.comparison?.status!=='exact_match').length,
           variant:businessEntities.filter(x=>x.comparison?.status==='possible_variant'&&x.review_status==='pending').length,
           new:businessEntities.filter(x=>x.comparison?.status==='new'&&x.review_status==='pending').length,
-          existing:businessEntities.filter(x=>x.comparison?.status==='exact_match').length,
+          existing:contentEntities.filter(x=>x.comparison?.status==='exact_match').length,
           translations:businessEntities.filter(x=>activeTranslationMissing(x)).length,
-          total:businessEntities.length
+          languageRecover:businessEntities.filter(x=>migrationLanguageDifferences(x.comparison).length>0).length,
+          total:contentEntities.length
         };
       }
       function refreshReviewCounters(){
@@ -814,7 +886,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           updateSaveUi('Échec de l’application du test — le catalogue n’a pas été validé.');
         }
       }
-      applyReviewFilter(n.pending>0?'pending':(n.variant>0?'variant':(n.new>0?'new':'all')));
+      applyReviewFilter(n.pending>0?'pending':(n.variant>0?'variant':(n.new>0?'new':(n.languageRecover>0?'languages':'all'))));
       $$('[data-translation-edit]').forEach(btn=>btn.onclick=()=>{
         const entity=entities.find(x=>String(x.id)===String(btn.dataset.translationEdit)),locale=btn.dataset.locale;
         if(!entity)return;

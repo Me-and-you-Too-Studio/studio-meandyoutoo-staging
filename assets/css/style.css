@@ -12806,3 +12806,27 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .admin-library-answer-localization>details>summary{cursor:pointer;color:#0d5d7a;font-weight:700;margin:4px 0}
 .admin-profile-localization-card .admin-library-localization-badges{margin:0 0 8px}
 @media(max-width:760px){.admin-library-localization-head{align-items:flex-start}.admin-library-localization-badges{margin-left:0}.admin-library-answer-localization{grid-column:1/-1}}
+
+/* Migration review — language differences are handled separately from business variants. */
+.migration-review-language-warning{display:inline-flex;align-items:center;gap:.35rem;padding:.28rem .55rem;border-radius:999px;background:#eef8fa;color:#0d6470;font-weight:700;font-size:.78rem}
+.migration-review-languages{margin-top:1rem;border:1px solid #d9e7ee;border-radius:14px;background:#fbfdfe;overflow:hidden}
+.migration-review-languages>summary{display:flex;align-items:center;gap:.65rem;flex-wrap:wrap;padding:.8rem 1rem;cursor:pointer;list-style:none}
+.migration-review-languages>summary::-webkit-details-marker{display:none}
+.migration-review-languages>summary .hint{margin-left:auto}
+.migration-review-language-tabs{display:flex;gap:.45rem;flex-wrap:wrap;padding:.7rem 1rem 0;border-top:1px solid #e4edf2}
+.migration-review-language-tabs button{border:1px solid #c9dce5;background:#fff;color:#24506d;border-radius:999px;padding:.4rem .75rem;font-weight:700;cursor:pointer}
+.migration-review-language-tabs button.is-active{background:#0d5d7b;color:#fff;border-color:#0d5d7b}
+.migration-review-language-panel{padding:1rem}
+.migration-review-language-status{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.75rem}
+.migration-review-language-status span{font-size:.8rem;padding:.28rem .55rem;border-radius:999px;background:#eef3f6;color:#52697a}
+.migration-review-language-status span.is-action{background:#fff3d9;color:#8b5a00;font-weight:700}
+.migration-review-language-status span.is-dormant{background:#f1eef8;color:#665487}
+.migration-review-language-columns,.migration-review-language-fields{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.migration-review-language-fields{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:.8rem}
+.migration-review-language-fields.is-studio{padding-top:.8rem;border-top:1px solid #e3edf1}
+.migration-review-language-columns>div,.migration-review-language-fields>div{min-width:0;padding:.75rem;border:1px solid #dde9ee;border-radius:10px;background:#fff}
+.migration-review-language-columns span,.migration-review-language-fields span{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;color:#617989;font-weight:700;margin-bottom:.35rem}
+.migration-review-language-columns p,.migration-review-language-fields p{margin:0;white-space:pre-wrap;line-height:1.5}
+.migration-review-diagnostic-section{margin:1rem 0;padding:1rem;border:1px solid #d9e7ee;border-radius:16px;background:#fff}
+.migration-review-diagnostic-head{display:flex;gap:.65rem;align-items:baseline;flex-wrap:wrap;margin-bottom:.75rem}.migration-review-diagnostic-head span{color:#627a8a;font-size:.9rem}
+@media (max-width:900px){.migration-review-language-columns,.migration-review-language-fields{grid-template-columns:1fr}}
