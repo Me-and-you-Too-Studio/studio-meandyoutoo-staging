@@ -221,10 +221,10 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
 
   function reviewCard(e,compact=false){
     const p=e.source_payload||{},c=e.comparison||{},cur=c.targetPayload||{};
-    const title=p.content||p.title||p.label||`${reviewTypeLabel(e.entity_type)} #${e.legacy_id}`;
+    const clean=v=>String(v||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+    const title=clean(p.content||p.title||p.label)||`${reviewTypeLabel(e.entity_type)} #${e.legacy_id}`;
     const exact=c.status==='exact_match',variant=c.status==='possible_variant';
     const status=exact?'existing':variant?'variant':'new';
-    const clean=v=>String(v||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
 
     let compare='';
     if(!compact&&c.targetEntityId&&['situation','answer','profile'].includes(e.entity_type)){
@@ -345,8 +345,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
                 </details>`:''}
               </div>`;
             }).join('')}
-            ${profiles.length?`<details class="migration-review-subgroup">
-              <summary><span class="migration-review-round">›</span>${profiles.length} profils du chapitre</summary>
+            ${profiles.length?`<details class="migration-review-subgroup migration-review-profile-subgroup" data-review-profile-group data-total-profiles="${profiles.length}">
+              <summary><span class="migration-review-round">›</span><span data-review-profile-count>${profiles.length} profil${profiles.length>1?'s':''}</span></summary>
               <div>${profiles.map(x=>reviewCard(x)).join('')}</div>
             </details>`:''}
           </div>
@@ -461,6 +461,15 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         $$('.migration-review-subgroup').forEach(group=>{
           const hasVisible=[...group.querySelectorAll('[data-review-card]')].some(c=>!c.hidden&&!c.classList.contains('is-context-only'));
           group.hidden=!hasVisible;
+        });
+        $$('[data-review-profile-group]').forEach(group=>{
+          const total=Number(group.dataset.totalProfiles||0);
+          const visible=[...group.querySelectorAll(':scope > div > [data-review-card]')].filter(c=>!c.hidden&&!c.classList.contains('is-context-only')).length;
+          const label=group.querySelector('[data-review-profile-count]');
+          if(!label)return;
+          label.textContent=root.dataset.activeFilter==='translations'
+            ? `${visible} profil${visible>1?'s':''} à compléter sur ${total}`
+            : `${total} profil${total>1?'s':''}`;
         });
         $$('.migration-review-situation-group').forEach(group=>{
           const own=[...group.children].find(el=>el.matches?.('[data-review-card]'));

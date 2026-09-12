@@ -12671,3 +12671,19 @@ body.sidebar-collapsed .profile-copy {
 #migration-translation-validate:disabled:not(:empty){
   opacity:.72;
 }
+
+
+/* Migration traduction UX — modale desktop large, responsive */
+#migration-translation-dialog.admin-dialog-wide{
+  width:95vw;
+  max-width:95vw;
+  max-height:calc(100vh - 24px);
+}
+#migration-translation-dialog>form{width:100%;box-sizing:border-box;}
+#migration-translation-dialog .migration-translation-editor{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.4rem;}
+#migration-translation-dialog .migration-translation-reference{max-height:360px;}
+#migration-translation-dialog textarea{resize:vertical;}
+@media(max-width:850px){
+  #migration-translation-dialog.admin-dialog-wide{width:calc(100vw - 20px);max-width:calc(100vw - 20px);}
+  #migration-translation-dialog .migration-translation-editor{grid-template-columns:1fr;}
+}
