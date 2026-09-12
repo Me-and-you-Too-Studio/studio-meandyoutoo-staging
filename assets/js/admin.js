@@ -599,11 +599,18 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       invalidProfileComplementaryIds.forEach(id=>dirty.set(id,'pending'));
 
       const filterSummary=$('#migration-review-filter-summary');
+      function reviewDecisionFor(entity){
+        const sel=$(`[data-review-status="${entity.id}"]`);
+        if(sel)return sel.value||'pending';
+        if(dirty.has(String(entity.id)))return dirty.get(String(entity.id))||'pending';
+        return entity.review_status||((entity.comparison?.status==='exact_match')?'keep_current':'pending');
+      }
       function filterExplanation(f){
         const matching=businessEntities.filter(e=>{
-          if(f==='pending')return e.review_status==='pending'&&e.comparison?.status!=='exact_match';
-          if(f==='variant')return e.comparison?.status==='possible_variant'&&e.review_status==='pending';
-          if(f==='new')return e.comparison?.status==='new'&&e.review_status==='pending';
+          const decision=reviewDecisionFor(e);
+          if(f==='pending')return decision==='pending'&&e.comparison?.status!=='exact_match';
+          if(f==='variant')return e.comparison?.status==='possible_variant'&&decision==='pending';
+          if(f==='new')return e.comparison?.status==='new'&&decision==='pending';
           if(f==='existing')return e.comparison?.status==='exact_match';
           if(f==='languages')return migrationLanguageDifferences(e.comparison).length>0;
           if(f==='translations')return activeTranslationMissing(e);
@@ -721,9 +728,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
 
       function liveReviewCounts(){
         return {
-          pending:businessEntities.filter(x=>x.review_status==='pending'&&x.comparison?.status!=='exact_match').length,
-          variant:businessEntities.filter(x=>x.comparison?.status==='possible_variant'&&x.review_status==='pending').length,
-          new:businessEntities.filter(x=>x.comparison?.status==='new'&&x.review_status==='pending').length,
+          pending:businessEntities.filter(x=>reviewDecisionFor(x)==='pending'&&x.comparison?.status!=='exact_match').length,
+          variant:businessEntities.filter(x=>x.comparison?.status==='possible_variant'&&reviewDecisionFor(x)==='pending').length,
+          new:businessEntities.filter(x=>x.comparison?.status==='new'&&reviewDecisionFor(x)==='pending').length,
           existing:contentEntities.filter(x=>x.comparison?.status==='exact_match').length,
           translations:businessEntities.filter(x=>activeTranslationMissing(x)).length,
           languageRecover:migrationRecoveryLocales(businessEntities).length,
@@ -804,6 +811,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           if(current)current.innerHTML=`<strong>${esc(def.label)}</strong><span>${esc(def.short)}</span>`;
           card?.querySelectorAll('[data-decision-help-item]').forEach(item=>item.classList.toggle('is-current',item.dataset.decisionHelpItem===value));
           if(value===sel.dataset.initialValue)dirty.delete(id); else dirty.set(id,value);
+          refreshReviewCounters();
+          const activeFilter=root.dataset.activeFilter||'pending';
+          if(filterSummary)filterSummary.innerHTML=filterExplanation(activeFilter);
           updateSaveUi();
         };
       });
