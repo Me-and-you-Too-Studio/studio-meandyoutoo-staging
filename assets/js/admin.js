@@ -88,6 +88,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function migrationEntityLabel(type,count=1){const labels={theme:['Thématique','Thématiques'],chapter:['Chapitre','Chapitres'],situation:['Situation','Situations'],answer:['Réponse','Réponses'],profile:['Profil','Profils'],survey_meta:['Informations du diagnostic','Informations du diagnostic']};return (labels[type]||[type,type])[count>1?1:0];}
   function migrationComparisonLabel(status){return({exact_match:'Déjà dans Studio',possible_variant:'Variante possible',new:'Nouveau'})[status]||'À analyser';}
   function migrationComparisonClass(status){return status==='exact_match'?'is-exact':status==='possible_variant'?'is-variant':'is-new';}
+  function migrationDifferenceLabel(field){return({content:'texte',score:'score',is_best:'meilleure réponse',position:'position',title:'titre',summary:'résumé',scoring_min:'score minimum',scoring_max:'score maximum',top_score:'score plafond',color:'couleur'})[field]||String(field||'différence');}
+  function migrationDifferencesText(cmp){const rows=Array.isArray(cmp?.differences)?cmp.differences:[];return rows.map(migrationDifferenceLabel).join(' · ');}
+  function migrationDifferencesHtml(cmp){const text=migrationDifferencesText(cmp);return text?`<div class="migration-difference-note"><strong>Différences détectées :</strong> ${esc(text)}</div>`:'';}
   function migrationTranslations(payload){const all=Object.keys(payload?.translations||{}).map(x=>String(x).toLowerCase()).filter(Boolean);const active=(payload?.activeLocales||[]).map(x=>String(x).toLowerCase()).filter(Boolean);const selected=active.length?active.filter(x=>all.includes(x)):all;return [...new Set(selected)].sort((a,b)=>a.localeCompare(b,'fr'));}
   function migrationDormantTranslations(payload){const all=Object.keys(payload?.translations||{}).map(x=>String(x).toLowerCase()).filter(Boolean);const active=new Set((payload?.activeLocales||[]).map(x=>String(x).toLowerCase()).filter(Boolean));return [...new Set(all.filter(x=>!active.has(x)))].sort((a,b)=>a.localeCompare(b,'fr'));}
   function migrationLanguageLabel(locale){const l=String(locale||'').toLowerCase();return({fr:'Français',en:'English',es:'Español',de:'Deutsch',it:'Italiano',pt:'Português',ar:'العربية',ja:'日本語','ko-kr':'한국어',zh:'中文',pl:'Polski',ru:'Русский',tr:'Türkçe'})[l]||String(locale||'').toUpperCase();}
@@ -124,8 +127,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     }).join('');
     return `<article class="migration-detail-item migration-profile-item ${migrationComparisonClass(cmp.status)}">
       <div class="migration-detail-item-head"><div class="migration-profile-heading"><span class="migration-profile-color-dot" style="--migration-profile-color:${esc(color)}"></span><div><span class="migration-detail-kind">Profil</span><strong>${esc(title)}</strong><small>Ancien ID ${esc(m.legacy_id)}${p.position!=null?' · position '+esc(p.position):''}</small></div></div><div class="migration-detail-badges"><span class="migration-compare-badge ${migrationComparisonClass(cmp.status)}">${esc(migrationComparisonLabel(cmp.status))}</span><span class="migration-score-badge is-range">Score ${esc(min)} → ${esc(max)}</span>${langs.length?`<div class="migration-lang-switch" aria-label="Langues actives disponibles">${langs.map(l=>`<button type="button" class="migration-lang-badge" data-migration-lang="${esc(m.legacy_id)}:${esc(l)}"><span>${esc(String(l).toUpperCase())}</span><small>${esc(migrationLanguageLabel(l))}</small></button>`).join('')}</div>`:''}</div></div>
+      ${migrationDifferencesHtml(cmp)}
       <div class="migration-profile-copy-grid"><div><span>Résumé</span><p>${esc(summary||'Aucun résumé historique.')}</p></div><div><span>Texte détaillé</span><p>${esc(content||'Aucun texte détaillé historique.')}</p></div></div>
-      ${target?`<div class="migration-profile-studio-current"><span>Studio actuel</span><strong>${esc(target.title||'Profil actuel')}</strong>${targetSummary?`<p><b>Résumé :</b> ${esc(targetSummary)}</p>`:''}${targetContent?`<p><b>Texte :</b> ${esc(targetContent)}</p>`:''}</div>`:''}
+      ${target?`<div class="migration-profile-studio-current"><span>Studio actuel</span><strong>${esc(target.title||'Profil actuel')}</strong><small>Score ${esc(target.scoring_min??'—')} → ${esc(target.scoring_max??'—')}${target.top_score!=null?' · plafond '+esc(target.top_score):''}${target.color?' · couleur '+esc(target.color):''}</small>${targetSummary?`<p><b>Résumé :</b> ${esc(targetSummary)}</p>`:''}${targetContent?`<p><b>Texte :</b> ${esc(targetContent)}</p>`:''}</div>`:''}
       ${translationPanels}
     </article>`;
   }
@@ -149,7 +153,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const countryHtml=variantCountries.length?`<div class="migration-country-variant"><span>Variante pays</span><strong>${variantCountries.map(esc).join(' · ')}</strong></div>`:'';
     return `<article class="migration-detail-item ${migrationComparisonClass(cmp.status)}">
       <div class="migration-detail-item-head"><div><span class="migration-detail-kind">${esc(migrationEntityLabel(m.entity_type))}</span><strong>${esc(title)}</strong><small>Ancien ID ${esc(m.legacy_id)}${p.position!=null?' · position '+esc(p.position):''}</small></div><div class="migration-detail-badges"><span class="migration-compare-badge ${migrationComparisonClass(cmp.status)}">${esc(migrationComparisonLabel(cmp.status))}</span>${migrationScoreHtml(m)}${langs.length?`<div class="migration-lang-switch" aria-label="Langues disponibles">${langs.map(l=>`<button type="button" class="migration-lang-badge" data-migration-lang="${esc(m.legacy_id)}:${esc(l)}" title="Afficher ${esc(migrationLanguageLabel(l))}"><span>${esc(String(l).toUpperCase())}</span><small>${esc(migrationLanguageLabel(l))}</small></button>`).join('')}</div>`:''}</div></div>
-      ${currentText?`<div class="migration-side-by-side"><div><span>Historique</span><p>${esc(title)}</p></div><div><span>Studio actuel</span><p>${esc(currentText)}</p></div></div>`:''}
+      ${migrationDifferencesHtml(cmp)}
+      ${currentText?`<div class="migration-side-by-side"><div><span>Historique</span><p>${esc(title)}</p></div><div><span>Studio actuel</span><p>${esc(currentText)}</p>${m.entity_type==='answer'?`<small>Score ${esc(target?.score??'—')}${target?.is_best===true?' · meilleure réponse':''}</small>`:''}</div></div>`:''}
       ${translationPanels}
       ${countryHtml}
       ${childrenHtml||''}
@@ -263,9 +268,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const studio=e.entity_type==='profile'
         ? `${cur.title||''}\n${clean(cur.summary)}\n${clean(cur.content)}`
         : clean(cur.content||cur.title);
-      compare=`<div class="migration-review-compare">
-        <div><span>HISTORIQUE</span><p>${esc(hist||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(p.scoreValue??p.score??'—')}</small>`:''}</div>
-        <div><span>STUDIO ACTUEL</span><p>${esc(studio||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(cur.score??'—')}</small>`:''}</div>
+      compare=`${migrationDifferencesHtml(c)}<div class="migration-review-compare">
+        <div><span>HISTORIQUE</span><p>${esc(hist||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(p.scoreValue??p.score??'—')}${p.isBest===true||p.is_best===true?' · meilleure réponse':''}</small>`:e.entity_type==='profile'?`<small>Score ${esc(p.scoringRangeMin??p.scoring_min??'—')} → ${esc(p.scoringRangeMax??p.scoring_max??'—')}${p.topScore!=null?' · plafond '+esc(p.topScore):''}${p.color?' · couleur '+esc(p.color):''}</small>`:''}</div>
+        <div><span>STUDIO ACTUEL</span><p>${esc(studio||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(cur.score??'—')}${cur.is_best===true?' · meilleure réponse':''}</small>`:e.entity_type==='profile'?`<small>Score ${esc(cur.scoring_min??'—')} → ${esc(cur.scoring_max??'—')}${cur.top_score!=null?' · plafond '+esc(cur.top_score):''}${cur.color?' · couleur '+esc(cur.color):''}</small>`:''}</div>
       </div>`;
     }
 

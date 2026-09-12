@@ -12690,3 +12690,21 @@ body.sidebar-collapsed .profile-copy {
 
 /* Migration historique — une traduction de profil affiche titre + résumé + texte. */
 .migration-profile-lang-panel .migration-profile-lang-content{grid-column:1/-1}
+
+/* Migration historique — différences de comparaison stricte */
+.migration-difference-note{
+  margin:.65rem 0 .8rem;
+  padding:.65rem .8rem;
+  border:1px solid #f0c36b;
+  border-radius:10px;
+  background:#fff8e8;
+  color:#6c4d12;
+  font-size:.9rem;
+  line-height:1.45;
+}
+.migration-difference-note strong{font-weight:800;}
+.migration-profile-studio-current small,
+.migration-review-compare small{
+  display:block;
+  margin-top:.35rem;
+}
