@@ -77,13 +77,43 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       await StudioModal.alert({title:b.source_customer_name||'Lot de migration',message:`Statut : ${migrationStatusLabel(b.status)}. ${dryRunText(b)||'Aucun dry-run enregistré.'}`,confirmLabel:'Fermer'});
     }catch(e){showError(e.message);}
   }
+  function migrationJsonData(json){
+    const entities=Array.isArray(json)?json:(Array.isArray(json?.entities)?json.entities:[]),meta=Array.isArray(json)?{}:(json?.meta||{});
+    const surveyMeta=entities.find(x=>String(x?.entityType||x?.entity_type||'')==='survey_meta')||{};
+    const theme=entities.find(x=>String(x?.entityType||x?.entity_type||'')==='theme')||{};
+    const surveyPayload=surveyMeta.payload||surveyMeta.source_payload||{};
+    const themePayload=theme.payload||theme.source_payload||{};
+    const survey=surveyPayload.survey||{};
+    const sourceSurveyId=String(meta.sourceSurveyId||survey.id||surveyMeta.legacyId||surveyMeta.legacy_id||'').trim();
+    const sourceCustomerId=String(meta.sourceCustomerId||survey.customer_id||themePayload.sourceCustomerId||'').trim();
+    const sourceCustomerName=String(meta.sourceCustomerName||survey.customer_name||themePayload.customerName||'').trim();
+    let diagnosticTitle=String(themePayload.title||'').replace(/\s+[—-]\s+historique importé\s*$/i,'').trim();
+    if(!diagnosticTitle)diagnosticTitle=String(meta.diagnosticTitle||meta.title||'Migration historique').trim();
+    const lotName=`Me&YouToo — ${diagnosticTitle||'Migration historique'}${sourceSurveyId?` — #${sourceSurveyId}`:''}`;
+    return{entities,meta,sourceSurveyId,sourceCustomerId,sourceCustomerName,diagnosticTitle,lotName};
+  }
+  function migrationDryRunPreview(input,batchId,fileName=''){
+    const preview=$('#migration-dryrun-preview'),btn=$('#run-migration-dryrun'),entities=input?._entities||[],meta=input?._meta||{};
+    if(!preview||!btn)return;
+    const by={};entities.forEach(x=>{const t=String(x.entityType||x.entity_type||'inconnu');by[t]=(by[t]||0)+1;});
+    const batch=state.migrationBatches.find(x=>String(x.id)===String(batchId)),expected=String(batch?.source_survey_id||''),got=String(meta.sourceSurveyId||'');
+    const mismatch=expected&&got&&expected!==got;
+    preview.innerHTML=`${fileName?`<small class="migration-prefill-file">JSON prêt : ${esc(fileName)}</small>`:''}<strong>${fmt(entities.length)} éléments détectés</strong><p>${esc(Object.entries(by).map(([k,v])=>k+' '+v).join(' · '))}</p>${got?`<p>Survey du fichier : <strong>#${esc(got)}</strong>${expected?' · attendu #'+esc(expected):''}</p>`:''}${mismatch?'<div class="composer-alert">Ce fichier ne correspond pas au survey indiqué dans le lot.</div>':'<p class="hint">Le dry-run compare sans écrire dans le catalogue.</p>'}`;
+    btn.disabled=!entities.length||mismatch;
+  }
   function openMigrationDialog(){
     const d=$('#migration-dialog'),sel=$('#migration-org');if(!d||!sel)return;
     sel.innerHTML='<option value="">Choisir un client</option>'+state.organizations.map(o=>`<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
-    $('#migration-source-name').value='Me&YouToo — Sexisme historique';$('#migration-source-id').value='';$('#migration-source-survey-id').value='';$('#migration-scope').value='catalog';$('#migration-org-wrap').hidden=true;d.showModal();
+    const jsonInput=$('#migration-source-json');if(jsonInput){jsonInput.value='';jsonInput._migrationData=null;}
+    const jsonStatus=$('#migration-source-json-status');if(jsonStatus){jsonStatus.textContent='Sélectionne le JSON historique : Studio préremplit le survey, l’ID client historique et le nom du lot. Tu peux encore les modifier avant de créer le lot.';jsonStatus.classList.remove('is-success','is-error');}
+    $('#migration-source-name').value='';$('#migration-source-id').value='';$('#migration-source-survey-id').value='';$('#migration-scope').value='catalog';$('#migration-org-wrap').hidden=true;d.showModal();
   }
-  function openDryRunDialog(batchId){
-    const d=$('#migration-dryrun-dialog');if(!d)return;d.dataset.batchId=batchId;$('#migration-dryrun-file').value='';$('#migration-dryrun-preview').innerHTML='<p class="hint">Sélectionne le fichier JSON exporté depuis la copie locale de l’ancien moteur.</p>';$('#run-migration-dryrun').disabled=true;d.showModal();
+  function openDryRunDialog(batchId,preloaded=null){
+    const d=$('#migration-dryrun-dialog');if(!d)return;d.dataset.batchId=batchId;
+    const input=$('#migration-dryrun-file');input.value='';input._entities=[];input._meta={};
+    $('#migration-dryrun-preview').innerHTML='<p class="hint">Sélectionne le fichier JSON exporté depuis la copie locale de l’ancien moteur.</p>';$('#run-migration-dryrun').disabled=true;
+    if(preloaded?.entities?.length){input._entities=preloaded.entities;input._meta=preloaded.meta||{};migrationDryRunPreview(input,batchId,preloaded.fileName||'JSON sélectionné à la création du lot');}
+    d.showModal();
   }
   function migrationEntityLabel(type,count=1){const labels={theme:['Thématique','Thématiques'],chapter:['Chapitre','Chapitres'],situation:['Situation','Situations'],answer:['Réponse','Réponses'],profile:['Profil','Profils'],survey_meta:['Informations du diagnostic','Informations du diagnostic']};return (labels[type]||[type,type])[count>1?1:0];}
   function migrationComparisonLabel(status){return({exact_match:'Déjà dans Studio',possible_variant:'Variante possible',new:'Nouveau'})[status]||'À analyser';}
@@ -95,6 +125,26 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function migrationDormantTranslations(payload){const all=Object.keys(payload?.translations||{}).map(x=>String(x).toLowerCase()).filter(Boolean);const active=new Set((payload?.activeLocales||[]).map(x=>String(x).toLowerCase()).filter(Boolean));return [...new Set(all.filter(x=>!active.has(x)))].sort((a,b)=>a.localeCompare(b,'fr'));}
   function migrationLanguageLabel(locale){const l=String(locale||'').toLowerCase();return({fr:'Français',en:'English',es:'Español',de:'Deutsch',it:'Italiano',pt:'Português',ar:'العربية',ja:'日本語','ko-kr':'한국어',zh:'中文',pl:'Polski',ru:'Русский',tr:'Türkçe'})[l]||String(locale||'').toUpperCase();}
   function migrationPlainText(value){const box=document.createElement('div');box.innerHTML=String(value||'');return (box.textContent||box.innerText||'').replace(/\s+/g,' ').trim();}
+  function migrationDiffTokens(value){return migrationPlainText(value).match(/\s+|[^\s]+/gu)||[];}
+  function migrationDiffTokenKey(token){return /^\s+$/u.test(token)?' ':String(token).toLocaleLowerCase('fr').replace(/[’]/g,"'");}
+  function migrationTextDiff(oldValue,newValue){
+    const oldTokens=migrationDiffTokens(oldValue),newTokens=migrationDiffTokens(newValue);
+    const oldPlain=migrationPlainText(oldValue),newPlain=migrationPlainText(newValue);
+    if(oldPlain===newPlain)return{oldHtml:esc(oldPlain||'—'),newHtml:esc(newPlain||'—'),changed:false};
+    const n=oldTokens.length,m=newTokens.length;
+    if(!n&&!m)return{oldHtml:'—',newHtml:'—',changed:false};
+    if(n*m>550000){return{oldHtml:`<mark class="migration-diff-old">${esc(oldPlain||'—')}</mark>`,newHtml:`<mark class="migration-diff-new">${esc(newPlain||'—')}</mark>`,changed:true};}
+    const dp=Array.from({length:n+1},()=>new Uint16Array(m+1));
+    for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--){dp[i][j]=migrationDiffTokenKey(oldTokens[i])===migrationDiffTokenKey(newTokens[j])?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);}
+    const oldOut=[],newOut=[];let i=0,j=0;
+    while(i<n||j<m){
+      if(i<n&&j<m&&migrationDiffTokenKey(oldTokens[i])===migrationDiffTokenKey(newTokens[j])){oldOut.push(esc(oldTokens[i]));newOut.push(esc(newTokens[j]));i++;j++;continue;}
+      if(j<m&&(i===n||dp[i][j+1]>dp[i+1]?.[j])){newOut.push(`<mark class="migration-diff-new">${esc(newTokens[j])}</mark>`);j++;continue;}
+      if(i<n){oldOut.push(`<mark class="migration-diff-old">${esc(oldTokens[i])}</mark>`);i++;continue;}
+    }
+    return{oldHtml:oldOut.join('')||'—',newHtml:newOut.join('')||'—',changed:true};
+  }
+  function migrationDiffLegend(changed=true){return changed?'<div class="migration-diff-legend"><span><i class="is-old"></i>Historique : supprimé / remplacé</span><span><i class="is-new"></i>Studio : ajouté / remplacé</span></div>':'';}
   function migrationPayloadTitle(m){const p=m?.source_payload||{};if(m?.entity_type==='profile')return p.title||p.raw?.title||`Profil #${m.legacy_id}`;if(m?.entity_type==='chapter')return p.title||p.originalTitle||`Chapitre #${m.legacy_id}`;if(m?.entity_type==='theme')return p.title||p.originalTitle||`Thématique #${m.legacy_id}`;return p.content||p.title||p.originalTitle||p.label||`${migrationEntityLabel(m.entity_type)} #${m.legacy_id}`;}
   function dryRunTypeStats(mappings,type){const rows=mappings.filter(m=>m.entity_type===type);const stat={total:rows.length,exact:0,variant:0,new:0};rows.forEach(m=>{const st=(m.comparison||m.source_payload?._comparison||{}).status||'new';if(st==='exact_match')stat.exact++;else if(st==='possible_variant')stat.variant++;else stat.new++;});return stat;}
   function migrationTranslationText(payload,locale){const t=payload?.translations?.[locale]||{};return t.content||t.title||t.summary||t.label||'';}
@@ -109,57 +159,26 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function migrationScoreHtml(m){const p=m?.source_payload||{};if(m.entity_type==='answer'&&p.scoreValue!=null)return `<span class="migration-score-badge">Score ${esc(p.scoreValue)}</span>`;if(m.entity_type==='profile'&&(p.scoringRangeMin!=null||p.scoringRangeMax!=null))return `<span class="migration-score-badge is-range">Score ${esc(p.scoringRangeMin??'—')} → ${esc(p.scoringRangeMax??'—')}</span>`;return '';}
   function migrationProfileDetailRow(m,context={}){
     const p=m.source_payload||{},cmp=m.comparison||p._comparison||{status:'new'},langs=migrationTranslations(p);
-    const raw=p.raw||{};
-    const title=p.title||raw.title||`Profil #${m.legacy_id}`;
-    const summary=migrationPlainText(p.summary||raw.summary||'');
-    const content=migrationPlainText(p.content||raw.content||'');
-    const color=p.color||raw.color||'#dce6ec';
-    const min=p.scoringRangeMin??raw.scoring_range_min??'—',max=p.scoringRangeMax??raw.scoring_range_max??'—';
-    const target=cmp.targetPayload||null;
-    const targetSummary=migrationPlainText(target?.summary||'');
-    const targetContent=migrationPlainText(target?.content||'');
-    const translationPanels=langs.map(l=>{
-      const row=p.translations?.[l]||{};
-      const translatedTitle=migrationPlainText(row.title||(l==='fr'?title:''));
-      const translatedSummary=migrationPlainText(row.summary||(l==='fr'?summary:''));
-      const translatedContent=migrationPlainText(row.content||(l==='fr'?content:''));
-      return `<div class="migration-lang-panel migration-profile-lang-panel" data-migration-lang-panel="${esc(m.legacy_id)}:${esc(l)}" hidden><div class="migration-lang-version"><div class="migration-lang-panel-head"><span class="migration-lang-code">${esc(String(l).toUpperCase())}</span><strong>${esc(migrationLanguageLabel(l))}</strong><em>Version historique${(p.activeLocales||[]).map(x=>String(x).toLowerCase()).includes(String(l).toLowerCase())?' · langue active':''}</em></div><div class="migration-profile-copy-grid"><div><span>Titre</span><p>${esc(translatedTitle||'Aucun titre historique.')}</p></div><div><span>Résumé</span><p>${esc(translatedSummary||'Aucun résumé historique.')}</p></div><div class="migration-profile-lang-content"><span>Texte détaillé</span><p>${esc(translatedContent||'Aucun texte détaillé historique.')}</p></div></div></div></div>`;
-    }).join('');
-    return `<article class="migration-detail-item migration-profile-item ${migrationComparisonClass(cmp.status)}">
-      <div class="migration-detail-item-head"><div class="migration-profile-heading"><span class="migration-profile-color-dot" style="--migration-profile-color:${esc(color)}"></span><div><span class="migration-detail-kind">Profil</span><strong>${esc(title)}</strong><small>Ancien ID ${esc(m.legacy_id)}${p.position!=null?' · position '+esc(p.position):''}</small></div></div><div class="migration-detail-badges"><span class="migration-compare-badge ${migrationComparisonClass(cmp.status)}">${esc(migrationComparisonLabel(cmp.status))}</span><span class="migration-score-badge is-range">Score ${esc(min)} → ${esc(max)}</span>${langs.length?`<div class="migration-lang-switch" aria-label="Langues actives disponibles">${langs.map(l=>`<button type="button" class="migration-lang-badge" data-migration-lang="${esc(m.legacy_id)}:${esc(l)}"><span>${esc(String(l).toUpperCase())}</span><small>${esc(migrationLanguageLabel(l))}</small></button>`).join('')}</div>`:''}</div></div>
-      ${migrationDifferencesHtml(cmp)}
-      <div class="migration-profile-copy-grid"><div><span>Résumé</span><p>${esc(summary||'Aucun résumé historique.')}</p></div><div><span>Texte détaillé</span><p>${esc(content||'Aucun texte détaillé historique.')}</p></div></div>
-      ${target?`<div class="migration-profile-studio-current"><span>Studio actuel</span><strong>${esc(target.title||'Profil actuel')}</strong><small>Score ${esc(target.scoring_min??'—')} → ${esc(target.scoring_max??'—')}${target.top_score!=null?' · plafond '+esc(target.top_score):''}${target.color?' · couleur '+esc(target.color):''}</small>${targetSummary?`<p><b>Résumé :</b> ${esc(targetSummary)}</p>`:''}${targetContent?`<p><b>Texte :</b> ${esc(targetContent)}</p>`:''}</div>`:''}
-      ${translationPanels}
-    </article>`;
+    const raw=p.raw||{},title=migrationPlainText(p.title||raw.title||`Profil #${m.legacy_id}`),summary=migrationPlainText(p.summary||raw.summary||''),content=migrationPlainText(p.content||raw.content||'');
+    const color=p.color||raw.color||'#dce6ec',min=p.scoringRangeMin??raw.scoring_range_min??'—',max=p.scoringRangeMax??raw.scoring_range_max??'—',target=cmp.targetPayload||null;
+    const targetTitle=migrationPlainText(target?.title||''),targetSummary=migrationPlainText(target?.summary||''),targetContent=migrationPlainText(target?.content||'');
+    const titleDiff=migrationTextDiff(title,targetTitle),summaryDiff=migrationTextDiff(summary,targetSummary),contentDiff=migrationTextDiff(content,targetContent);
+    const hasTextDiff=!!target&&(titleDiff.changed||summaryDiff.changed||contentDiff.changed);
+    const translationPanels=langs.map(l=>{const row=p.translations?.[l]||{},translatedTitle=migrationPlainText(row.title||(l==='fr'?title:'')),translatedSummary=migrationPlainText(row.summary||(l==='fr'?summary:'')),translatedContent=migrationPlainText(row.content||(l==='fr'?content:''));return `<div class="migration-lang-panel migration-profile-lang-panel" data-migration-lang-panel="${esc(m.legacy_id)}:${esc(l)}" hidden><div class="migration-lang-version"><div class="migration-lang-panel-head"><span class="migration-lang-code">${esc(String(l).toUpperCase())}</span><strong>${esc(migrationLanguageLabel(l))}</strong><em>Version historique${(p.activeLocales||[]).map(x=>String(x).toLowerCase()).includes(String(l).toLowerCase())?' · langue active':''}</em></div><div class="migration-profile-copy-grid"><div><span>Titre</span><p>${esc(translatedTitle||'Aucun titre historique.')}</p></div><div><span>Résumé</span><p>${esc(translatedSummary||'Aucun résumé historique.')}</p></div><div class="migration-profile-lang-content"><span>Texte détaillé</span><p>${esc(translatedContent||'Aucun texte détaillé historique.')}</p></div></div></div></div>`;}).join('');
+    const comparisonHtml=target?`${migrationDiffLegend(hasTextDiff)}<div class="migration-profile-structured-compare"><div class="migration-profile-version is-history"><div class="migration-profile-version-head"><span>HISTORIQUE</span><strong>${p.position!=null?'Profil '+esc(p.position)+' · ':''}${esc(title||'Profil historique')}</strong></div><div class="migration-profile-field"><span>Titre du profil</span><p class="migration-diff-text">${titleDiff.oldHtml}</p></div><div class="migration-profile-field"><span>Résumé</span><p class="migration-diff-text">${summaryDiff.oldHtml}</p></div><div class="migration-profile-field is-detail"><span>Texte détaillé</span><p class="migration-diff-text">${contentDiff.oldHtml}</p></div><small>Score ${esc(min)} → ${esc(max)}${p.topScore!=null?' · plafond '+esc(p.topScore):''}${color?' · couleur '+esc(color):''}</small></div><div class="migration-profile-version is-studio"><div class="migration-profile-version-head"><span>STUDIO ACTUEL</span><strong>${esc(targetTitle||'Profil actuel')}</strong></div><div class="migration-profile-field"><span>Titre du profil</span><p class="migration-diff-text">${titleDiff.newHtml}</p></div><div class="migration-profile-field"><span>Résumé</span><p class="migration-diff-text">${summaryDiff.newHtml}</p></div><div class="migration-profile-field is-detail"><span>Texte détaillé</span><p class="migration-diff-text">${contentDiff.newHtml}</p></div><small>Score ${esc(target.scoring_min??'—')} → ${esc(target.scoring_max??'—')}${target.top_score!=null?' · plafond '+esc(target.top_score):''}${target.color?' · couleur '+esc(target.color):''}</small></div></div>`:`<div class="migration-profile-single"><div class="migration-profile-field"><span>Titre du profil</span><p>${esc(title||'—')}</p></div><div class="migration-profile-field"><span>Résumé</span><p>${esc(summary||'—')}</p></div><div class="migration-profile-field is-detail"><span>Texte détaillé</span><p>${esc(content||'—')}</p></div></div>`;
+    return `<article class="migration-detail-item migration-profile-item ${migrationComparisonClass(cmp.status)}"><div class="migration-detail-item-head"><div class="migration-profile-heading"><span class="migration-profile-color-dot" style="--migration-profile-color:${esc(color)}"></span><div><span class="migration-detail-kind">Profil${p.position!=null?' '+esc(p.position):''}</span><strong>${esc(title)}</strong><small>Ancien ID ${esc(m.legacy_id)}</small></div></div><div class="migration-detail-badges"><span class="migration-compare-badge ${migrationComparisonClass(cmp.status)}">${esc(migrationComparisonLabel(cmp.status))}</span><span class="migration-score-badge is-range">Score ${esc(min)} → ${esc(max)}</span>${langs.length?`<div class="migration-lang-switch" aria-label="Langues actives disponibles">${langs.map(l=>`<button type="button" class="migration-lang-badge" data-migration-lang="${esc(m.legacy_id)}:${esc(l)}"><span>${esc(String(l).toUpperCase())}</span><small>${esc(migrationLanguageLabel(l))}</small></button>`).join('')}</div>`:''}</div></div>${migrationDifferencesHtml(cmp)}${comparisonHtml}${translationPanels}</article>`;
   }
+
 
   function migrationDetailRow(m,childrenHtml='',context={}){
     const p=m.source_payload||{},cmp=m.comparison||p._comparison||{status:'new'},langs=migrationTranslations(p),title=migrationPayloadTitle(m),target=cmp.targetPayload||null;
-    const currentText=target?.content||target?.title||'';
-    const translationPanels=langs.map(l=>{
-      const studioLocaleText=migrationStudioTranslationText(target,l);
-      const localeCode=String(l||'').toUpperCase();
-      const studioPanel=target
-        ? (studioLocaleText
-          ? `<div class="migration-lang-version is-studio"><div class="migration-lang-panel-head"><span class="migration-lang-code is-studio">STUDIO</span><strong>Version actuelle · ${esc(localeCode)}</strong></div><p>${esc(studioLocaleText)}</p></div>`
-          : `<div class="migration-lang-version is-studio is-missing"><div class="migration-lang-panel-head"><span class="migration-lang-code is-studio">STUDIO</span><strong>Aucune version ${esc(localeCode)}</strong></div><p>Le Studio actuel ne contient pas de version ${esc(migrationLanguageLabel(l))} pour cet élément.</p></div>`)
-        : '';
-      return `<div class="migration-lang-panel" data-migration-lang-panel="${esc(m.legacy_id)}:${esc(l)}" hidden><div class="migration-lang-version"><div class="migration-lang-panel-head"><span class="migration-lang-code">${esc(localeCode)}</span><strong>${esc(migrationLanguageLabel(l))}</strong><em>Version historique</em></div><p>${esc(migrationTranslationText(p,l)||'Aucun texte disponible dans cette langue.')}</p></div>${studioPanel}</div>`;
-    }).join('');
-    const countries=(p.countries||[]).map(c=>String(c.name||c.id||'').trim()).filter(Boolean);
-    const official=(context.officialCountries||[]).map(x=>String(x).trim()).filter(Boolean);
-    const variantCountries=[...new Set(countries.filter(c=>!official.some(o=>o.toLowerCase()===c.toLowerCase())))];
-    const countryHtml=variantCountries.length?`<div class="migration-country-variant"><span>Variante pays</span><strong>${variantCountries.map(esc).join(' · ')}</strong></div>`:'';
-    return `<article class="migration-detail-item ${migrationComparisonClass(cmp.status)}">
-      <div class="migration-detail-item-head"><div><span class="migration-detail-kind">${esc(migrationEntityLabel(m.entity_type))}</span><strong>${esc(title)}</strong><small>Ancien ID ${esc(m.legacy_id)}${p.position!=null?' · position '+esc(p.position):''}</small></div><div class="migration-detail-badges"><span class="migration-compare-badge ${migrationComparisonClass(cmp.status)}">${esc(migrationComparisonLabel(cmp.status))}</span>${migrationScoreHtml(m)}${langs.length?`<div class="migration-lang-switch" aria-label="Langues disponibles">${langs.map(l=>`<button type="button" class="migration-lang-badge" data-migration-lang="${esc(m.legacy_id)}:${esc(l)}" title="Afficher ${esc(migrationLanguageLabel(l))}"><span>${esc(String(l).toUpperCase())}</span><small>${esc(migrationLanguageLabel(l))}</small></button>`).join('')}</div>`:''}</div></div>
-      ${migrationDifferencesHtml(cmp)}
-      ${currentText?`<div class="migration-side-by-side"><div><span>Historique</span><p>${esc(title)}</p></div><div><span>Studio actuel</span><p>${esc(currentText)}</p>${m.entity_type==='answer'?`<small>Score ${esc(target?.score??'—')}${target?.is_best===true?' · meilleure réponse':''}</small>`:''}</div></div>`:''}
-      ${translationPanels}
-      ${countryHtml}
-      ${childrenHtml||''}
-    </article>`;
+    const currentText=target?.content||target?.title||'',textDiff=target?migrationTextDiff(title,currentText):null;
+    const translationPanels=langs.map(l=>{const studioLocaleText=migrationStudioTranslationText(target,l),localeCode=String(l||'').toUpperCase();const studioPanel=target?(studioLocaleText?`<div class="migration-lang-version is-studio"><div class="migration-lang-panel-head"><span class="migration-lang-code is-studio">STUDIO</span><strong>Version actuelle · ${esc(localeCode)}</strong></div><p>${esc(studioLocaleText)}</p></div>`:`<div class="migration-lang-version is-studio is-missing"><div class="migration-lang-panel-head"><span class="migration-lang-code is-studio">STUDIO</span><strong>Aucune version ${esc(localeCode)}</strong></div><p>Le Studio actuel ne contient pas de version ${esc(migrationLanguageLabel(l))} pour cet élément.</p></div>`):'';return `<div class="migration-lang-panel" data-migration-lang-panel="${esc(m.legacy_id)}:${esc(l)}" hidden><div class="migration-lang-version"><div class="migration-lang-panel-head"><span class="migration-lang-code">${esc(localeCode)}</span><strong>${esc(migrationLanguageLabel(l))}</strong><em>Version historique</em></div><p>${esc(migrationTranslationText(p,l)||'Aucun texte disponible dans cette langue.')}</p></div>${studioPanel}</div>`;}).join('');
+    const countries=(p.countries||[]).map(c=>String(c.name||c.id||'').trim()).filter(Boolean),official=(context.officialCountries||[]).map(x=>String(x).trim()).filter(Boolean),variantCountries=[...new Set(countries.filter(c=>!official.some(o=>o.toLowerCase()===c.toLowerCase())))],countryHtml=variantCountries.length?`<div class="migration-country-variant"><span>Variante pays</span><strong>${variantCountries.map(esc).join(' · ')}</strong></div>`:'';
+    const compareHtml=currentText?`${migrationDiffLegend(textDiff?.changed)}<div class="migration-side-by-side migration-text-compare"><div><span>Historique</span><p class="migration-diff-text">${textDiff?.oldHtml||esc(title)}</p></div><div><span>Studio actuel</span><p class="migration-diff-text">${textDiff?.newHtml||esc(currentText)}</p>${m.entity_type==='answer'?`<small>Score ${esc(target?.score??'—')}${target?.is_best===true?' · meilleure réponse':''}</small>`:''}</div></div>`:'';
+    return `<article class="migration-detail-item ${migrationComparisonClass(cmp.status)}"><div class="migration-detail-item-head"><div><span class="migration-detail-kind">${esc(migrationEntityLabel(m.entity_type))}</span><strong>${esc(title)}</strong><small>Ancien ID ${esc(m.legacy_id)}${p.position!=null?' · position '+esc(p.position):''}</small></div><div class="migration-detail-badges"><span class="migration-compare-badge ${migrationComparisonClass(cmp.status)}">${esc(migrationComparisonLabel(cmp.status))}</span>${migrationScoreHtml(m)}${langs.length?`<div class="migration-lang-switch" aria-label="Langues disponibles">${langs.map(l=>`<button type="button" class="migration-lang-badge" data-migration-lang="${esc(m.legacy_id)}:${esc(l)}" title="Afficher ${esc(migrationLanguageLabel(l))}"><span>${esc(String(l).toUpperCase())}</span><small>${esc(migrationLanguageLabel(l))}</small></button>`).join('')}</div>`:''}</div></div>${migrationDifferencesHtml(cmp)}${compareHtml}${translationPanels}${countryHtml}${childrenHtml||''}</article>`;
   }
+
   async function showDryRunDetail(batchId){
     try{
       const data=await StudioAPI.request('/api/admin/migrations/'+batchId),batch=data.batch||{},mappings=data.mappings||[],summary=batch.summary?.dryRun||{},d=$('#migration-detail-dialog'),root=$('#migration-detail-content');
@@ -254,51 +273,25 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   }
 
   function reviewCard(e,compact=false){
-    const p=e.source_payload||{},c=e.comparison||{},cur=c.targetPayload||{};
-    const clean=v=>String(v||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
-    const title=clean(p.content||p.title||p.label)||`${reviewTypeLabel(e.entity_type)} #${e.legacy_id}`;
-    const exact=c.status==='exact_match',variant=c.status==='possible_variant';
-    const status=exact?'existing':variant?'variant':'new';
-
+    const p=e.source_payload||{},c=e.comparison||{},cur=c.targetPayload||{},clean=v=>migrationPlainText(v);
+    const isProfile=e.entity_type==='profile';
+    const title=isProfile?clean(p.title||p.raw?.title)||`Profil #${e.legacy_id}`:clean(p.content||p.title||p.label)||`${reviewTypeLabel(e.entity_type)} #${e.legacy_id}`;
+    const exact=c.status==='exact_match',variant=c.status==='possible_variant',status=exact?'existing':variant?'variant':'new';
     let compare='';
     if(!compact&&c.targetEntityId&&['situation','answer','profile'].includes(e.entity_type)){
-      const hist=e.entity_type==='profile'
-        ? `${p.title||''}\n${clean(p.summary)}\n${clean(p.content)}`
-        : clean(p.content||p.title);
-      const studio=e.entity_type==='profile'
-        ? `${cur.title||''}\n${clean(cur.summary)}\n${clean(cur.content)}`
-        : clean(cur.content||cur.title);
-      compare=`${migrationDifferencesHtml(c)}<div class="migration-review-compare">
-        <div><span>HISTORIQUE</span><p>${esc(hist||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(p.scoreValue??p.score??'—')}${p.isBest===true||p.is_best===true?' · meilleure réponse':''}</small>`:e.entity_type==='profile'?`<small>Score ${esc(p.scoringRangeMin??p.scoring_min??'—')} → ${esc(p.scoringRangeMax??p.scoring_max??'—')}${p.topScore!=null?' · plafond '+esc(p.topScore):''}${p.color?' · couleur '+esc(p.color):''}</small>`:''}</div>
-        <div><span>STUDIO ACTUEL</span><p>${esc(studio||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(cur.score??'—')}${cur.is_best===true?' · meilleure réponse':''}</small>`:e.entity_type==='profile'?`<small>Score ${esc(cur.scoring_min??'—')} → ${esc(cur.scoring_max??'—')}${cur.top_score!=null?' · plafond '+esc(cur.top_score):''}${cur.color?' · couleur '+esc(cur.color):''}</small>`:''}</div>
-      </div>`;
+      if(isProfile){
+        const histTitle=clean(p.title||p.raw?.title),histSummary=clean(p.summary||p.raw?.summary),histContent=clean(p.content||p.raw?.content),studioTitle=clean(cur.title),studioSummary=clean(cur.summary),studioContent=clean(cur.content);
+        const dTitle=migrationTextDiff(histTitle,studioTitle),dSummary=migrationTextDiff(histSummary,studioSummary),dContent=migrationTextDiff(histContent,studioContent),changed=dTitle.changed||dSummary.changed||dContent.changed;
+        compare=`${migrationDifferencesHtml(c)}${migrationDiffLegend(changed)}<div class="migration-review-profile-compare"><div class="migration-review-profile-version is-history"><div class="migration-review-profile-version-head"><span>HISTORIQUE</span><strong>${p.position!=null?'Profil '+esc(p.position)+' · ':''}${esc(histTitle||'Profil historique')}</strong></div><div class="migration-review-profile-field"><span>Titre du profil</span><p class="migration-diff-text">${dTitle.oldHtml}</p></div><div class="migration-review-profile-field"><span>Résumé</span><p class="migration-diff-text">${dSummary.oldHtml}</p></div><div class="migration-review-profile-field is-detail"><span>Texte détaillé</span><p class="migration-diff-text">${dContent.oldHtml}</p></div><small>Score ${esc(p.scoringRangeMin??p.scoring_min??'—')} → ${esc(p.scoringRangeMax??p.scoring_max??'—')}${p.topScore!=null?' · plafond '+esc(p.topScore):''}${p.color?' · couleur '+esc(p.color):''}</small></div><div class="migration-review-profile-version is-studio"><div class="migration-review-profile-version-head"><span>STUDIO ACTUEL</span><strong>${esc(studioTitle||'Profil actuel')}</strong></div><div class="migration-review-profile-field"><span>Titre du profil</span><p class="migration-diff-text">${dTitle.newHtml}</p></div><div class="migration-review-profile-field"><span>Résumé</span><p class="migration-diff-text">${dSummary.newHtml}</p></div><div class="migration-review-profile-field is-detail"><span>Texte détaillé</span><p class="migration-diff-text">${dContent.newHtml}</p></div><small>Score ${esc(cur.scoring_min??'—')} → ${esc(cur.scoring_max??'—')}${cur.top_score!=null?' · plafond '+esc(cur.top_score):''}${cur.color?' · couleur '+esc(cur.color):''}</small></div></div>`;
+      }else{
+        const hist=clean(p.content||p.title),studio=clean(cur.content||cur.title),diff=migrationTextDiff(hist,studio);
+        compare=`${migrationDifferencesHtml(c)}${migrationDiffLegend(diff.changed)}<div class="migration-review-compare"><div><span>HISTORIQUE</span><p class="migration-diff-text">${diff.oldHtml}</p>${e.entity_type==='answer'?`<small>Score ${esc(p.scoreValue??p.score??'—')}${p.isBest===true||p.is_best===true?' · meilleure réponse':''}</small>`:''}</div><div><span>STUDIO ACTUEL</span><p class="migration-diff-text">${diff.newHtml}</p>${e.entity_type==='answer'?`<small>Score ${esc(cur.score??'—')}${cur.is_best===true?' · meilleure réponse':''}</small>`:''}</div></div>`;
+      }
     }
-
-    const decision=e.review_status||(exact?'keep_current':'pending');
-    const missing=activeTranslationMissing(e);
-    const answerContext=e.entity_type==='answer'&&Array.isArray(c.currentSiblingAnswers)&&c.currentSiblingAnswers.length
-      ? `<div class="migration-review-answer-context"><span>Réponses actuellement rattachées à cette situation dans Studio</span><ul>${c.currentSiblingAnswers.map(a=>`<li>${esc(a.content||'—')} <b>— score ${esc(a.score??'—')}</b></li>`).join('')}</ul></div>`:'';
-
-    return `<article class="migration-review-row"
-      data-review-card
-      data-cmp="${status}"
-      data-pending="${decision==='pending'?'1':'0'}"
-      data-translations="${missing?'1':'0'}">
-      <div class="migration-review-main">
-        <div class="migration-review-heading">
-          <span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}</span>
-          <span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>
-          ${missing?`<span class="migration-review-translation-warning">Traduction active à compléter</span>`:''}<span class="migration-review-context-note">Contexte parent</span>
-        </div>
-        <strong>${esc(title)}</strong>
-        <small>Ancien ID ${esc(e.legacy_id)}</small>
-        ${compare}
-        ${answerContext}
-        ${translationReviewHtml(e)}
-      </div>
-      <div class="migration-review-decision"><select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision)}</select></div>
-    </article>`;
+    const decision=e.review_status||(exact?'keep_current':'pending'),missing=activeTranslationMissing(e),answerContext=e.entity_type==='answer'&&Array.isArray(c.currentSiblingAnswers)&&c.currentSiblingAnswers.length?`<div class="migration-review-answer-context"><span>Réponses actuellement rattachées à cette situation dans Studio</span><ul>${c.currentSiblingAnswers.map(a=>`<li>${esc(a.content||'—')} <b>— score ${esc(a.score??'—')}</b></li>`).join('')}</ul></div>`:'';
+    return `<article class="migration-review-row" data-review-card data-cmp="${status}" data-pending="${decision==='pending'?'1':'0'}" data-translations="${missing?'1':'0'}"><div class="migration-review-main"><div class="migration-review-heading"><span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}${isProfile&&p.position!=null?' '+esc(p.position):''}</span><span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>${missing?`<span class="migration-review-translation-warning">Traduction active à compléter</span>`:''}<span class="migration-review-context-note">Contexte parent</span></div><strong>${esc(title)}</strong><small>Ancien ID ${esc(e.legacy_id)}</small>${compare}${answerContext}${translationReviewHtml(e)}</div><div class="migration-review-decision"><select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision)}</select></div></article>`;
   }
+
 
   function reviewTechnicalCard(e){
     const p=e.source_payload||{};
@@ -1049,8 +1042,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   bindNavigation();
   const migrationBtn=$('#new-migration-batch');if(migrationBtn)migrationBtn.onclick=openMigrationDialog;
   const migrationScope=$('#migration-scope');if(migrationScope)migrationScope.onchange=()=>{$('#migration-org-wrap').hidden=migrationScope.value!=='client';};
-  const migrationForm=$('#migration-form');if(migrationForm)migrationForm.onsubmit=async e=>{e.preventDefault();try{const scope=$('#migration-scope').value,organizationId=scope==='client'?$('#migration-org').value:null;await StudioAPI.request('/api/admin/migrations',{method:'POST',body:JSON.stringify({scope,organizationId,sourceCustomerName:$('#migration-source-name').value.trim(),sourceCustomerId:$('#migration-source-id').value.trim(),sourceSurveyId:$('#migration-source-survey-id').value.trim()})});$('#migration-dialog').close();state.migrationsLoaded=false;loadMigrations();}catch(err){showError(err.message);}};
-  const dryRunFile=$('#migration-dryrun-file');if(dryRunFile)dryRunFile.onchange=async()=>{const file=dryRunFile.files?.[0],preview=$('#migration-dryrun-preview'),btn=$('#run-migration-dryrun');btn.disabled=true;if(!file){preview.innerHTML='<p class="hint">Sélectionne un fichier JSON.</p>';return;}try{const json=JSON.parse(await file.text()),entities=Array.isArray(json)?json:(json.entities||[]),meta=Array.isArray(json)?{}:(json.meta||{});dryRunFile._entities=entities;dryRunFile._meta=meta;const by={};entities.forEach(x=>{const t=String(x.entityType||'inconnu');by[t]=(by[t]||0)+1;});const batch=state.migrationBatches.find(x=>String(x.id)===String($('#migration-dryrun-dialog').dataset.batchId)),expected=String(batch?.source_survey_id||''),got=String(meta.sourceSurveyId||'');const mismatch=expected&&got&&expected!==got;preview.innerHTML=`<strong>${fmt(entities.length)} éléments détectés</strong><p>${esc(Object.entries(by).map(([k,v])=>k+' '+v).join(' · '))}</p>${got?`<p>Survey du fichier : <strong>#${esc(got)}</strong>${expected?' · attendu #'+esc(expected):''}</p>`:''}${mismatch?'<div class="composer-alert">Ce fichier ne correspond pas au survey indiqué dans le lot.</div>':'<p class="hint">Le dry-run compare sans écrire dans le catalogue.</p>'}`;btn.disabled=!entities.length||mismatch;}catch(e){dryRunFile._entities=[];preview.innerHTML='<div class="composer-alert">Fichier JSON invalide : '+esc(e.message)+'</div>';}};
+  const migrationSourceJson=$('#migration-source-json');if(migrationSourceJson)migrationSourceJson.onchange=async()=>{const file=migrationSourceJson.files?.[0],status=$('#migration-source-json-status');migrationSourceJson._migrationData=null;if(!file){if(status){status.textContent='Sélectionne le JSON historique : Studio préremplit le survey, l’ID client historique et le nom du lot.';status.classList.remove('is-success','is-error');}return;}try{const json=JSON.parse(await file.text()),data=migrationJsonData(json);if(!data.entities.length)throw new Error('Aucune entité de migration détectée');migrationSourceJson._migrationData={...data,fileName:file.name};if(data.sourceSurveyId)$('#migration-source-survey-id').value=data.sourceSurveyId;if(data.sourceCustomerId)$('#migration-source-id').value=data.sourceCustomerId;if(data.lotName)$('#migration-source-name').value=data.lotName;if(status){status.innerHTML=`Prérempli depuis <strong>${esc(file.name)}</strong> : survey ${data.sourceSurveyId?'#'+esc(data.sourceSurveyId):'non renseigné'}${data.sourceCustomerId?' · client historique #'+esc(data.sourceCustomerId):''}${data.sourceCustomerName?' · '+esc(data.sourceCustomerName):''}.`;status.classList.remove('is-error');status.classList.add('is-success');}}catch(err){if(status){status.textContent='JSON invalide : '+err.message;status.classList.remove('is-success');status.classList.add('is-error');}}};
+  const migrationForm=$('#migration-form');if(migrationForm)migrationForm.onsubmit=async e=>{e.preventDefault();try{const scope=$('#migration-scope').value,organizationId=scope==='client'?$('#migration-org').value:null,preloaded=$('#migration-source-json')?._migrationData||null;const created=await StudioAPI.request('/api/admin/migrations',{method:'POST',body:JSON.stringify({scope,organizationId,sourceCustomerName:$('#migration-source-name').value.trim(),sourceCustomerId:$('#migration-source-id').value.trim(),sourceSurveyId:$('#migration-source-survey-id').value.trim()})});$('#migration-dialog').close();state.migrationsLoaded=false;await loadMigrations();if(preloaded?.entities?.length&&created?.batch?.id)openDryRunDialog(created.batch.id,preloaded);}catch(err){showError(err.message);}};
+  const dryRunFile=$('#migration-dryrun-file');if(dryRunFile)dryRunFile.onchange=async()=>{const file=dryRunFile.files?.[0];$('#run-migration-dryrun').disabled=true;if(!file){dryRunFile._entities=[];dryRunFile._meta={};$('#migration-dryrun-preview').innerHTML='<p class="hint">Sélectionne un fichier JSON.</p>';return;}try{const json=JSON.parse(await file.text()),data=migrationJsonData(json);dryRunFile._entities=data.entities;dryRunFile._meta=data.meta;migrationDryRunPreview(dryRunFile,$('#migration-dryrun-dialog').dataset.batchId,file.name);}catch(e){dryRunFile._entities=[];dryRunFile._meta={};$('#migration-dryrun-preview').innerHTML='<div class="composer-alert">Fichier JSON invalide : '+esc(e.message)+'</div>';}};
   const runDry=$('#run-migration-dryrun');if(runDry)runDry.onclick=async()=>{const d=$('#migration-dryrun-dialog'),entities=$('#migration-dryrun-file')._entities||[];if(!entities.length)return;runDry.disabled=true;try{const r=await StudioAPI.request('/api/admin/migrations/'+d.dataset.batchId+'/dry-run',{method:'POST',body:JSON.stringify({entities})});d.close();await StudioModal.alert({title:'Dry-run terminé',message:`${fmt(r.validation?.accepted)} éléments analysés. Aucune donnée du catalogue n’a été modifiée.`,confirmLabel:'Continuer'});state.migrationsLoaded=false;loadMigrations();}catch(e){showError(e.message);}finally{runDry.disabled=false;}};
   load();
 })();

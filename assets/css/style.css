@@ -12708,3 +12708,45 @@ body.sidebar-collapsed .profile-copy {
   display:block;
   margin-top:.35rem;
 }
+
+
+/* Migration historique — création guidée depuis le JSON */
+.migration-json-prefill{padding:.85rem;border:1px solid #cfe1e8;border-radius:14px;background:#f7fbfc}
+#migration-source-json-status{display:block;margin-top:.5rem;line-height:1.45}
+#migration-source-json-status.is-success{color:#21704a;font-weight:700}
+#migration-source-json-status.is-error{color:#a33b3b;font-weight:700}
+.migration-prefill-file{display:block;margin-bottom:.35rem;color:#21704a;font-weight:800}
+
+/* Migration historique — revue large et comparaison mot à mot */
+#migration-review-dialog.admin-dialog-wide{width:95vw;max-width:95vw;max-height:calc(100vh - 24px)}
+#migration-review-dialog>form{width:100%;box-sizing:border-box}
+.migration-diff-legend{display:flex;gap:.9rem;flex-wrap:wrap;margin:.5rem 0 .65rem;color:#617580;font-size:.76rem;font-weight:700}
+.migration-diff-legend span{display:inline-flex;align-items:center;gap:.35rem}
+.migration-diff-legend i{width:14px;height:14px;border-radius:4px;border:1px solid transparent}
+.migration-diff-legend i.is-old{background:#fff0d6;border-color:#e6b75f}
+.migration-diff-legend i.is-new{background:#e1f5f3;border-color:#69b9b5}
+.migration-diff-text{white-space:pre-wrap;line-height:1.58}
+mark.migration-diff-old,mark.migration-diff-new{padding:.04em .18em;border-radius:4px;color:inherit;font-weight:800}
+mark.migration-diff-old{background:#fff0d6;box-shadow:inset 0 -1px 0 #dca53f}
+mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
+.migration-text-compare>div{min-width:0}
+
+/* Profils : titre, résumé et texte détaillé clairement séparés */
+.migration-profile-structured-compare,.migration-review-profile-compare{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem;margin-top:.65rem}
+.migration-profile-version,.migration-review-profile-version{min-width:0;border:1px solid #dbe7ec;border-radius:14px;background:#f9fbfc;padding:1rem;display:grid;gap:.75rem;align-content:start}
+.migration-profile-version.is-history,.migration-review-profile-version.is-history{border-left:4px solid #e6b75f}
+.migration-profile-version.is-studio,.migration-review-profile-version.is-studio{border-left:4px solid #69b9b5}
+.migration-profile-version-head,.migration-review-profile-version-head{display:grid;gap:.2rem;padding-bottom:.45rem;border-bottom:1px solid #dce7ec}
+.migration-profile-version-head>span,.migration-review-profile-version-head>span{font-size:.72rem;font-weight:900;letter-spacing:.05em;color:#687d87}
+.migration-profile-version-head>strong,.migration-review-profile-version-head>strong{font-size:1rem;color:#0d4c72}
+.migration-profile-field,.migration-review-profile-field{display:grid;gap:.3rem}
+.migration-profile-field>span,.migration-review-profile-field>span{font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:#6c7e88}
+.migration-profile-field p,.migration-review-profile-field p{margin:0;color:#263f4e;overflow-wrap:anywhere}
+.migration-profile-field.is-detail,.migration-review-profile-field.is-detail{padding-top:.15rem}
+.migration-profile-single{display:grid;gap:.75rem;margin-top:.75rem;padding:1rem;border:1px solid #dbe7ec;border-radius:14px;background:#f9fbfc}
+.migration-review-row .migration-review-main>strong{font-size:1rem}
+
+@media(max-width:900px){
+  #migration-review-dialog.admin-dialog-wide{width:calc(100vw - 16px);max-width:calc(100vw - 16px)}
+  .migration-profile-structured-compare,.migration-review-profile-compare{grid-template-columns:1fr}
+}
