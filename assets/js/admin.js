@@ -88,7 +88,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function migrationEntityLabel(type,count=1){const labels={theme:['Thématique','Thématiques'],chapter:['Chapitre','Chapitres'],situation:['Situation','Situations'],answer:['Réponse','Réponses'],profile:['Profil','Profils'],survey_meta:['Informations du diagnostic','Informations du diagnostic']};return (labels[type]||[type,type])[count>1?1:0];}
   function migrationComparisonLabel(status){return({exact_match:'Déjà dans Studio',possible_variant:'Variante possible',new:'Nouveau'})[status]||'À analyser';}
   function migrationComparisonClass(status){return status==='exact_match'?'is-exact':status==='possible_variant'?'is-variant':'is-new';}
-  function migrationTranslations(payload){return Object.keys(payload?.translations||{}).filter(Boolean).sort((a,b)=>a.localeCompare(b,'fr'));}
+  function migrationTranslations(payload){const all=Object.keys(payload?.translations||{}).map(x=>String(x).toLowerCase()).filter(Boolean);const active=(payload?.activeLocales||[]).map(x=>String(x).toLowerCase()).filter(Boolean);const selected=active.length?active.filter(x=>all.includes(x)):all;return [...new Set(selected)].sort((a,b)=>a.localeCompare(b,'fr'));}
+  function migrationDormantTranslations(payload){const all=Object.keys(payload?.translations||{}).map(x=>String(x).toLowerCase()).filter(Boolean);const active=new Set((payload?.activeLocales||[]).map(x=>String(x).toLowerCase()).filter(Boolean));return [...new Set(all.filter(x=>!active.has(x)))].sort((a,b)=>a.localeCompare(b,'fr'));}
   function migrationLanguageLabel(locale){const l=String(locale||'').toLowerCase();return({fr:'Français',en:'English',es:'Español',de:'Deutsch',it:'Italiano',pt:'Português',ar:'العربية',ja:'日本語','ko-kr':'한국어',zh:'中文',pl:'Polski',ru:'Русский',tr:'Türkçe'})[l]||String(locale||'').toUpperCase();}
   function migrationPlainText(value){const box=document.createElement('div');box.innerHTML=String(value||'');return (box.textContent||box.innerText||'').replace(/\s+/g,' ').trim();}
   function migrationPayloadTitle(m){const p=m?.source_payload||{};if(m?.entity_type==='profile')return p.title||p.raw?.title||`Profil #${m.legacy_id}`;if(m?.entity_type==='chapter')return p.title||p.originalTitle||`Chapitre #${m.legacy_id}`;if(m?.entity_type==='theme')return p.title||p.originalTitle||`Thématique #${m.legacy_id}`;return p.content||p.title||p.originalTitle||p.label||`${migrationEntityLabel(m.entity_type)} #${m.legacy_id}`;}
@@ -106,14 +107,21 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const target=cmp.targetPayload||null;
     const targetSummary=migrationPlainText(target?.summary||'');
     const targetContent=migrationPlainText(target?.content||'');
-    const translationPanels=langs.map(l=>`<div class="migration-lang-panel" data-migration-lang-panel="${esc(m.legacy_id)}:${esc(l)}" hidden><div class="migration-lang-version"><div class="migration-lang-panel-head"><span class="migration-lang-code">${esc(String(l).toUpperCase())}</span><strong>${esc(migrationLanguageLabel(l))}</strong><em>Version historique</em></div><p>${esc(migrationTranslationText(p,l)||title)}</p></div></div>`).join('');
+    const translationPanels=langs.map(l=>{
+      const row=p.translations?.[l]||{};
+      const translatedTitle=migrationPlainText(row.title||(l==='fr'?title:''));
+      const translatedSummary=migrationPlainText(row.summary||(l==='fr'?summary:''));
+      const translatedContent=migrationPlainText(row.content||(l==='fr'?content:''));
+      return `<div class="migration-lang-panel migration-profile-lang-panel" data-migration-lang-panel="${esc(m.legacy_id)}:${esc(l)}" hidden><div class="migration-lang-version"><div class="migration-lang-panel-head"><span class="migration-lang-code">${esc(String(l).toUpperCase())}</span><strong>${esc(migrationLanguageLabel(l))}</strong><em>Version historique${(p.activeLocales||[]).map(x=>String(x).toLowerCase()).includes(String(l).toLowerCase())?' · langue active':''}</em></div><div class="migration-profile-copy-grid"><div><span>Titre</span><p>${esc(translatedTitle||'Aucun titre historique.')}</p></div><div><span>Résumé</span><p>${esc(translatedSummary||'Aucun résumé historique.')}</p></div><div class="migration-profile-lang-content"><span>Texte détaillé</span><p>${esc(translatedContent||'Aucun texte détaillé historique.')}</p></div></div></div></div>`;
+    }).join('');
     return `<article class="migration-detail-item migration-profile-item ${migrationComparisonClass(cmp.status)}">
-      <div class="migration-detail-item-head"><div class="migration-profile-heading"><span class="migration-profile-color-dot" style="--migration-profile-color:${esc(color)}"></span><div><span class="migration-detail-kind">Profil</span><strong>${esc(title)}</strong><small>Ancien ID ${esc(m.legacy_id)}${p.position!=null?' · position '+esc(p.position):''}</small></div></div><div class="migration-detail-badges"><span class="migration-compare-badge ${migrationComparisonClass(cmp.status)}">${esc(migrationComparisonLabel(cmp.status))}</span><span class="migration-score-badge is-range">Score ${esc(min)} → ${esc(max)}</span>${langs.length?`<div class="migration-lang-switch" aria-label="Langues disponibles">${langs.map(l=>`<button type="button" class="migration-lang-badge" data-migration-lang="${esc(m.legacy_id)}:${esc(l)}"><span>${esc(String(l).toUpperCase())}</span><small>${esc(migrationLanguageLabel(l))}</small></button>`).join('')}</div>`:''}</div></div>
+      <div class="migration-detail-item-head"><div class="migration-profile-heading"><span class="migration-profile-color-dot" style="--migration-profile-color:${esc(color)}"></span><div><span class="migration-detail-kind">Profil</span><strong>${esc(title)}</strong><small>Ancien ID ${esc(m.legacy_id)}${p.position!=null?' · position '+esc(p.position):''}</small></div></div><div class="migration-detail-badges"><span class="migration-compare-badge ${migrationComparisonClass(cmp.status)}">${esc(migrationComparisonLabel(cmp.status))}</span><span class="migration-score-badge is-range">Score ${esc(min)} → ${esc(max)}</span>${langs.length?`<div class="migration-lang-switch" aria-label="Langues actives disponibles">${langs.map(l=>`<button type="button" class="migration-lang-badge" data-migration-lang="${esc(m.legacy_id)}:${esc(l)}"><span>${esc(String(l).toUpperCase())}</span><small>${esc(migrationLanguageLabel(l))}</small></button>`).join('')}</div>`:''}</div></div>
       <div class="migration-profile-copy-grid"><div><span>Résumé</span><p>${esc(summary||'Aucun résumé historique.')}</p></div><div><span>Texte détaillé</span><p>${esc(content||'Aucun texte détaillé historique.')}</p></div></div>
       ${target?`<div class="migration-profile-studio-current"><span>Studio actuel</span><strong>${esc(target.title||'Profil actuel')}</strong>${targetSummary?`<p><b>Résumé :</b> ${esc(targetSummary)}</p>`:''}${targetContent?`<p><b>Texte :</b> ${esc(targetContent)}</p>`:''}</div>`:''}
       ${translationPanels}
     </article>`;
   }
+
   function migrationDetailRow(m,childrenHtml='',context={}){
     const p=m.source_payload||{},cmp=m.comparison||p._comparison||{status:'new'},langs=migrationTranslations(p),title=migrationPayloadTitle(m),target=cmp.targetPayload||null;
     const currentText=target?.content||target?.title||'';
@@ -144,7 +152,10 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const theme=mappings.find(m=>m.entity_type==='theme');
       const meta=mappings.find(m=>m.entity_type==='survey_meta');
       const activeLocales=meta?.source_payload?.activeLocales||theme?.source_payload?.activeLocales||[];
-      const dormantLocales=meta?.source_payload?.dormantLocales||theme?.source_payload?.dormantLocales||[];
+      const explicitDormant=meta?.source_payload?.dormantLocales||theme?.source_payload?.dormantLocales||[];
+      const allHistoricalLocales=[...new Set(mappings.flatMap(m=>Object.keys(m.source_payload?.translations||{})).map(x=>String(x).toLowerCase()).filter(Boolean))];
+      const activeLocaleSet=new Set(activeLocales.map(x=>String(x).toLowerCase()));
+      const dormantLocales=explicitDormant.length?explicitDormant:allHistoricalLocales.filter(x=>!activeLocaleSet.has(x));
       const officialCountries=[...new Set((meta?.source_payload?.countries||[])
         .map(x=>x.country_name||x.name)
         .filter(Boolean))];

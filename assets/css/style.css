@@ -12687,3 +12687,6 @@ body.sidebar-collapsed .profile-copy {
   #migration-translation-dialog.admin-dialog-wide{width:calc(100vw - 20px);max-width:calc(100vw - 20px);}
   #migration-translation-dialog .migration-translation-editor{grid-template-columns:1fr;}
 }
+
+/* Migration historique — une traduction de profil affiche titre + résumé + texte. */
+.migration-profile-lang-panel .migration-profile-lang-content{grid-column:1/-1}
