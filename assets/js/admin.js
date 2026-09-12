@@ -363,19 +363,22 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           </summary>
           <div class="migration-review-chapter-body">
             ${reviewCard(ch,true)}
-            ${situations.map(si=>{
-              const answers=(children.get(String(si.legacy_id))||[]).filter(x=>x.entity_type==='answer');
-              return `<div class="migration-review-situation-group">
-                ${reviewCard(si)}
-                ${answers.length?`<details class="migration-review-subgroup">
-                  <summary><span class="migration-review-round">›</span>${answers.length} réponses</summary>
-                  <div>${answers.map(x=>reviewCard(x,true)).join('')}</div>
-                </details>`:''}
-              </div>`;
-            }).join('')}
             ${profiles.length?`<details class="migration-review-subgroup migration-review-profile-subgroup" data-review-profile-group data-total-profiles="${profiles.length}">
-              <summary><span class="migration-review-round">›</span><span data-review-profile-count>${profiles.length} profil${profiles.length>1?'s':''}</span></summary>
+              <summary><span class="migration-review-round">›</span><span><strong>Profils</strong> · <span data-review-profile-count>${profiles.length} profil${profiles.length>1?'s':''}</span></span></summary>
               <div>${profiles.map(x=>reviewCard(x)).join('')}</div>
+            </details>`:''}
+            ${situations.length?`<details class="migration-review-subgroup migration-review-situations-subgroup" data-review-situations-group>
+              <summary><span class="migration-review-round">›</span><span><strong>Situations</strong> · ${situations.length} situation${situations.length>1?'s':''}</span></summary>
+              <div>${situations.map(si=>{
+                const answers=(children.get(String(si.legacy_id))||[]).filter(x=>x.entity_type==='answer');
+                return `<div class="migration-review-situation-group">
+                  ${reviewCard(si)}
+                  ${answers.length?`<details class="migration-review-subgroup">
+                    <summary><span class="migration-review-round">›</span>${answers.length} réponses</summary>
+                    <div>${answers.map(x=>reviewCard(x,true)).join('')}</div>
+                  </details>`:''}
+                </div>`;
+              }).join('')}</div>
             </details>`:''}
           </div>
         </details>`;
@@ -515,7 +518,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
             .filter(g=>!g.hidden);
           const hasVisible=visibleCards.length>0||visibleGroups.length>0;
           ch.hidden=!hasVisible;
-          if(hasVisible){visibleChapters++;ch.open=true;}
+          if(hasVisible)visibleChapters++;
         });
         if(empty)empty.hidden=visibleChapters>0;
       }
