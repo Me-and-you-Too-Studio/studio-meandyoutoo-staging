@@ -546,10 +546,34 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         $$('[data-review-chapter],.migration-review-subgroup').filter(x=>!x.hidden).forEach(x=>x.open=b.dataset.reviewExpand==='1');
       }));
 
-      function updateSaveUi(){
+      function liveReviewCounts(){
+        return {
+          pending:businessEntities.filter(x=>x.review_status==='pending'&&x.comparison?.status!=='exact_match').length,
+          variant:businessEntities.filter(x=>x.comparison?.status==='possible_variant').length,
+          new:businessEntities.filter(x=>x.comparison?.status==='new').length,
+          existing:businessEntities.filter(x=>x.comparison?.status==='exact_match').length,
+          translations:businessEntities.filter(x=>activeTranslationMissing(x)).length,
+          total:businessEntities.length
+        };
+      }
+      function refreshReviewCounters(){
+        const counts=liveReviewCounts();
+        filterButtons.forEach(btn=>{
+          const key=btn.dataset.reviewFilter;
+          const value=counts[key];
+          const counter=btn.querySelector('b');
+          if(counter&&Number.isFinite(value))counter.textContent=String(value);
+        });
+        const title=root.querySelector('.migration-review-welcome h3');
+        if(title)title.textContent=`${counts.pending} décision${counts.pending>1?'s':''} réellement à prendre`;
+        return counts;
+      }
+      function updateSaveUi(message=''){
         const count=dirty.size;
         if(saveBtn)saveBtn.disabled=!count;
-        if(saveState)saveState.textContent=count?`${count} décision${count>1?'s':''} à enregistrer`:'Aucune modification à enregistrer';
+        if(!saveState)return;
+        if(message){saveState.textContent=message;return;}
+        saveState.textContent=count?`${count} décision${count>1?'s':''} à enregistrer`:'Aucune modification en attente';
       }
 
       $$('[data-review-status]').forEach(sel=>{
@@ -587,24 +611,43 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
 
       if(saveBtn)saveBtn.onclick=async()=>{
         if(!dirty.size)return;
+        const savedEntries=[...dirty.entries()];
+        const savedCount=savedEntries.length;
         saveBtn.disabled=true;
         if(saveState)saveState.textContent='Enregistrement…';
         try{
-          for(const [id,value] of dirty){
+          for(const [id,value] of savedEntries){
             await StudioAPI.request('/api/admin/migrations/'+batchId+'/review/'+id,{
               method:'PATCH',body:JSON.stringify({reviewStatus:value})
             });
             const sel=$(`[data-review-status="${id}"]`);
             if(sel)sel.dataset.initialValue=value;
+            const entity=businessEntities.find(x=>String(x.id)===String(id));
+            if(entity)entity.review_status=value;
           }
           dirty.clear();
-          if(saveState)saveState.textContent='Décisions enregistrées';
-          setTimeout(()=>{if(saveState&&!dirty.size)saveState.textContent='Aucune modification à enregistrer';},1600);
+          const counts=refreshReviewCounters();
+          const activeFilter=root.dataset.activeFilter||'pending';
+          applyReviewFilter(activeFilter);
+          const savedLabel=`${savedCount} décision${savedCount>1?'s':''} enregistrée${savedCount>1?'s':''}`;
+          if(counts.pending>0){
+            updateSaveUi(`✓ ${savedLabel}. ${counts.pending} reste${counts.pending>1?'nt':''} à décider.`);
+            if(activeFilter==='pending'){
+              const next=[...root.querySelectorAll('[data-review-card]')].find(card=>!card.hidden&&card.dataset.pending==='1');
+              next?.scrollIntoView({behavior:'smooth',block:'center'});
+            }
+          }else{
+            updateSaveUi(`✓ ${savedLabel}. Toutes les décisions sont enregistrées.`);
+            await StudioModal.alert({
+              eyebrow:'ÉTAPE 2 TERMINÉE',
+              title:'Toutes les décisions sont enregistrées',
+              message:'La revue humaine est terminée. Aucune modification du catalogue n’a encore été appliquée. L’intégration finale restera une étape séparée.',
+              confirmLabel:'Continuer'
+            });
+          }
         }catch(e){
           showError(e.message);
-          if(saveState)saveState.textContent='Échec de l’enregistrement';
-        }finally{
-          updateSaveUi();
+          updateSaveUi('Échec de l’enregistrement — réessaie.');
         }
       };
 
