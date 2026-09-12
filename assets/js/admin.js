@@ -95,6 +95,14 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function migrationPayloadTitle(m){const p=m?.source_payload||{};if(m?.entity_type==='profile')return p.title||p.raw?.title||`Profil #${m.legacy_id}`;if(m?.entity_type==='chapter')return p.title||p.originalTitle||`Chapitre #${m.legacy_id}`;if(m?.entity_type==='theme')return p.title||p.originalTitle||`Thématique #${m.legacy_id}`;return p.content||p.title||p.originalTitle||p.label||`${migrationEntityLabel(m.entity_type)} #${m.legacy_id}`;}
   function dryRunTypeStats(mappings,type){const rows=mappings.filter(m=>m.entity_type===type);const stat={total:rows.length,exact:0,variant:0,new:0};rows.forEach(m=>{const st=(m.comparison||m.source_payload?._comparison||{}).status||'new';if(st==='exact_match')stat.exact++;else if(st==='possible_variant')stat.variant++;else stat.new++;});return stat;}
   function migrationTranslationText(payload,locale){const t=payload?.translations?.[locale]||{};return t.content||t.title||t.summary||t.label||'';}
+  function migrationStudioTranslationText(target,locale){
+    const l=String(locale||'').toLowerCase();
+    const translated=target?.translations?.[l]||{};
+    const translatedText=translated.content||translated.title||translated.summary||translated.label||'';
+    if(translatedText)return translatedText;
+    if(l==='fr')return target?.content||target?.title||target?.summary||target?.label||'';
+    return '';
+  }
   function migrationScoreHtml(m){const p=m?.source_payload||{};if(m.entity_type==='answer'&&p.scoreValue!=null)return `<span class="migration-score-badge">Score ${esc(p.scoreValue)}</span>`;if(m.entity_type==='profile'&&(p.scoringRangeMin!=null||p.scoringRangeMax!=null))return `<span class="migration-score-badge is-range">Score ${esc(p.scoringRangeMin??'—')} → ${esc(p.scoringRangeMax??'—')}</span>`;return '';}
   function migrationProfileDetailRow(m,context={}){
     const p=m.source_payload||{},cmp=m.comparison||p._comparison||{status:'new'},langs=migrationTranslations(p);
@@ -125,7 +133,16 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function migrationDetailRow(m,childrenHtml='',context={}){
     const p=m.source_payload||{},cmp=m.comparison||p._comparison||{status:'new'},langs=migrationTranslations(p),title=migrationPayloadTitle(m),target=cmp.targetPayload||null;
     const currentText=target?.content||target?.title||'';
-    const translationPanels=langs.map(l=>`<div class="migration-lang-panel" data-migration-lang-panel="${esc(m.legacy_id)}:${esc(l)}" hidden><div class="migration-lang-version"><div class="migration-lang-panel-head"><span class="migration-lang-code">${esc(String(l).toUpperCase())}</span><strong>${esc(migrationLanguageLabel(l))}</strong><em>Version historique</em></div><p>${esc(migrationTranslationText(p,l)||'Aucun texte disponible dans cette langue.')}</p></div>${currentText?`<div class="migration-lang-version is-studio"><div class="migration-lang-panel-head"><span class="migration-lang-code is-studio">STUDIO</span><strong>Version actuelle</strong></div><p>${esc(currentText)}</p></div>`:''}</div>`).join('');
+    const translationPanels=langs.map(l=>{
+      const studioLocaleText=migrationStudioTranslationText(target,l);
+      const localeCode=String(l||'').toUpperCase();
+      const studioPanel=target
+        ? (studioLocaleText
+          ? `<div class="migration-lang-version is-studio"><div class="migration-lang-panel-head"><span class="migration-lang-code is-studio">STUDIO</span><strong>Version actuelle · ${esc(localeCode)}</strong></div><p>${esc(studioLocaleText)}</p></div>`
+          : `<div class="migration-lang-version is-studio is-missing"><div class="migration-lang-panel-head"><span class="migration-lang-code is-studio">STUDIO</span><strong>Aucune version ${esc(localeCode)}</strong></div><p>Le Studio actuel ne contient pas de version ${esc(migrationLanguageLabel(l))} pour cet élément.</p></div>`)
+        : '';
+      return `<div class="migration-lang-panel" data-migration-lang-panel="${esc(m.legacy_id)}:${esc(l)}" hidden><div class="migration-lang-version"><div class="migration-lang-panel-head"><span class="migration-lang-code">${esc(localeCode)}</span><strong>${esc(migrationLanguageLabel(l))}</strong><em>Version historique</em></div><p>${esc(migrationTranslationText(p,l)||'Aucun texte disponible dans cette langue.')}</p></div>${studioPanel}</div>`;
+    }).join('');
     const countries=(p.countries||[]).map(c=>String(c.name||c.id||'').trim()).filter(Boolean);
     const official=(context.officialCountries||[]).map(x=>String(x).trim()).filter(Boolean);
     const variantCountries=[...new Set(countries.filter(c=>!official.some(o=>o.toLowerCase()===c.toLowerCase())))];
