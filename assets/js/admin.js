@@ -556,9 +556,81 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         $('#migration-translation-title').textContent=`${p.title||hist.title||'Profil'} — ${locale.toUpperCase()}`;
         $('#migration-translation-intro').textContent='Le français est affiché comme référence. Les champs historiques disponibles sont préremplis. « Enregistrer comme brouillon » conserve ton travail sans le considérer terminé ; « Valider la traduction » la marque comme complète et la retire du filtre des traductions à compléter.';
         $('#migration-translation-body').innerHTML=`<div class="migration-translation-editor"><section><span>FR — référence</span><h3>${esc(p.title||p.translations?.fr?.title||'—')}</h3><label>Résumé</label><div class="migration-translation-reference">${esc(clean(p.summary)||'—')}</div><label>Texte détaillé</label><div class="migration-translation-reference">${esc(clean(p.content)||'—')}</div></section><section><span>${locale.toUpperCase()} — à compléter</span><label>Titre</label><input id="migration-translation-field-title" value="${esc(saved.title||hist.title||'')}"><label>Résumé</label><textarea id="migration-translation-field-summary" rows="5">${esc(saved.summary||hist.summary||'')}</textarea><label>Texte détaillé</label><textarea id="migration-translation-field-content" rows="10">${esc(saved.content||hist.content||'')}</textarea></section></div>`;
-        $('#migration-translation-state').textContent=saved.status==='validated'?'Traduction validée':saved.status==='draft'?'Brouillon enregistré':'';
-        const save=async status=>{try{await StudioAPI.request(`/api/admin/migrations/${batchId}/review/${entity.id}/translation/${locale}`,{method:'PUT',body:JSON.stringify({title:$('#migration-translation-field-title').value,summary:$('#migration-translation-field-summary').value,content:$('#migration-translation-field-content').value,status})});td.close();await openMigrationReview(batchId);}catch(err){showError(err.message);}};
-        $('#migration-translation-draft').onclick=()=>save('draft');$('#migration-translation-validate').onclick=()=>save('validated');td.showModal();
+        const stateEl=$('#migration-translation-state'),draftBtn=$('#migration-translation-draft'),validateBtn=$('#migration-translation-validate');
+        const setTranslationState=(kind,message)=>{
+          stateEl.className='migration-translation-state '+kind;
+          stateEl.textContent=message||'';
+        };
+        if(saved.status==='validated'){
+          setTranslationState('success','✓ Traduction déjà validée');
+          validateBtn.textContent='✓ Traduction validée';
+          validateBtn.disabled=true;
+        }else if(saved.status==='draft'){
+          setTranslationState('draft','Brouillon enregistré');
+          validateBtn.textContent='Valider la traduction';
+          validateBtn.disabled=false;
+        }else{
+          setTranslationState('','');
+          validateBtn.textContent='Valider la traduction';
+          validateBtn.disabled=false;
+        }
+        const closeTranslation=()=>{
+          if(td.open)td.close();
+        };
+        td.querySelectorAll('[data-close-dialog="migration-translation-dialog"]').forEach(b=>{
+          b.onclick=e=>{e.preventDefault();e.stopPropagation();closeTranslation();};
+        });
+        const save=async status=>{
+          const title=$('#migration-translation-field-title').value.trim();
+          const summary=$('#migration-translation-field-summary').value.trim();
+          const content=$('#migration-translation-field-content').value.trim();
+          if(status==='validated'&&(!title||!summary||!content)){
+            setTranslationState('error','Titre, résumé et texte détaillé sont obligatoires pour valider.');
+            return;
+          }
+          draftBtn.disabled=true;validateBtn.disabled=true;
+          if(status==='validated'){
+            validateBtn.textContent='Validation…';
+            setTranslationState('loading','Validation en cours…');
+          }else{
+            draftBtn.textContent='Enregistrement…';
+            setTranslationState('loading','Enregistrement du brouillon…');
+          }
+          try{
+            const result=await StudioAPI.request(`/api/admin/migrations/${batchId}/review/${entity.id}/translation/${locale}`,{
+              method:'PUT',
+              body:JSON.stringify({title,summary,content,status})
+            });
+            draftsByKey.set(`${entity.id}:${locale}`,result.translation||{title,summary,content,status});
+            if(status==='validated'){
+              setTranslationState('success','✓ Traduction validée. Elle ne sera plus comptée parmi les traductions à compléter.');
+              validateBtn.textContent='✓ Traduction validée';
+              validateBtn.disabled=true;
+              draftBtn.textContent='Enregistrer comme brouillon';
+              draftBtn.disabled=false;
+            }else{
+              setTranslationState('draft','✓ Brouillon enregistré. La traduction reste à compléter tant qu’elle n’est pas validée.');
+              draftBtn.textContent='Enregistrer comme brouillon';
+              draftBtn.disabled=false;
+              validateBtn.textContent='Valider la traduction';
+              validateBtn.disabled=false;
+            }
+          }catch(err){
+            setTranslationState('error','Échec : '+(err.message||'impossible d’enregistrer la traduction'));
+            draftBtn.textContent='Enregistrer comme brouillon';
+            validateBtn.textContent='Valider la traduction';
+            draftBtn.disabled=false;validateBtn.disabled=false;
+          }
+        };
+        draftBtn.onclick=()=>save('draft');
+        validateBtn.onclick=()=>save('validated');
+        td.addEventListener('close',()=>{
+          // Rafraîchit la revue seulement APRÈS fermeture de la sous-fenêtre.
+          // On ferme d'abord la revue existante pour éviter showModal() sur un dialog déjà ouvert.
+          if(d.open)d.close();
+          openMigrationReview(batchId);
+        },{once:true});
+        td.showModal();
       });
       d.showModal();
     }catch(e){showError(e.message);}

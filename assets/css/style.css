@@ -12653,3 +12653,21 @@ body.sidebar-collapsed .profile-copy {
 .migration-review-situation-group[hidden]{
   display:none !important;
 }
+
+/* Traductions migration — retour explicite de sauvegarde/validation */
+.migration-translation-state{
+  margin-right:auto;
+  min-height:1.4rem;
+  font-weight:800;
+  font-size:.92rem;
+}
+.migration-translation-state.success{color:#267044;}
+.migration-translation-state.draft{color:#0d4c72;}
+.migration-translation-state.loading{color:#607985;}
+.migration-translation-state.error{color:#b42318;}
+#migration-translation-validate:disabled{
+  cursor:default;
+}
+#migration-translation-validate:disabled:not(:empty){
+  opacity:.72;
+}
