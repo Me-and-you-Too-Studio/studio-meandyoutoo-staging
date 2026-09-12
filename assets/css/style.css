@@ -12784,3 +12784,25 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .migration-review-decision-history-row small{color:#6a7f8d}
 .migration-review-decision-history-choice{display:inline-flex;align-items:center;justify-content:center;max-width:280px;padding:7px 10px;border-radius:999px;background:#eef7f8;color:#0b6b73;font-weight:700;text-align:center}
 @media (max-width:760px){.migration-review-decision-history-row{grid-template-columns:1fr}.migration-review-decision-history-choice{justify-self:start;max-width:100%}}
+
+/* Migration / Bibliothèque — langues et périmètres culturels */
+.admin-library-localization-badges{display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center;margin-left:6px}
+.admin-library-localization-chip{display:inline-flex;align-items:center;min-height:24px;padding:3px 8px;border:1px solid #cfe0e8;border-radius:999px;background:#f7fbfd;color:#315a70;font-size:12px;font-weight:700;line-height:1.2}
+.admin-library-localization-chip.is-language{background:#eef8fb}
+.admin-library-localization-chip.is-country{background:#fff7e8;border-color:#efd6a1;color:#74551b}
+.admin-library-localization-panel,.admin-library-localization-list{margin-top:14px;border-top:1px solid #dbe6ec;padding-top:14px}
+.admin-library-localization-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.admin-library-localization-row{border:1px solid #dce7ed;border-radius:10px;background:#fff;margin-top:8px;overflow:hidden}
+.admin-library-localization-row.is-cultural{border-color:#efd6a1;background:#fffdf8}
+.admin-library-localization-row>summary{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 12px;cursor:pointer;list-style:none}
+.admin-library-localization-row>summary::-webkit-details-marker{display:none}
+.admin-library-localization-row>summary span{font-size:12px;color:#6b7f8c}
+.admin-library-localization-copy{padding:0 12px 12px;display:grid;gap:10px}
+.admin-library-localization-copy b{display:block;margin-bottom:3px;font-size:11px;text-transform:uppercase;color:#607886}
+.admin-library-localization-copy p{margin:0;white-space:pre-wrap;line-height:1.45;color:#18384b}
+.admin-library-localization-empty{margin:8px 0 0;color:#718692;font-size:13px}
+.admin-library-answer-localization{grid-column:2/-1;display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-top:4px}
+.admin-library-answer-localization>details{width:100%;font-size:12px}
+.admin-library-answer-localization>details>summary{cursor:pointer;color:#0d5d7a;font-weight:700;margin:4px 0}
+.admin-profile-localization-card .admin-library-localization-badges{margin:0 0 8px}
+@media(max-width:760px){.admin-library-localization-head{align-items:flex-start}.admin-library-localization-badges{margin-left:0}.admin-library-answer-localization{grid-column:1/-1}}
