@@ -46,12 +46,12 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       state.migrationBatches=batches.batches||[];state.promotionRequests=promotions.requests||[];state.migrationsLoaded=true;renderMigrations();
     }catch(e){showError(e.message);}
   }
-  function migrationStatusLabel(s){return({draft:'Brouillon',dry_run_ready:'Dry-run prêt',approved:'Approuvé',importing:'Import en cours',review_ready:'En zone de revue',completed:'Terminé',failed:'Erreur',rolled_back:'Annulé',archived:'Archivé'})[s]||s;}
+  function migrationStatusLabel(s){return({draft:'Brouillon',dry_run_ready:'Dry-run prêt',approved:'Approuvé',importing:'Import en cours',review_ready:'En zone de revue',completed:'Test intégré',failed:'Erreur',rolled_back:'Test annulé',archived:'Archivé'})[s]||s;}
   function dryRunText(b){const d=b?.summary?.dryRun;if(!d)return'';return `${fmt(d.accepted)} éléments · ${fmt(d.exactMatches)} déjà présents · ${fmt(d.possibleVariants)} variantes possibles · ${fmt(d.newEntities)} nouveaux`;}
   function renderMigrations(){
     const rows=state.migrationBatches||[],activeRows=rows.filter(x=>x.status!=='archived'),archivedRows=rows.filter(x=>x.status==='archived'),pending=(state.promotionRequests||[]).filter(x=>x.status==='pending').length;
     const k=$('#migration-kpis');if(k)k.innerHTML=`<article><strong>${activeRows.length}</strong><span>Lots actifs</span></article><article><strong>${activeRows.filter(x=>x.status==='dry_run_ready').length}</strong><span>Dry-runs à valider</span></article><article><strong>${activeRows.filter(x=>x.status==='review_ready').length}</strong><span>Imports en revue</span></article><article><strong>${pending}</strong><span>Promotions à traiter</span></article>`;
-    const migrationCard=b=>`<article class="admin-migration-card ${b.status==='archived'?'is-archived':''}" data-open-migration-card="${b.id}" data-migration-status="${esc(b.status)}" tabindex="0" role="button" aria-label="Ouvrir le lot ${esc(b.source_customer_name||'Migration historique')}"><div><span class="admin-migration-scope">${b.scope==='catalog'?'Catalogue Me&YouToo':'Client'}</span><h3>${esc(b.source_customer_name||'Migration historique')}</h3><p>${esc(b.organization_name||'Catalogue commun')}${b.source_survey_id?' · Survey #'+esc(b.source_survey_id):''} · ${fmt(b.mapping_count)} élément${Number(b.mapping_count)>1?'s':''} · ${fmt(b.error_count)} erreur${Number(b.error_count)>1?'s':''}</p>${dryRunText(b)?`<small class="admin-migration-summary">${esc(dryRunText(b))}</small>`:''}${b.status==='archived'&&b.archived_at?`<small class="admin-migration-summary">Archivé le ${esc(dateTime(b.archived_at))}</small>`:''}</div><div class="admin-migration-actions"><span class="admin-migration-status is-${esc(b.status)}">${esc(migrationStatusLabel(b.status))}</span><button class="button button-secondary" data-open-migration="${b.id}" data-status="${esc(b.status)}">Ouvrir</button>${b.status!=='archived'?`<button class="button button-ghost" data-archive-migration="${b.id}">Archiver</button>`:`<button class="button button-ghost" data-restore-migration="${b.id}">Restaurer</button>`}${b.status!=='completed'&&b.status!=='importing'?`<button class="button button-danger-soft" data-delete-migration="${b.id}">Supprimer</button>`:''}</div></article>`;
+    const migrationCard=b=>{const integration=b.summary?.integration||{},isTestApplied=b.status==='completed'&&integration.testMode===true,isRolledBack=b.status==='rolled_back'&&integration.testMode===true;return `<article class="admin-migration-card ${b.status==='archived'?'is-archived':''}" data-open-migration-card="${b.id}" data-migration-status="${esc(b.status)}" tabindex="0" role="button" aria-label="Ouvrir le lot ${esc(b.source_customer_name||'Migration historique')}"><div><span class="admin-migration-scope">${b.scope==='catalog'?'Catalogue Me&YouToo':'Client'}</span><h3>${esc(b.source_customer_name||'Migration historique')}</h3><p>${esc(b.organization_name||'Catalogue commun')}${b.source_survey_id?' · Survey #'+esc(b.source_survey_id):''} · ${fmt(b.mapping_count)} élément${Number(b.mapping_count)>1?'s':''} · ${fmt(b.error_count)} erreur${Number(b.error_count)>1?'s':''}</p>${dryRunText(b)?`<small class="admin-migration-summary">${esc(dryRunText(b))}</small>`:''}${isTestApplied?`<small class="admin-migration-summary">Test appliqué : ${fmt(integration.updated)} mise(s) à jour · ${fmt(integration.created)} création(s) · ${fmt(integration.countryVariants)} variante(s) pays · rollback disponible</small>`:''}${isRolledBack?`<small class="admin-migration-summary">Test annulé le ${esc(dateTime(integration.rolledBackAt))} · le lot peut être supprimé.</small>`:''}${b.status==='archived'&&b.archived_at?`<small class="admin-migration-summary">Archivé le ${esc(dateTime(b.archived_at))}</small>`:''}</div><div class="admin-migration-actions"><span class="admin-migration-status is-${esc(b.status)}">${esc(migrationStatusLabel(b.status))}</span><button class="button button-secondary" data-open-migration="${b.id}" data-status="${esc(b.status)}">Ouvrir</button>${isTestApplied?`<button class="button button-danger-soft" data-rollback-migration="${b.id}">Annuler le test</button>`:''}${b.status!=='archived'&&!isTestApplied?`<button class="button button-ghost" data-archive-migration="${b.id}">Archiver</button>`:b.status==='archived'?`<button class="button button-ghost" data-restore-migration="${b.id}">Restaurer</button>`:''}${b.status!=='completed'&&b.status!=='importing'?`<button class="button button-danger-soft" data-delete-migration="${b.id}">Supprimer</button>`:''}</div></article>`;};
     const root=$('#admin-migrations');if(root)root.innerHTML=(activeRows.map(migrationCard).join('')||'<div class="card admin-empty">Aucun lot de migration actif.</div>')+(archivedRows.length?`<details class="admin-migration-archives"><summary>Lots archivés <strong>${archivedRows.length}</strong></summary><div class="admin-migration-archive-list">${archivedRows.map(migrationCard).join('')}</div></details>`:'');
     const pro=$('#admin-promotion-requests');if(pro)pro.innerHTML=(state.promotionRequests||[]).map(r=>`<article class="admin-migration-card"><div><span class="admin-migration-scope">${esc(r.organization_name||'Client')}</span><h3>${esc(r.source_entity_type)} #${esc(r.source_entity_id)}</h3><p>${esc(r.reason||'Aucun commentaire')}</p></div><div class="admin-migration-actions"><span class="admin-migration-status is-${esc(r.status)}">${esc(r.status)}</span>${r.status==='pending'?`<button class="button button-secondary" data-promotion-action="approve" data-promotion-id="${r.id}">Valider</button><button class="button button-ghost" data-promotion-action="reject" data-promotion-id="${r.id}">Refuser</button>`:''}</div></article>`).join('')||'<div class="card admin-empty">Aucune variante proposée au catalogue.</div>';
     $$('[data-dryrun-migration]').forEach(b=>b.onclick=()=>openDryRunDialog(b.dataset.dryrunMigration));
@@ -63,6 +63,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     $$('[data-open-migration-card]').forEach(card=>{const open=()=>openMigrationByStatus(card.dataset.openMigrationCard,card.dataset.migrationStatus);card.onclick=e=>{if(e.target.closest('button,select,input,a,summary'))return;open();};card.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button,select,input,a')){e.preventDefault();open();}};});
     $$('[data-archive-migration]').forEach(b=>b.onclick=async e=>{e.preventDefault();e.stopPropagation();const ok=await StudioModal.confirm({title:'Archiver ce lot ?',message:'Le lot disparaîtra des lots actifs mais conservera tout son historique, son dry-run et sa zone de revue.',confirmLabel:'Archiver'});if(!ok)return;try{await StudioAPI.request('/api/admin/migrations/'+b.dataset.archiveMigration+'/archive',{method:'POST',body:'{}'});state.migrationsLoaded=false;loadMigrations();}catch(err){showError(err.message);}});
     $$('[data-restore-migration]').forEach(b=>b.onclick=async e=>{e.preventDefault();e.stopPropagation();try{await StudioAPI.request('/api/admin/migrations/'+b.dataset.restoreMigration+'/restore',{method:'POST',body:'{}'});state.migrationsLoaded=false;loadMigrations();}catch(err){showError(err.message);}});
+    $$('[data-rollback-migration]').forEach(b=>b.onclick=async e=>{e.preventDefault();e.stopPropagation();const ok=await StudioModal.confirm({type:'danger',eyebrow:'TEST STAGING',title:'Annuler complètement cette intégration de test ?',message:'Studio restaurera les contenus modifiés et supprimera les contenus/traductions créés par ce lot. Les décisions de revue resteront dans le lot pour pouvoir contrôler le test. Cette fonction est réservée au staging.',cancelLabel:'Conserver le test',confirmLabel:'Annuler l’intégration'});if(!ok)return;try{const r=await StudioAPI.request('/api/admin/migrations/'+b.dataset.rollbackMigration+'/rollback-test',{method:'POST',body:'{}'});await StudioModal.alert({eyebrow:'ROLLBACK TERMINÉ',title:'Le catalogue a été restauré',message:r.message||'Toutes les opérations du test ont été annulées.',confirmLabel:'Fermer'});state.migrationsLoaded=false;await loadMigrations();}catch(err){showError(err.message);}});
     $$('[data-delete-migration]').forEach(b=>b.onclick=async e=>{e.preventDefault();e.stopPropagation();const ok=await StudioModal.confirm({type:'danger',title:'Supprimer définitivement ce lot ?',message:'Le lot, son dry-run, ses mappings et sa zone de revue seront supprimés. Cette action est irréversible. Le Studio refusera la suppression si le lot a déjà créé des contenus.',confirmLabel:'Supprimer'});if(!ok)return;try{await StudioAPI.request('/api/admin/migrations/'+b.dataset.deleteMigration,{method:'DELETE'});state.migrationsLoaded=false;loadMigrations();}catch(err){showError(err.message);}});
     $$('[data-promotion-action]').forEach(b=>b.onclick=async()=>{try{await StudioAPI.request('/api/admin/catalog-promotion-requests/'+b.dataset.promotionId,{method:'PATCH',body:JSON.stringify({action:b.dataset.promotionAction})});state.migrationsLoaded=false;loadMigrations();}catch(e){showError(e.message);}});
   }
@@ -185,8 +186,13 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       if(!d||!root)return;
       d.dataset.batchId=batchId;
       const batchLabel=batch.name||batch.source_customer_name||'Import historique';
-      $('#migration-detail-title').textContent='Résultat du dry-run';
-      $('#migration-detail-subtitle').textContent=`${batchLabel} · ${fmt(summary.accepted||mappings.length)} éléments analysés · aucune écriture dans le catalogue`;
+      const integration=batch.summary?.integration||{},isTestApplied=batch.status==='completed'&&integration.testMode===true,isRolledBack=batch.status==='rolled_back'&&integration.testMode===true;
+      $('#migration-detail-title').textContent=isTestApplied?'Intégration de test appliquée':isRolledBack?'Intégration de test annulée':'Résultat du dry-run';
+      $('#migration-detail-subtitle').textContent=isTestApplied
+        ? `${batchLabel} · application STAGING avec rollback disponible`
+        : isRolledBack
+          ? `${batchLabel} · catalogue restauré · lot supprimable`
+          : `${batchLabel} · ${fmt(summary.accepted||mappings.length)} éléments analysés · aucune écriture dans le catalogue`;
       const types=['theme','chapter','situation','answer','profile','survey_meta'];
       const stats=Object.fromEntries(types.map(t=>[t,dryRunTypeStats(mappings,t)]));
       const summaryCards=types.filter(t=>stats[t].total).map(t=>{const x=stats[t];return `<article><strong>${fmt(x.total)}</strong><span>${esc(migrationEntityLabel(t,x.total))}</span><small>${fmt(x.exact)} déjà présents · ${fmt(x.variant)} variantes · ${fmt(x.new)} nouveaux</small></article>`;}).join('');
@@ -203,15 +209,16 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         .filter(Boolean))];
       const chapters=mappings.filter(m=>m.entity_type==='chapter').sort((a,b)=>(Number(a.source_payload?.position)||0)-(Number(b.source_payload?.position)||0));
       const chapterBlocks=chapters.map(ch=>{const situations=(byParent.get(String(ch.legacy_id))||[]).filter(x=>x.entity_type==='situation').sort((a,b)=>(Number(a.source_payload?.position)||0)-(Number(b.source_payload?.position)||0));const profiles=(byParent.get(String(ch.legacy_id))||[]).filter(x=>x.entity_type==='profile').sort((a,b)=>(Number(a.source_payload?.position)||0)-(Number(b.source_payload?.position)||0));const situationHtml=situations.map(si=>{const answers=(byParent.get(String(si.legacy_id))||[]).filter(x=>x.entity_type==='answer');const child=`<details class="migration-detail-children"><summary><span>${answers.length} réponse${answers.length>1?'s':''} · ${migrationTranslations(si.source_payload).length} langue${migrationTranslations(si.source_payload).length>1?'s':''}</span><span class="migration-fold-label">Afficher</span></summary><div>${answers.map(a=>migrationDetailRow(a,'',{officialCountries})).join('')||'<p class="hint">Aucune réponse.</p>'}</div></details>`;return migrationDetailRow(si,child,{officialCountries});}).join('');return `<details class="migration-chapter-block"><summary><div class="migration-chapter-summary-main"><span class="migration-chapter-chevron" aria-hidden="true">›</span><div><strong>${esc(migrationPayloadTitle(ch))}</strong><span>${situations.length} situation${situations.length>1?'s':''} · ${profiles.length} profil${profiles.length>1?'s':''}</span></div></div><div class="migration-chapter-summary-actions"><span class="migration-compare-badge ${migrationComparisonClass((ch.comparison||ch.source_payload?._comparison||{}).status)}">${esc(migrationComparisonLabel((ch.comparison||ch.source_payload?._comparison||{}).status))}</span><span class="migration-fold-label">Déplier</span></div></summary><div class="migration-chapter-content">${situationHtml}${profiles.length?`<details class="migration-profile-group"><summary><span>${profiles.length} profils du chapitre</span><span class="migration-fold-label">Afficher</span></summary>${profiles.map(p=>migrationProfileDetailRow(p,{officialCountries})).join('')}</details>`:''}</div></details>`;}).join('');
-      root.innerHTML=`<section class="migration-review-welcome migration-dryrun-welcome"><div class="migration-review-welcome-head"><div><span class="migration-review-step-label">ÉTAPE 1 SUR 3 · ANALYSE AUTOMATIQUE</span><h3>Contrôler le rapprochement avant toute décision</h3><p>Ce premier écran sert uniquement à vérifier ce que Studio a détecté : correspondances, variantes, nouveautés, langues et périmètre. Tu ne prends encore aucune décision d’intégration.</p></div></div></section><section class="migration-detail-security"><strong>Import protégé</strong><span>Le Sexisme actuel reste intact. Ce dry-run compare uniquement les données historiques au Studio.</span></section><section class="migration-detail-kpis">${summaryCards}</section><section class="migration-detail-overview"><div><span>Survey historique</span><strong>#${esc(batch.source_survey_id||meta?.legacy_id||'—')}</strong></div><div><span>Langues actives</span><strong>${activeLocales.map(x=>String(x).toUpperCase()).join(' · ')||'—'}</strong>${dormantLocales.length?`<small>Traductions historiques hors diffusion : ${dormantLocales.map(x=>String(x).toUpperCase()).join(' · ')}</small>`:''}</div><div><span>Périmètre historique</span><strong>${officialCountries.map(esc).join(' · ')||'Non renseigné'}</strong></div><div><span>Erreurs</span><strong>${fmt(summary.invalid||0)}</strong></div></section>${theme?`<div class="migration-detail-theme">${migrationDetailRow(theme,'',{officialCountries})}</div>`:''}<section class="migration-detail-chapters"><div class="migration-detail-section-head"><div><h3>Contrôle du contenu</h3><p>Ouvre les chapitres puis les situations. Clique sur une langue pour afficher sa version. Les langues hors diffusion restent signalées séparément. Les scores sont affichés sur chaque réponse et les seuils sur chaque profil.</p></div><div class="migration-fold-actions"><button type="button" class="button button-ghost button-small" id="migration-expand-all">Tout déplier</button><button type="button" class="button button-ghost button-small" id="migration-collapse-all">Tout replier</button></div></div>${chapterBlocks||'<p class="admin-empty">Aucun chapitre trouvé.</p>'}</section>`;
+      root.innerHTML=`<section class="migration-review-welcome migration-dryrun-welcome"><div class="migration-review-welcome-head"><div><span class="migration-review-step-label">${isTestApplied?'ÉTAPE 3 SUR 3 · TEST D’INTÉGRATION':isRolledBack?'TEST ANNULÉ · CATALOGUE RESTAURÉ':'ÉTAPE 1 SUR 3 · ANALYSE AUTOMATIQUE'}</span><h3>${isTestApplied?'Contrôler le résultat avant rollback':isRolledBack?'Le test a été entièrement annulé':'Contrôler le rapprochement avant toute décision'}</h3><p>${isTestApplied?'Les décisions ont été appliquées au catalogue de staging. Tu peux maintenant tester les écrans qui consomment réellement ces données puis annuler le test.':isRolledBack?'Les contenus modifiés ont été restaurés et les contenus créés par le test ont été supprimés. Tu peux supprimer le lot.':'Ce premier écran sert uniquement à vérifier ce que Studio a détecté : correspondances, variantes, nouveautés, langues et périmètre. Tu ne prends encore aucune décision d’intégration.'}</p></div></div></section>${isTestApplied?`<section class="migration-detail-security"><strong>Test STAGING appliqué</strong><span>${fmt(integration.updated)} mise(s) à jour · ${fmt(integration.created)} création(s) · ${fmt(integration.countryVariants)} variante(s) pays · ${fmt(integration.translations)} traduction(s). Un snapshot de rollback a été créé.</span></section>`:isRolledBack?`<section class="migration-detail-security"><strong>Rollback terminé</strong><span>Le catalogue a été restauré. Le lot peut maintenant être supprimé définitivement si tu n’en as plus besoin.</span></section>`:`<section class="migration-detail-security"><strong>Import protégé</strong><span>Le Sexisme actuel reste intact. Ce dry-run compare uniquement les données historiques au Studio.</span></section>`}<section class="migration-detail-kpis">${summaryCards}</section><section class="migration-detail-overview"><div><span>Survey historique</span><strong>#${esc(batch.source_survey_id||meta?.legacy_id||'—')}</strong></div><div><span>Langues actives</span><strong>${activeLocales.map(x=>String(x).toUpperCase()).join(' · ')||'—'}</strong>${dormantLocales.length?`<small>Traductions historiques hors diffusion : ${dormantLocales.map(x=>String(x).toUpperCase()).join(' · ')}</small>`:''}</div><div><span>Périmètre historique</span><strong>${officialCountries.map(esc).join(' · ')||'Non renseigné'}</strong></div><div><span>Erreurs</span><strong>${fmt(summary.invalid||0)}</strong></div></section>${theme?`<div class="migration-detail-theme">${migrationDetailRow(theme,'',{officialCountries})}</div>`:''}<section class="migration-detail-chapters"><div class="migration-detail-section-head"><div><h3>Contrôle du contenu</h3><p>Ouvre les chapitres puis les situations. Clique sur une langue pour afficher sa version. Les langues hors diffusion restent signalées séparément. Les scores sont affichés sur chaque réponse et les seuils sur chaque profil.</p></div><div class="migration-fold-actions"><button type="button" class="button button-ghost button-small" id="migration-expand-all">Tout déplier</button><button type="button" class="button button-ghost button-small" id="migration-collapse-all">Tout replier</button></div></div>${chapterBlocks||'<p class="admin-empty">Aucun chapitre trouvé.</p>'}</section>`;
       $$('[data-migration-lang]',root).forEach(btn=>btn.onclick=()=>{const key=btn.dataset.migrationLang,panel=root.querySelector(`[data-migration-lang-panel="${CSS.escape(key)}"]`),item=btn.closest('.migration-detail-item');if(!panel)return;item.querySelectorAll('[data-migration-lang-panel]').forEach(x=>{if(x!==panel)x.hidden=true;});item.querySelectorAll('[data-migration-lang]').forEach(x=>x.classList.toggle('is-active',x===btn&&!panel.hidden));panel.hidden=!panel.hidden;btn.classList.toggle('is-active',!panel.hidden);});
       $('#migration-expand-all')?.addEventListener('click',()=>$$('.migration-chapter-block,.migration-detail-children,.migration-profile-group',root).forEach(x=>x.open=true));
       $('#migration-collapse-all')?.addEventListener('click',()=>$$('.migration-chapter-block,.migration-detail-children,.migration-profile-group',root).forEach(x=>x.open=false));
-      const actions=$('#migration-detail-actions');actions.innerHTML=`<button type="button" class="button button-ghost" data-close-dialog="migration-detail-dialog">Fermer</button>${batch.status==='dry_run_ready'?'<button type="button" class="button button-primary" id="migration-detail-approve">Passer à la revue</button>':''}${batch.status==='approved'?'<button type="button" class="button button-primary" id="migration-detail-stage">Ouvrir la revue humaine</button>':''}${batch.status==='review_ready'?'<button type="button" class="button button-primary" id="migration-detail-review">Reprendre la revue des décisions</button>':''}`;
+      const actions=$('#migration-detail-actions');actions.innerHTML=`<button type="button" class="button button-ghost" data-close-dialog="migration-detail-dialog">Fermer</button>${batch.status==='dry_run_ready'?'<button type="button" class="button button-primary" id="migration-detail-approve">Passer à la revue</button>':''}${batch.status==='approved'?'<button type="button" class="button button-primary" id="migration-detail-stage">Ouvrir la revue humaine</button>':''}${batch.status==='review_ready'?'<button type="button" class="button button-primary" id="migration-detail-review">Reprendre la revue des décisions</button>':''}${isTestApplied?'<button type="button" class="button button-danger-soft" id="migration-detail-rollback">Annuler l’intégration de test</button>':''}`;
       actions.querySelector('[data-close-dialog]')?.addEventListener('click',()=>d.close());
       $('#migration-detail-approve')?.addEventListener('click',async()=>{const ok=await StudioModal.confirm({title:'Passer à la revue humaine ?',message:'Tu confirmes que le résultat du dry-run est cohérent. Studio va copier ce lot dans une zone de revue séparée afin que tu puisses prendre les décisions métier. Aucune donnée du catalogue actuel ne sera modifiée.',confirmLabel:'Passer à la revue'});if(!ok)return;try{await StudioAPI.request('/api/admin/migrations/'+batchId+'/approve',{method:'POST',body:'{}'});await StudioAPI.request('/api/admin/migrations/'+batchId+'/stage-import',{method:'POST',body:'{}'});d.close();state.migrationsLoaded=false;await loadMigrations();openMigrationReview(batchId);}catch(e){showError(e.message);state.migrationsLoaded=false;await loadMigrations();}});
       $('#migration-detail-stage')?.addEventListener('click',async()=>{const ok=await StudioModal.confirm({title:'Ouvrir la revue humaine ?',message:'Le dry-run est déjà validé. Les éléments historiques seront copiés dans la zone de revue séparée. Le catalogue actuel ne sera pas modifié.',confirmLabel:'Ouvrir la revue'});if(!ok)return;try{await StudioAPI.request('/api/admin/migrations/'+batchId+'/stage-import',{method:'POST',body:'{}'});d.close();state.migrationsLoaded=false;await loadMigrations();openMigrationReview(batchId);}catch(e){showError(e.message);}});
       $('#migration-detail-review')?.addEventListener('click',()=>{d.close();openMigrationReview(batchId);});
+      $('#migration-detail-rollback')?.addEventListener('click',async()=>{const ok=await StudioModal.confirm({type:'danger',eyebrow:'TEST STAGING',title:'Annuler cette intégration de test ?',message:'Les mises à jour seront restaurées et toutes les données créées par ce lot seront supprimées. Les décisions de revue resteront traçables.',cancelLabel:'Conserver le test',confirmLabel:'Annuler l’intégration'});if(!ok)return;try{const r=await StudioAPI.request('/api/admin/migrations/'+batchId+'/rollback-test',{method:'POST',body:'{}'});d.close();await StudioModal.alert({title:'Rollback terminé',message:r.message||'Le catalogue de staging a été restauré.',confirmLabel:'Fermer'});state.migrationsLoaded=false;await loadMigrations();}catch(e){showError(e.message);}});
       d.showModal();
     }catch(e){showError(e.message);}
   }
@@ -344,8 +351,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const chapters=entities.filter(x=>x.entity_type==='chapter');
       const n={
         pending:businessEntities.filter(x=>x.review_status==='pending'&&x.comparison?.status!=='exact_match').length,
-        variant:businessEntities.filter(x=>x.comparison?.status==='possible_variant').length,
-        new:businessEntities.filter(x=>x.comparison?.status==='new').length,
+        variant:businessEntities.filter(x=>x.comparison?.status==='possible_variant'&&x.review_status==='pending').length,
+        new:businessEntities.filter(x=>x.comparison?.status==='new'&&x.review_status==='pending').length,
         existing:businessEntities.filter(x=>x.comparison?.status==='exact_match').length,
         translations:businessEntities.filter(x=>{
           if(!activeTranslationMissing(x))return false;
@@ -362,7 +369,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         return `<details class="migration-review-chapter" data-review-chapter>
           <summary>
             <span class="migration-review-round">›</span>
-            <div><strong>${esc(ch.source_payload?.title||'Chapitre')}</strong><small>${situations.length} situations · ${profiles.length} profils</small></div>
+            <div><strong>${esc(ch.source_payload?.title||'Chapitre')}</strong><small><span data-review-chapter-situations data-total-situations="${situations.length}">${situations.length} situations</span> · <span data-review-chapter-profiles data-total-profiles="${profiles.length}">${profiles.length} profils</span></small></div>
           </summary>
           <div class="migration-review-chapter-body">
             ${reviewCard(ch,true)}
@@ -371,7 +378,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
               <div>${profiles.map(x=>reviewCard(x)).join('')}</div>
             </details>`:''}
             ${situations.length?`<details class="migration-review-subgroup migration-review-situations-subgroup" data-review-situations-group>
-              <summary><span class="migration-review-round">›</span><span><strong>Situations</strong> · ${situations.length} situation${situations.length>1?'s':''}</span></summary>
+              <summary><span class="migration-review-round">›</span><span><strong>Situations</strong> · <span data-review-situation-count data-total-situations="${situations.length}">${situations.length} situation${situations.length>1?'s':''}</span></span></summary>
               <div>${situations.map(si=>{
                 const answers=(children.get(String(si.legacy_id))||[]).filter(x=>x.entity_type==='answer');
                 return `<div class="migration-review-situation-group">
@@ -409,10 +416,10 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
               À décider <b>${n.pending}</b>${reviewInfo('Les éléments qui nécessitent une décision humaine. C’est le meilleur point de départ.')}
             </button>
             <button type="button" data-review-filter="variant">
-              Variantes <b>${n.variant}</b>${reviewInfo('Le contenu historique ressemble au Studio actuel mais une différence a été détectée.')}
+              Variantes à décider <b>${n.variant}</b>${reviewInfo('Variantes détectées qui n’ont pas encore de décision enregistrée. Une fois décidées, elles sortent de ce compteur et restent consultables dans « Tout voir ».')}
             </button>
             <button type="button" data-review-filter="new">
-              Nouveaux <b>${n.new}</b>${reviewInfo('Aucun équivalent n’a été retrouvé dans le Studio actuel.')}
+              Nouveaux à décider <b>${n.new}</b>${reviewInfo('Nouveaux contenus sans décision enregistrée. Une fois décidés, ils sortent de ce compteur et restent consultables dans « Tout voir ».')}
             </button>
             <button type="button" data-review-filter="translations">
               Traductions à compléter <b>${n.translations}</b>${reviewInfo('Uniquement les langues actives du diagnostic pour lesquelles un contenu requis manque. Les traductions historiques hors diffusion ne sont pas comptées.')}
@@ -448,7 +455,12 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           <span>Choisis un autre filtre pour poursuivre la revue.</span>
         </div>
 
-        ${chapterHtml}`;
+        ${chapterHtml}
+        <section class="admin-library-note migration-review-final-step" id="migration-review-final-step" ${(n.pending>0||n.translations>0)?'hidden':''}>
+          <strong>ÉTAPE 3 SUR 3 · TEST D’INTÉGRATION STAGING</strong>
+          <span>Toutes les décisions sont enregistrées. Tu peux appliquer réellement ce lot dans le catalogue de staging pour tester le parcours jusqu’au bout. Studio créera un snapshot permettant d’annuler ensuite toutes les modifications et créations du test.</span>
+          <div class="top-actions"><button type="button" class="button button-primary" id="migration-review-apply-test">Appliquer le test dans le catalogue staging</button></div>
+        </section>`;
 
       const filterButtons=$$('[data-review-filter]');
       const cards=$$('[data-review-card]');
@@ -462,8 +474,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       function filterExplanation(f){
         const matching=businessEntities.filter(e=>{
           if(f==='pending')return e.review_status==='pending'&&e.comparison?.status!=='exact_match';
-          if(f==='variant')return e.comparison?.status==='possible_variant';
-          if(f==='new')return e.comparison?.status==='new';
+          if(f==='variant')return e.comparison?.status==='possible_variant'&&e.review_status==='pending';
+          if(f==='new')return e.comparison?.status==='new'&&e.review_status==='pending';
           if(f==='existing')return e.comparison?.status==='exact_match';
           if(f==='translations')return activeTranslationMissing(e);
           return true;
@@ -478,7 +490,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           const locales=[...new Set(matching.flatMap(e=>translationMissingInfo(e).map(x=>x.locale.toUpperCase())))];
           return `<strong>${matching.length} contenu${matching.length>1?'s':''} avec traduction active incomplète</strong><span>Langue${locales.length>1?'s':''} concernée${locales.length>1?'s':''} : ${locales.join(', ')||'—'}. ${parts.join(' · ')}</span>`;
         }
-        const labels={pending:'Décisions restantes',variant:'Variantes à examiner',new:'Nouveautés détectées',existing:'Contenus déjà rapprochés',all:'Tous les contenus métier'};
+        const labels={pending:'Décisions restantes',variant:'Variantes restant à décider',new:'Nouveaux contenus restant à décider',existing:'Contenus déjà rapprochés',all:'Tous les contenus métier'};
         return `<strong>${labels[f]||'Résultats'}</strong><span>${parts.join(' · ')||'Aucun contenu'}. Les situations parentes restent visibles comme contexte lorsque seules leurs réponses correspondent au filtre.</span>`;
       }
       function refreshNestedVisibility(){
@@ -496,14 +508,28 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           const hasVisible=[...group.querySelectorAll('[data-review-card]')].some(c=>!c.hidden&&!c.classList.contains('is-context-only'));
           group.hidden=!hasVisible;
         });
+        const activeFilter=root.dataset.activeFilter||'all';
+        const contextualLabel=(kind,visible,total)=>{
+          const plural=visible>1?'s':'';
+          if(activeFilter==='pending')return `${visible} ${kind}${plural} à décider sur ${total}`;
+          if(activeFilter==='variant')return `${visible} ${kind}${plural} variante${plural} sur ${total}`;
+          if(activeFilter==='new')return `${visible} nouveau${visible>1?'x':''} ${kind}${plural} sur ${total}`;
+          if(activeFilter==='translations')return `${visible} ${kind}${plural} à compléter sur ${total}`;
+          if(activeFilter==='existing')return `${visible} ${kind}${plural} déjà présent${plural} sur ${total}`;
+          return `${total} ${kind}${total>1?'s':''}`;
+        };
         $$('[data-review-profile-group]').forEach(group=>{
           const total=Number(group.dataset.totalProfiles||0);
           const visible=[...group.querySelectorAll(':scope > div > [data-review-card]')].filter(c=>!c.hidden&&!c.classList.contains('is-context-only')).length;
           const label=group.querySelector('[data-review-profile-count]');
+          if(label)label.textContent=contextualLabel('profil',visible,total);
+        });
+        $$('[data-review-situations-group]').forEach(group=>{
+          const label=group.querySelector('[data-review-situation-count]');
           if(!label)return;
-          label.textContent=root.dataset.activeFilter==='translations'
-            ? `${visible} profil${visible>1?'s':''} à compléter sur ${total}`
-            : `${total} profil${total>1?'s':''}`;
+          const total=Number(label.dataset.totalSituations||0);
+          const visible=[...group.querySelectorAll(':scope > div > .migration-review-situation-group > [data-review-card]')].filter(c=>!c.hidden&&!c.classList.contains('is-context-only')).length;
+          label.textContent=contextualLabel('situation',visible,total);
         });
         $$('.migration-review-situation-group').forEach(group=>{
           const own=[...group.children].find(el=>el.matches?.('[data-review-card]'));
@@ -520,6 +546,12 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           const visibleGroups=[...ch.querySelectorAll('.migration-review-subgroup')]
             .filter(g=>!g.hidden);
           const hasVisible=visibleCards.length>0||visibleGroups.length>0;
+          const situationCards=[...ch.querySelectorAll('.migration-review-situations-subgroup > div > .migration-review-situation-group > [data-review-card]')].filter(c=>!c.hidden&&!c.classList.contains('is-context-only'));
+          const profileCards=[...ch.querySelectorAll('.migration-review-profile-subgroup > div > [data-review-card]')].filter(c=>!c.hidden&&!c.classList.contains('is-context-only'));
+          const sitLabel=ch.querySelector('[data-review-chapter-situations]');
+          const profLabel=ch.querySelector('[data-review-chapter-profiles]');
+          if(sitLabel)sitLabel.textContent=contextualLabel('situation',situationCards.length,Number(sitLabel.dataset.totalSituations||0));
+          if(profLabel)profLabel.textContent=contextualLabel('profil',profileCards.length,Number(profLabel.dataset.totalProfiles||0));
           ch.hidden=!hasVisible;
           if(hasVisible)visibleChapters++;
         });
@@ -530,7 +562,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         filterButtons.forEach(x=>x.classList.toggle('active',x.dataset.reviewFilter===f));
         cards.forEach(c=>{
           c.classList.remove('is-context-only');
-          const show=f==='all'||(f==='pending'&&c.dataset.pending==='1')||(f==='variant'&&c.dataset.cmp==='variant')||(f==='new'&&c.dataset.cmp==='new')||(f==='existing'&&c.dataset.cmp==='existing')||(f==='translations'&&c.dataset.translations==='1');
+          const show=f==='all'||(f==='pending'&&c.dataset.pending==='1')||(f==='variant'&&c.dataset.cmp==='variant'&&c.dataset.pending==='1')||(f==='new'&&c.dataset.cmp==='new'&&c.dataset.pending==='1')||(f==='existing'&&c.dataset.cmp==='existing')||(f==='translations'&&c.dataset.translations==='1');
           c.dataset.filterMatched=show?'1':'0';c.hidden=!show;
         });
         refreshNestedVisibility();
@@ -549,8 +581,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       function liveReviewCounts(){
         return {
           pending:businessEntities.filter(x=>x.review_status==='pending'&&x.comparison?.status!=='exact_match').length,
-          variant:businessEntities.filter(x=>x.comparison?.status==='possible_variant').length,
-          new:businessEntities.filter(x=>x.comparison?.status==='new').length,
+          variant:businessEntities.filter(x=>x.comparison?.status==='possible_variant'&&x.review_status==='pending').length,
+          new:businessEntities.filter(x=>x.comparison?.status==='new'&&x.review_status==='pending').length,
           existing:businessEntities.filter(x=>x.comparison?.status==='exact_match').length,
           translations:businessEntities.filter(x=>activeTranslationMissing(x)).length,
           total:businessEntities.length
@@ -565,7 +597,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           if(counter&&Number.isFinite(value))counter.textContent=String(value);
         });
         const title=root.querySelector('.migration-review-welcome h3');
-        if(title)title.textContent=`${counts.pending} décision${counts.pending>1?'s':''} réellement à prendre`;
+        if(title)title.textContent=counts.pending?`${counts.pending} décision${counts.pending>1?'s':''} réellement à prendre`:counts.translations?`Toutes les décisions sont prises · ${counts.translations} traduction${counts.translations>1?'s':''} à compléter`:'Toutes les décisions métier sont enregistrées';
+        const finalStep=root.querySelector('#migration-review-final-step');
+        if(finalStep)finalStep.hidden=counts.pending>0||counts.translations>0;
         return counts;
       }
       function updateSaveUi(message=''){
@@ -676,6 +710,24 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
 
       syncDecisionControlsFromData();
       updateSaveUi();
+      const applyTestBtn=$('#migration-review-apply-test');
+      if(applyTestBtn)applyTestBtn.onclick=async()=>{
+        const counts=liveReviewCounts();
+        if(dirty.size){updateSaveUi('Enregistre d’abord les décisions en attente avant l’intégration de test.');return;}
+        if(counts.pending>0){updateSaveUi(`${counts.pending} décision${counts.pending>1?'s':''} reste${counts.pending>1?'nt':''} à prendre.`);return;}if(counts.translations>0){updateSaveUi(`${counts.translations} traduction${counts.translations>1?'s':''} active${counts.translations>1?'s':''} reste${counts.translations>1?'nt':''} à compléter.`);return;}
+        const ok=await StudioModal.confirm({type:'danger',eyebrow:'ÉTAPE 3 SUR 3 · TEST STAGING',title:'Appliquer réellement ces décisions dans le catalogue de staging ?',message:'Cette action modifie le catalogue STAGING pour te permettre de tester le parcours complet. Avant chaque modification, Studio crée un snapshot. Tu pourras ensuite utiliser « Annuler le test » pour restaurer les anciennes valeurs et supprimer tout ce que ce lot a créé. Ne jamais activer cette fonction en production.',cancelLabel:'Rester en revue',confirmLabel:'Appliquer le test'});
+        if(!ok)return;
+        applyTestBtn.disabled=true;applyTestBtn.textContent='Application en cours…';
+        try{
+          const r=await StudioAPI.request('/api/admin/migrations/'+batchId+'/apply-test',{method:'POST',body:'{}'});
+          d.close();
+          await StudioModal.alert({eyebrow:'TEST STAGING APPLIQUÉ',title:'Tu peux maintenant tester le catalogue',message:r.message||'Les décisions ont été appliquées. Un rollback complet est disponible depuis le lot de migration.',confirmLabel:'Fermer'});
+          state.migrationsLoaded=false;await loadMigrations();
+        }catch(e){
+          showError(e.message);
+          applyTestBtn.disabled=false;applyTestBtn.textContent='Appliquer le test dans le catalogue staging';
+        }
+      };
       applyReviewFilter(n.pending>0?'pending':(n.variant>0?'variant':(n.new>0?'new':'all')));
       $$('[data-translation-edit]').forEach(btn=>btn.onclick=()=>{
         const entity=entities.find(x=>String(x.id)===String(btn.dataset.translationEdit)),locale=btn.dataset.locale;
