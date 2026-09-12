@@ -12770,3 +12770,17 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .migration-review-decision-help-item span{font-size:.74rem;color:#627986;line-height:1.4}
 .migration-review-decision-help-item.is-current{background:#eaf6f8;box-shadow:inset 3px 0 0 #0b8793}
 @media(max-width:900px){.migration-review-decision{min-width:0}.migration-review-decision-control{grid-template-columns:minmax(0,1fr) 40px}}
+
+/* Migration review — recap of manually saved decisions */
+.migration-review-decision-history{margin:14px 0;border:1px solid #d7e3ea;border-radius:14px;background:#fff;overflow:hidden}
+.migration-review-decision-history>summary{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;list-style:none;color:#174c6a;background:#f8fbfc;font-weight:700}
+.migration-review-decision-history>summary::-webkit-details-marker{display:none}
+.migration-review-decision-history[open] .migration-review-round{transform:rotate(90deg)}
+.migration-review-decision-history-body{padding:0 16px 14px}
+.migration-review-decision-history-body .hint{margin:10px 0 12px;color:#61798a}
+.migration-review-decision-history-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;padding:12px 0;border-top:1px solid #e4edf2}
+.migration-review-decision-history-row>div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.migration-review-decision-history-row strong{color:#173f5a}
+.migration-review-decision-history-row small{color:#6a7f8d}
+.migration-review-decision-history-choice{display:inline-flex;align-items:center;justify-content:center;max-width:280px;padding:7px 10px;border-radius:999px;background:#eef7f8;color:#0b6b73;font-weight:700;text-align:center}
+@media (max-width:760px){.migration-review-decision-history-row{grid-template-columns:1fr}.migration-review-decision-history-choice{justify-self:start;max-width:100%}}

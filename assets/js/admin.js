@@ -246,6 +246,48 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
 
   const reviewCmpLabel=s=>s==='exact_match'?'Déjà présent':s==='possible_variant'?'Variante':'Nouveau';
 
+  function migrationDecisionEntityTitle(e){
+    const p=e?.source_payload||{};
+    if(e?.entity_type==='profile')return migrationPlainText(p.title||p.raw?.title)||`Profil #${e?.legacy_id||'—'}`;
+    if(e?.entity_type==='chapter')return migrationPlainText(p.title)||`Chapitre #${e?.legacy_id||'—'}`;
+    return migrationPlainText(p.content||p.title||p.label)||`${reviewTypeLabel(e?.entity_type)} #${e?.legacy_id||'—'}`;
+  }
+  function migrationDecisionDate(value){
+    if(!value)return 'Date non disponible';
+    const d=new Date(value);
+    if(Number.isNaN(d.getTime()))return 'Date non disponible';
+    return d.toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  }
+  function migrationDecisionHistoryHtml(entityList){
+    const rows=(entityList||[])
+      .filter(e=>e.reviewed_at&&e.review_status&&e.review_status!=='pending')
+      .sort((a,b)=>new Date(b.reviewed_at||0)-new Date(a.reviewed_at||0));
+    if(!rows.length)return '';
+    return `<details class="migration-review-decision-history" data-review-decision-history ${rows.length?'open':''}>
+      <summary>
+        <span class="migration-review-round">›</span>
+        <span><strong>Mes décisions enregistrées</strong> · <span data-review-history-count>${rows.length}</span></span>
+      </summary>
+      <div class="migration-review-decision-history-body">
+        <p class="hint">Ce récapitulatif montre la décision actuellement enregistrée pour chaque élément que tu as traité manuellement. Si tu modifies une décision, cette ligne sera mise à jour.</p>
+        <div data-review-history-list>
+          ${rows.map(e=>{
+            const def=reviewDecisionDefinitions[e.review_status]||reviewDecisionDefinitions.pending;
+            const title=migrationDecisionEntityTitle(e);
+            return `<article class="migration-review-decision-history-row" data-review-history-entity="${esc(e.id)}">
+              <div>
+                <span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}</span>
+                <strong>${esc(title)}</strong>
+                <small>Ancien ID ${esc(e.legacy_id)} · ${esc(migrationDecisionDate(e.reviewed_at))}</small>
+              </div>
+              <span class="migration-review-decision-history-choice">${esc(def.label)}</span>
+            </article>`;
+          }).join('')}
+        </div>
+      </div>
+    </details>`;
+  }
+
   function translationMissingInfo(e){
     const p=e.source_payload||{},active=(p.activeLocales||[]).map(String).filter(Boolean),tr=p.translations||{};
     if(!active.length || ['theme','survey_meta'].includes(e.entity_type))return [];
@@ -445,6 +487,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           ${reviewInfo('Un rapprochement automatique n’intègre rien. Il prépare uniquement la décision finale.')}
         </div>
 
+        <div id="migration-review-decision-history-slot">${migrationDecisionHistoryHtml(businessEntities)}</div>
+
         ${technicalEntities.length?`<details class="migration-review-technical-block">
           <summary><span class="migration-review-round">›</span>Informations techniques de migration ${reviewInfo('Provenance, ancien ID, langues et métadonnées nécessaires à la traçabilité. Aucune décision métier à prendre ici.')}</summary>
           <div>${technicalEntities.map(reviewTechnicalCard).join('')}</div>
@@ -458,8 +502,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         ${chapterHtml}
         <section class="admin-library-note migration-review-final-step" id="migration-review-final-step" ${(n.pending>0||n.translations>0)?'hidden':''}>
           <strong>ÉTAPE 3 SUR 3 · TEST D’INTÉGRATION STAGING</strong>
-          <span>Toutes les décisions sont enregistrées. Tu peux appliquer réellement ce lot dans le catalogue de staging pour tester le parcours jusqu’au bout. Studio créera un snapshot permettant d’annuler ensuite toutes les modifications et créations du test.</span>
-          <div class="top-actions"><button type="button" class="button button-primary" id="migration-review-apply-test">Appliquer le test dans le catalogue staging</button></div>
+          <span>Toutes les décisions sont enregistrées. Le bouton principal en bas de la fenêtre permet maintenant d’appliquer réellement ce lot dans le catalogue de staging. Studio créera un snapshot permettant d’annuler ensuite toutes les modifications et créations du test.</span>
         </section>`;
 
       const filterButtons=$$('[data-review-filter]');
@@ -602,11 +645,26 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         if(finalStep)finalStep.hidden=counts.pending>0||counts.translations>0;
         return counts;
       }
+      function refreshDecisionHistory(){
+        const slot=$('#migration-review-decision-history-slot');
+        if(!slot)return;
+        slot.innerHTML=migrationDecisionHistoryHtml(businessEntities);
+      }
+      function isReviewReadyForTest(){
+        const counts=liveReviewCounts();
+        return dirty.size===0&&counts.pending===0&&counts.translations===0;
+      }
       function updateSaveUi(message=''){
         const count=dirty.size;
-        if(saveBtn)saveBtn.disabled=!count;
+        const ready=isReviewReadyForTest();
+        if(saveBtn){
+          saveBtn.dataset.mode=ready?'apply-test':'save';
+          saveBtn.textContent=ready?'Appliquer le test dans le catalogue staging':'Enregistrer mes décisions';
+          saveBtn.disabled=ready?false:!count;
+        }
         if(!saveState)return;
         if(message){saveState.textContent=message;return;}
+        if(ready){saveState.textContent='Toutes les décisions sont enregistrées. Le test staging est prêt à être appliqué.';return;}
         saveState.textContent=count?`${count} décision${count>1?'s':''} à enregistrer`:'Aucune modification en attente';
       }
       function syncDecisionControlsFromData(){
@@ -666,6 +724,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       });
 
       if(saveBtn)saveBtn.onclick=async()=>{
+        if(saveBtn.dataset.mode==='apply-test'){
+          return applyMigrationTest();
+        }
         if(!dirty.size)return;
         const savedEntries=[...dirty.entries()];
         const savedCount=savedEntries.length;
@@ -673,16 +734,20 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         if(saveState)saveState.textContent='Enregistrement…';
         try{
           for(const [id,value] of savedEntries){
-            await StudioAPI.request('/api/admin/migrations/'+batchId+'/review/'+id,{
+            const saved=await StudioAPI.request('/api/admin/migrations/'+batchId+'/review/'+id,{
               method:'PATCH',body:JSON.stringify({reviewStatus:value})
             });
             const sel=$(`[data-review-status="${id}"]`);
             if(sel)sel.dataset.initialValue=value;
             const entity=businessEntities.find(x=>String(x.id)===String(id));
-            if(entity)entity.review_status=value;
+            if(entity){
+              if(saved?.entity)Object.assign(entity,saved.entity);
+              else entity.review_status=value;
+            }
           }
           dirty.clear();
           syncDecisionControlsFromData();
+          refreshDecisionHistory();
           const counts=refreshReviewCounters();
           const activeFilter=root.dataset.activeFilter||'pending';
           applyReviewFilter(activeFilter);
@@ -709,15 +774,16 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       };
 
       syncDecisionControlsFromData();
+      refreshDecisionHistory();
       updateSaveUi();
-      const applyTestBtn=$('#migration-review-apply-test');
-      if(applyTestBtn)applyTestBtn.onclick=async()=>{
+      async function applyMigrationTest(){
         const counts=liveReviewCounts();
         if(dirty.size){updateSaveUi('Enregistre d’abord les décisions en attente avant l’intégration de test.');return;}
-        if(counts.pending>0){updateSaveUi(`${counts.pending} décision${counts.pending>1?'s':''} reste${counts.pending>1?'nt':''} à prendre.`);return;}if(counts.translations>0){updateSaveUi(`${counts.translations} traduction${counts.translations>1?'s':''} active${counts.translations>1?'s':''} reste${counts.translations>1?'nt':''} à compléter.`);return;}
+        if(counts.pending>0){updateSaveUi(`${counts.pending} décision${counts.pending>1?'s':''} reste${counts.pending>1?'nt':''} à prendre.`);return;}
+        if(counts.translations>0){updateSaveUi(`${counts.translations} traduction${counts.translations>1?'s':''} active${counts.translations>1?'s':''} reste${counts.translations>1?'nt':''} à compléter.`);return;}
         const ok=await StudioModal.confirm({type:'danger',eyebrow:'ÉTAPE 3 SUR 3 · TEST STAGING',title:'Appliquer réellement ces décisions dans le catalogue de staging ?',message:'Cette action modifie le catalogue STAGING pour te permettre de tester le parcours complet. Avant chaque modification, Studio crée un snapshot. Tu pourras ensuite utiliser « Annuler le test » pour restaurer les anciennes valeurs et supprimer tout ce que ce lot a créé. Ne jamais activer cette fonction en production.',cancelLabel:'Rester en revue',confirmLabel:'Appliquer le test'});
         if(!ok)return;
-        applyTestBtn.disabled=true;applyTestBtn.textContent='Application en cours…';
+        if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Application en cours…';}
         try{
           const r=await StudioAPI.request('/api/admin/migrations/'+batchId+'/apply-test',{method:'POST',body:'{}'});
           d.close();
@@ -725,9 +791,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           state.migrationsLoaded=false;await loadMigrations();
         }catch(e){
           showError(e.message);
-          applyTestBtn.disabled=false;applyTestBtn.textContent='Appliquer le test dans le catalogue staging';
+          updateSaveUi('Échec de l’application du test — le catalogue n’a pas été validé.');
         }
-      };
+      }
       applyReviewFilter(n.pending>0?'pending':(n.variant>0?'variant':(n.new>0?'new':'all')));
       $$('[data-translation-edit]').forEach(btn=>btn.onclick=()=>{
         const entity=entities.find(x=>String(x.id)===String(btn.dataset.translationEdit)),locale=btn.dataset.locale;
