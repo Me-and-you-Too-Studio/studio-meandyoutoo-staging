@@ -12843,3 +12843,6 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .migration-profile-meta{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
 .migration-profile-color-swatch{display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--migration-profile-color);box-shadow:0 0 0 3px color-mix(in srgb,var(--migration-profile-color) 18%,transparent);flex:0 0 auto}
 @media(max-width:900px){.migration-review-language-profile-compare{grid-template-columns:1fr}}
+
+/* Migration review: make language filter visually explicit */
+.migration-review-row.is-language-focus{outline:2px solid rgba(13,76,114,.22);outline-offset:2px}.migration-review-row.is-language-focus .migration-review-languages{background:#f5fbfd;border-color:#8fcbd2}

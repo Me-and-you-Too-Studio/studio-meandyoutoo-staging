@@ -472,7 +472,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const n={
         pending:businessEntities.filter(x=>x.review_status==='pending'&&x.comparison?.status!=='exact_match').length,
         variant:businessEntities.filter(x=>x.comparison?.status==='possible_variant'&&x.review_status==='pending').length,
-        new:businessEntities.filter(x=>x.comparison?.status==='new'&&x.review_status==='pending').length,
+        new:contentEntities.filter(x=>x.comparison?.status==='new'&&x.review_status==='pending').length,
         existing:contentEntities.filter(x=>x.comparison?.status==='exact_match').length,
         translations:businessEntities.filter(x=>{
           if(!activeTranslationMissing(x))return false;
@@ -543,7 +543,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
               Nouveaux à décider <b>${n.new}</b>${reviewInfo('Nouveaux contenus sans décision enregistrée. Une fois décidés, ils sortent de ce compteur et restent consultables dans « Tout voir ».')}
             </button>
             <button type="button" data-review-filter="languages">
-              Langues à récupérer <b>${n.languageRecover}</b>${reviewInfo('Nombre de langues historiques à récupérer dans Studio (hors FR, qui sert de base de comparaison). Un même EN manquant sur plusieurs contenus ne compte qu’une seule langue ici. Les contenus concernés apparaissent dans ce filtre.')}
+              <span data-review-language-filter-label>Langues à récupérer</span> <b>${n.languageRecover}</b>${reviewInfo('Nombre de langues historiques à récupérer dans Studio (hors FR, qui sert de base de comparaison). Un même EN manquant sur plusieurs contenus ne compte qu’une seule langue ici. Les contenus concernés apparaissent dans ce filtre.')}
             </button>
             <button type="button" data-review-filter="translations">
               Traductions à compléter <b>${n.translations}</b>${reviewInfo('Uniquement les langues actives du diagnostic pour lesquelles le contenu historique lui-même est incomplet. Les traductions historiques hors diffusion ne sont pas comptées.')}
@@ -707,6 +707,20 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           c.dataset.filterMatched=show?'1':'0';c.hidden=!show;
         });
         refreshNestedVisibility();
+        if(f==='languages'){
+          cards.filter(c=>!c.hidden&&c.dataset.languageRecover==='1').forEach(card=>{
+            const details=card.querySelector('.migration-review-languages');
+            if(details)details.open=true;
+            const action=card.querySelector('.migration-review-language-panel .migration-review-language-status .is-action');
+            const panel=action?.closest('[data-review-lang-panel]');
+            if(panel){
+              const key=panel.dataset.reviewLangPanel;
+              card.querySelectorAll('[data-review-lang-tab]').forEach(tab=>tab.classList.toggle('is-active',tab.dataset.reviewLangTab===key));
+              card.querySelectorAll('[data-review-lang-panel]').forEach(p=>p.hidden=p.dataset.reviewLangPanel!==key);
+              card.classList.add('is-language-focus');
+            }
+          });
+        }else cards.forEach(c=>c.classList.remove('is-language-focus'));
         if(filterSummary)filterSummary.innerHTML=filterExplanation(f);
       }
 
@@ -730,9 +744,10 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         return {
           pending:businessEntities.filter(x=>reviewDecisionFor(x)==='pending'&&x.comparison?.status!=='exact_match').length,
           variant:businessEntities.filter(x=>x.comparison?.status==='possible_variant'&&reviewDecisionFor(x)==='pending').length,
-          new:businessEntities.filter(x=>x.comparison?.status==='new'&&reviewDecisionFor(x)==='pending').length,
+          new:contentEntities.filter(x=>x.comparison?.status==='new'&&reviewDecisionFor(x)==='pending').length,
           existing:contentEntities.filter(x=>x.comparison?.status==='exact_match').length,
           translations:businessEntities.filter(x=>activeTranslationMissing(x)).length,
+          languages:migrationRecoveryLocales(businessEntities).length,
           languageRecover:migrationRecoveryLocales(businessEntities).length,
           total:contentEntities.length
         };
@@ -745,6 +760,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           const counter=btn.querySelector('b');
           if(counter&&Number.isFinite(value))counter.textContent=String(value);
         });
+        const languageLabel=root.querySelector('[data-review-language-filter-label]');
+        if(languageLabel)languageLabel.textContent=counts.pending===0?'Langues prévues':'Langues à récupérer';
         const title=root.querySelector('.migration-review-welcome h3');
         if(title)title.textContent=counts.pending?`${counts.pending} décision${counts.pending>1?'s':''} réellement à prendre`:counts.translations?`Toutes les décisions sont prises · ${counts.translations} traduction${counts.translations>1?'s':''} à compléter`:'Toutes les décisions métier sont enregistrées';
         const finalStep=root.querySelector('#migration-review-final-step');
