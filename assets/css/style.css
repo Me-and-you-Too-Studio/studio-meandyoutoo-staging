@@ -12861,4 +12861,3 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .migration-review-global-language-options b{color:#15395a}
 .migration-review-global-language-options small{color:#6c7f90}
 .migration-review-global-language-state{display:flex;gap:8px;align-items:center;margin-top:12px;color:#0b6f76}
-@media(max-width:760px){.migration-review-global-language-options{flex-direction:column}.migration-review-global-language-options label{min-width:0;width:100%}}
