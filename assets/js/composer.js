@@ -302,6 +302,39 @@
   }
   async function replaceSituation(projectSituationId,catalogSituationId){try{const data=await api(`/api/projects/${projectId}/situations/${projectSituationId}/replace`,{method:'PATCH',body:JSON.stringify({catalogSituationId:Number(catalogSituationId)})});closeLibrary();const refreshed=await api(`/api/projects/${projectId}/composer`);state.project=refreshed.project;state.chapters=refreshed.chapters;render();showMessage(data.linked?'La sélection liée a été remplacée et enregistrée ensemble.':'La situation a été remplacée et enregistrée.','success');}catch(e){showMessage(e.message);}}
 
+  async function changeWholeChapter(catalogChapterId){
+    const ch=state.chapters[state.active];
+    const target=(ch.alternatives||[]).find(option=>String(option.id)===String(catalogChapterId));
+    if(!target||target.selected)return;
+    const confirmed=await window.StudioModal.confirm({
+      eyebrow:'Choix du chapitre',
+      title:`Remplacer « ${ch.title} » par « ${target.title} » ?`,
+      message:'Ce choix remplace le chapitre entier : situations, réponses, scoring et profils associés. Les personnalisations déjà réalisées dans ce chapitre seront supprimées.',
+      type:'warning',
+      cancelLabel:'Conserver le chapitre actuel',
+      confirmLabel:'Choisir ce chapitre'
+    });
+    if(!confirmed)return;
+    try{
+      await api(`/api/projects/${projectId}/chapters/${ch.id}/catalog-choice`,{method:'PATCH',body:JSON.stringify({catalogChapterId:Number(target.id)})});
+      const refreshed=await api(`/api/projects/${projectId}/composer`);
+      state.project=refreshed.project;state.chapters=refreshed.chapters;
+      state.active=Math.min(state.active,state.chapters.length-1);
+      render();
+      showMessage(`Le chapitre « ${target.title} » a été sélectionné avec ses situations, réponses et profils.`,'success');
+    }catch(e){showMessage(e.message);}
+  }
+
+  function renderChapterChoice(ch){
+    const box=$('chapter-choice');if(!box)return;
+    const options=Array.isArray(ch.alternatives)?ch.alternatives:[];
+    if(options.length<2){box.hidden=true;box.innerHTML='';return;}
+    box.hidden=false;
+    const disabled=state.project?.can_edit===false;
+    box.innerHTML=`<div class="chapter-choice-copy"><strong>Choisissez l’orientation de ce chapitre</strong><span>Le choix porte sur le chapitre complet : situations, réponses et profils.</span></div><div class="chapter-choice-options">${options.map(option=>`<button type="button" class="chapter-choice-option ${option.selected?'is-selected':''}" data-chapter-choice="${esc(option.id)}" ${disabled?'disabled':''}><span>${esc(option.choice_label||option.title)}</span>${option.selected?'<strong>✓ Sélectionné</strong>':'<strong>Choisir</strong>'}</button>`).join('')}</div>`;
+    box.querySelectorAll('[data-chapter-choice]').forEach(button=>button.onclick=()=>changeWholeChapter(button.dataset.chapterChoice));
+  }
+
   function render(){
     const ch=state.chapters[state.active];if(!ch)return;
     const stereotypes=isStereotypesChapter(ch),status=chapterCountStatus(ch);
@@ -312,6 +345,8 @@
       :status.rules.min!=null
         ?`${status.count} situation${status.count>1?'s':''} retenue${status.count>1?'s':''} · ${status.rules.min} minimum et ${status.rules.max} maximum dans ce chapitre.`
         :`${status.count} situations retenues · consultez les réponses et scores avant de modifier votre sélection.`;
+
+    renderChapterChoice(ch);
 
     const libraryButton=$('library-button');
     libraryButton.hidden=Boolean(ch.locked||stereotypes||state.project?.can_edit===false);

@@ -8,7 +8,7 @@
 <div id="composer-alert" class="composer-alert" hidden></div>
 <section class="composer composer-live" aria-live="polite">
 <aside class="composer-side creation-chapters card"><p class="eyebrow">Chapitres</p><h2 class="section-title" id="catalog-title">Chargement…</h2><p class="section-desc" id="catalog-summary"></p><div class="progress"><span id="catalog-progress" style="width:0%"></span></div><p id="catalog-count"></p><div id="chapter-nav" class="composer-chapter-nav"></div></aside>
-<div class="composer-main card"><div class="composer-main-head"><div><p class="eyebrow" id="chapter-kicker"></p><h2 class="section-title" id="chapter-title">Chargement du catalogue…</h2><p class="section-desc" id="chapter-desc"></p></div><button class="button button-secondary" id="library-button" type="button">Bibliothèque liée</button></div><div class="composer-customization-guidance"><div class="composer-customization-guidance-icon" aria-hidden="true">✎</div><div>
+<div class="composer-main card"><div class="composer-main-head"><div><p class="eyebrow" id="chapter-kicker"></p><h2 class="section-title" id="chapter-title">Chargement du catalogue…</h2><p class="section-desc" id="chapter-desc"></p><div id="chapter-choice" class="chapter-choice-box" hidden></div></div><button class="button button-secondary" id="library-button" type="button">Bibliothèque de situations</button></div><div class="composer-customization-guidance"><div class="composer-customization-guidance-icon" aria-hidden="true">✎</div><div>
 <strong>Personnalisez le contexte, pas le sens</strong>
 <p>Vous pouvez adapter une mise en situation ou une réponse à votre organisation : <strong>changer un prénom</strong>, utiliser votre <strong>terminologie interne</strong>, préciser un <strong>métier</strong>, un <strong>secteur d’activité</strong> ou un <strong>contexte professionnel</strong>.</p>
 <p><strong>À conserver impérativement :</strong> le sens de la situation, l’intention pédagogique et le niveau de pertinence des réponses. Les scores restent définis par Me&YouToo.</p>
@@ -19,7 +19,7 @@
 </section>
 <div class="creation-sticky-actions"><a class="button button-ghost" id="composer-theme-back" href="mes-campagnes.html">← Mes campagnes</a><div class="creation-sticky-progress"><strong id="sticky-part-label">Partie en cours</strong><span id="sticky-step-copy">Questions → Profils</span></div><a class="button button-primary" id="composer-next" href="personnalisation.html">Personnaliser les profils de cette partie →</a></div>
 </main></div><nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
-<div class="composer-drawer-backdrop" id="library-backdrop" hidden></div><aside class="composer-drawer" id="library-drawer" aria-hidden="true"><div class="composer-drawer-head"><div><p class="eyebrow">Bibliothèque Me&YouToo</p><h2 id="library-title">Situations alternatives</h2></div><button class="icon-button" id="library-close" aria-label="Fermer">×</button></div><div id="library-list" class="composer-library-list"></div></aside>
+<div class="composer-drawer-backdrop" id="library-backdrop" hidden></div><aside class="composer-drawer" id="library-drawer" aria-hidden="true"><div class="composer-drawer-head"><div><p class="eyebrow">Bibliothèque de situations Me&YouToo</p><h2 id="library-title">Situations complémentaires</h2></div><button class="icon-button" id="library-close" aria-label="Fermer">×</button></div><div id="library-list" class="composer-library-list"></div></aside>
 <script src="assets/js/api.js?v=20260713-2"></script>
 <script src="assets/js/app.js?v=20260902-notification-refresh-1"></script>
 <script src="assets/js/project-context.js?v=20260902-explicit-theme-start-1"></script>
@@ -32,7 +32,7 @@
 
   function loadComposerScript(){
     var script=document.createElement('script');
-    script.src='assets/js/composer.js?v=20260904-context-back-1';
+    script.src='assets/js/composer.js?v=20260913-chapter-choice-1';
     document.body.appendChild(script);
   }
 
