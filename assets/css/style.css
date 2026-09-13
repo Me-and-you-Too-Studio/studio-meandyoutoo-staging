@@ -12846,3 +12846,19 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 
 /* Migration review: make language filter visually explicit */
 .migration-review-row.is-language-focus{outline:2px solid rgba(13,76,114,.22);outline-offset:2px}.migration-review-row.is-language-focus .migration-review-languages{background:#f5fbfd;border-color:#8fcbd2}
+
+/* Migration — choix global des langues */
+.migration-review-global-languages{margin:14px 0;padding:16px 18px;border:1px solid #cfe1e8;border-radius:16px;background:#f7fbfc}
+.migration-review-global-languages-head>div{display:flex;flex-direction:column;gap:4px}
+.migration-review-global-languages-head strong{color:#0d4c72;font-size:16px}
+.migration-review-global-languages-head span,.migration-review-global-language-state span{color:#60758a;font-size:13px}
+.migration-review-global-language-options{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+.migration-review-global-language-options label{display:flex;align-items:flex-start;gap:10px;min-width:230px;padding:12px 14px;border:1px solid #cbdde5;border-radius:12px;background:#fff;cursor:pointer}
+.migration-review-global-language-options label:has(input:checked){border-color:#008c95;background:#eef9f9}
+.migration-review-global-language-options label.is-required{cursor:default;background:#f3f6f8}
+.migration-review-global-language-options input{margin-top:3px;accent-color:#008c95}
+.migration-review-global-language-options span{display:flex;flex-direction:column;gap:3px}
+.migration-review-global-language-options b{color:#15395a}
+.migration-review-global-language-options small{color:#6c7f90}
+.migration-review-global-language-state{display:flex;gap:8px;align-items:center;margin-top:12px;color:#0b6f76}
+@media(max-width:760px){.migration-review-global-language-options{flex-direction:column}.migration-review-global-language-options label{min-width:0;width:100%}}

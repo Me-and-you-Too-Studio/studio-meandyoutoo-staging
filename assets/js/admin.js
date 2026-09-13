@@ -482,6 +482,15 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         languageRecover:migrationRecoveryLocales(businessEntities).length,
         total:contentEntities.length
       };
+      const availableMigrationLocales=[...new Set(businessEntities.flatMap(e=>{
+        const p=e.source_payload||{};
+        return [...Object.keys(p.translations||{}),...(p.activeLocales||[]),...(p.dormantLocales||[])];
+      }).map(x=>String(x||'').toLowerCase()).filter(x=>['fr','en','es'].includes(x)))];
+      const savedMigrationLocales=Array.isArray(batch.summary?.migrationLanguageSelection)
+        ? batch.summary.migrationLanguageSelection.map(x=>String(x||'').toLowerCase())
+        : ['fr',...(availableMigrationLocales.includes('en')?['en']:[])];
+      const selectedMigrationLocales=new Set(savedMigrationLocales);
+      selectedMigrationLocales.add('fr');
 
       const chapterHtml=chapters.map(ch=>{
         const direct=children.get(String(ch.legacy_id))||[];
@@ -531,6 +540,18 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           </div>
         </section>
 
+        <section class="migration-review-global-languages">
+          <div class="migration-review-global-languages-head">
+            <div><strong>Langues à intégrer au catalogue</strong><span>Décision globale pour tout le diagnostic. Les onglets FR / EN / ES dans les contenus servent uniquement à contrôler les traductions.</span></div>
+          </div>
+          <div class="migration-review-global-language-options">
+            <label class="is-required"><input type="checkbox" checked disabled> <span><b>Français (FR)</b><small>Langue de référence · obligatoire</small></span></label>
+            ${availableMigrationLocales.includes('en')?`<label><input type="checkbox" data-migration-global-locale="en" ${selectedMigrationLocales.has('en')?'checked':''}> <span><b>Anglais (EN)</b><small>Traduction historique disponible${(themeEntity?.source_payload?.activeLocales||[]).map(x=>String(x).toLowerCase()).includes('en')?' · active dans le survey #44':''}</small></span></label>`:''}
+            ${availableMigrationLocales.includes('es')?`<label><input type="checkbox" data-migration-global-locale="es" ${selectedMigrationLocales.has('es')?'checked':''}> <span><b>Espagnol (ES)</b><small>Traduction historique disponible · hors diffusion dans le survey #44</small></span></label>`:''}
+          </div>
+          <div class="migration-review-global-language-state" data-migration-language-state></div>
+        </section>
+
         <div class="migration-review-toolbar">
           <div class="migration-review-filters" role="group" aria-label="Filtres de revue">
             <button type="button" data-review-filter="pending">
@@ -541,9 +562,6 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
             </button>
             <button type="button" data-review-filter="new">
               Nouveaux à décider <b>${n.new}</b>${reviewInfo('Nouveaux contenus sans décision enregistrée. Une fois décidés, ils sortent de ce compteur et restent consultables dans « Tout voir ».')}
-            </button>
-            <button type="button" data-review-filter="languages">
-              <span data-review-language-filter-label>Langues à récupérer</span> <b>${n.languageRecover}</b>${reviewInfo('Nombre de langues historiques à récupérer dans Studio (hors FR, qui sert de base de comparaison). Un même EN manquant sur plusieurs contenus ne compte qu’une seule langue ici. Les contenus concernés apparaissent dans ce filtre.')}
             </button>
             <button type="button" data-review-filter="translations">
               Traductions à compléter <b>${n.translations}</b>${reviewInfo('Uniquement les langues actives du diagnostic pour lesquelles le contenu historique lui-même est incomplet. Les traductions historiques hors diffusion ne sont pas comptées.')}
@@ -565,7 +583,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
 
         <div class="migration-review-auto-note">
           <strong>${n.existing} éléments déjà rapprochés automatiquement</strong>
-          <span>Le contenu FR est conservé. Quand seule une langue manque dans Studio, « Récupérer la traduction uniquement » est pré-sélectionné automatiquement : cela ne crée plus une variante métier.</span>
+          <span>Le contenu FR est comparé séparément. EN et ES se choisissent une seule fois dans « Langues à intégrer au catalogue » ci-dessus : ils ne créent aucune variante métier et aucune décision contenu par contenu.</span>
           ${reviewInfo('Un rapprochement automatique n’intègre rien. Il prépare uniquement la décision finale.')}
         </div>
 
@@ -586,7 +604,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         ${chapterHtml}
         <section class="admin-library-note migration-review-final-step" id="migration-review-final-step" ${(n.pending>0||n.translations>0)?'hidden':''}>
           <strong>ÉTAPE 3 SUR 3 · TEST D’INTÉGRATION STAGING</strong>
-          <span>Toutes les décisions sont enregistrées. Le bouton principal en bas de la fenêtre permet maintenant d’appliquer réellement ce lot dans le catalogue de staging. Studio créera un snapshot permettant d’annuler ensuite toutes les modifications et créations du test.</span>
+          <span>Toutes les décisions sont enregistrées. Le bouton principal en bas de la fenêtre permet maintenant d’appliquer réellement ce lot dans le catalogue de staging. Studio créera un snapshot permettant d’annuler ensuite toutes les modifications et créations du test. Les langues cochées ci-dessus seront intégrées globalement.</span>
         </section>`;
 
       const filterButtons=$$('[data-review-filter]');
@@ -597,6 +615,26 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const saveState=$('#migration-review-save-state');
       const dirty=new Map();
       invalidProfileComplementaryIds.forEach(id=>dirty.set(id,'pending'));
+
+      const languageState=$('[data-migration-language-state]');
+      const refreshGlobalLanguageState=()=>{
+        const selected=['FR',...$$('[data-migration-global-locale]:checked').map(el=>String(el.dataset.migrationGlobalLocale||'').toUpperCase())];
+        if(languageState)languageState.innerHTML=`<strong>Sera intégré : ${selected.join(' · ')}</strong><span>Cette sélection s’appliquera à tous les contenus disposant de la traduction historique correspondante.</span>`;
+      };
+      $$('[data-migration-global-locale]').forEach(input=>input.addEventListener('change',async()=>{
+        refreshGlobalLanguageState();
+        const locales=['fr',...$$('[data-migration-global-locale]:checked').map(el=>String(el.dataset.migrationGlobalLocale||'').toLowerCase())];
+        input.disabled=true;
+        try{
+          await StudioAPI.request(`/api/admin/migrations/${batch.id}/languages`,{method:'PATCH',body:{locales}});
+          toast('Choix des langues enregistré.','success');
+        }catch(error){
+          input.checked=!input.checked;
+          refreshGlobalLanguageState();
+          toast(error?.message||'Impossible d’enregistrer le choix de langue.','error');
+        }finally{input.disabled=false;}
+      }));
+      refreshGlobalLanguageState();
 
       const filterSummary=$('#migration-review-filter-summary');
       function reviewDecisionFor(entity){
