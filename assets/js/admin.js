@@ -486,9 +486,10 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         const p=e.source_payload||{};
         return [...Object.keys(p.translations||{}),...(p.activeLocales||[]),...(p.dormantLocales||[])];
       }).map(x=>String(x||'').toLowerCase()).filter(x=>['fr','en','es'].includes(x)))];
-      const savedMigrationLocales=Array.isArray(migrationBatch.summary?.migrationLanguageSelection)
+      const hasExplicitLanguageChoice=migrationBatch.summary?.migrationLanguageSelectionExplicit===true;
+      const savedMigrationLocales=(hasExplicitLanguageChoice&&Array.isArray(migrationBatch.summary?.migrationLanguageSelection))
         ? migrationBatch.summary.migrationLanguageSelection.map(x=>String(x||'').toLowerCase())
-        : ['fr',...(availableMigrationLocales.includes('en')?['en']:[])];
+        : ['fr'];
       const selectedMigrationLocales=new Set(savedMigrationLocales);
       selectedMigrationLocales.add('fr');
 
@@ -546,10 +547,13 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           </div>
           <div class="migration-review-global-language-options">
             <label class="is-required"><input type="checkbox" checked disabled> <span><b>Français (FR)</b><small>Langue de référence · obligatoire</small></span></label>
-            ${availableMigrationLocales.includes('en')?`<label><input type="checkbox" data-migration-global-locale="en" ${selectedMigrationLocales.has('en')?'checked':''}> <span><b>Anglais (EN)</b><small>Traduction historique disponible · active dans le survey #44</small></span></label>`:''}
-            ${availableMigrationLocales.includes('es')?`<label><input type="checkbox" data-migration-global-locale="es" ${selectedMigrationLocales.has('es')?'checked':''}> <span><b>Espagnol (ES)</b><small>Traduction historique disponible · hors diffusion dans le survey #44</small></span></label>`:''}
+            ${availableMigrationLocales.includes('en')?`<label><input type="checkbox" data-migration-global-locale="en" ${selectedMigrationLocales.has('en')?'checked':''}> <span><b>Anglais (EN)</b><small>Disponible historiquement · à activer si tu veux l’intégrer</small></span></label>`:''}
+            ${availableMigrationLocales.includes('es')?`<label><input type="checkbox" data-migration-global-locale="es" ${selectedMigrationLocales.has('es')?'checked':''}> <span><b>Espagnol (ES)</b><small>Disponible historiquement · à activer si tu veux l’intégrer</small></span></label>`:''}
           </div>
-          <div class="migration-review-global-language-state" data-migration-language-state></div>
+          <div class="migration-review-global-language-footer">
+            <div class="migration-review-global-language-state" data-migration-language-state></div>
+            <button type="button" class="button button-secondary button-small" data-migration-language-reset>Réinitialiser les langues</button>
+          </div>
         </section>
 
         <div class="migration-review-toolbar">
@@ -619,10 +623,25 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const languageState=$('[data-migration-language-state]');
       const refreshGlobalLanguageState=()=>{
         const selected=['FR',...$$('[data-migration-global-locale]:checked').map(el=>String(el.dataset.migrationGlobalLocale||'').toUpperCase())];
-        if(languageState)languageState.innerHTML=`<strong>Sera intégré : ${selected.join(' · ')}</strong><span>La sélection s’applique à tous les contenus disposant de cette traduction historique.</span>`;
+        if(languageState)languageState.innerHTML=`<strong>Langues sélectionnées : ${selected.join(' · ')}</strong><span>La sélection s’applique à tous les contenus disposant de cette traduction historique.</span>`;
       };
       $$('[data-migration-global-locale]').forEach(input=>input.addEventListener('change',async()=>{
-        refreshGlobalLanguageState();
+        const resetLanguagesBtn=$('[data-migration-language-reset]');
+      if(resetLanguagesBtn)resetLanguagesBtn.onclick=async()=>{
+        const optional=$$('[data-migration-global-locale]');
+        resetLanguagesBtn.disabled=true;optional.forEach(el=>el.disabled=true);
+        try{
+          await StudioAPI.request(`/api/admin/migrations/${migrationBatch.id}/languages`,{method:'PATCH',body:JSON.stringify({locales:['fr']})});
+          optional.forEach(el=>el.checked=false);
+          refreshGlobalLanguageState();
+          toast('Langues réinitialisées : FR uniquement.','success');
+        }catch(error){
+          toast(error?.message||'Impossible de réinitialiser les langues.','error');
+        }finally{
+          resetLanguagesBtn.disabled=false;optional.forEach(el=>el.disabled=false);
+        }
+      };
+      refreshGlobalLanguageState();
         const locales=['fr',...$$('[data-migration-global-locale]:checked').map(el=>String(el.dataset.migrationGlobalLocale||'').toLowerCase())];
         input.disabled=true;
         try{

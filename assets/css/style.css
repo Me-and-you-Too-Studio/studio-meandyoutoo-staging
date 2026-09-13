@@ -12869,3 +12869,6 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .admin-library-theme-scope-tag.is-scope{background:#fff7e8;border-color:#efc978}
 .admin-library-theme-scope-tag.is-language{background:#eef8fb;border-color:#b9dbe7}
 .admin-library-theme-scope-tag b{font-weight:700}
+
+.migration-review-global-language-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:12px;flex-wrap:wrap}
+.migration-review-global-language-footer .migration-review-global-language-state{margin-top:0}
