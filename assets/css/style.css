@@ -12861,3 +12861,5 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .migration-review-global-language-options b{color:#15395a}
 .migration-review-global-language-options small{color:#6c7f90}
 .migration-review-global-language-state{display:flex;gap:8px;align-items:center;margin-top:12px;color:#0b6f76}
+
+.admin-library-localization-copy label{display:flex;flex-direction:column;gap:6px;margin:8px 0}.admin-library-localization-copy input,.admin-library-localization-copy textarea{width:100%;box-sizing:border-box;border:1px solid #cbdde5;border-radius:10px;padding:10px 12px;font:inherit;background:#fff;color:#15395a}.admin-library-localization-actions{display:flex;justify-content:flex-end;margin-top:10px}
