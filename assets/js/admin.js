@@ -165,7 +165,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const l=String(locale||'').toLowerCase();
     const direct=migrationTranslationText(payload,l);
     if(l==='fr'&&(!direct||migrationIsTechnicalCountryLabel(direct))){
-      const ref=migrationBestSourceTranslation(payload,['en','es','br','de','it','ja','ko-kr','zf','zh','pt','nl','pl','ro','ru','sv-se','tr','bg']);
+      const ref=migrationBestSourceTranslation(payload,['en','es','br','de','it','ja','ko-kr','zf','zh','pt','nl','pl','ro','ru','sk','sv-se','tr','bg']);
       if(ref.text)return{text:ref.text,fallback:true,sourceLocale:ref.locale};
     }
     return{text:direct,fallback:false,sourceLocale:l};
@@ -468,7 +468,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const loc=m.locale.toUpperCase(),row=tr[m.locale]||{};
       const refTitle=p.title||tr.fr?.title||'',refSummary=clean(p.summary||tr.fr?.summary||''),refContent=clean(p.content||tr.fr?.content||'');
       if(m.locale==='fr'&&['situation','answer'].includes(e.entity_type)){
-        const source=migrationBestSourceTranslation(p,['en','es','br','de','it','ja','ko-kr','zf','zh','pt','nl','pl','ro','ru','sv-se','tr','bg']);
+        const source=migrationBestSourceTranslation(p,['en','es','br','de','it','ja','ko-kr','zf','zh','pt','nl','pl','ro','ru','sk','sv-se','tr','bg']);
         const sourceCode=(source.locale||'').toUpperCase();
         return `<div class="migration-review-translation-card"><div class="migration-review-translation-head"><span>FR</span><strong>Français</strong><em>traduction à compléter</em></div><div class="migration-review-fr-missing-notice"><strong>⚠ Traduction française à compléter</strong><p>Le champ FR historique est un repère technique et non une traduction exploitable.</p></div><div class="migration-review-translation-grid"><div><span>Texte source disponible${sourceCode?' — '+esc(sourceCode):''}</span><strong>${esc(source.text||'—')}</strong></div></div><button type="button" class="button button-secondary migration-translation-edit" data-translation-edit="${e.id}" data-locale="fr">Traduire en français</button></div>`;
       }
@@ -519,7 +519,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           const hv=clean(h.title||h.content);
           if(frNeedsTranslation){
             const english=clean(migrationTranslationText(p,'en'));
-            const source=migrationBestSourceTranslation(p,['en','es','br','de','it','ja','ko-kr','zf','zh','pt','nl','pl','ro','ru','sv-se','tr','bg']);
+            const source=migrationBestSourceTranslation(p,['en','es','br','de','it','ja','ko-kr','zf','zh','pt','nl','pl','ro','ru','sk','sv-se','tr','bg']);
             const sourceCode=(source.locale||'').toUpperCase();
             body=`<div class="migration-review-fr-missing-notice"><strong>⚠ Traduction française à compléter</strong><p>Le champ FR historique est un repère technique. Le vrai contenu disponible est affiché ci-dessous comme source de traduction.</p></div><div class="migration-review-language-columns"><div><span>Texte source disponible${sourceCode?' — '+esc(sourceCode):''}</span><p>${esc(clean(source.text)||hv||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(p.scoreValue??p.score??'—')}</small>`:''}</div></div><button type="button" class="button button-secondary migration-translation-edit" data-translation-edit="${e.id}" data-locale="fr">Traduire en français</button>`;
           }else{
@@ -1301,7 +1301,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         $('#migration-translation-intro').textContent=locale==='fr'?'Le texte anglais est affiché comme référence lorsqu’aucune vraie version française n’existe. Saisis ici la traduction française, puis valide-la pour la retirer des traductions à compléter.':'Le français est affiché comme référence. Les champs historiques disponibles sont préremplis. « Enregistrer comme brouillon » conserve ton travail sans le considérer terminé ; « Valider la traduction » la marque comme complète et la retire du filtre des traductions à compléter.';
         if(isSimpleTranslation){
           const source=locale==='fr'
-            ? migrationBestSourceTranslation(p,['en','es','br','de','it','ja','ko-kr','zf','zh','pt','nl','pl','ro','ru','sv-se','tr','bg'])
+            ? migrationBestSourceTranslation(p,['en','es','br','de','it','ja','ko-kr','zf','zh','pt','nl','pl','ro','ru','sk','sv-se','tr','bg'])
             : {locale:'fr',text:clean(p.translations?.fr?.content||p.content||p.translations?.fr?.title||p.title||'')};
           const reference=source.text||'—',sourceCode=(source.locale||'').toUpperCase();
           const existing=saved.content||hist.content||saved.title||hist.title||'';
@@ -1541,8 +1541,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       scopeSelect.innerHTML='<option value="">Tous les périmètres</option>'+allScopes.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
       if(allScopes.includes(current))scopeSelect.value=current;
     }
-    const localeLabels={fr:'Français (FR)',en:'Anglais (EN)',bg:'Bulgare (BG)',br:'Portugais Brésil (BR)',de:'Allemand (DE)',es:'Espagnol (ES)',it:'Italien (IT)',ja:'Japonais (JA)','ko-kr':'Coréen (KO-KR)',nl:'Néerlandais (NL)','nl-be':'Néerlandais Belgique (NL-BE)',pl:'Polonais (PL)',pt:'Portugais (PT)',ro:'Roumain (RO)',ru:'Russe (RU)','sv-se':'Suédois (SV-SE)',tr:'Turc (TR)',zf:'Chinois simplifié (ZF)',zh:'Chinois traditionnel (ZH)',cs:'Tchèque (CS)',id:'Indonésien (ID)',ar:'Arabe (AR)'};
-    const localeReference=['fr','en','bg','br','cs','de','es','it','ja','ko-kr','nl','nl-be','pl','pt','ro','ru','sv-se','tr','zf','zh','id','ar'];
+    const localeLabels={fr:'Français (FR)',en:'Anglais (EN)',bg:'Bulgare (BG)',br:'Portugais Brésil (BR)',de:'Allemand (DE)',es:'Espagnol (ES)',it:'Italien (IT)',ja:'Japonais (JA)','ko-kr':'Coréen (KO-KR)',nl:'Néerlandais (NL)','nl-be':'Néerlandais Belgique (NL-BE)',pl:'Polonais (PL)',pt:'Portugais (PT)',ro:'Roumain (RO)',ru:'Russe (RU)','sv-se':'Suédois (SV-SE)',tr:'Turc (TR)',zf:'Chinois simplifié (ZF)',zh:'Chinois traditionnel (ZH)',cs:'Tchèque (CS)',sk:'Slovaque (SK)',id:'Indonésien (ID)',ar:'Arabe (AR)'};
+    const localeReference=['fr','en','bg','br','cs','de','es','it','ja','ko-kr','nl','nl-be','pl','pt','ro','ru','sk','sv-se','tr','zf','zh','id','ar'];
     const detectedLocales=mediaMeta.map(x=>String(x.meta.locale||'').trim().toLowerCase()).filter(Boolean);
     const allLocales=[...new Set([...localeReference,...detectedLocales])].sort((a,b)=>(localeLabels[a]||a).localeCompare(localeLabels[b]||b,'fr'));
     if(localeSelect){
@@ -1719,7 +1719,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const raw=String(entity?.content||'').trim();
     if(raw&&!libraryIsTechnicalLegacyContent(raw))return raw;
     const rows=Array.isArray(entity?.translations)?entity.translations:[];
-    const order=['en','es','br','de','it','ja','ko-kr','zf','zh','pt','nl','pl','ro','ru','sv-se','tr','bg'];
+    const order=['en','es','br','de','it','ja','ko-kr','zf','zh','pt','nl','pl','ro','ru','sk','sv-se','tr','bg'];
     for(const loc of order){
       const row=rows.find(r=>String(r.locale||'').toLowerCase()===loc);
       const c=libraryContentObject(row);
