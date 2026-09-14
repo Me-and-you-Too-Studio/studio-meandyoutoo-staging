@@ -1398,13 +1398,76 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const root=$('#admin-library');if(!root)return;root.innerHTML='<div class="admin-library-loading">Chargement de la bibliothèque…</div>';
     try{const[data,media]=await Promise.all([StudioAPI.request('/api/admin/catalog/themes'),StudioAPI.request('/api/admin/media-library')]);state.catalogThemes=data.themes||[];state.mediaLibrary=media.videos||[];state.mediaThemes=media.themeOptions||[];state.mediaLibraryLoaded=true;state.catalogLoaded=true;renderLibraryAdmin();}catch(e){root.innerHTML=`<div class="composer-alert">${esc(e.message)}</div>`;}
   }
-  function mediaLibraryOptions(selectedId=''){
-    const active=state.mediaLibrary.filter(v=>v.active!==false||String(v.id)===String(selectedId));
-    return '<option value="">Aucune vidéo</option>'+active.map(v=>{
+  function normalizedVideoMeta(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[_]+/g,' ').replace(/\s+/g,' ').trim();}
+  function inferredVideoMeta(video){
+    const blob=normalizedVideoMeta([video?.title,video?.description,...(video?.admin_tags||[])].filter(Boolean).join(' '));
+    let scope=String(video?.cultural_scope||video?.effective_cultural_scope||'').trim().toUpperCase();
+    if(!scope){
+      if(/\b(universel|universelle|universal|worldwide|monde)\b/.test(blob))scope='WORLDWIDE';
+      else if(/\bfrance\b/.test(blob))scope='FRANCE';
+      else if(/\b(asie|asia|asiatique)\b/.test(blob))scope='ASIE';
+      else if(/\bmaghreb\b/.test(blob))scope='MAGHREB';
+      else if(/\binternational\b/.test(blob))scope='INTERNATIONAL';
+    }
+    let locale=String(video?.locale||video?.effective_locale||'').trim().toLowerCase().replaceAll('_','-');
+    if(!locale){
+      if(/\b(francais|french)\b/.test(blob))locale='fr';
+      else if(/\b(anglais|english)\b/.test(blob))locale='en';
+      else if(/\b(arabe|arabic)\b/.test(blob))locale='ar';
+      else if(/\b(japonais|japanese)\b/.test(blob))locale='ja';
+      else if(/\b(coreen|korean)\b/.test(blob))locale='ko-kr';
+      else if(/\b(chinois|chinese|mandarin)\b/.test(blob))locale='zh';
+      else if(/\b(allemand|german)\b/.test(blob))locale='de';
+      else if(/\b(espagnol|spanish)\b/.test(blob))locale='es';
+      else if(/\b(italien|italian)\b/.test(blob))locale='it';
+      else if(/\b(portugais|portuguese)\b/.test(blob))locale='pt';
+    }
+    return {scope:scope||'',locale:locale||''};
+  }
+  function chapterVideoScope(chapter){
+    if(String(chapter?.country_scope||'').toLowerCase()==='worldwide')return'WORLDWIDE';
+    const codes=(chapter?.country_codes||[]).map(x=>String(x||'').trim().toUpperCase()).filter(Boolean);
+    if(codes.includes('FR'))return'FRANCE';
+    if(codes.length===1)return codes[0];
+    return String(chapter?.country_scope||'').trim().toUpperCase();
+  }
+  function compatibleVideoScope(videoScope,chapterScope){
+    const v=String(videoScope||'').toUpperCase(),c=String(chapterScope||'').toUpperCase();
+    if(!v||!c)return true;
+    if(v===c)return true;
+    if(c==='WORLDWIDE'&&(v==='WORLDWIDE'||v==='INTERNATIONAL'))return true;
+    return false;
+  }
+  function mediaLibraryOptions(selectedId='',context=null){
+    const selected=String(selectedId||'');
+    let active=state.mediaLibrary.filter(v=>v.active!==false||String(v.id)===selected);
+    if(context?.chapter){
+      const expectedScope=chapterVideoScope(context.chapter);
+      const expectedLocale=String(context.locale||'').toLowerCase().replaceAll('_','-');
+      active=active.filter(v=>{
+        if(String(v.id)===selected)return true;
+        const meta=inferredVideoMeta(v);
+        const localeOk=!meta.locale||!expectedLocale||meta.locale===expectedLocale;
+        const scopeOk=compatibleVideoScope(meta.scope,expectedScope);
+        return localeOk&&scopeOk;
+      });
+      const theme=findTheme(context.chapter.theme_id);
+      if(theme?.slug){
+        active=active.filter(v=>String(v.id)===selected||!(v.theme_keys||[]).length||(v.theme_keys||[]).includes(theme.slug));
+      }
+    }
+    const option=v=>{
+      const meta=inferredVideoMeta(v);
       const tags=[...(v.theme_keys||[]).map(key=>state.mediaThemes.find(t=>t.key===key)?.title||key),...(v.admin_tags||[])].filter(Boolean);
+      const classification=[meta.scope||'PÉRIMÈTRE À CLASSER',meta.locale?meta.locale.toUpperCase():'LANGUE À CLASSER'].join(' · ');
       const suffix=tags.length?' — '+tags.join(' · '):'';
-      return `<option value="${v.id}" ${String(v.id)===String(selectedId)?'selected':''}>${esc(v.title+suffix)}</option>`;
-    }).join('');
+      return `<option value="${v.id}" ${String(v.id)===selected?'selected':''}>${esc(v.title+' — '+classification+suffix)}</option>`;
+    };
+    const classified=active.filter(v=>{const m=inferredVideoMeta(v);return m.scope&&m.locale;});
+    const unclassified=active.filter(v=>{const m=inferredVideoMeta(v);return !m.scope||!m.locale;});
+    return '<option value="">Aucune vidéo</option>'
+      +(classified.length?`<optgroup label="Compatibles avec ce périmètre et cette langue">${classified.map(option).join('')}</optgroup>`:'')
+      +(unclassified.length?`<optgroup label="Vidéos à classer (métadonnées incomplètes)">${unclassified.map(option).join('')}</optgroup>`:'');
   }
   function mediaLibraryForm(video=null){
     const selectedThemes=new Set((video?.theme_keys||[]).map(String));
@@ -1422,6 +1485,10 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           <label><span>Titre</span><input data-media-lib-title value="${esc(video?.title||'')}" placeholder="Ex. Stéréotypes de genre" required></label>
           <label><span>URL publique HB</span><input data-media-lib-url type="url" value="${esc(video?.source_url||'')}" placeholder="https://…" required><small>Cette URL reste côté admin/API et n’est pas affichée au client.</small></label>
           <label class="admin-media-library-description"><span>Description</span><textarea data-media-lib-description rows="3" placeholder="Ex. France en français">${esc(video?.description||'')}</textarea></label>
+          <label><span>Périmètre culturel</span><input data-media-lib-scope list="admin-media-scope-suggestions" value="${esc(video?.cultural_scope||video?.effective_cultural_scope||'')}" placeholder="WORLDWIDE, FRANCE, ASIE…"><small>Indépendant de la langue. Ex. WORLDWIDE, FRANCE, ASIE, MAGHREB, INTERNATIONAL.</small></label>
+          <label><span>Langue de cette vidéo</span><input data-media-lib-locale list="admin-media-locale-suggestions" value="${esc(video?.locale||video?.effective_locale||'')}" placeholder="fr, en, ja, ko-kr…"><small>Une seule langue par fichier vidéo.</small></label>
+          <datalist id="admin-media-scope-suggestions"><option value="WORLDWIDE"><option value="FRANCE"><option value="ASIE"><option value="MAGHREB"><option value="INTERNATIONAL"></datalist>
+          <datalist id="admin-media-locale-suggestions"><option value="fr"><option value="en"><option value="ar"><option value="de"><option value="es"><option value="it"><option value="ja"><option value="ko-kr"><option value="zh"><option value="pt"></datalist>
         </div>
       </section>
 
@@ -1477,7 +1544,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         &&(!themeId||(v.theme_keys||[]).includes(themeId))
         &&(!tag||(v.admin_tags||[]).includes(tag));
     });
-    root.innerHTML=videos.length?videos.map(v=>`<article class="admin-media-library-card ${v.active===false?'is-inactive':''}"><div class="admin-media-library-card-head"><span class="admin-media-library-play">▶</span><div><h3>${esc(v.title)}</h3><div class="admin-media-library-tags"><span class="${v.active===false?'is-off':'is-on'}">${v.active===false?'Inactive':'Active'}</span><span>${Number(v.usage_count||0)} utilisation${Number(v.usage_count||0)>1?'s':''}</span></div></div></div><div class="admin-media-classification">${(v.theme_keys||[]).map(key=>`<span class="admin-media-theme-tag">${esc(state.mediaThemes.find(t=>t.key===key)?.title||key)}</span>`).join('')}${(v.admin_tags||[]).map(t=>`<span class="admin-media-free-tag">${esc(t)}</span>`).join('')}</div>${v.description?`<p>${esc(v.description)}</p>`:''}<div class="admin-media-library-url"><span>URL HB</span><code>${esc(v.source_url)}</code></div><div class="admin-media-library-card-actions"><button class="button button-secondary button-small" type="button" data-edit-media-library="${v.id}">Modifier</button><button class="button button-danger-soft button-small" type="button" data-delete-media-library="${v.id}" ${Number(v.usage_count||0)>0?'disabled title="Vidéo utilisée : retirez d’abord ses associations"':''}>Supprimer</button></div></article>`).join(''):'<p class="admin-library-empty-line">Aucune vidéo ne correspond à ces filtres.</p>';
+    root.innerHTML=videos.length?videos.map(v=>`<article class="admin-media-library-card ${v.active===false?'is-inactive':''}"><div class="admin-media-library-card-head"><span class="admin-media-library-play">▶</span><div><h3>${esc(v.title)}</h3><div class="admin-media-library-tags"><span class="${v.active===false?'is-off':'is-on'}">${v.active===false?'Inactive':'Active'}</span><span>${Number(v.usage_count||0)} utilisation${Number(v.usage_count||0)>1?'s':''}</span></div></div></div><div class="admin-media-classification">${(()=>{const meta=inferredVideoMeta(v);return `${meta.scope?`<span class="admin-media-theme-tag">🌍 ${esc(meta.scope)}</span>`:''}${meta.locale?`<span class="admin-media-theme-tag">🌐 ${esc(meta.locale.toUpperCase())}</span>`:''}`;})()}${(v.theme_keys||[]).map(key=>`<span class="admin-media-theme-tag">${esc(state.mediaThemes.find(t=>t.key===key)?.title||key)}</span>`).join('')}${(v.admin_tags||[]).map(t=>`<span class="admin-media-free-tag">${esc(t)}</span>`).join('')}</div>${v.description?`<p>${esc(v.description)}</p>`:''}<div class="admin-media-library-url"><span>URL HB</span><code>${esc(v.source_url)}</code></div><div class="admin-media-library-card-actions"><button class="button button-secondary button-small" type="button" data-edit-media-library="${v.id}">Modifier</button><button class="button button-danger-soft button-small" type="button" data-delete-media-library="${v.id}" ${Number(v.usage_count||0)>0?'disabled title="Vidéo utilisée : retirez d’abord ses associations"':''}>Supprimer</button></div></article>`).join(''):'<p class="admin-library-empty-line">Aucune vidéo ne correspond à ces filtres.</p>';
     $$('[data-edit-media-library]').forEach(b=>b.onclick=()=>openMediaLibraryForm(state.mediaLibrary.find(v=>String(v.id)===String(b.dataset.editMediaLibrary))));
     $$('[data-delete-media-library]').forEach(b=>b.onclick=async()=>{const v=state.mediaLibrary.find(x=>String(x.id)===String(b.dataset.deleteMediaLibrary));if(!confirm(`Supprimer définitivement « ${v?.title||'cette vidéo'} » de la médiathèque ?`))return;try{await StudioAPI.request('/api/admin/media-library/'+b.dataset.deleteMediaLibrary,{method:'DELETE'});await loadMediaLibrary();state.catalogLoaded=false;}catch(error){showError(error.message);}});
   }
@@ -1522,6 +1589,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         title:form.querySelector('[data-media-lib-title]').value.trim(),
         sourceUrl:form.querySelector('[data-media-lib-url]').value.trim(),
         description:form.querySelector('[data-media-lib-description]').value.trim(),
+        culturalScope:form.querySelector('[data-media-lib-scope]').value.trim(),
+        locale:form.querySelector('[data-media-lib-locale]').value.trim(),
         themeKeys:[...form.querySelectorAll('[data-media-lib-theme]:checked')].map(i=>i.value),
         tags:mediaFormTags(form),
         active:form.querySelector('[data-media-lib-active]').checked
@@ -1706,7 +1775,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const effectiveMedia=mediaForLocale('fr')||profileMedia[0]||null;
     const videoLanguageRows=chapterLocales.map(locale=>{
       const current=mediaForLocale(locale);
-      return `<label class="admin-library-video-select admin-profile-video-select"><span>${esc(locale.toUpperCase())}</span><select data-profile-video-library data-profile-video-locale="${esc(locale)}">${mediaLibraryOptions(current?.video_id||'')}</select></label>`;
+      return `<label class="admin-library-video-select admin-profile-video-select"><span>${esc(locale.toUpperCase())}</span><select data-profile-video-library data-profile-video-locale="${esc(locale)}">${mediaLibraryOptions(current?.video_id||'',{chapter:ch,locale})}</select></label>`;
     }).join('');
     const color=esc(profile.color||'#dce6ec');
     return `<article class="admin-library-profile-inline-card admin-profile-card-v2"><details><summary>
@@ -1775,7 +1844,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         </div>
         <input type="hidden" data-profile-video-id value="${effectiveMedia?.id||''}">
         <div class="admin-profile-video-language-grid">${videoLanguageRows}</div>
-        <small class="admin-library-video-help">Facultatif : choisissez une vidéo uniquement pour les langues où ce chapitre en possède une. Les tags de la médiathèque sont affichés dans la liste pour identifier la bonne version. Le choix est appliqué aux 3 profils.</small>
+        <small class="admin-library-video-help">Facultatif : chaque liste est filtrée selon le périmètre culturel du chapitre + la langue. Le titre, le périmètre, la langue et les tags de la médiathèque restent visibles pour identifier la bonne version. Si ce chapitre n’a pas de vidéo, laissez « Aucune vidéo ». Le choix est appliqué aux 3 profils.</small>
       </section>
 
     </div></details></article>`;
