@@ -344,12 +344,15 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       return true;
     });
   }
-  function reviewDecisionOptions(current,entityType){
-    return reviewDecisionEntries(entityType).map(([v,d])=>`<option value="${v}" ${v===current?'selected':''}>${d.label}</option>`).join('');
+  function reviewDecisionOptions(current,entityType,entity=null,businessEntities=[]){
+    return reviewDecisionEntries(entityType).map(([v,d])=>{
+      const display=migrationDecisionDisplay(entity,v,businessEntities);
+      return `<option value="${v}" ${v===current?'selected':''}>${esc(display.label||d.label)}</option>`;
+    }).join('');
   }
-  function reviewDecisionHelpHtml(current,entityType){
-    const currentDef=reviewDecisionDefinitions[current]||reviewDecisionDefinitions.pending;
-    return `<div class="migration-review-decision-current" data-decision-current><strong>${esc(currentDef.label)}</strong><span>${esc(currentDef.short)}</span></div><div class="migration-review-decision-help-panel" data-decision-help-panel hidden><div class="migration-review-decision-help-head"><strong>Que signifie chaque choix ?</strong><span>Aucune de ces décisions ne modifie le catalogue maintenant. Elles seront appliquées uniquement lors de l’étape finale d’intégration.</span></div>${reviewDecisionEntries(entityType).map(([value,d])=>`<div class="migration-review-decision-help-item" data-decision-help-item="${value}"><strong>${esc(d.label)}</strong><span>${esc(d.detail)}</span></div>`).join('')}</div>`;
+  function reviewDecisionHelpHtml(current,entityType,entity=null,businessEntities=[]){
+    const currentDef=migrationDecisionDisplay(entity,current,businessEntities);
+    return `<div class="migration-review-decision-current" data-decision-current><strong>${esc(currentDef.label)}</strong><span>${esc(currentDef.short)}</span></div><div class="migration-review-decision-help-panel" data-decision-help-panel hidden><div class="migration-review-decision-help-head"><strong>Que signifie chaque choix ?</strong><span>Aucune de ces décisions ne modifie le catalogue maintenant. Elles seront appliquées uniquement lors de l’étape finale d’intégration.</span></div>${reviewDecisionEntries(entityType).map(([value,d])=>{const display=migrationDecisionDisplay(entity,value,businessEntities);return `<div class="migration-review-decision-help-item" data-decision-help-item="${value}"><strong>${esc(display.label||d.label)}</strong><span>${esc(value==='use_legacy'&&display.short?display.short:d.detail)}</span></div>`;}).join('')}</div>`;
   }
   const reviewTypeLabel=t=>({
     theme:'THÉMATIQUE',chapter:'CHAPITRE',situation:'SITUATION',
@@ -579,7 +582,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const languageDiff=migrationLanguageDifferences(c).length>0;
     const countryHtml=migrationReviewCountryHtml(e);
     const statusBadge=(newCatalogMode||isNewContent)?`<span class="migration-review-status new">À importer</span>`:`<span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>${migrationLanguageDiffBadge(c)}`;
-    const decisionHtml=newCatalogMode?`<div class="migration-review-decision"><div class="migration-review-decision-current"><strong>Décision globale</strong><span>Inclus dans le nouveau catalogue de référence</span></div></div>`:`<div class="migration-review-decision"><div class="migration-review-decision-control"><select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision,e.entity_type)}</select><button type="button" class="migration-review-decision-help" data-decision-help aria-label="Aide sur les décisions">?</button></div>${reviewDecisionHelpHtml(decision,e.entity_type)}</div>`;
+    const decisionHtml=newCatalogMode?`<div class="migration-review-decision"><div class="migration-review-decision-current"><strong>Décision globale</strong><span>Inclus dans le nouveau catalogue de référence</span></div></div>`:`<div class="migration-review-decision"><div class="migration-review-decision-control"><select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision,e.entity_type,e,context.businessEntities||[])}</select><button type="button" class="migration-review-decision-help" data-decision-help aria-label="Aide sur les décisions">?</button></div>${reviewDecisionHelpHtml(decision,e.entity_type,e,context.businessEntities||[])}</div>`;
     return `<article class="migration-review-row" data-review-card data-cmp="${status}" data-pending="${newCatalogMode?'0':decision==='pending'?'1':'0'}" data-translations="${missing?'1':'0'}" data-language-recover="${languageDiff?'1':'0'}"><div class="migration-review-main"><div class="migration-review-heading"><span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}${isProfile&&p.position!=null?' '+esc(p.position):''}</span>${statusBadge}${missing?`<span class="migration-review-translation-warning">Traduction à compléter</span>`:''}${isTheme?'':`<span class="migration-review-context-note">Contexte parent</span>`}</div><strong>${esc(title)}</strong><small>Ancien ID ${esc(e.legacy_id)}</small>${countryHtml}${compare}${migrationReviewLanguageHtml(e,context)}${answerContext}${translationReviewHtml(e,context)}</div>${decisionHtml}</article>`;
   }
 
@@ -673,16 +676,27 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const selectedMigrationLocales=new Set(savedMigrationLocales);
       selectedMigrationLocales.add('fr');
       const newCatalogMode=Boolean(themeEntity && !themeEntity.target_entity_id && themeEntity.source_payload?.catalogCreateIfMissing===true);
-      const reviewContext={newCatalogMode,countryLocaleMap:reviewCountryLocaleMap};
+      const reviewContext={newCatalogMode,countryLocaleMap:reviewCountryLocaleMap,businessEntities};
 
       const chapterHtml=chapters.map(ch=>{
         const direct=children.get(String(ch.legacy_id))||[];
         const situations=direct.filter(x=>x.entity_type==='situation');
         const profiles=direct.filter(x=>x.entity_type==='profile');
+        const answers=situations.flatMap(si=>(children.get(String(si.legacy_id))||[]).filter(x=>x.entity_type==='answer'));
+        const treeEntities=[ch,...situations,...answers,...profiles];
+        const activeLocales=[...new Set(treeEntities.flatMap(e=>{
+          const p=e.source_payload||{};
+          const active=Array.isArray(p.activeLocales)?p.activeLocales:[];
+          return active.map(x=>String(x||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean);
+        }))].sort((a,b)=>a==='fr'?-1:b==='fr'?1:a.localeCompare(b,'fr'));
+        if(!activeLocales.includes('fr'))activeLocales.unshift('fr');
+        const countryCodes=(ch.source_payload?.countryCodes||[]).map(x=>String(x||'').toUpperCase()).filter(Boolean);
+        const countryLabel=ch.source_payload?.countryScope==='worldwide'?'🌍 Tous pays · WORLDWIDE':`Périmètre culturel : ${countryCodes.length?countryCodes.map(libraryCountryLabel).join(' · '):'—'}`;
+        const isNewAlternative=Boolean(ch.source_payload?.choiceGroup&&!ch.target_entity_id);
         return `<details class="migration-review-chapter" data-review-chapter>
           <summary>
             <span class="migration-review-round">›</span>
-            <div><strong>${esc(ch.source_payload?.title||'Chapitre')}</strong>${ch.source_payload?.choiceGroup?`<div class="migration-alternative-summary"><span><b>Chapitre alternatif à :</b> ${esc(ch.source_payload?.alternativeToTitle||'chapitre de référence')}</span><span>${ch.source_payload?.countryScope==='worldwide'?'🌍 Tous pays · WORLDWIDE':'Périmètre : '+esc((ch.source_payload?.countryCodes||[]).join(' · '))}</span><button type="button" class="button button-secondary button-small" data-review-alt-bulk="${esc(ch.legacy_id)}">Intégrer tout ce chapitre comme alternative</button></div>`:''}<small><span data-review-chapter-situations data-total-situations="${situations.length}">${situations.length} situations</span> · <span data-review-chapter-profiles data-total-profiles="${profiles.length}">${profiles.length} profils</span></small></div>
+            <div><strong>${esc(ch.source_payload?.title||'Chapitre')}</strong>${ch.source_payload?.choiceGroup?`<div class="migration-alternative-summary"><span><b>Chapitre alternatif à :</b> ${esc(ch.source_payload?.alternativeToTitle||'chapitre de référence')}</span><span>${esc(countryLabel)}</span><span><b>Langues actives :</b> ${esc(activeLocales.map(x=>x.toUpperCase()).join(' · '))}</span>${isNewAlternative?`<button type="button" class="button button-secondary button-small" data-review-alt-bulk="${esc(ch.id)}">Intégrer tout ce chapitre comme alternative</button>`:''}</div>`:''}<small><span data-review-chapter-situations data-total-situations="${situations.length}">${situations.length} situations</span> · ${answers.length} réponses · <span data-review-chapter-profiles data-total-profiles="${profiles.length}">${profiles.length} profils</span></small></div>
           </summary>
           <div class="migration-review-chapter-body">
             ${reviewCard(ch,true,reviewContext)}
@@ -1052,43 +1066,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         saveState.textContent=count?`${count} décision${count>1?'s':''} à enregistrer`:'Aucune modification en attente';
       }
       function syncDecisionControlsFromData(){
-        $$('[data-review-alt-bulk]').forEach(btn=>btn.onclick=async()=>{
-        const chapterLegacy=String(btn.dataset.reviewAltBulk||'');
-        const chapter=businessEntities.find(e=>e.entity_type==='chapter'&&String(e.legacy_id)===chapterLegacy);
-        if(!chapter)return;
-        const direct=businessEntities.filter(e=>String(e.legacy_parent_id||'')===chapterLegacy);
-        const situationIds=new Set(direct.filter(e=>e.entity_type==='situation').map(e=>String(e.legacy_id)));
-        const descendants=businessEntities.filter(e=>
-          e===chapter ||
-          String(e.legacy_parent_id||'')===chapterLegacy ||
-          (e.entity_type==='answer'&&situationIds.has(String(e.legacy_parent_id||'')))
-        );
-        const ok=await StudioModal.confirm({
-          eyebrow:'CHAPITRE ALTERNATIF',
-          title:`Intégrer « ${chapter.source_payload?.title||'ce chapitre'} » en une seule décision ?`,
-          message:`Studio intégrera le chapitre, ses situations, ses réponses et ses profils comme un bloc complet. ${chapter.source_payload?.alternativeToTitle?`Il sera proposé en alternative à « ${chapter.source_payload.alternativeToTitle} ». `:''}${chapter.source_payload?.countryScope==='worldwide'?'Sa portée restera WORLDWIDE / tous pays.':''} L’introduction générale du diagnostic n’est pas modifiée.`,
-          cancelLabel:'Annuler',
-          confirmLabel:'Intégrer le chapitre complet'
-        });
-        if(!ok)return;
-        descendants.forEach(entity=>{
-          const sel=$(`[data-review-status="${entity.id}"]`);
-          if(sel){
-            sel.value='use_legacy';
-            sel.classList.add('is-decided');
-            const card=sel.closest('[data-review-card]');
-            card?.setAttribute('data-pending','0');
-            const current=card?.querySelector('[data-decision-current]');
-            const def=migrationDecisionDisplay(entity,'use_legacy',businessEntities);
-            if(current)current.innerHTML=`<strong>${esc(def.label)}</strong><span>${esc(def.short)}</span>`;
-            if(sel.dataset.initialValue==='use_legacy')dirty.delete(String(entity.id));else dirty.set(String(entity.id),'use_legacy');
-          }
-        });
-        refreshReviewCounters();
-        updateSaveUi(`✓ ${descendants.length} éléments du chapitre sont prêts à être enregistrés en une seule fois.`);
-      });
-
-      $$('[data-review-status]').forEach(sel=>{
+        $$('[data-review-status]').forEach(sel=>{
           const id=sel.dataset.reviewStatus;
           const entity=businessEntities.find(x=>String(x.id)===String(id));
           if(!entity)return;
@@ -1100,7 +1078,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           const card=sel.closest('[data-review-card]');
           card?.setAttribute('data-pending',expected==='pending'?'1':'0');
           const current=card?.querySelector('[data-decision-current]');
-          const def=reviewDecisionDefinitions[expected]||reviewDecisionDefinitions.pending;
+          const def=migrationDecisionDisplay(entity,expected,businessEntities);
           if(current)current.innerHTML=`<strong>${esc(def.label)}</strong><span>${esc(def.short)}</span>`;
           card?.querySelectorAll('[data-decision-help-item]').forEach(item=>item.classList.toggle('is-current',item.dataset.decisionHelpItem===expected));
           const helpPanel=card?.querySelector('[data-decision-help-panel]');
@@ -1111,9 +1089,10 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       }
 
       $$('[data-review-alt-bulk]').forEach(btn=>btn.onclick=async()=>{
-        const chapterLegacy=String(btn.dataset.reviewAltBulk||'');
-        const chapter=businessEntities.find(e=>e.entity_type==='chapter'&&String(e.legacy_id)===chapterLegacy);
+        const chapterId=String(btn.dataset.reviewAltBulk||'');
+        const chapter=businessEntities.find(e=>e.entity_type==='chapter'&&String(e.id)===chapterId);
         if(!chapter)return;
+        const chapterLegacy=String(chapter.legacy_id||'');
         const direct=businessEntities.filter(e=>String(e.legacy_parent_id||'')===chapterLegacy);
         const situationIds=new Set(direct.filter(e=>e.entity_type==='situation').map(e=>String(e.legacy_id)));
         const descendants=businessEntities.filter(e=>
@@ -1121,29 +1100,40 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           String(e.legacy_parent_id||'')===chapterLegacy ||
           (e.entity_type==='answer'&&situationIds.has(String(e.legacy_parent_id||'')))
         );
+        const situationCount=descendants.filter(e=>e.entity_type==='situation').length;
+        const answerCount=descendants.filter(e=>e.entity_type==='answer').length;
+        const profileCount=descendants.filter(e=>e.entity_type==='profile').length;
         const ok=await StudioModal.confirm({
           eyebrow:'CHAPITRE ALTERNATIF',
           title:`Intégrer « ${chapter.source_payload?.title||'ce chapitre'} » en une seule décision ?`,
-          message:`Studio intégrera le chapitre, ses situations, ses réponses et ses profils comme un bloc complet. ${chapter.source_payload?.alternativeToTitle?`Il sera proposé en alternative à « ${chapter.source_payload.alternativeToTitle} ». `:''}${chapter.source_payload?.countryScope==='worldwide'?'Sa portée restera WORLDWIDE / tous pays.':''} L’introduction générale du diagnostic n’est pas modifiée.`,
+          message:`Cette décision sera enregistrée immédiatement pour le chapitre complet : ${situationCount} situation${situationCount>1?'s':''}, ${answerCount} réponse${answerCount>1?'s':''} et ${profileCount} profil${profileCount>1?'s':''}. ${chapter.source_payload?.alternativeToTitle?`Il sera proposé en alternative à « ${chapter.source_payload.alternativeToTitle} ». `:''}${chapter.source_payload?.countryScope==='worldwide'?'Sa portée restera WORLDWIDE / tous pays. ':''}L’introduction générale du diagnostic n’est pas modifiée.`,
           cancelLabel:'Annuler',
           confirmLabel:'Intégrer le chapitre complet'
         });
         if(!ok)return;
-        descendants.forEach(entity=>{
-          const sel=$(`[data-review-status="${entity.id}"]`);
-          if(sel){
-            sel.value='use_legacy';
-            sel.classList.add('is-decided');
-            const card=sel.closest('[data-review-card]');
-            card?.setAttribute('data-pending','0');
-            const current=card?.querySelector('[data-decision-current]');
-            const def=migrationDecisionDisplay(entity,'use_legacy',businessEntities);
-            if(current)current.innerHTML=`<strong>${esc(def.label)}</strong><span>${esc(def.short)}</span>`;
-            if(sel.dataset.initialValue==='use_legacy')dirty.delete(String(entity.id));else dirty.set(String(entity.id),'use_legacy');
-          }
-        });
-        refreshReviewCounters();
-        updateSaveUi(`✓ ${descendants.length} éléments du chapitre sont prêts à être enregistrés en une seule fois.`);
+        btn.disabled=true;
+        const previousLabel=btn.textContent;
+        btn.textContent='Intégration du chapitre…';
+        try{
+          const result=await StudioAPI.request(`/api/admin/migrations/${batchId}/review/${chapter.id}/use-legacy-tree`,{method:'POST',body:'{}'});
+          const updatedById=new Map((result?.entities||[]).map(e=>[String(e.id),e]));
+          descendants.forEach(entity=>{
+            const updated=updatedById.get(String(entity.id));
+            if(updated)Object.assign(entity,updated);
+            else entity.review_status='use_legacy';
+            dirty.delete(String(entity.id));
+          });
+          syncDecisionControlsFromData();
+          refreshDecisionHistory();
+          const counts=refreshReviewCounters();
+          applyReviewFilter(root.dataset.activeFilter||(counts.pending?'pending':'all'));
+          updateSaveUi(`✓ Chapitre alternatif enregistré comme un bloc complet : ${situationCount} situation${situationCount>1?'s':''}, ${answerCount} réponse${answerCount>1?'s':''}, ${profileCount} profil${profileCount>1?'s':''}.`);
+          btn.textContent='Chapitre alternatif intégré';
+        }catch(error){
+          btn.disabled=false;
+          btn.textContent=previousLabel;
+          showError(error?.message||'Impossible d’intégrer ce chapitre alternatif en une seule décision.');
+        }
       });
 
       $$('[data-review-status]').forEach(sel=>{
