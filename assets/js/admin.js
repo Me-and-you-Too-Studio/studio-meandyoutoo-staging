@@ -384,7 +384,10 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       }else if(e.entity_type==='chapter'){
         if(!(loc==='fr'?(p.title||row.title):row.title))missing.push('titre');
       }else if(['situation','answer'].includes(e.entity_type)){
-        if(!(loc==='fr'?(p.content||row.content):row.content))missing.push('texte');
+        if(loc==='fr'){
+          const frValue=p.content||row.content||'';
+          if(!frValue||migrationIsTechnicalCountryLabel(frValue))missing.push('texte');
+        }else if(!row.content)missing.push('texte');
       }
       if(missing.length)out.push({locale:loc,missing,availableTitle:row.title||'',availableContent:row.content||''});
     }
@@ -438,6 +441,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     };
     const panels=locales.map((loc,index)=>{
       const h=histFor(loc),st=studioFor(loc),code=loc.toUpperCase(),missing=diffs.has(`translation_missing:${loc}`),different=diffs.has(`translation_differs:${loc}`),isDormant=dormant.has(loc)&&!active.has(loc);
+      const frRaw=loc==='fr'&&['situation','answer'].includes(e.entity_type)?migrationTranslationText(p,'fr'):'';
+      const frNeedsTranslation=loc==='fr'&&['situation','answer'].includes(e.entity_type)&&(!frRaw||migrationIsTechnicalCountryLabel(frRaw));
       let body='';
       if(newCatalogMode){
         if(e.entity_type==='profile'){
@@ -446,7 +451,12 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           body=`<div class="migration-review-language-columns"><div><span>Introduction à importer</span><p>${esc(clean(h.introduction)||'—')}</p></div></div>`;
         }else{
           const hv=clean(h.title||h.content);
-          body=`<div class="migration-review-language-columns"><div><span>Contenu à importer</span><p>${esc(hv||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(p.scoreValue??p.score??'—')}</small>`:''}</div></div>`;
+          if(frNeedsTranslation){
+            const english=clean(migrationTranslationText(p,'en'));
+            body=`<div class="migration-review-fr-missing-notice"><strong>⚠ Traduction française à compléter</strong><p>Aucun véritable contenu français n’est disponible pour cette variante${e.entity_type==='situation'?' pays':''}. Le texte anglais ci-dessous est affiché uniquement comme référence pour préparer la traduction française.</p></div><div class="migration-review-language-columns"><div><span>Texte anglais de référence</span><p>${esc(english||hv||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(p.scoreValue??p.score??'—')}</small>`:''}</div></div><button type="button" class="button button-secondary migration-translation-edit" data-translation-edit="${e.id}" data-locale="fr">Compléter la traduction FR</button>`;
+          }else{
+            body=`<div class="migration-review-language-columns"><div><span>Contenu à importer</span><p>${esc(hv||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(p.scoreValue??p.score??'—')}</small>`:''}</div></div>`;
+          }
         }
       }else if(e.entity_type==='profile'){
         const dt=migrationTextDiff(clean(h.title),clean(st.title)),ds=migrationTextDiff(clean(h.summary),clean(st.summary)),dc=migrationTextDiff(clean(h.content),clean(st.content));
@@ -458,7 +468,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         const hv=clean(h.title||h.content),sv=clean(st.title||st.content),d=migrationTextDiff(hv,sv);
         body=`${migrationDiffLegend(d.changed)}<div class="migration-review-language-columns"><div><span>Historique</span><p class="migration-diff-text">${d.oldHtml}</p></div><div><span>Studio actuel</span><p class="migration-diff-text">${d.newHtml}</p></div></div>`;
       }
-      let status=newCatalogMode?'Disponible pour import':'Disponible';
+      let status=newCatalogMode?(frNeedsTranslation?'Traduction FR à compléter':'Disponible pour import'):'Disponible';
       if(!newCatalogMode&&missing)status=isDormant?'À récupérer · historique hors diffusion':'À récupérer : absente du Studio';
       else if(!newCatalogMode&&different)status=isDormant?'Version différente · historique hors diffusion':'À récupérer : version différente';
       else if(isDormant)status='Historique hors diffusion';
@@ -1102,9 +1112,18 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         if(!entity)return;
         const p=entity.source_payload||{},hist=p.translations?.[locale]||{},saved=draftsByKey.get(`${entity.id}:${locale}`)||{};
         const clean=v=>String(v||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim(),td=$('#migration-translation-dialog');
-        $('#migration-translation-title').textContent=`${p.title||hist.title||'Profil'} — ${locale.toUpperCase()}`;
-        $('#migration-translation-intro').textContent='Le français est affiché comme référence. Les champs historiques disponibles sont préremplis. « Enregistrer comme brouillon » conserve ton travail sans le considérer terminé ; « Valider la traduction » la marque comme complète et la retire du filtre des traductions à compléter.';
-        $('#migration-translation-body').innerHTML=`<div class="migration-translation-editor"><section><span>FR — référence</span><h3>${esc(p.title||p.translations?.fr?.title||'—')}</h3><label>Résumé</label><div class="migration-translation-reference">${esc(clean(p.summary)||'—')}</div><label>Texte détaillé</label><div class="migration-translation-reference">${esc(clean(p.content)||'—')}</div></section><section><span>${locale.toUpperCase()} — à compléter</span><label>Titre</label><input id="migration-translation-field-title" value="${esc(saved.title||hist.title||'')}"><label>Résumé</label><textarea id="migration-translation-field-summary" rows="5">${esc(saved.summary||hist.summary||'')}</textarea><label>Texte détaillé</label><textarea id="migration-translation-field-content" rows="10">${esc(saved.content||hist.content||'')}</textarea></section></div>`;
+        const isSimpleTranslation=['situation','answer','chapter'].includes(entity.entity_type);
+        const entityLabel=entity.entity_type==='situation'?'Situation':entity.entity_type==='answer'?'Réponse':entity.entity_type==='chapter'?'Chapitre':(p.title||hist.title||'Profil');
+        $('#migration-translation-title').textContent=`${entityLabel} — ${locale.toUpperCase()}`;
+        $('#migration-translation-intro').textContent=locale==='fr'?'Le texte anglais est affiché comme référence lorsqu’aucune vraie version française n’existe. Saisis ici la traduction française, puis valide-la pour la retirer des traductions à compléter.':'Le français est affiché comme référence. Les champs historiques disponibles sont préremplis. « Enregistrer comme brouillon » conserve ton travail sans le considérer terminé ; « Valider la traduction » la marque comme complète et la retire du filtre des traductions à compléter.';
+        if(isSimpleTranslation){
+          const english=clean(p.translations?.en?.content||p.translations?.en?.title||'');
+          const reference=locale==='fr'?(english||clean(p.content)||'—'):clean(p.translations?.fr?.content||p.content||p.translations?.fr?.title||p.title||'—');
+          const existing=saved.content||hist.content||saved.title||hist.title||'';
+          $('#migration-translation-body').innerHTML=`<div class="migration-translation-editor"><section><span>${locale==='fr'?'EN — texte de référence':'FR — référence'}</span><div class="migration-translation-reference">${esc(reference)}</div></section><section><span>${locale.toUpperCase()} — à compléter</span><label>${entity.entity_type==='chapter'?'Titre':'Texte'}</label><textarea id="migration-translation-field-content" rows="10">${esc(existing)}</textarea><input type="hidden" id="migration-translation-field-title" value=""><input type="hidden" id="migration-translation-field-summary" value=""></section></div>`;
+        }else{
+          $('#migration-translation-body').innerHTML=`<div class="migration-translation-editor"><section><span>FR — référence</span><h3>${esc(p.title||p.translations?.fr?.title||'—')}</h3><label>Résumé</label><div class="migration-translation-reference">${esc(clean(p.summary)||'—')}</div><label>Texte détaillé</label><div class="migration-translation-reference">${esc(clean(p.content)||'—')}</div></section><section><span>${locale.toUpperCase()} — à compléter</span><label>Titre</label><input id="migration-translation-field-title" value="${esc(saved.title||hist.title||'')}"><label>Résumé</label><textarea id="migration-translation-field-summary" rows="5">${esc(saved.summary||hist.summary||'')}</textarea><label>Texte détaillé</label><textarea id="migration-translation-field-content" rows="10">${esc(saved.content||hist.content||'')}</textarea></section></div>`;
+        }
         const stateEl=$('#migration-translation-state'),draftBtn=$('#migration-translation-draft'),validateBtn=$('#migration-translation-validate');
         const setTranslationState=(kind,message)=>{
           stateEl.className='migration-translation-state '+kind;
