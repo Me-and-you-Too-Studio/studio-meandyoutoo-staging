@@ -1402,12 +1402,14 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function inferredVideoMeta(video){
     const blob=normalizedVideoMeta([video?.title,video?.description,...(video?.admin_tags||[])].filter(Boolean).join(' '));
     let scope=String(video?.cultural_scope||video?.effective_cultural_scope||'').trim().toUpperCase();
+    if(scope==='INTERNATIONAL')scope='WORLDWIDE';
+    if(scope==='JAPON'||scope==='JAPAN')scope='ASIE';
     if(!scope){
       if(/\b(universel|universelle|universal|worldwide|monde)\b/.test(blob))scope='WORLDWIDE';
       else if(/\bfrance\b/.test(blob))scope='FRANCE';
       else if(/\b(asie|asia|asiatique)\b/.test(blob))scope='ASIE';
       else if(/\bmaghreb\b/.test(blob))scope='MAGHREB';
-      else if(/\binternational\b/.test(blob))scope='INTERNATIONAL';
+      else if(/\binternational\b/.test(blob))scope='WORLDWIDE';
     }
     let locale=String(video?.locale||video?.effective_locale||'').trim().toLowerCase().replaceAll('_','-');
     if(!locale){
@@ -1485,10 +1487,10 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           <label><span>Titre</span><input data-media-lib-title value="${esc(video?.title||'')}" placeholder="Ex. Stéréotypes de genre" required></label>
           <label><span>URL publique HB</span><input data-media-lib-url type="url" value="${esc(video?.source_url||'')}" placeholder="https://…" required><small>Cette URL reste côté admin/API et n’est pas affichée au client.</small></label>
           <label class="admin-media-library-description"><span>Description</span><textarea data-media-lib-description rows="3" placeholder="Ex. France en français">${esc(video?.description||'')}</textarea></label>
-          <label><span>Périmètre culturel</span><input data-media-lib-scope list="admin-media-scope-suggestions" value="${esc(video?.cultural_scope||video?.effective_cultural_scope||'')}" placeholder="WORLDWIDE, FRANCE, ASIE…"><small>Indépendant de la langue. Ex. WORLDWIDE, FRANCE, ASIE, MAGHREB, INTERNATIONAL.</small></label>
+          <label><span>Périmètre culturel</span><input data-media-lib-scope list="admin-media-scope-suggestions" value="${esc(video?.cultural_scope||video?.effective_cultural_scope||'')}" placeholder="WORLDWIDE, FRANCE, ASIE, MAGHREB"><small>Indépendant de la langue. INTERNATIONAL est normalisé en WORLDWIDE ; Japon relève du périmètre ASIE.</small></label>
           <label><span>Langue de cette vidéo</span><input data-media-lib-locale list="admin-media-locale-suggestions" value="${esc(video?.locale||video?.effective_locale||'')}" placeholder="fr, en, ja, ko-kr…"><small>Une seule langue par fichier vidéo.</small></label>
-          <datalist id="admin-media-scope-suggestions"><option value="WORLDWIDE"><option value="FRANCE"><option value="ASIE"><option value="MAGHREB"><option value="INTERNATIONAL"></datalist>
-          <datalist id="admin-media-locale-suggestions"><option value="fr"><option value="en"><option value="ar"><option value="de"><option value="es"><option value="it"><option value="ja"><option value="ko-kr"><option value="zh"><option value="pt"></datalist>
+          <datalist id="admin-media-scope-suggestions"><option value="WORLDWIDE"><option value="FRANCE"><option value="ASIE"><option value="MAGHREB"></datalist>
+          <datalist id="admin-media-locale-suggestions"><option value="fr"><option value="en"><option value="bg"><option value="br"><option value="de"><option value="es"><option value="it"><option value="ja"><option value="ko-kr"><option value="nl"><option value="nl-be"><option value="pl"><option value="pt"><option value="ro"><option value="ru"><option value="sv-se"><option value="tr"><option value="zf"><option value="zh"><option value="id"><option value="ar"></datalist>
         </div>
       </section>
 
@@ -1532,14 +1534,17 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       themeSelect.value=current;
     }
     const mediaMeta=state.mediaLibrary.map(v=>({video:v,meta:inferredVideoMeta(v)}));
-    const allScopes=[...new Set(mediaMeta.map(x=>String(x.meta.scope||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
+    const scopeReference=['WORLDWIDE','FRANCE','ASIE','MAGHREB'];
+    const allScopes=scopeReference;
     if(scopeSelect){
       const current=scopeSelect.value;
       scopeSelect.innerHTML='<option value="">Tous les périmètres</option>'+allScopes.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
       if(allScopes.includes(current))scopeSelect.value=current;
     }
-    const localeLabels={fr:'Français (FR)',en:'English (EN)',ar:'Arabe (AR)',de:'Deutsch (DE)',es:'Español (ES)',it:'Italiano (IT)',ja:'日本語 (JA)','ko-kr':'한국어 (KO-KR)',zf:'Chinois simplifié (ZF)',zh:'Chinois traditionnel (ZH)',pt:'Português (PT)',br:'Português Brésil (BR)',bg:'Български (BG)',nl:'Nederlands (NL)','nl-be':'Nederlands België (NL-BE)',pl:'Polski (PL)',ro:'Română (RO)',ru:'Русский (RU)','sv-se':'Svenska (SV-SE)',tr:'Türkçe (TR)'};
-    const allLocales=[...new Set(mediaMeta.map(x=>String(x.meta.locale||'').trim().toLowerCase()).filter(Boolean))].sort((a,b)=>(localeLabels[a]||a).localeCompare(localeLabels[b]||b,'fr'));
+    const localeLabels={fr:'Français (FR)',en:'Anglais (EN)',bg:'Bulgare (BG)',br:'Portugais Brésil (BR)',de:'Allemand (DE)',es:'Espagnol (ES)',it:'Italien (IT)',ja:'Japonais (JA)','ko-kr':'Coréen (KO-KR)',nl:'Néerlandais (NL)','nl-be':'Néerlandais Belgique (NL-BE)',pl:'Polonais (PL)',pt:'Portugais (PT)',ro:'Roumain (RO)',ru:'Russe (RU)','sv-se':'Suédois (SV-SE)',tr:'Turc (TR)',zf:'Chinois simplifié (ZF)',zh:'Chinois traditionnel (ZH)',id:'Indonésien (ID)',ar:'Arabe (AR)'};
+    const localeReference=['fr','en','bg','br','de','es','it','ja','ko-kr','nl','nl-be','pl','pt','ro','ru','sv-se','tr','zf','zh','id','ar'];
+    const detectedLocales=mediaMeta.map(x=>String(x.meta.locale||'').trim().toLowerCase()).filter(Boolean);
+    const allLocales=[...new Set([...localeReference,...detectedLocales])].sort((a,b)=>(localeLabels[a]||a).localeCompare(localeLabels[b]||b,'fr'));
     if(localeSelect){
       const current=localeSelect.value;
       localeSelect.innerHTML='<option value="">Toutes les langues</option>'+allLocales.map(v=>`<option value="${esc(v)}">${esc(localeLabels[v]||v.toUpperCase())}</option>`).join('');
