@@ -743,9 +743,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         </div>
 
         ${chapterHtml}
-        <section class="admin-library-note migration-review-final-step" id="migration-review-final-step" ${(n.pending>0||n.translations>0)?'hidden':''}>
+        <section class="admin-library-note migration-review-final-step" id="migration-review-final-step" ${(n.pending>0||(!newCatalogMode&&n.translations>0))?'hidden':''}>
           <strong>ÉTAPE 3 SUR 3 · TEST D’INTÉGRATION STAGING</strong>
-          <span>Toutes les décisions sont enregistrées. Le bouton principal en bas de la fenêtre permet maintenant d’appliquer réellement ce lot dans le catalogue de staging. Studio créera un snapshot permettant d’annuler ensuite toutes les modifications et créations du test.</span>
+          <span>Toutes les décisions métier sont enregistrées. ${newCatalogMode&&n.translations>0?`${n.translations} traduction${n.translations>1?'s':''} FR reste${n.translations>1?'nt':''} à compléter, mais cela ne bloque pas le test staging. `:''}Le bouton principal en bas de la fenêtre permet maintenant d’appliquer ce lot dans le catalogue de staging. Studio créera un snapshot permettant d’annuler ensuite toutes les modifications et créations du test.</span>
         </section>`;
 
       const filterButtons=$$('[data-review-filter]');
@@ -969,7 +969,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         const title=root.querySelector('.migration-review-welcome h3');
         if(title)title.textContent=newCatalogMode?'Nouvelle thématique · validation globale du référentiel':counts.pending?`${counts.pending} décision${counts.pending>1?'s':''} réellement à prendre`:counts.translations?`Toutes les décisions sont prises · ${counts.translations} traduction${counts.translations>1?'s':''} à compléter`:'Toutes les décisions métier sont enregistrées';
         const finalStep=root.querySelector('#migration-review-final-step');
-        if(finalStep)finalStep.hidden=counts.pending>0||counts.translations>0;
+        if(finalStep)finalStep.hidden=counts.pending>0||(!newCatalogMode&&counts.translations>0);
         return counts;
       }
       function refreshDecisionHistory(){
@@ -979,19 +979,25 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       }
       function isReviewReadyForTest(){
         const counts=liveReviewCounts();
-        return dirty.size===0&&counts.pending===0&&counts.translations===0;
+        return dirty.size===0&&counts.pending===0&&(newCatalogMode||counts.translations===0);
       }
       function updateSaveUi(message=''){
         const count=dirty.size;
         const ready=isReviewReadyForTest();
         if(saveBtn){
           saveBtn.dataset.mode=ready?'apply-test':'save';
-          saveBtn.textContent=ready?'Appliquer le test dans le catalogue staging':'Enregistrer mes décisions';
+          saveBtn.textContent=ready?'Tester l’intégration dans staging':'Enregistrer mes décisions';
           saveBtn.disabled=ready?false:!count;
         }
         if(!saveState)return;
         if(message){saveState.textContent=message;return;}
-        if(ready){saveState.textContent='Toutes les décisions sont enregistrées. Le test staging est prêt à être appliqué.';return;}
+        if(ready){
+          const counts=liveReviewCounts();
+          saveState.textContent=newCatalogMode&&counts.translations>0
+            ? `Toutes les décisions métier sont enregistrées. ${counts.translations} traduction${counts.translations>1?'s':''} reste${counts.translations>1?'nt':''} à compléter sans bloquer le test staging.`
+            : 'Toutes les décisions sont enregistrées. Le test staging est prêt à être appliqué.';
+          return;
+        }
         saveState.textContent=count?`${count} décision${count>1?'s':''} à enregistrer`:'Aucune modification en attente';
       }
       function syncDecisionControlsFromData(){
@@ -1110,8 +1116,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         const counts=liveReviewCounts();
         if(dirty.size){updateSaveUi('Enregistre d’abord les décisions en attente avant l’intégration de test.');return;}
         if(counts.pending>0){updateSaveUi(`${counts.pending} décision${counts.pending>1?'s':''} reste${counts.pending>1?'nt':''} à prendre.`);return;}
-        if(counts.translations>0){updateSaveUi(`${counts.translations} traduction${counts.translations>1?'s':''} active${counts.translations>1?'s':''} reste${counts.translations>1?'nt':''} à compléter.`);return;}
-        const ok=await StudioModal.confirm({type:'danger',eyebrow:'ÉTAPE 3 SUR 3 · TEST STAGING',title:'Appliquer réellement ces décisions dans le catalogue de staging ?',message:'Cette action modifie le catalogue STAGING pour te permettre de tester le parcours complet. Avant chaque modification, Studio crée un snapshot. Tu pourras ensuite utiliser « Annuler le test » pour restaurer les anciennes valeurs et supprimer tout ce que ce lot a créé. Ne jamais activer cette fonction en production.',cancelLabel:'Rester en revue',confirmLabel:'Appliquer le test'});
+        if(counts.translations>0&&!newCatalogMode){updateSaveUi(`${counts.translations} traduction${counts.translations>1?'s':''} active${counts.translations>1?'s':''} reste${counts.translations>1?'nt':''} à compléter.`);return;}
+        const ok=await StudioModal.confirm({type:'danger',eyebrow:'ÉTAPE 3 SUR 3 · TEST STAGING',title:'Appliquer réellement ces décisions dans le catalogue de staging ?',message:`Cette action modifie le catalogue STAGING pour te permettre de tester le parcours complet.${newCatalogMode&&counts.translations>0?` ${counts.translations} traduction${counts.translations>1?'s':''} FR reste${counts.translations>1?'nt':''} à compléter ; elles restent signalées et pourront être travaillées ensuite.`:''} Avant chaque modification, Studio crée un snapshot. Tu pourras ensuite utiliser « Annuler le test » pour restaurer les anciennes valeurs et supprimer tout ce que ce lot a créé. Ne jamais activer cette fonction en production.`,cancelLabel:'Rester en revue',confirmLabel:'Appliquer le test'});
         if(!ok)return;
         if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Application en cours…';}
         try{
