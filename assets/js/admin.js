@@ -1562,8 +1562,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const generic=libraryGenericTranslations(entity);
     const declared=Array.isArray(entity?.available_locales)?entity.available_locales:[];
     const locales=[...new Set(['fr',...declared,...generic.map(t=>String(t.locale||'').toLowerCase()).filter(Boolean)].map(x=>String(x).toLowerCase()))];
-    const countryCodes=[...new Set([...(entity?.cultural_legal_scope?[String(entity.cultural_legal_scope)]:[]),...libraryCountryVariants(entity).map(t=>String(t.country_code||'').trim()).filter(Boolean)])];
-    return `<span class="admin-library-localization-badges"><span class="admin-library-localization-chip is-language">Langues disponibles : ${locales.map(libraryLocaleLabel).join(' · ')}</span>${countryCodes.map(c=>`<span class="admin-library-localization-chip is-country">Périmètre culturel et légal : ${esc(libraryCountryLabel(c))}</span>`).join('')}</span>`;
+    const worldwide=String(entity?.country_scope||entity?.cultural_legal_scope||'').toLowerCase()==='worldwide';
+    const countryCodes=worldwide?[]:[...new Set([...(entity?.cultural_legal_scope?[String(entity.cultural_legal_scope)]:[]),...(Array.isArray(entity?.chapter_country_codes)?entity.chapter_country_codes:[]),...libraryCountryVariants(entity).map(t=>String(t.country_code||'').trim()).filter(Boolean)])];
+    return `<span class="admin-library-localization-badges"><span class="admin-library-localization-chip is-language">Langues disponibles : ${locales.map(libraryLocaleLabel).join(' · ')}</span>${worldwide?'<span class="admin-library-localization-chip is-country">Périmètre culturel : 🌍 Tous pays · WORLDWIDE</span>':countryCodes.map(c=>`<span class="admin-library-localization-chip is-country">Périmètre culturel : ${esc(libraryCountryLabel(c))}</span>`).join('')}</span>`;
   }
   const libraryCountryLocalesMap={
     US:['en'], CA:['en'], FR:['fr'], DE:['de','en'], AT:['de','en'], BR:['br','en'],
@@ -1580,8 +1581,12 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     return allowed;
   }
   function libraryFilteredTranslations(entity,countryCodes=[]){
-    const allowed=libraryAllowedLocalesForCountries(countryCodes);
-    return libraryTranslationRows(entity).filter(row=>{
+    const rows=libraryTranslationRows(entity);
+    const worldwide=String(entity?.country_scope||entity?.cultural_legal_scope||'').toLowerCase()==='worldwide';
+    if(worldwide)return rows;
+    const effectiveCountries=(Array.isArray(countryCodes)&&countryCodes.length)?countryCodes:(Array.isArray(entity?.chapter_country_codes)?entity.chapter_country_codes:[]);
+    const allowed=libraryAllowedLocalesForCountries(effectiveCountries);
+    return rows.filter(row=>{
       const locale=String(row.locale||'').toLowerCase();
       return allowed.has(locale);
     });
