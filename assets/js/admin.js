@@ -1541,7 +1541,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       scopeSelect.innerHTML='<option value="">Tous les périmètres</option>'+allScopes.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
       if(allScopes.includes(current))scopeSelect.value=current;
     }
-    const localeLabels={fr:'Français (FR)',en:'Anglais (EN)',bg:'Bulgare (BG)',br:'Portugais Brésil (BR)',de:'Allemand (DE)',es:'Espagnol (ES)',it:'Italien (IT)',ja:'Japonais (JA)','ko-kr':'Coréen (KO-KR)',nl:'Néerlandais (NL)','nl-be':'Néerlandais Belgique (NL-BE)',pl:'Polonais (PL)',pt:'Portugais (PT)',ro:'Roumain (RO)',ru:'Russe (RU)','sv-se':'Suédois (SV-SE)',tr:'Turc (TR)',zf:'Chinois simplifié (ZF)',zh:'Chinois traditionnel (ZH)',id:'Indonésien (ID)',ar:'Arabe (AR)'};
+    const localeLabels={fr:'Français (FR)',en:'Anglais (EN)',bg:'Bulgare (BG)',br:'Portugais Brésil (BR)',de:'Allemand (DE)',es:'Espagnol (ES)',it:'Italien (IT)',ja:'Japonais (JA)','ko-kr':'Coréen (KO-KR)',nl:'Néerlandais (NL)','nl-be':'Néerlandais Belgique (NL-BE)',pl:'Polonais (PL)',pt:'Portugais (PT)',ro:'Roumain (RO)',ru:'Russe (RU)','sv-se':'Suédois (SV-SE)',tr:'Turc (TR)',zf:'Chinois simplifié (ZF)',zh:'Chinois traditionnel (ZH)',cs:'Tchèque (CS)',id:'Indonésien (ID)',ar:'Arabe (AR)'};
     const localeReference=['fr','en','bg','br','de','es','it','ja','ko-kr','nl','nl-be','pl','pt','ro','ru','sv-se','tr','zf','zh','id','ar'];
     const detectedLocales=mediaMeta.map(x=>String(x.meta.locale||'').trim().toLowerCase()).filter(Boolean);
     const allLocales=[...new Set([...localeReference,...detectedLocales])].sort((a,b)=>(localeLabels[a]||a).localeCompare(localeLabels[b]||b,'fr'));
