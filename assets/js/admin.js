@@ -475,7 +475,12 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
 
   function migrationReviewLanguageHtml(e,context={}){
     const p=e.source_payload||{},c=e.comparison||{},target=c.targetPayload||{},active=new Set((p.activeLocales||[]).map(x=>String(x).toLowerCase())),dormant=new Set((p.dormantLocales||[]).map(x=>String(x).toLowerCase())),newCatalogMode=context.newCatalogMode===true;
-    const baseLocales=['situation','answer'].includes(e.entity_type)?migrationVisibleLocales(e,context):[...new Set(['fr',...Object.keys(p.translations||{}),...Object.keys(target.translations||{}),...(p.activeLocales||[]),...(p.dormantLocales||[])])];
+    const isNewContent=c.status==='new'&&!c.targetEntityId&&!e.target_entity_id;
+    const importOnlyMode=newCatalogMode||isNewContent;
+    const activeOnly=[...new Set(['fr',...(p.activeLocales||[])].map(x=>String(x||'').toLowerCase()).filter(Boolean))];
+    const baseLocales=importOnlyMode
+      ? (['situation','answer'].includes(e.entity_type)?migrationVisibleLocales(e,context):activeOnly)
+      : (['situation','answer'].includes(e.entity_type)?migrationVisibleLocales(e,context):[...new Set(['fr',...Object.keys(p.translations||{}),...Object.keys(target.translations||{}),...(p.activeLocales||[]),...(p.dormantLocales||[])])]);
     const locales=[...new Set(baseLocales.map(x=>String(x||'').toLowerCase()).filter(Boolean))].sort((a,b)=>a==='fr'?-1:b==='fr'?1:a.localeCompare(b,'fr'));
     if(!locales.length)return'';
     const diffs=new Set(migrationLanguageDifferences(c));
@@ -502,7 +507,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const frRaw=loc==='fr'&&['situation','answer'].includes(e.entity_type)?migrationTranslationText(p,'fr'):'';
       const frNeedsTranslation=loc==='fr'&&['situation','answer'].includes(e.entity_type)&&(!frRaw||migrationIsTechnicalCountryLabel(frRaw));
       let body='';
-      if(newCatalogMode){
+      if(importOnlyMode){
         if(e.entity_type==='profile'){
           body=`<div class="migration-review-language-columns"><div><span>Contenu à importer</span><p><b>${esc(clean(h.title)||'—')}</b></p><p>${esc(clean(h.summary)||'—')}</p><p>${esc(clean(h.content)||'—')}</p>${loc==='fr'?`<small>Score ${esc(p.scoringRangeMin??p.scoring_min??'—')} → ${esc(p.scoringRangeMax??p.scoring_max??'—')}</small>`:''}</div></div>`;
         }else if(e.entity_type==='theme'){
@@ -556,7 +561,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const title=isProfile?clean(p.title||p.raw?.title)||`Profil #${e.legacy_id}`:isTheme?'Introduction du diagnostic':clean(displaySituation||p.content||p.title||p.label)||`${reviewTypeLabel(e.entity_type)} #${e.legacy_id}`;
     const exact=c.status==='exact_match',variant=c.status==='possible_variant',status=exact?'existing':variant?'variant':'new';
     let compare='';
-    if(!newCatalogMode&&!compact&&c.targetEntityId&&['theme','situation','answer','profile'].includes(e.entity_type)){
+    const isNewContent=c.status==='new'&&!c.targetEntityId&&!e.target_entity_id;
+    if(!newCatalogMode&&!isNewContent&&!compact&&c.targetEntityId&&['theme','situation','answer','profile'].includes(e.entity_type)){
       if(isTheme){
         const histIntro=clean(p.introduction||p.translations?.fr?.introduction||p.translations?.fr?.content),studioIntro=clean(cur.introduction_html),diff=migrationTextDiff(histIntro,studioIntro);
         compare=`${migrationDifferencesHtml(c)}${migrationDiffLegend(diff.changed)}<div class="migration-review-compare"><div><span>INTRODUCTION HISTORIQUE</span><p class="migration-diff-text">${diff.oldHtml}</p></div><div><span>INTRODUCTION STUDIO ACTUELLE</span><p class="migration-diff-text">${diff.newHtml}</p></div></div>`;
@@ -572,9 +578,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const decision=e.review_status||(exact?'keep_current':'pending'),missing=activeTranslationMissing(e,context),answerContext=!newCatalogMode&&e.entity_type==='answer'&&Array.isArray(c.currentSiblingAnswers)&&c.currentSiblingAnswers.length?`<div class="migration-review-answer-context"><span>Réponses actuellement rattachées à cette situation dans Studio</span><ul>${c.currentSiblingAnswers.map(a=>`<li>${esc(a.content||'—')} <b>— score ${esc(a.score??'—')}</b></li>`).join('')}</ul></div>`:'';
     const languageDiff=migrationLanguageDifferences(c).length>0;
     const countryHtml=migrationReviewCountryHtml(e);
-    const statusBadge=newCatalogMode?`<span class="migration-review-status new">À importer</span>`:`<span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>${migrationLanguageDiffBadge(c)}`;
+    const statusBadge=(newCatalogMode||isNewContent)?`<span class="migration-review-status new">À importer</span>`:`<span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>${migrationLanguageDiffBadge(c)}`;
     const decisionHtml=newCatalogMode?`<div class="migration-review-decision"><div class="migration-review-decision-current"><strong>Décision globale</strong><span>Inclus dans le nouveau catalogue de référence</span></div></div>`:`<div class="migration-review-decision"><div class="migration-review-decision-control"><select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision,e.entity_type)}</select><button type="button" class="migration-review-decision-help" data-decision-help aria-label="Aide sur les décisions">?</button></div>${reviewDecisionHelpHtml(decision,e.entity_type)}</div>`;
-    return `<article class="migration-review-row" data-review-card data-cmp="${status}" data-pending="${newCatalogMode?'0':decision==='pending'?'1':'0'}" data-translations="${missing?'1':'0'}" data-language-recover="${languageDiff?'1':'0'}"><div class="migration-review-main"><div class="migration-review-heading"><span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}${isProfile&&p.position!=null?' '+esc(p.position):''}</span>${statusBadge}${missing?`<span class="migration-review-translation-warning">Traduction à compléter</span>`:''}${isTheme?'':`<span class="migration-review-context-note">Contexte parent</span>`}</div><strong>${esc(title)}</strong><small>Ancien ID ${esc(e.legacy_id)}</small>${countryHtml}${compare}${migrationReviewLanguageHtml(e,context)}${answerContext}${translationReviewHtml(e,context)}</div>${decisionHtml}</article>`;
+    return `<article class="migration-review-row" data-review-card data-cmp="${status}" data-pending="${newCatalogMode?'0':decision==='pending'?'1':'0'}" data-translations="${missing?'1':'0'}" data-language-recover="${languageDiff?'1':'0'}"><div class="migration-review-main"><div class="migration-review-heading"><span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}${isProfile&&p.position!=null?' '+esc(p.position):''}</span>${statusBadge}${missing?`<span class="migration-review-translation-warning">Traduction à compléter</span>`:''}${isTheme||e.entity_type==='chapter'?'':`<span class="migration-review-context-note">Contexte parent</span>`}</div><strong>${esc(title)}</strong><small>Ancien ID ${esc(e.legacy_id)}</small>${countryHtml}${compare}${migrationReviewLanguageHtml(e,context)}${answerContext}${translationReviewHtml(e,context)}</div>${decisionHtml}</article>`;
   }
 
 
