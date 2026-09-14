@@ -1,5 +1,6 @@
 (()=>{
 const previewSource=new URLSearchParams(location.search).get('source')||'live';
+const previewLocale=String(new URLSearchParams(location.search).get('lang')||document.documentElement.lang||'fr').toLowerCase().replaceAll('_','-');
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=h=>{let x=document.createElement('div');x.innerHTML=String(h||'').replace(/<\s*br\s*\/?\s*>/gi,'\n').replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi,'</$1>\n\n');return(x.textContent||'').replace(/\u00a0/g,' ').replace(/[ \t]+\n/g,'\n').replace(/\n[ \t]+/g,'\n').replace(/\n{3,}/g,'\n\n').trim()},q=new URLSearchParams(location.search),pid=q.get('projectId'),theme=q.get('theme')||'',mode=q.get('mode')||(pid?'project':'catalog'),root=$('#rp');
 let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[];
 
@@ -27,7 +28,7 @@ function fallbackSocio(){return [{key:'gender',label:'Vous êtes :',options:[{la
 function normalizeProfile(p){return {...p,title:p.title||p.titre||'Profil',summary:clean(p.summary||p.resume||p.phrase||''),content:clean(p.content||p.description||p.desc||''),scoring_min:num(p.scoring_min??p.min,0),scoring_max:num(p.scoring_max??p.max,0),top_score:num(p.top_score,0)}}
 function normalizeAnswer(a,i){return typeof a==='object'?{...a,label:a.text||a.content||a.label||`Réponse ${i+1}`,score:num(a.score,0)}:{label:String(a),score:0}}
 function normalizeResources(list){return (Array.isArray(list)?list:[]).map((r,i)=>({title:String(r?.title||r?.titre||r?.label||r?.text||`Ressource ${i+1}`).trim(),url:String(r?.url||r?.href||r?.link||'').trim()})).filter(r=>r.title&&/^https?:\/\//i.test(r.url))}
-function normalizeMedia(list){return (Array.isArray(list)?list:[]).map(m=>({id:m.id,title:String(m.title||'Vidéo'),placement:m.placement,profile_position:m.profile_position===null||m.profile_position===undefined?null:Number(m.profile_position),playback_path:String(m.playback_path||'')})).filter(m=>m.id&&m.playback_path)}
+function normalizeMedia(list){const rows=(Array.isArray(list)?list:[]).map(m=>({id:m.id,title:String(m.title||'Vidéo'),placement:m.placement,profile_position:m.profile_position===null||m.profile_position===undefined?null:Number(m.profile_position),locale:String(m.locale||'').toLowerCase().replaceAll('_','-'),playback_path:String(m.playback_path||'')})).filter(m=>m.id&&m.playback_path);const exact=rows.filter(m=>m.locale===previewLocale);return exact.length?exact:(previewLocale==='fr'?rows.filter(m=>!m.locale):[])}
 function norm(x){
   let pr=x.project||{},live=mode==='project'&&previewSource!=='saved'?JSON.parse(sessionStorage.getItem('meayt_preview')||'null'):null;
   const sourceSocio=Array.isArray(pr.sociodemo)&&pr.sociodemo.length?pr.sociodemo:(Array.isArray(x.theme?.sociodemo_default)?x.theme.sociodemo_default:[]);

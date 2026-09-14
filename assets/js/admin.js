@@ -1400,7 +1400,11 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   }
   function mediaLibraryOptions(selectedId=''){
     const active=state.mediaLibrary.filter(v=>v.active!==false||String(v.id)===String(selectedId));
-    return '<option value="">Aucune vidéo</option>'+active.map(v=>`<option value="${v.id}" ${String(v.id)===String(selectedId)?'selected':''}>${esc(v.title)}</option>`).join('');
+    return '<option value="">Aucune vidéo</option>'+active.map(v=>{
+      const tags=[...(v.theme_keys||[]).map(key=>state.mediaThemes.find(t=>t.key===key)?.title||key),...(v.admin_tags||[])].filter(Boolean);
+      const suffix=tags.length?' — '+tags.join(' · '):'';
+      return `<option value="${v.id}" ${String(v.id)===String(selectedId)?'selected':''}>${esc(v.title+suffix)}</option>`;
+    }).join('');
   }
   function mediaLibraryForm(video=null){
     const selectedThemes=new Set((video?.theme_keys||[]).map(String));
@@ -1697,8 +1701,13 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function answerInlineRow(answer={},index=0,readonly=false,countryCodes=[]){return `<div class="admin-library-answer-row"><span class="admin-library-answer-number">${Number(index)+1}</span><label class="admin-library-answer-content"><span>Réponse</span><input data-answer-content placeholder="Texte de la réponse" value="${esc(answer.content||'')}" required ${readonly?'disabled':''}></label><label class="admin-library-answer-score"><span>Score</span><input data-answer-score type="number" step="0.01" value="${answer.score??''}" required ${readonly?'disabled':''}></label><label class="admin-library-best-answer" title="Réponse attendue / la plus inclusive"><input data-answer-best type="checkbox" ${answer.is_best?'checked':''} ${readonly?'disabled':''}><span>Meilleure réponse</span></label>${readonly?'':`<button type="button" class="admin-library-answer-remove" data-remove-inline-answer aria-label="Supprimer la réponse">×</button>`}<div class="admin-library-answer-localization">${libraryFilteredTranslations(answer,countryCodes).length?`<details><summary>Voir les langues disponibles</summary>${libraryLocalizationDetails(answer,'answer',countryCodes)}</details>`:''}</div></div>`;}
   function profileInlineRow(ch,profile={},index=0){
     const profileMedia=(ch.media||[]).filter(m=>m.placement==='profile_result');
-    const commonMedia=profileMedia.find(m=>m.profile_position===null||m.profile_position===undefined)||profileMedia[0]||null;
-    const effectiveMedia=commonMedia;
+    const chapterLocales=[...new Set((Array.isArray(ch.available_locales)&&ch.available_locales.length?ch.available_locales:['fr']).map(x=>String(x||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
+    const mediaForLocale=locale=>profileMedia.find(m=>String(m.locale||'').toLowerCase()===locale)||(locale==='fr'?profileMedia.find(m=>!m.locale):null)||null;
+    const effectiveMedia=mediaForLocale('fr')||profileMedia[0]||null;
+    const videoLanguageRows=chapterLocales.map(locale=>{
+      const current=mediaForLocale(locale);
+      return `<label class="admin-library-video-select admin-profile-video-select"><span>${esc(locale.toUpperCase())}</span><select data-profile-video-library data-profile-video-locale="${esc(locale)}">${mediaLibraryOptions(current?.video_id||'')}</select></label>`;
+    }).join('');
     const color=esc(profile.color||'#dce6ec');
     return `<article class="admin-library-profile-inline-card admin-profile-card-v2"><details><summary>
       <div class="admin-library-profile-summary">
@@ -1765,8 +1774,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           <div><h4>Vidéo de restitution <span class="admin-library-optional">facultatif</span></h4><p>Une vidéo choisie ici est automatiquement appliquée aux trois profils de ce chapitre.</p></div>
         </div>
         <input type="hidden" data-profile-video-id value="${effectiveMedia?.id||''}">
-        <label class="admin-library-video-select admin-profile-video-select"><span>Vidéo associée</span><select data-profile-video-library>${mediaLibraryOptions(effectiveMedia?.video_id||'')}</select></label>
-        ${effectiveMedia?`<span class="admin-library-video-present">🎬 ${esc(effectiveMedia.title)} · appliquée aux 3 profils</span>`:'<small class="admin-library-video-help">Aucune vidéo associée à ce chapitre.</small>'}
+        <div class="admin-profile-video-language-grid">${videoLanguageRows}</div>
+        <small class="admin-library-video-help">Facultatif : choisissez une vidéo uniquement pour les langues où ce chapitre en possède une. Les tags de la médiathèque sont affichés dans la liste pour identifier la bonne version. Le choix est appliqué aux 3 profils.</small>
       </section>
 
     </div></details></article>`;
@@ -1855,19 +1864,21 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function bindProfileVideoSync(form){
     const selects=[...form.querySelectorAll('[data-profile-video-library]')];
     selects.forEach(select=>select.onchange=()=>{
+      const locale=String(select.dataset.profileVideoLocale||'fr');
       const value=select.value;
-      selects.forEach(other=>other.value=value);
-      form.querySelectorAll('.admin-library-video-present').forEach(el=>el.remove());
-      form.querySelectorAll('.admin-library-video-help').forEach(el=>{
-        el.textContent=value?'Cette vidéo sera affichée quel que soit le profil obtenu.':'Aucune vidéo associée à ce chapitre.';
-      });
+      selects.filter(other=>String(other.dataset.profileVideoLocale||'fr')===locale).forEach(other=>other.value=value);
     });
   }
   async function syncChapterProfileVideo(chapterId,form){
-    const videoId=form.querySelector('[data-profile-video-library]')?.value||'';
+    const byLocale=new Map();
+    [...form.querySelectorAll('[data-profile-video-library]')].forEach(select=>{
+      const locale=String(select.dataset.profileVideoLocale||'fr').toLowerCase();
+      if(!byLocale.has(locale))byLocale.set(locale,select.value||'');
+    });
+    const videos=[...byLocale.entries()].map(([locale,videoId])=>({locale,videoId:videoId||null}));
     await StudioAPI.request('/api/admin/catalog/chapters/'+chapterId+'/profile-video',{
       method:'PUT',
-      body:JSON.stringify({videoId:videoId||null})
+      body:JSON.stringify({videos})
     });
   }
   async function refreshLibrary(){state.catalogLoaded=false;await loadLibraryAdmin();}
