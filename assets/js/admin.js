@@ -1226,6 +1226,51 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       syncDecisionControlsFromData();
       refreshDecisionHistory();
       updateSaveUi();
+
+      // Repair batches saved with the former regression: if the alternative chapter
+      // itself was already accepted but its descendants stayed pending, the parent
+      // decision is authoritative and must be propagated to the complete tree.
+      (async()=>{
+        const alternatives=businessEntities.filter(ch=>
+          ch.entity_type==='chapter'&&
+          ch.source_payload?.choiceGroup&&
+          !ch.target_entity_id&&
+          ch.review_status==='use_legacy'
+        );
+        let repaired=false;
+        for(const chapter of alternatives){
+          const chapterLegacy=String(chapter.legacy_id||'');
+          const direct=businessEntities.filter(e=>String(e.legacy_parent_id||'')===chapterLegacy);
+          const situationIds=new Set(direct.filter(e=>e.entity_type==='situation').map(e=>String(e.legacy_id)));
+          const descendants=businessEntities.filter(e=>
+            e===chapter||
+            String(e.legacy_parent_id||'')===chapterLegacy||
+            (e.entity_type==='answer'&&situationIds.has(String(e.legacy_parent_id||'')))
+          );
+          if(!descendants.some(e=>e!==chapter&&e.review_status==='pending'))continue;
+          try{
+            const result=await StudioAPI.request(`/api/admin/migrations/${batchId}/review/${chapter.id}/use-legacy-tree`,{method:'POST',body:'{}'});
+            const updatedById=new Map((result?.entities||[]).map(e=>[String(e.id),e]));
+            descendants.forEach(entity=>{
+              const updated=updatedById.get(String(entity.id));
+              if(updated)Object.assign(entity,updated);
+              else entity.review_status='use_legacy';
+              dirty.delete(String(entity.id));
+            });
+            repaired=true;
+          }catch(error){
+            console.error('Impossible de propager la décision du chapitre alternatif',error);
+          }
+        }
+        if(repaired){
+          syncDecisionControlsFromData();
+          refreshDecisionHistory();
+          const counts=refreshReviewCounters();
+          applyReviewFilter(root.dataset.activeFilter||(counts.pending?'pending':'all'));
+          updateSaveUi(counts.pending?`✓ Décision du chapitre alternatif propagée. ${counts.pending} décision${counts.pending>1?'s':''} reste${counts.pending>1?'nt':''} à prendre.`:'✓ Chapitre alternatif enregistré comme une seule décision. Toutes ses situations, réponses et profils sont intégrés avec lui.');
+        }
+      })();
+
       async function applyMigrationTest(){
         const counts=liveReviewCounts();
         if(dirty.size){updateSaveUi('Enregistre d’abord les décisions en attente avant l’intégration de test.');return;}
