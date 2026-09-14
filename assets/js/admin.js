@@ -134,7 +134,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function migrationRecoveryLocales(entities=[]){return [...new Set(entities.flatMap(x=>migrationLanguageDiffLocales(x.comparison)).map(x=>String(x||'').toLowerCase()).filter(Boolean))].sort();}
   function migrationTranslations(payload){const all=Object.keys(payload?.translations||{}).map(x=>String(x).toLowerCase()).filter(Boolean);const active=(payload?.activeLocales||[]).map(x=>String(x).toLowerCase()).filter(Boolean);const selected=active.length?active.filter(x=>all.includes(x)):all;return [...new Set(selected)].sort((a,b)=>a.localeCompare(b,'fr'));}
   function migrationDormantTranslations(payload){const all=Object.keys(payload?.translations||{}).map(x=>String(x).toLowerCase()).filter(Boolean);const active=new Set((payload?.activeLocales||[]).map(x=>String(x).toLowerCase()).filter(Boolean));return [...new Set(all.filter(x=>!active.has(x)))].sort((a,b)=>a.localeCompare(b,'fr'));}
-  function migrationLanguageLabel(locale){const l=String(locale||'').toLowerCase();return({fr:'Français',en:'English',es:'Español',de:'Deutsch',it:'Italiano',pt:'Português',ar:'العربية',ja:'日本語','ko-kr':'한국어',zh:'中文',pl:'Polski',ru:'Русский',tr:'Türkçe'})[l]||String(locale||'').toUpperCase();}
+  function migrationLanguageLabel(locale){const l=String(locale||'').toLowerCase();return({fr:'Français',en:'English',es:'Español',de:'Deutsch',it:'Italiano',pt:'Português',br:'Português (Brésil)',bg:'Български',ar:'العربية',ja:'日本語','ko-kr':'한국어',zh:'中文',zf:'中文繁體',nl:'Nederlands','nl-be':'Nederlands (BE)',pl:'Polski',ro:'Română',ru:'Русский','sv-se':'Svenska',tr:'Türkçe'})[l]||String(locale||'').toUpperCase();}
   function migrationPlainText(value){const box=document.createElement('div');box.innerHTML=String(value||'');return (box.textContent||box.innerText||'').replace(/\s+/g,' ').trim();}
   function migrationDiffTokens(value){return migrationPlainText(value).match(/\s+|[^\s]+/gu)||[];}
   function migrationDiffTokenKey(token){return /^\s+$/u.test(token)?' ':String(token).toLocaleLowerCase('fr').replace(/[’]/g,"'");}
@@ -550,13 +550,15 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const availableMigrationLocales=[...new Set(businessEntities.flatMap(e=>{
         const p=e.source_payload||{};
         return [...Object.keys(p.translations||{}),...(p.activeLocales||[]),...(p.dormantLocales||[])];
-      }).map(x=>String(x||'').toLowerCase()).filter(x=>['fr','en','es'].includes(x)))];
+      }).map(x=>String(x||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))]
+        .sort((a,b)=>a==='fr'?-1:b==='fr'?1:a.localeCompare(b,'fr'));
       const hasExplicitLanguageChoice=migrationBatch.summary?.migrationLanguageSelectionExplicit===true;
       const savedMigrationLocales=(hasExplicitLanguageChoice&&Array.isArray(migrationBatch.summary?.migrationLanguageSelection))
         ? migrationBatch.summary.migrationLanguageSelection.map(x=>String(x||'').toLowerCase())
         : ['fr'];
       const selectedMigrationLocales=new Set(savedMigrationLocales);
       selectedMigrationLocales.add('fr');
+      const newCatalogMode=Boolean(themeEntity && !themeEntity.target_entity_id && themeEntity.source_payload?.catalogCreateIfMissing===true);
 
       const chapterHtml=chapters.map(ch=>{
         const direct=children.get(String(ch.legacy_id))||[];
@@ -595,8 +597,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           <div class="migration-review-welcome-head">
             <div>
               <span class="migration-review-step-label">ÉTAPE 2 SUR 3 · REVUE HUMAINE</span>
-              <h3>${n.pending} décision${n.pending>1?'s':''} réellement à prendre</h3>
-              <p>Studio a déjà rapproché automatiquement l’historique du catalogue actuel. Commence par les différences : tu n’as pas à relire tout le diagnostic.</p>
+              <h3>${newCatalogMode?'Nouvelle thématique · validation globale du référentiel':`${n.pending} décision${n.pending>1?'s':''} réellement à prendre`}</h3>
+              <p>${newCatalogMode?'Aucune référence Studio n’existe encore pour cette thématique. Contrôle le contenu puis valide le lot en une seule fois comme nouveau catalogue de référence Me&YouToo.':"Studio a déjà rapproché automatiquement l’historique du catalogue actuel. Commence par les différences : tu n’as pas à relire tout le diagnostic."}</p>
             </div>
           </div>
           <div class="migration-review-steps">
@@ -606,14 +608,23 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           </div>
         </section>
 
+        ${newCatalogMode?`<section class="migration-review-global-decision">
+          <div>
+            <strong>Nouvelle thématique — aucun catalogue Studio existant</strong>
+            <span>Les ${businessEntities.length} éléments métier de ce lot peuvent être définis en une seule fois comme référence du nouveau catalogue. La revue reste disponible pour contrôler chapitres, pays, réponses, scores, profils et traductions avant le test staging.</span>
+          </div>
+          <button type="button" class="button button-primary" id="migration-use-legacy-all">Importer tout ce lot comme nouvelle référence Me&YouToo</button>
+        </section>`:''}
+
         <section class="migration-review-global-languages">
           <div class="migration-review-global-languages-head">
-            <div><strong>Langues à intégrer au catalogue</strong><span>Choix global pour tout le diagnostic. Les onglets FR / EN / ES dans les contenus servent uniquement à contrôler les traductions.</span></div>
+            <div><strong>Langues à intégrer au catalogue</strong><span>Choix global pour tout le diagnostic. Les langues proposées viennent directement du survey historique ; les onglets des contenus servent uniquement à contrôler les traductions.</span></div>
           </div>
           <div class="migration-review-global-language-options">
-            <label class="is-required"><input type="checkbox" checked disabled> <span><b>Français (FR)</b><small>Langue de référence · obligatoire</small></span></label>
-            ${availableMigrationLocales.includes('en')?`<label><input type="checkbox" data-migration-global-locale="en" ${selectedMigrationLocales.has('en')?'checked':''}> <span><b>Anglais (EN)</b><small>Traduction historique disponible · active dans le survey #44</small></span></label>`:''}
-            ${availableMigrationLocales.includes('es')?`<label><input type="checkbox" data-migration-global-locale="es" ${selectedMigrationLocales.has('es')?'checked':''}> <span><b>Espagnol (ES)</b><small>Traduction historique disponible · hors diffusion dans le survey #44</small></span></label>`:''}
+            ${availableMigrationLocales.map(loc=>loc==='fr'
+              ? `<label class="is-required"><input type="checkbox" checked disabled> <span><b>${esc(migrationLanguageLabel(loc))} (${esc(loc.toUpperCase())})</b><small>Langue de gestion/référence · obligatoire</small></span></label>`
+              : `<label><input type="checkbox" data-migration-global-locale="${esc(loc)}" ${selectedMigrationLocales.has(loc)?'checked':''}> <span><b>${esc(migrationLanguageLabel(loc))} (${esc(loc.toUpperCase())})</b><small>Traduction historique disponible${(themeEntity?.source_payload?.activeLocales||[]).map(x=>String(x).toLowerCase()).includes(loc)?' · active dans le survey':''}</small></span></label>`
+            ).join('')}
           </div>
           <div class="migration-review-global-language-state" data-migration-language-state></div>
         </section>
@@ -648,8 +659,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         <div class="migration-review-filter-summary" id="migration-review-filter-summary"></div>
 
         <div class="migration-review-auto-note">
-          <strong>${n.existing} éléments déjà rapprochés automatiquement</strong>
-          <span>Le contenu FR est comparé séparément. EN et ES se choisissent une seule fois dans « Langues à intégrer au catalogue » : ils ne créent aucune variante métier.</span>
+          <strong>${newCatalogMode?'Aucune référence Studio à remplacer':`${n.existing} éléments déjà rapprochés automatiquement`}</strong>
+          <span>${newCatalogMode?'Ce lot crée le nouveau référentiel. Les langues se choisissent une seule fois dans « Langues à intégrer au catalogue » et ne créent aucune variante métier.':'Le contenu FR est comparé séparément. Les autres langues se choisissent une seule fois dans « Langues à intégrer au catalogue » : elles ne créent aucune variante métier.'}</span>
           ${reviewInfo('Un rapprochement automatique n’intègre rien. Il prépare uniquement la décision finale.')}
         </div>
 
@@ -700,6 +711,32 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         }finally{input.disabled=false;}
       }));
       refreshGlobalLanguageState();
+
+      const globalReferenceBtn=$('#migration-use-legacy-all');
+      if(globalReferenceBtn)globalReferenceBtn.onclick=async()=>{
+        const ok=await StudioModal.confirm({
+          eyebrow:'NOUVELLE THÉMATIQUE',
+          title:'Définir tout ce lot comme nouveau catalogue de référence ?',
+          message:`Cette décision marquera en une seule fois les ${businessEntities.length} éléments métier du lot comme contenus à intégrer. Aucune écriture dans le catalogue n’est encore faite : tu pourras toujours contrôler la revue avant le test staging.`,
+          cancelLabel:'Annuler',confirmLabel:'Valider tout le lot'
+        });
+        if(!ok)return;
+        globalReferenceBtn.disabled=true;globalReferenceBtn.textContent='Validation du lot…';
+        try{
+          const result=await StudioAPI.request(`/api/admin/migrations/${migrationBatch.id}/review/use-legacy-all`,{method:'POST',body:'{}'});
+          businessEntities.forEach(entity=>{if(entity.comparison?.status!=='exact_match')entity.review_status='use_legacy';});
+          dirty.clear();
+          syncDecisionControlsFromData();
+          refreshDecisionHistory();
+          refreshReviewCounters();
+          applyReviewFilter(root.dataset.activeFilter||'all');
+          updateSaveUi(`✓ ${result?.updated||businessEntities.length} éléments validés comme nouvelle référence.`);
+          globalReferenceBtn.textContent='Lot validé comme nouvelle référence';
+        }catch(error){
+          globalReferenceBtn.disabled=false;globalReferenceBtn.textContent='Importer tout ce lot comme nouvelle référence Me&YouToo';
+          showError(error?.message||'Impossible de valider globalement le lot.');
+        }
+      };
 
       const filterSummary=$('#migration-review-filter-summary');
       function reviewDecisionFor(entity){
