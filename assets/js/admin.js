@@ -214,22 +214,40 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     return out;
   }
   function migrationVisibleLocales(m,context={}){
-    const p=m?.source_payload||{},all=migrationTranslations(p);
-    if(m?.entity_type!=='situation'&&m?.entity_type!=='answer')return all;
-    if(Array.isArray(context.allowedLocales)&&context.allowedLocales.length){
-      return [...new Set(['fr',...context.allowedLocales.map(x=>String(x).toLowerCase())])];
+    const p=m?.source_payload||{};
+    const normalize=x=>String(x||'').trim().toLowerCase().replaceAll('_','-');
+    const active=[...(p.activeLocales||[]),...(context.activeLocales||[])].map(normalize).filter(Boolean);
+    const translations=p.translations||{};
+    const available=new Set();
+
+    // FR est toujours visible comme langue de gestion.
+    available.add('fr');
+
+    // Les langues de diffusion viennent du contenu réellement disponible,
+    // jamais du pays. Pays et langue sont deux axes indépendants.
+    Object.entries(translations).forEach(([locale,row])=>{
+      const loc=normalize(locale);
+      if(!loc)return;
+      const hasText=Boolean(
+        row && (
+          String(row.content||'').trim() ||
+          String(row.title||'').trim() ||
+          String(row.summary||'').trim() ||
+          String(row.introduction||'').trim()
+        )
+      );
+      if(hasText)available.add(loc);
+    });
+
+    // Le contenu source FR compte comme FR disponible.
+    if(String(p.content||p.title||p.summary||'').trim())available.add('fr');
+
+    // Si le survey déclare des langues actives, on ne garde en diffusion
+    // que celles qui ont réellement un contenu, plus FR gestion.
+    if(active.length){
+      return [...available].filter(loc=>loc==='fr'||active.includes(loc));
     }
-    if(p.countryScope==='worldwide')return [...new Set(['fr',...all])];
-    const codes=[...new Set([
-      ...(p.countryCodes||[]),
-      ...(p.country_codes||[]),
-      ...((p.countries||[]).map(x=>x?.code||x?.country_code||x?.countryCode||x?.id))
-    ].map(x=>String(x||'').trim().toUpperCase()).filter(Boolean))];
-    if(!codes.length)return [...new Set(['fr',...all])];
-    const countryLocaleMap=context.countryLocaleMap instanceof Map?context.countryLocaleMap:new Map();
-    const allowed=new Set(['fr']);
-    codes.forEach(code=>(countryLocaleMap.get(code)||[]).forEach(locale=>allowed.add(String(locale).toLowerCase())));
-    return [...allowed];
+    return [...available];
   }
   function migrationPayloadTitle(m){const p=m?.source_payload||{};if(m?.entity_type==='profile')return p.title||p.raw?.title||`Profil #${m.legacy_id}`;if(m?.entity_type==='chapter')return p.title||p.originalTitle||`Chapitre #${m.legacy_id}`;if(m?.entity_type==='theme')return p.title||p.originalTitle||`Thématique #${m.legacy_id}`;if(m?.entity_type==='situation'){const fr=migrationDisplayTranslation(p,'fr');if(fr.text)return fr.text;}return p.content||p.title||p.originalTitle||p.label||`${migrationEntityLabel(m.entity_type)} #${m.legacy_id}`;}
   function dryRunTypeStats(mappings,type){const rows=mappings.filter(m=>m.entity_type===type);const stat={total:rows.length,exact:0,variant:0,new:0};rows.forEach(m=>{const st=(m.comparison||m.source_payload?._comparison||{}).status||'new';if(st==='exact_match')stat.exact++;else if(st==='possible_variant')stat.variant++;else stat.new++;});return stat;}
@@ -1562,9 +1580,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const generic=libraryGenericTranslations(entity);
     const declared=Array.isArray(entity?.available_locales)?entity.available_locales:[];
     const locales=[...new Set(['fr',...declared,...generic.map(t=>String(t.locale||'').toLowerCase()).filter(Boolean)].map(x=>String(x).toLowerCase()))];
-    const worldwide=String(entity?.country_scope||entity?.cultural_legal_scope||'').toLowerCase()==='worldwide';
-    const countryCodes=worldwide?[]:[...new Set([...(entity?.cultural_legal_scope?[String(entity.cultural_legal_scope)]:[]),...(Array.isArray(entity?.chapter_country_codes)?entity.chapter_country_codes:[]),...libraryCountryVariants(entity).map(t=>String(t.country_code||'').trim()).filter(Boolean)])];
-    return `<span class="admin-library-localization-badges"><span class="admin-library-localization-chip is-language">Langues disponibles : ${locales.map(libraryLocaleLabel).join(' · ')}</span>${worldwide?'<span class="admin-library-localization-chip is-country">Périmètre culturel : 🌍 Tous pays · WORLDWIDE</span>':countryCodes.map(c=>`<span class="admin-library-localization-chip is-country">Périmètre culturel : ${esc(libraryCountryLabel(c))}</span>`).join('')}</span>`;
+    const countryCodes=[...new Set([...(entity?.cultural_legal_scope?[String(entity.cultural_legal_scope)]:[]),...libraryCountryVariants(entity).map(t=>String(t.country_code||'').trim()).filter(Boolean)])];
+    return `<span class="admin-library-localization-badges"><span class="admin-library-localization-chip is-language">Langues disponibles : ${locales.map(libraryLocaleLabel).join(' · ')}</span>${countryCodes.map(c=>`<span class="admin-library-localization-chip is-country">Périmètre culturel et légal : ${esc(libraryCountryLabel(c))}</span>`).join('')}</span>`;
   }
   const libraryCountryLocalesMap={
     US:['en'], CA:['en'], FR:['fr'], DE:['de','en'], AT:['de','en'], BR:['br','en'],
@@ -1582,20 +1599,20 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   }
   function libraryFilteredTranslations(entity,countryCodes=[]){
     const rows=libraryTranslationRows(entity);
-    const worldwide=String(entity?.country_scope||entity?.cultural_legal_scope||'').toLowerCase()==='worldwide';
-    if(worldwide)return rows;
-    const effectiveCountries=(Array.isArray(countryCodes)&&countryCodes.length)?countryCodes:(Array.isArray(entity?.chapter_country_codes)?entity.chapter_country_codes:[]);
-    const allowed=libraryAllowedLocalesForCountries(effectiveCountries);
+    const active=(Array.isArray(entity?.available_locales)?entity.available_locales:[])
+      .map(x=>String(x||'').trim().toLowerCase().replaceAll('_','-'))
+      .filter(Boolean);
+    if(!active.length)return rows;
     return rows.filter(row=>{
-      const locale=String(row.locale||'').toLowerCase();
-      return allowed.has(locale);
+      const locale=String(row.locale||'').trim().toLowerCase().replaceAll('_','-');
+      return locale==='fr'||active.includes(locale);
     });
   }
   function libraryLocalizationDetails(entity,entityType,countryCodes=[]){
     const filtered=libraryFilteredTranslations(entity,countryCodes);
     const generic=filtered.filter(t=>!t.country_code);
     const variants=filtered.filter(t=>Boolean(t.country_code));
-    if(!generic.length&&!variants.length)return `<p class="admin-library-localization-empty">Aucune traduction disponible pour ce périmètre. Le français reste la langue de gestion.</p>`;
+    if(!generic.length&&!variants.length)return `<p class="admin-library-localization-empty">Aucune traduction disponible sur ce contenu. Le français reste la langue de gestion.</p>`;
     const rowHtml=(row,isVariant=false)=>{
       const c=libraryContentObject(row),locale=libraryLocaleLabel(row.locale),country=row.country_code?` · ${esc(row.country_code)}`:'';
       let body='';
@@ -1610,7 +1627,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const readonly=isArchived||isDeleted;
     const typeTag=si.is_default?'<span class="admin-library-type-tag is-base">Sélection de base</span>':'<span class="admin-library-type-tag is-library">Bibliothèque complémentaire</span>';
     const statusTag=isArchived?'<span class="admin-library-type-tag is-archived">Archivée</span>':isDeleted?'<span class="admin-library-type-tag is-deleted">Supprimée</span>':'';
-    return `<details class="admin-library-situation-row ${isArchived?'is-archived':''} ${isDeleted?'is-deleted':''}" data-situation-details="${si.id}"><summary><div class="admin-library-situation-summary"><p>${esc(libraryRealContent(si))}</p><div class="admin-library-situation-meta"><span>${answers.length} réponse${answers.length>1?'s':''}</span>${typeTag}${statusTag}${(si.country_codes||[]).map(c=>`<span class="admin-library-type-tag is-country">${esc(libraryCountryLabel(c))}</span>`).join('')}</div></div><span class="admin-library-summary-action">${readonly?'Consulter':'Voir / modifier'} <span class="admin-library-situation-chevron" aria-hidden="true">⌄</span></span></summary><form class="admin-library-inline-form admin-library-situation-form" data-situation-inline-form="${si.id}" data-chapter-id="${ch.id}"><section class="admin-library-editor-section admin-library-editor-situation"><div class="admin-library-editor-section-title"><span class="admin-library-editor-icon">✎</span><div><h4>Situation</h4><p>${isArchived?'Cette situation est archivée et n’est plus proposée dans les nouvelles campagnes.':isDeleted?'Cette situation est dans les supprimées. Vous pouvez la restaurer ou la supprimer définitivement.':'Modifiez son contenu ou son emplacement dans le catalogue.'}</p></div></div><label class="admin-library-wide-label admin-library-content-field"><span>Texte de la situation</span><textarea data-inline-situation-content rows="3" required ${readonly?'disabled':''}>${esc(libraryRealContent(si)||'')}</textarea></label><div class="admin-library-localization-panel"><div class="admin-library-localization-head"><strong>Langues de diffusion + FR gestion</strong></div>${libraryLocalizationDetails(si,'situation',si.country_codes||[])}</div><div class="admin-library-inline-toggles"><label><input data-inline-situation-default type="checkbox" ${si.is_default?'checked':''} ${readonly?'disabled':''}> Inclure dans la sélection de base du thème</label></div></section><section class="admin-library-editor-section admin-library-editor-answers"><div class="admin-library-answer-head"><div class="admin-library-editor-section-title"><span class="admin-library-editor-icon">✓</span><div><h4>Réponses et scoring</h4><p>Le score reste administré par Me&amp;YouToo.</p></div></div>${readonly?'':'<button class="button button-secondary button-small" type="button" data-add-inline-answer>+ Ajouter une réponse</button>'}</div><div class="admin-library-answer-list" data-inline-answer-list>${answers.map((answer,index)=>answerInlineRow(answer,index,readonly,si.country_codes||[])).join('')}</div></section><div class="admin-library-inline-actions admin-library-content-actions">${isArchived?`<button class="button button-secondary" type="button" data-restore-situation="${si.id}">Restaurer</button><button class="button button-danger-soft" type="button" data-delete-situation="${si.id}">Déplacer dans les supprimées</button>`:isDeleted?`<button class="button button-secondary" type="button" data-undelete-situation="${si.id}">Restaurer</button><button class="button button-danger-soft" type="button" data-delete-situation-permanent="${si.id}">Supprimer définitivement</button>`:`<button class="button button-danger-soft" type="button" data-archive-situation="${si.id}">Archiver</button><button class="button button-danger-soft admin-library-delete-button" type="button" data-delete-situation="${si.id}">Supprimer</button><span class="admin-library-action-spacer"></span><button class="button button-secondary" type="button" data-cancel-inline>Annuler</button><button class="button button-primary" type="submit">Enregistrer la situation</button>`}</div></form></details>`;
+    return `<details class="admin-library-situation-row ${isArchived?'is-archived':''} ${isDeleted?'is-deleted':''}" data-situation-details="${si.id}"><summary><div class="admin-library-situation-summary"><p>${esc(libraryRealContent(si))}</p><div class="admin-library-situation-meta"><span>${answers.length} réponse${answers.length>1?'s':''}</span>${typeTag}${statusTag}${(si.country_codes||[]).map(c=>`<span class="admin-library-type-tag is-country">${esc(libraryCountryLabel(c))}</span>`).join('')}</div></div><span class="admin-library-summary-action">${readonly?'Consulter':'Voir / modifier'} <span class="admin-library-situation-chevron" aria-hidden="true">⌄</span></span></summary><form class="admin-library-inline-form admin-library-situation-form" data-situation-inline-form="${si.id}" data-chapter-id="${ch.id}"><section class="admin-library-editor-section admin-library-editor-situation"><div class="admin-library-editor-section-title"><span class="admin-library-editor-icon">✎</span><div><h4>Situation</h4><p>${isArchived?'Cette situation est archivée et n’est plus proposée dans les nouvelles campagnes.':isDeleted?'Cette situation est dans les supprimées. Vous pouvez la restaurer ou la supprimer définitivement.':'Modifiez son contenu ou son emplacement dans le catalogue.'}</p></div></div><label class="admin-library-wide-label admin-library-content-field"><span>Texte de la situation</span><textarea data-inline-situation-content rows="3" required ${readonly?'disabled':''}>${esc(libraryRealContent(si)||'')}</textarea></label><div class="admin-library-localization-panel"><div class="admin-library-localization-head"><strong>Langues disponibles sur ce contenu + FR gestion</strong></div>${libraryLocalizationDetails(si,'situation',si.country_codes||[])}</div><div class="admin-library-inline-toggles"><label><input data-inline-situation-default type="checkbox" ${si.is_default?'checked':''} ${readonly?'disabled':''}> Inclure dans la sélection de base du thème</label></div></section><section class="admin-library-editor-section admin-library-editor-answers"><div class="admin-library-answer-head"><div class="admin-library-editor-section-title"><span class="admin-library-editor-icon">✓</span><div><h4>Réponses et scoring</h4><p>Le score reste administré par Me&amp;YouToo.</p></div></div>${readonly?'':'<button class="button button-secondary button-small" type="button" data-add-inline-answer>+ Ajouter une réponse</button>'}</div><div class="admin-library-answer-list" data-inline-answer-list>${answers.map((answer,index)=>answerInlineRow(answer,index,readonly,si.country_codes||[])).join('')}</div></section><div class="admin-library-inline-actions admin-library-content-actions">${isArchived?`<button class="button button-secondary" type="button" data-restore-situation="${si.id}">Restaurer</button><button class="button button-danger-soft" type="button" data-delete-situation="${si.id}">Déplacer dans les supprimées</button>`:isDeleted?`<button class="button button-secondary" type="button" data-undelete-situation="${si.id}">Restaurer</button><button class="button button-danger-soft" type="button" data-delete-situation-permanent="${si.id}">Supprimer définitivement</button>`:`<button class="button button-danger-soft" type="button" data-archive-situation="${si.id}">Archiver</button><button class="button button-danger-soft admin-library-delete-button" type="button" data-delete-situation="${si.id}">Supprimer</button><span class="admin-library-action-spacer"></span><button class="button button-secondary" type="button" data-cancel-inline>Annuler</button><button class="button button-primary" type="submit">Enregistrer la situation</button>`}</div></form></details>`;
   }
   function answerInlineRow(answer={},index=0,readonly=false,countryCodes=[]){return `<div class="admin-library-answer-row"><span class="admin-library-answer-number">${Number(index)+1}</span><label class="admin-library-answer-content"><span>Réponse</span><input data-answer-content placeholder="Texte de la réponse" value="${esc(answer.content||'')}" required ${readonly?'disabled':''}></label><label class="admin-library-answer-score"><span>Score</span><input data-answer-score type="number" step="0.01" value="${answer.score??''}" required ${readonly?'disabled':''}></label><label class="admin-library-best-answer" title="Réponse attendue / la plus inclusive"><input data-answer-best type="checkbox" ${answer.is_best?'checked':''} ${readonly?'disabled':''}><span>Meilleure réponse</span></label>${readonly?'':`<button type="button" class="admin-library-answer-remove" data-remove-inline-answer aria-label="Supprimer la réponse">×</button>`}<div class="admin-library-answer-localization">${libraryFilteredTranslations(answer,countryCodes).length?`<details><summary>Voir les langues disponibles</summary>${libraryLocalizationDetails(answer,'answer',countryCodes)}</details>`:''}</div></div>`;}
   function profileInlineRow(ch,profile={},index=0){
