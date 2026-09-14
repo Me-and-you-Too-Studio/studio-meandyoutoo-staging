@@ -580,7 +580,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const countryHtml=migrationReviewCountryHtml(e);
     const statusBadge=(newCatalogMode||isNewContent)?`<span class="migration-review-status new">À importer</span>`:`<span class="migration-review-status ${status}">${reviewCmpLabel(c.status)}</span>${migrationLanguageDiffBadge(c)}`;
     const decisionHtml=newCatalogMode?`<div class="migration-review-decision"><div class="migration-review-decision-current"><strong>Décision globale</strong><span>Inclus dans le nouveau catalogue de référence</span></div></div>`:`<div class="migration-review-decision"><div class="migration-review-decision-control"><select data-review-status="${e.id}" aria-label="Décision pour ${esc(title)}">${reviewDecisionOptions(decision,e.entity_type)}</select><button type="button" class="migration-review-decision-help" data-decision-help aria-label="Aide sur les décisions">?</button></div>${reviewDecisionHelpHtml(decision,e.entity_type)}</div>`;
-    return `<article class="migration-review-row" data-review-card data-cmp="${status}" data-pending="${newCatalogMode?'0':decision==='pending'?'1':'0'}" data-translations="${missing?'1':'0'}" data-language-recover="${languageDiff?'1':'0'}"><div class="migration-review-main"><div class="migration-review-heading"><span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}${isProfile&&p.position!=null?' '+esc(p.position):''}</span>${statusBadge}${missing?`<span class="migration-review-translation-warning">Traduction à compléter</span>`:''}${isTheme||e.entity_type==='chapter'?'':`<span class="migration-review-context-note">Contexte parent</span>`}</div><strong>${esc(title)}</strong><small>Ancien ID ${esc(e.legacy_id)}</small>${countryHtml}${compare}${migrationReviewLanguageHtml(e,context)}${answerContext}${translationReviewHtml(e,context)}</div>${decisionHtml}</article>`;
+    return `<article class="migration-review-row" data-review-card data-cmp="${status}" data-pending="${newCatalogMode?'0':decision==='pending'?'1':'0'}" data-translations="${missing?'1':'0'}" data-language-recover="${languageDiff?'1':'0'}"><div class="migration-review-main"><div class="migration-review-heading"><span class="admin-migration-scope">${reviewTypeLabel(e.entity_type)}${isProfile&&p.position!=null?' '+esc(p.position):''}</span>${statusBadge}${missing?`<span class="migration-review-translation-warning">Traduction à compléter</span>`:''}${isTheme?'':`<span class="migration-review-context-note">Contexte parent</span>`}</div><strong>${esc(title)}</strong><small>Ancien ID ${esc(e.legacy_id)}</small>${countryHtml}${compare}${migrationReviewLanguageHtml(e,context)}${answerContext}${translationReviewHtml(e,context)}</div>${decisionHtml}</article>`;
   }
 
 
@@ -660,7 +660,10 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const migrationBatch=data.batch||{};
       const availableMigrationLocales=[...new Set(businessEntities.flatMap(e=>{
         const p=e.source_payload||{};
-        return [...Object.keys(p.translations||{}),...(p.activeLocales||[]),...(p.dormantLocales||[])];
+        const active=(p.activeLocales||[])
+          .map(x=>String(x||'').trim().toLowerCase().replaceAll('_','-'))
+          .filter(Boolean);
+        return active.length?active:['fr'];
       }).map(x=>String(x||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))]
         .sort((a,b)=>a==='fr'?-1:b==='fr'?1:a.localeCompare(b,'fr'));
       const hasExplicitLanguageChoice=migrationBatch.summary?.migrationLanguageSelectionExplicit===true;
