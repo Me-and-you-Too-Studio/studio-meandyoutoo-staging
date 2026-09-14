@@ -634,7 +634,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         return `<details class="migration-review-chapter" data-review-chapter>
           <summary>
             <span class="migration-review-round">›</span>
-            <div><strong>${esc(ch.source_payload?.title||'Chapitre')}</strong><small><span data-review-chapter-situations data-total-situations="${situations.length}">${situations.length} situations</span> · <span data-review-chapter-profiles data-total-profiles="${profiles.length}">${profiles.length} profils</span></small></div>
+            <div><strong>${esc(ch.source_payload?.title||'Chapitre')}</strong>${ch.source_payload?.choiceGroup?`<div class="migration-alternative-summary"><span><b>Chapitre alternatif à :</b> ${esc(ch.source_payload?.alternativeToTitle||'chapitre de référence')}</span><span>${ch.source_payload?.countryScope==='worldwide'?'🌍 Tous pays · WORLDWIDE':'Périmètre : '+esc((ch.source_payload?.countryCodes||[]).join(' · '))}</span><button type="button" class="button button-secondary button-small" data-review-alt-bulk="${esc(ch.legacy_id)}">Intégrer tout ce chapitre comme alternative</button></div>`:''}<small><span data-review-chapter-situations data-total-situations="${situations.length}">${situations.length} situations</span> · <span data-review-chapter-profiles data-total-profiles="${profiles.length}">${profiles.length} profils</span></small></div>
           </summary>
           <div class="migration-review-chapter-body">
             ${reviewCard(ch,true,reviewContext)}
@@ -1004,7 +1004,43 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         saveState.textContent=count?`${count} décision${count>1?'s':''} à enregistrer`:'Aucune modification en attente';
       }
       function syncDecisionControlsFromData(){
-        $$('[data-review-status]').forEach(sel=>{
+        $$('[data-review-alt-bulk]').forEach(btn=>btn.onclick=async()=>{
+        const chapterLegacy=String(btn.dataset.reviewAltBulk||'');
+        const chapter=businessEntities.find(e=>e.entity_type==='chapter'&&String(e.legacy_id)===chapterLegacy);
+        if(!chapter)return;
+        const direct=businessEntities.filter(e=>String(e.legacy_parent_id||'')===chapterLegacy);
+        const situationIds=new Set(direct.filter(e=>e.entity_type==='situation').map(e=>String(e.legacy_id)));
+        const descendants=businessEntities.filter(e=>
+          e===chapter ||
+          String(e.legacy_parent_id||'')===chapterLegacy ||
+          (e.entity_type==='answer'&&situationIds.has(String(e.legacy_parent_id||'')))
+        );
+        const ok=await StudioModal.confirm({
+          eyebrow:'CHAPITRE ALTERNATIF',
+          title:`Intégrer « ${chapter.source_payload?.title||'ce chapitre'} » en une seule décision ?`,
+          message:`Studio intégrera le chapitre, ses situations, ses réponses et ses profils comme un bloc complet. ${chapter.source_payload?.alternativeToTitle?`Il sera proposé en alternative à « ${chapter.source_payload.alternativeToTitle} ». `:''}${chapter.source_payload?.countryScope==='worldwide'?'Sa portée restera WORLDWIDE / tous pays.':''} L’introduction générale du diagnostic n’est pas modifiée.`,
+          cancelLabel:'Annuler',
+          confirmLabel:'Intégrer le chapitre complet'
+        });
+        if(!ok)return;
+        descendants.forEach(entity=>{
+          const sel=$(`[data-review-status="${entity.id}"]`);
+          if(sel){
+            sel.value='use_legacy';
+            sel.classList.add('is-decided');
+            const card=sel.closest('[data-review-card]');
+            card?.setAttribute('data-pending','0');
+            const current=card?.querySelector('[data-decision-current]');
+            const def=reviewDecisionDefinitions.use_legacy;
+            if(current)current.innerHTML=`<strong>Intégrer avec le chapitre alternatif</strong><span>${esc(def.short)}</span>`;
+            if(sel.dataset.initialValue==='use_legacy')dirty.delete(String(entity.id));else dirty.set(String(entity.id),'use_legacy');
+          }
+        });
+        refreshReviewCounters();
+        updateSaveUi(`✓ ${descendants.length} éléments du chapitre sont prêts à être enregistrés en une seule fois.`);
+      });
+
+      $$('[data-review-status]').forEach(sel=>{
           const id=sel.dataset.reviewStatus;
           const entity=businessEntities.find(x=>String(x.id)===String(id));
           if(!entity)return;
@@ -1025,6 +1061,42 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           if(helpBtn){helpBtn.classList.remove('is-open');helpBtn.setAttribute('aria-expanded','false');}
         });
       }
+
+      $$('[data-review-alt-bulk]').forEach(btn=>btn.onclick=async()=>{
+        const chapterLegacy=String(btn.dataset.reviewAltBulk||'');
+        const chapter=businessEntities.find(e=>e.entity_type==='chapter'&&String(e.legacy_id)===chapterLegacy);
+        if(!chapter)return;
+        const direct=businessEntities.filter(e=>String(e.legacy_parent_id||'')===chapterLegacy);
+        const situationIds=new Set(direct.filter(e=>e.entity_type==='situation').map(e=>String(e.legacy_id)));
+        const descendants=businessEntities.filter(e=>
+          e===chapter ||
+          String(e.legacy_parent_id||'')===chapterLegacy ||
+          (e.entity_type==='answer'&&situationIds.has(String(e.legacy_parent_id||'')))
+        );
+        const ok=await StudioModal.confirm({
+          eyebrow:'CHAPITRE ALTERNATIF',
+          title:`Intégrer « ${chapter.source_payload?.title||'ce chapitre'} » en une seule décision ?`,
+          message:`Studio intégrera le chapitre, ses situations, ses réponses et ses profils comme un bloc complet. ${chapter.source_payload?.alternativeToTitle?`Il sera proposé en alternative à « ${chapter.source_payload.alternativeToTitle} ». `:''}${chapter.source_payload?.countryScope==='worldwide'?'Sa portée restera WORLDWIDE / tous pays.':''} L’introduction générale du diagnostic n’est pas modifiée.`,
+          cancelLabel:'Annuler',
+          confirmLabel:'Intégrer le chapitre complet'
+        });
+        if(!ok)return;
+        descendants.forEach(entity=>{
+          const sel=$(`[data-review-status="${entity.id}"]`);
+          if(sel){
+            sel.value='use_legacy';
+            sel.classList.add('is-decided');
+            const card=sel.closest('[data-review-card]');
+            card?.setAttribute('data-pending','0');
+            const current=card?.querySelector('[data-decision-current]');
+            const def=reviewDecisionDefinitions.use_legacy;
+            if(current)current.innerHTML=`<strong>Intégrer avec le chapitre alternatif</strong><span>${esc(def.short)}</span>`;
+            if(sel.dataset.initialValue==='use_legacy')dirty.delete(String(entity.id));else dirty.set(String(entity.id),'use_legacy');
+          }
+        });
+        refreshReviewCounters();
+        updateSaveUi(`✓ ${descendants.length} éléments du chapitre sont prêts à être enregistrés en une seule fois.`);
+      });
 
       $$('[data-review-status]').forEach(sel=>{
         const initial=sel.value;
