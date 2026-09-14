@@ -176,8 +176,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       .map(x=>String(x||'').toLowerCase().replaceAll('_','-'))
       .filter((x,i,a)=>x&&x!=='fr'&&a.indexOf(x)===i);
     for(const locale of candidates){
-      const text=migrationTranslationText(payload,locale);
-      if(text&&!migrationIsTechnicalCountryLabel(text))return{locale,text};
+      const value=migrationTranslationText(payload,locale);
+      if(value&&!migrationIsTechnicalCountryLabel(value))return{locale,text:value};
     }
     return{locale:'',text:''};
   }
@@ -463,9 +463,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         }else{
           const hv=clean(h.title||h.content);
           if(frNeedsTranslation){
-            const source=migrationBestSourceTranslation(p,['en','es','br','de','it','ja','ko-kr','zf','zh','pt','nl','pl','ro','ru','sv-se','tr','bg']);
-            const sourceCode=(source.locale||'').toUpperCase(),sourceLabel=source.locale?migrationLanguageLabel(source.locale):'langue disponible';
-            body=`<div class="migration-review-fr-missing-notice"><strong>⚠ Traduction française à compléter</strong><p>Aucun véritable contenu français n’est disponible pour cette variante${e.entity_type==='situation'?' pays':''}. Le texte ci-dessous provient de ${sourceCode?sourceCode+' · ':''}${esc(sourceLabel)} et sert uniquement de référence pour préparer la traduction française.</p></div><div class="migration-review-language-columns"><div><span>Texte source disponible${sourceCode?' — '+esc(sourceCode):''}</span><p>${esc(clean(source.text)||hv||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(p.scoreValue??p.score??'—')}</small>`:''}</div></div><button type="button" class="button button-secondary migration-translation-edit" data-translation-edit="${e.id}" data-locale="fr">Compléter la traduction FR</button>`;
+            const english=clean(migrationTranslationText(p,'en'));
+            body=`<div class="migration-review-fr-missing-notice"><strong>⚠ Traduction française à compléter</strong><p>Aucun véritable contenu français n’est disponible pour cette variante${e.entity_type==='situation'?' pays':''}. Le texte anglais ci-dessous est affiché uniquement comme référence pour préparer la traduction française.</p></div><div class="migration-review-language-columns"><div><span>Texte anglais de référence</span><p>${esc(english||hv||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(p.scoreValue??p.score??'—')}</small>`:''}</div></div><button type="button" class="button button-secondary migration-translation-edit" data-translation-edit="${e.id}" data-locale="fr">Compléter la traduction FR</button>`;
           }else{
             body=`<div class="migration-review-language-columns"><div><span>Contenu à importer</span><p>${esc(hv||'—')}</p>${e.entity_type==='answer'?`<small>Score ${esc(p.scoreValue??p.score??'—')}</small>`:''}</div></div>`;
           }
@@ -487,7 +486,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       return `<div class="migration-review-language-panel" data-review-lang-panel="${esc(e.id)}:${esc(loc)}" ${index?'hidden':''}><div class="migration-review-language-status"><strong>${esc(code)} · ${esc(migrationLanguageLabel(loc))}</strong><span class="${missing||different?'is-action':isDormant?'is-dormant':''}">${esc(status)}</span></div>${body}${(!newCatalogMode&&(missing||different))?`<p class="hint">${e.review_status==='translation_only'?'Cette langue sera récupérée sans modifier la version FR du Studio.':'Cette langue sera importée uniquement si elle est cochée dans le choix global des langues.'}</p>`:''}</div>`;
     }).join('');
     const recovery=migrationLanguageDiffLocales(c).map(x=>x.toUpperCase());
-    return `<details class="migration-review-languages" ${recovery.length?'open':''}><summary><strong>Langues</strong>${migrationLanguageDiffBadge(c)}<span class="hint">Historique : ${locales.map(x=>x.toUpperCase()).join(' · ')}</span></summary><div class="migration-review-language-tabs">${locales.map((loc,index)=>`<button type="button" class="${index?'':'is-active'}" data-review-lang-tab="${esc(e.id)}:${esc(loc)}">${esc(loc.toUpperCase())}</button>`).join('')}</div>${panels}</details>`;
+    return `<details class="migration-review-languages" ${recovery.length?'open':''}><summary><strong>Langues</strong>${migrationLanguageDiffBadge(c)}<span class="hint">${newCatalogMode?'Langues disponibles':'Historique'} : ${locales.map(x=>x.toUpperCase()).join(' · ')}</span></summary><div class="migration-review-language-tabs">${locales.map((loc,index)=>`<button type="button" class="${index?'':'is-active'}" data-review-lang-tab="${esc(e.id)}:${esc(loc)}">${esc(loc.toUpperCase())}</button>`).join('')}</div>${panels}</details>`;
   }
 
   function reviewInfo(text){
@@ -1127,15 +1126,12 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         const isSimpleTranslation=['situation','answer','chapter'].includes(entity.entity_type);
         const entityLabel=entity.entity_type==='situation'?'Situation':entity.entity_type==='answer'?'Réponse':entity.entity_type==='chapter'?'Chapitre':(p.title||hist.title||'Profil');
         $('#migration-translation-title').textContent=`${entityLabel} — ${locale.toUpperCase()}`;
-        $('#migration-translation-intro').textContent=locale==='fr'?'La meilleure langue réellement disponible pour cette variante est affichée comme texte source lorsqu’aucune vraie version française n’existe. Saisis ici la traduction française, puis valide-la pour la retirer des traductions à compléter.':'Le français est affiché comme référence. Les champs historiques disponibles sont préremplis. « Enregistrer comme brouillon » conserve ton travail sans le considérer terminé ; « Valider la traduction » la marque comme complète et la retire du filtre des traductions à compléter.';
+        $('#migration-translation-intro').textContent=locale==='fr'?'Le texte anglais est affiché comme référence lorsqu’aucune vraie version française n’existe. Saisis ici la traduction française, puis valide-la pour la retirer des traductions à compléter.':'Le français est affiché comme référence. Les champs historiques disponibles sont préremplis. « Enregistrer comme brouillon » conserve ton travail sans le considérer terminé ; « Valider la traduction » la marque comme complète et la retire du filtre des traductions à compléter.';
         if(isSimpleTranslation){
-          const source=locale==='fr'
-            ? migrationBestSourceTranslation(p,['en','es','br','de','it','ja','ko-kr','zf','zh','pt','nl','pl','ro','ru','sv-se','tr','bg'])
-            : {locale:'fr',text:clean(p.translations?.fr?.content||p.content||p.translations?.fr?.title||p.title||'')};
-          const reference=source.text||'—';
+          const english=clean(p.translations?.en?.content||p.translations?.en?.title||'');
+          const reference=locale==='fr'?(english||clean(p.content)||'—'):clean(p.translations?.fr?.content||p.content||p.translations?.fr?.title||p.title||'—');
           const existing=saved.content||hist.content||saved.title||hist.title||'';
-          const sourceCode=(source.locale||'').toUpperCase();
-          $('#migration-translation-body').innerHTML=`<div class="migration-translation-editor"><section><span>${locale==='fr'?(sourceCode?sourceCode+' — texte source disponible':'Texte source disponible'):'FR — référence'}</span><div class="migration-translation-reference">${esc(reference)}</div></section><section><span>${locale.toUpperCase()} — à compléter</span><label>${entity.entity_type==='chapter'?'Titre':'Texte'}</label><textarea id="migration-translation-field-content" rows="10">${esc(existing)}</textarea><input type="hidden" id="migration-translation-field-title" value=""><input type="hidden" id="migration-translation-field-summary" value=""></section></div>`;
+          $('#migration-translation-body').innerHTML=`<div class="migration-translation-editor"><section><span>${locale==='fr'?'EN — texte de référence':'FR — référence'}</span><div class="migration-translation-reference">${esc(reference)}</div></section><section><span>${locale.toUpperCase()} — à compléter</span><label>${entity.entity_type==='chapter'?'Titre':'Texte'}</label><textarea id="migration-translation-field-content" rows="10">${esc(existing)}</textarea><input type="hidden" id="migration-translation-field-title" value=""><input type="hidden" id="migration-translation-field-summary" value=""></section></div>`;
         }else{
           $('#migration-translation-body').innerHTML=`<div class="migration-translation-editor"><section><span>FR — référence</span><h3>${esc(p.title||p.translations?.fr?.title||'—')}</h3><label>Résumé</label><div class="migration-translation-reference">${esc(clean(p.summary)||'—')}</div><label>Texte détaillé</label><div class="migration-translation-reference">${esc(clean(p.content)||'—')}</div></section><section><span>${locale.toUpperCase()} — à compléter</span><label>Titre</label><input id="migration-translation-field-title" value="${esc(saved.title||hist.title||'')}"><label>Résumé</label><textarea id="migration-translation-field-summary" rows="5">${esc(saved.summary||hist.summary||'')}</textarea><label>Texte détaillé</label><textarea id="migration-translation-field-content" rows="10">${esc(saved.content||hist.content||'')}</textarea></section></div>`;
         }
