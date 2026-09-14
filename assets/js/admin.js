@@ -347,6 +347,27 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     if(e?.entity_type==='chapter')return migrationPlainText(p.title)||`Chapitre #${e?.legacy_id||'—'}`;
     return migrationPlainText(p.content||p.title||p.label)||`${reviewTypeLabel(e?.entity_type)} #${e?.legacy_id||'—'}`;
   }
+  function migrationDecisionDisplay(entity,value,businessEntities=[]){
+    const def=reviewDecisionDefinitions[value]||reviewDecisionDefinitions.pending;
+    if(value!=='use_legacy')return {label:def.label,short:def.short};
+    const p=entity?.source_payload||{};
+    if(entity?.entity_type==='chapter'&&p.choiceGroup){
+      return {label:'Intégrer le chapitre alternatif',short:`Créer « ${p.title||'ce chapitre'} » comme alternative${p.alternativeToTitle?` à « ${p.alternativeToTitle} »`:''}.`};
+    }
+    const parentAlt=businessEntities.find(x=>x.entity_type==='chapter'&&String(x.legacy_id)===String(entity?.legacy_parent_id||'')&&x.source_payload?.choiceGroup);
+    let answerAlt=false;
+    if(entity?.entity_type==='answer'){
+      const parentSituation=businessEntities.find(x=>x.entity_type==='situation'&&String(x.legacy_id)===String(entity?.legacy_parent_id||''));
+      if(parentSituation){
+        answerAlt=businessEntities.some(ch=>ch.entity_type==='chapter'&&ch.source_payload?.choiceGroup&&String(ch.legacy_id)===String(parentSituation.legacy_parent_id||''));
+      }
+    }
+    if(parentAlt||answerAlt){
+      return {label:'Intégrer avec le chapitre alternatif',short:'Ajouter ce contenu avec le nouveau chapitre alternatif.'};
+    }
+    return {label:def.label,short:def.short};
+  }
+
   function migrationDecisionDate(value){
     if(!value)return 'Date non disponible';
     const d=new Date(value);
@@ -367,7 +388,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         <p class="hint">Ce récapitulatif montre la décision actuellement enregistrée pour chaque élément que tu as traité manuellement. Si tu modifies une décision, cette ligne sera mise à jour.</p>
         <div data-review-history-list>
           ${rows.map(e=>{
-            const def=reviewDecisionDefinitions[e.review_status]||reviewDecisionDefinitions.pending;
+            const def=migrationDecisionDisplay(e,e.review_status,entityList||[]);
             const title=migrationDecisionEntityTitle(e);
             return `<article class="migration-review-decision-history-row" data-review-history-entity="${esc(e.id)}">
               <div>
@@ -1031,8 +1052,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
             const card=sel.closest('[data-review-card]');
             card?.setAttribute('data-pending','0');
             const current=card?.querySelector('[data-decision-current]');
-            const def=reviewDecisionDefinitions.use_legacy;
-            if(current)current.innerHTML=`<strong>Intégrer avec le chapitre alternatif</strong><span>${esc(def.short)}</span>`;
+            const def=migrationDecisionDisplay(entity,'use_legacy',businessEntities);
+            if(current)current.innerHTML=`<strong>${esc(def.label)}</strong><span>${esc(def.short)}</span>`;
             if(sel.dataset.initialValue==='use_legacy')dirty.delete(String(entity.id));else dirty.set(String(entity.id),'use_legacy');
           }
         });
@@ -1089,8 +1110,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
             const card=sel.closest('[data-review-card]');
             card?.setAttribute('data-pending','0');
             const current=card?.querySelector('[data-decision-current]');
-            const def=reviewDecisionDefinitions.use_legacy;
-            if(current)current.innerHTML=`<strong>Intégrer avec le chapitre alternatif</strong><span>${esc(def.short)}</span>`;
+            const def=migrationDecisionDisplay(entity,'use_legacy',businessEntities);
+            if(current)current.innerHTML=`<strong>${esc(def.label)}</strong><span>${esc(def.short)}</span>`;
             if(sel.dataset.initialValue==='use_legacy')dirty.delete(String(entity.id));else dirty.set(String(entity.id),'use_legacy');
           }
         });
@@ -1109,7 +1130,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           const card=sel.closest('[data-review-card]');
           card?.setAttribute('data-pending',value==='pending'?'1':'0');
           const current=card?.querySelector('[data-decision-current]');
-          const def=reviewDecisionDefinitions[value]||reviewDecisionDefinitions.pending;
+          const decisionEntity=businessEntities.find(x=>String(x.id)===String(id));
+          const def=migrationDecisionDisplay(decisionEntity,value,businessEntities);
           if(current)current.innerHTML=`<strong>${esc(def.label)}</strong><span>${esc(def.short)}</span>`;
           card?.querySelectorAll('[data-decision-help-item]').forEach(item=>item.classList.toggle('is-current',item.dataset.decisionHelpItem===value));
           if(value===sel.dataset.initialValue)dirty.delete(id); else dirty.set(id,value);
