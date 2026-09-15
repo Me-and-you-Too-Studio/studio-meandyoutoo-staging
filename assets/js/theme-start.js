@@ -97,6 +97,29 @@
     });
   }
 
+  async function renderThemeAvailability(themeSlug){
+    var hero=document.querySelector('.hero-panel');
+    if(!hero||!themeSlug)return;
+    var old=hero.querySelector('[data-theme-availability]');if(old)old.remove();
+    try{
+      var payload=await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(themeSlug)+'/variants');
+      var variants=Array.isArray(payload.variants)?payload.variants:[];
+      if(!variants.length)return;
+      var scopes=[],locales=[];
+      variants.forEach(function(v){
+        var label=v.scopeLabel||v.countryLabel||v.countryCode||v.culturalScope||'';
+        if(label&&!scopes.includes(label))scopes.push(label);
+        (v.locales||[]).forEach(function(locale){if(locale&&!locales.includes(locale))locales.push(locale);});
+      });
+      var block=document.createElement('div');
+      block.dataset.themeAvailability='true';
+      block.style.cssText='display:flex;flex-wrap:wrap;gap:10px 18px;margin:4px 0 18px;padding:14px 16px;border:1px solid #dce8ee;border-radius:16px;background:#f8fbfc';
+      block.innerHTML='<div><strong style="display:block;color:#0d4c72;margin-bottom:5px">Périmètre disponible</strong><span>'+esc(scopes.join(' · '))+'</span></div><div><strong style="display:block;color:#0d4c72;margin-bottom:5px">Langues disponibles</strong><span>'+locales.map(function(l){return esc(localeFullLabel(l));}).join(' · ')+'</span></div>';
+      var title=hero.querySelector('.section-title');
+      if(title)title.insertAdjacentElement('beforebegin',block);else hero.prepend(block);
+    }catch(error){console.warn('[MEAYT] Disponibilités de la thématique non chargées',error);}
+  }
+
   async function loadReadOnlyCatalog(){
     var startButton=document.querySelector('.hero-panel [data-start-theme]');
     var themeSlug=(startButton&&startButton.dataset.startTheme)||existingTheme;
@@ -118,6 +141,7 @@
       var resolved=await resolveThemeSlug(themeSlug),data=resolved.data;
       themeSlug=resolved.slug;
       if(startButton){startButton.dataset.startTheme=themeSlug;startButton.href='composer.html?theme='+encodeURIComponent(themeSlug);}
+      renderThemeAvailability(themeSlug);
       var chapters=Array.isArray(data.chapters)?data.chapters:[];
       table.querySelector('thead').innerHTML='<tr><th>Chapitre du catalogue</th><th>Situations de référence</th><th>Usage</th><th>Action</th></tr>';
       table.querySelector('tbody').innerHTML=chapters.map(function(chapter,index){
@@ -160,7 +184,7 @@
     return new Promise(function(resolve){
       var dialog=document.createElement('dialog');dialog.className='studio-modal';
       var scopes=[];variants.forEach(function(v){var k=(v.culturalScope||'')+'|'+(v.countryCode||'');if(!scopes.some(function(x){return x.key===k;}))scopes.push({key:k,label:v.scopeLabel||v.countryLabel||v.culturalScope||v.countryCode||'International',culturalScope:v.culturalScope||'',countryCode:v.countryCode||''});});
-      dialog.innerHTML='<form method="dialog" class="studio-modal-card" style="max-width:680px"><div class="studio-modal-body"><p class="eyebrow">Version du diagnostic</p><h2>Choisissez le périmètre et la langue</h2><p>Cette sélection détermine la version du catalogue utilisée pour votre campagne.</p><label style="display:grid;gap:7px;margin-top:20px"><strong>Périmètre culturel / pays</strong><select data-variant-scope class="input">'+scopes.map(function(x,i){return '<option value="'+i+'">'+esc(x.label)+'</option>';}).join('')+'</select></label><label style="display:grid;gap:7px;margin-top:16px"><strong>Langue du diagnostic</strong><select data-variant-locale class="input"></select></label></div><div class="studio-modal-actions"><button type="button" class="button button-secondary" data-cancel>Annuler</button><button type="button" class="button button-primary" data-confirm>Continuer vers la composition</button></div></form>';
+      dialog.innerHTML='<form method="dialog" class="studio-modal-shell" style="max-width:680px;grid-template-columns:1fr"><div class="studio-modal-copy" style="padding-right:0"><p class="eyebrow">Version du diagnostic</p><h2>Choisissez le périmètre et la langue</h2><p class="studio-modal-message">Cette sélection détermine la version du catalogue utilisée pour votre campagne.</p></div><div class="studio-modal-field"><label>Périmètre disponible</label><select data-variant-scope class="input" style="width:100%">'+scopes.map(function(x,i){return '<option value="'+i+'">'+esc(x.label)+'</option>';}).join('')+'</select></div><div class="studio-modal-field" style="margin-top:16px"><label>Langue disponible</label><select data-variant-locale class="input" style="width:100%"></select></div><div class="studio-modal-actions"><button type="button" class="button button-secondary" data-cancel>Annuler</button><button type="button" class="button button-primary" data-confirm>Continuer vers la composition</button></div></form>';
       document.body.appendChild(dialog);var scope=dialog.querySelector('[data-variant-scope]'),locale=dialog.querySelector('[data-variant-locale]');
       function refresh(){var x=scopes[Number(scope.value)||0];var allowed=variants.filter(function(v){return (v.culturalScope||'')===x.culturalScope&&(v.countryCode||'')===x.countryCode;});var locales=[];allowed.forEach(function(v){(v.locales||[]).forEach(function(l){if(!locales.includes(l))locales.push(l);});});locale.innerHTML=locales.map(function(l){return '<option value="'+esc(l)+'">'+esc(localeFullLabel(l))+'</option>';}).join('');}
       scope.onchange=refresh;refresh();dialog.querySelector('[data-cancel]').onclick=function(){dialog.close();resolve(null);};dialog.querySelector('[data-confirm]').onclick=function(){var x=scopes[Number(scope.value)||0];var out={culturalScope:x.culturalScope,countryCode:x.countryCode,locale:locale.value};dialog.close();resolve(out);};dialog.addEventListener('close',function(){setTimeout(function(){dialog.remove();},0);},{once:true});dialog.showModal();
