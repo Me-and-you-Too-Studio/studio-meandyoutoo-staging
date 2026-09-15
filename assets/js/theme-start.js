@@ -155,11 +155,11 @@
       var oldChoicePanel=document.getElementById('theme-chapter-choice-panel');if(oldChoicePanel)oldChoicePanel.remove();
       if(choiceGroups.length){
         var choicePanel=document.createElement('section');choicePanel.id='theme-chapter-choice-panel';choicePanel.className='theme-choice-panel';
-        choicePanel.innerHTML='<div class="theme-choice-head"><p class="eyebrow">Parcours du diagnostic</p><h2>Certains chapitres sont au choix</h2><p>Comparez les approches proposées et sélectionnez celle qui correspond le mieux à votre objectif. Le choix recommandé est présélectionné.</p></div>'+choiceGroups.map(function(ch,groupIndex){
+        choicePanel.innerHTML='<div class="theme-choice-head"><p class="eyebrow">Parcours du diagnostic</p><h2>Certains chapitres sont au choix</h2><p>Comparez les approches proposées et sélectionnez celle qui correspond le mieux à votre objectif. Une option est présélectionnée, mais vous pouvez choisir l’approche la plus adaptée à votre objectif.</p></div>'+choiceGroups.map(function(ch,groupIndex){
           var opts=ch.alternatives||[],selected=opts.find(function(o){return o.is_default_choice;})||opts[0];pageChoiceSelections[ch.choice_group]=selected.id;
           return '<fieldset class="theme-choice-group"><legend>Choix '+(groupIndex+1)+'</legend><div class="theme-choice-options">'+opts.map(function(o){
             var checked=String(o.id)===String(selected.id);
-            return '<label class="theme-choice-card'+(checked?' is-selected':'')+'"><input type="radio" name="choice-'+groupIndex+'" value="'+esc(o.id)+'" data-choice-group="'+esc(ch.choice_group)+'" '+(checked?'checked':'')+'><span class="theme-choice-card-top"><strong>'+esc(o.choice_label||o.title)+'</strong>'+(o.is_default_choice?'<em>Recommandé</em>':'')+'</span><span class="theme-choice-description">'+esc(o.client_description||('Ce chapitre aborde : '+(o.choice_label||o.title)+'.'))+'</span></label>';
+            return '<label class="theme-choice-card'+(checked?' is-selected':'')+'"><input type="radio" name="choice-'+groupIndex+'" value="'+esc(o.id)+'" data-choice-group="'+esc(ch.choice_group)+'" '+(checked?'checked':'')+'><span class="theme-choice-card-top"><strong>'+esc(o.choice_label||o.title)+'</strong>'+(o.is_default_choice?'<em>Présélectionné</em>':'')+'</span><span class="theme-choice-description">'+esc(o.client_description||'Consultez le contenu de ce chapitre pour choisir l’approche la plus adaptée à votre objectif.')+'</span></label>';
           }).join('')+'</div></fieldset>';
         }).join('');
         var card=table.closest('.table-card');if(card)card.insertAdjacentElement('beforebegin',choicePanel);
