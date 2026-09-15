@@ -203,7 +203,11 @@ async function loadPreviewData(preserveStep=false){try{
     const base=await api(`/api/projects/${pid}/composer?locale=${encodeURIComponent(previewLocale)}`);
     previewCountry=String(base.project?.selected_country_code||'FR').toUpperCase();
     const slug=base.project?.theme_slug||theme;
-    if(slug){try{const v=await api(`/api/catalog/themes/${encodeURIComponent(slug)}/variants`);const match=(v.variants||[]).find(x=>String(x.countryCode||'').toUpperCase()===previewCountry)||(v.variants||[]).find(x=>String(x.culturalScope||'').toLowerCase()===String(base.project?.selected_cultural_scope||'').toLowerCase());availablePreviewLocales=(match?.locales||[base.project?.selected_locale||'fr']).map(x=>String(x).toLowerCase().replaceAll('_','-'));}catch(_){availablePreviewLocales=[base.project?.selected_locale||'fr'];}}
+    // For an existing campaign, expose only the language(s) retained for that campaign,
+    // not every translation available in the catalogue for the perimeter.
+    const campaignLocale=String(base.project?.selected_locale||'fr').toLowerCase().replaceAll('_','-');
+    availablePreviewLocales=[campaignLocale];
+    previewLocale=campaignLocale;
     norm(base);
   }else{
     previewCountry='FR';
