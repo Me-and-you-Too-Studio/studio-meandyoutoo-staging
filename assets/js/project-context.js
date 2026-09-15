@@ -38,7 +38,8 @@
         creationIntent:confirmedSelection===true?'confirmed-theme-selection':'',
         culturalScope:variant&&variant.culturalScope||'',
         countryCode:variant&&variant.countryCode||'',
-        locale:variant&&variant.locale||''
+        locale:variant&&variant.locale||'',
+        choiceSelections:variant&&variant.choiceSelections||{}
       })
     });
     return data.project;

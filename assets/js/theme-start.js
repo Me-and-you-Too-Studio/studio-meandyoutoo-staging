@@ -2,6 +2,7 @@
   var params=new URLSearchParams(location.search);
   var existingProjectId=params.get('projectId')||'';
   var existingTheme=params.get('theme')||'';
+  var pageChoiceSelections={};
   var esc=function(value){return String(value==null?'':value).replace(/[&<>"']/g,function(character){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character];});};
 
   function previewDialog(){
@@ -111,8 +112,7 @@
         if(label&&!scopes.includes(label))scopes.push(label);
         (v.locales||[]).forEach(function(locale){if(locale&&!locales.includes(locale))locales.push(locale);});
       });
-      var isLegalScope=/sexis/i.test(String(themeSlug||''));
-      var scopeTitle=isLegalScope?'Périmètre culturel et légal':'Périmètre culturel';
+      var scopeTitle=payload.theme&&payload.theme.scopeKind==='cultural_legal'?'Périmètre culturel et légal':'Périmètre culturel';
       var block=document.createElement('div');
       block.dataset.themeAvailability='true';
       block.className='theme-availability-tags';
@@ -150,6 +150,22 @@
       if(startButton){startButton.dataset.startTheme=themeSlug;startButton.href='composer.html?theme='+encodeURIComponent(themeSlug);}
       renderThemeAvailability(themeSlug);
       var chapters=Array.isArray(data.chapters)?data.chapters:[];
+      pageChoiceSelections={};
+      var choiceGroups=chapters.filter(function(ch){return ch.choice_group&&Array.isArray(ch.alternatives)&&ch.alternatives.length>1;});
+      var oldChoicePanel=document.getElementById('theme-chapter-choice-panel');if(oldChoicePanel)oldChoicePanel.remove();
+      if(choiceGroups.length){
+        var choicePanel=document.createElement('section');choicePanel.id='theme-chapter-choice-panel';choicePanel.className='theme-choice-panel';
+        choicePanel.innerHTML='<div class="theme-choice-head"><p class="eyebrow">Parcours du diagnostic</p><h2>Certains chapitres sont au choix</h2><p>Comparez les approches proposées et sélectionnez celle qui correspond le mieux à votre objectif. Le choix recommandé est présélectionné.</p></div>'+choiceGroups.map(function(ch,groupIndex){
+          var opts=ch.alternatives||[],selected=opts.find(function(o){return o.is_default_choice;})||opts[0];pageChoiceSelections[ch.choice_group]=selected.id;
+          return '<fieldset class="theme-choice-group"><legend>Choix '+(groupIndex+1)+'</legend><div class="theme-choice-options">'+opts.map(function(o){
+            var checked=String(o.id)===String(selected.id);
+            return '<label class="theme-choice-card'+(checked?' is-selected':'')+'"><input type="radio" name="choice-'+groupIndex+'" value="'+esc(o.id)+'" data-choice-group="'+esc(ch.choice_group)+'" '+(checked?'checked':'')+'><span class="theme-choice-card-top"><strong>'+esc(o.choice_label||o.title)+'</strong>'+(o.is_default_choice?'<em>Recommandé</em>':'')+'</span><span class="theme-choice-description">'+esc(o.client_description||('Ce chapitre aborde : '+(o.choice_label||o.title)+'.'))+'</span></label>';
+          }).join('')+'</div></fieldset>';
+        }).join('');
+        var card=table.closest('.table-card');if(card)card.insertAdjacentElement('beforebegin',choicePanel);
+        choicePanel.querySelectorAll('[data-choice-group]').forEach(function(input){input.onchange=function(){pageChoiceSelections[input.dataset.choiceGroup]=Number(input.value);input.closest('.theme-choice-options').querySelectorAll('.theme-choice-card').forEach(function(card){card.classList.toggle('is-selected',Boolean(card.querySelector('input:checked')));});};});
+        if(!document.getElementById('theme-choice-styles')){var cs=document.createElement('style');cs.id='theme-choice-styles';cs.textContent='.theme-choice-panel{margin:0 0 28px;padding:28px;border:1px solid #d9e5ec;border-radius:24px;background:#fff}.theme-choice-head h2{margin:4px 0 8px;color:#173762}.theme-choice-head p:last-child{margin:0 0 22px;color:#60758b}.theme-choice-group{border:0;padding:0;margin:20px 0 0}.theme-choice-group legend{font-weight:800;color:#0d4c72;margin-bottom:10px}.theme-choice-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.theme-choice-card{display:grid;gap:10px;padding:18px;border:1.5px solid #d5e1e8;border-radius:18px;background:#fbfdfe;cursor:pointer;transition:.18s}.theme-choice-card:hover{border-color:#8bbbc6;background:#fff}.theme-choice-card.is-selected{border-color:#078b93;box-shadow:0 0 0 3px rgba(7,139,147,.10);background:#f5fbfb}.theme-choice-card input{position:absolute;opacity:0;pointer-events:none}.theme-choice-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#173762}.theme-choice-card-top em{font-style:normal;font-size:.75rem;padding:5px 8px;border-radius:999px;background:#e7f6f4;color:#08777d}.theme-choice-description{color:#5e7287;line-height:1.45;font-size:.92rem}@media(max-width:760px){.theme-choice-options{grid-template-columns:1fr}.theme-choice-panel{padding:20px}}';document.head.appendChild(cs);}
+      }
       table.querySelector('thead').innerHTML='<tr><th>Chapitre du catalogue</th><th>Situations de référence</th><th>Usage</th><th>Action</th></tr>';
       table.querySelector('tbody').innerHTML=chapters.map(function(chapter,index){
         var count=Array.isArray(chapter.situations)?chapter.situations.length:0;
@@ -184,14 +200,14 @@
 
   function localeFullLabel(code){
     var key=String(code||'').toLowerCase().replaceAll('_','-');
-    var names={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',nl:'Néerlandais',pl:'Polonais',cs:'Tchèque',sk:'Slovaque',id:'Indonésien',ja:'Japonais',ko:'Coréen','ko-kr':'Coréen',zh:'Chinois',ar:'Arabe',ro:'Roumain',bg:'Bulgare',ru:'Russe',tr:'Turc',da:'Danois',no:'Norvégien',sv:'Suédois'};
+    var names={fr:'Français',en:'Anglais',bg:'Bulgare',br:'Portugais Brésil',de:'Allemand',es:'Espagnol',it:'Italien',ja:'Japonais',ko:'Coréen','ko-kr':'Coréen',nl:'Néerlandais','nl-be':'Néerlandais Belgique',pl:'Polonais',pt:'Portugais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',sv:'Suédois',tr:'Turc',zf:'Chinois simplifié',zh:'Chinois traditionnel',cs:'Tchèque',sk:'Slovaque',id:'Indonésien',ar:'Arabe',da:'Danois',no:'Norvégien'};
     return (names[key]||key.toUpperCase())+' ('+key.toUpperCase()+')';
   }
   function chooseCatalogVariant(variants){
     return new Promise(function(resolve){
       var dialog=document.createElement('dialog');dialog.className='studio-modal';
       var scopes=[];variants.forEach(function(v){var k=(v.culturalScope||'')+'|'+(v.countryCode||'');if(!scopes.some(function(x){return x.key===k;}))scopes.push({key:k,label:v.scopeLabel||v.countryLabel||v.culturalScope||v.countryCode||'International',culturalScope:v.culturalScope||'',countryCode:v.countryCode||''});});
-      var scopeFieldLabel=/sexis/i.test(String(existingTheme||document.querySelector('.hero-panel [data-start-theme]')?.dataset.startTheme||''))?'Périmètre culturel et légal':'Périmètre culturel';
+      var scopeFieldLabel=(variants._scopeKind==='cultural_legal')?'Périmètre culturel et légal':'Périmètre culturel';
       dialog.innerHTML='<form method="dialog" class="studio-modal-shell version-picker-shell"><div class="studio-modal-copy version-picker-copy"><p class="eyebrow">Version du diagnostic</p><h2>Choisissez le périmètre et la langue</h2><p class="studio-modal-message">Cette sélection détermine la version du catalogue utilisée pour votre campagne.</p></div><div class="version-picker-fields"><div class="studio-modal-field version-picker-field"><label>'+esc(scopeFieldLabel)+'</label><div class="version-picker-select-wrap"><select data-variant-scope class="version-picker-select">'+scopes.map(function(x,i){return '<option value="'+i+'">'+esc(x.label)+'</option>';}).join('')+'</select></div></div><div class="studio-modal-field version-picker-field"><label>Langue disponible</label><div class="version-picker-select-wrap"><select data-variant-locale class="version-picker-select"></select></div></div></div><div class="studio-modal-actions version-picker-actions"><button type="button" class="button button-secondary" data-cancel>Annuler</button><button type="button" class="button button-primary" data-confirm>Continuer vers la composition</button></div></form>';
       if(!document.getElementById('version-picker-style')){var modalStyle=document.createElement('style');modalStyle.id='version-picker-style';modalStyle.textContent='.version-picker-shell{max-width:680px!important;grid-template-columns:1fr!important;padding:38px 38px 30px!important;border:0!important;border-radius:28px!important;box-shadow:0 28px 80px rgba(18,48,72,.28)!important;overflow:hidden}.version-picker-copy{padding-right:0!important;margin-bottom:6px}.version-picker-copy h2{margin:5px 0 10px}.version-picker-fields{display:grid;gap:18px;margin-top:16px}.version-picker-field{display:grid;gap:8px}.version-picker-field label{font-size:.9rem;font-weight:800;color:#203b68}.version-picker-select-wrap{position:relative}.version-picker-select{display:block;width:100%;height:54px;box-sizing:border-box;appearance:none;-webkit-appearance:none;border:1.5px solid #c9d9e4;border-radius:14px;background:#f8fbfc;padding:0 48px 0 16px;font:inherit;font-size:1rem;font-weight:650;color:#203b68;outline:none;box-shadow:0 1px 2px rgba(13,76,114,.04);transition:border-color .18s,box-shadow .18s,background .18s}.version-picker-select:hover{background:#fff;border-color:#91bcc9}.version-picker-select:focus{background:#fff;border-color:#078b93;box-shadow:0 0 0 4px rgba(7,139,147,.13)}.version-picker-select-wrap:after{content:"⌄";position:absolute;right:17px;top:50%;transform:translateY(-57%);font-size:24px;line-height:1;color:#0d4c72;pointer-events:none}.version-picker-actions{margin-top:28px!important;padding-top:24px!important;border-top:1px solid #e4edf2!important;gap:12px!important}.version-picker-actions .button{min-height:52px;border-radius:14px!important;padding-left:22px!important;padding-right:22px!important}@media(max-width:720px){.version-picker-shell{padding:28px 22px 22px!important;border-radius:22px!important}.version-picker-actions{display:grid!important;grid-template-columns:1fr!important}.version-picker-actions .button{width:100%}}';document.head.appendChild(modalStyle);}
       document.body.appendChild(dialog);var scope=dialog.querySelector('[data-variant-scope]'),locale=dialog.querySelector('[data-variant-locale]');
@@ -231,6 +247,7 @@
       try{
         var options=await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(themeSlug)+'/variants');
         var variants=Array.isArray(options.variants)?options.variants:[];
+        variants._scopeKind=options.theme&&options.theme.scopeKind||'cultural';
         if(variants.length){
           variant=await chooseCatalogVariant(variants);
           if(!variant)return;
@@ -238,6 +255,7 @@
       }catch(optionError){
         await window.StudioModal.alert({eyebrow:'Version du diagnostic',title:'Impossible de charger les versions disponibles',message:optionError.message,type:'error'});return;
       }
+      variant.choiceSelections=Object.assign({},pageChoiceSelections);
       link.dataset.creating='true';
       link.setAttribute('aria-busy','true');
       var oldText=link.textContent;
