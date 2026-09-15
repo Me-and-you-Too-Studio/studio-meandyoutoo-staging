@@ -151,15 +151,26 @@
       renderThemeAvailability(themeSlug);
       var chapters=Array.isArray(data.chapters)?data.chapters:[];
       table.querySelector('thead').innerHTML='<tr><th>Chapitre du catalogue</th><th>Situations de référence</th><th>Usage</th><th>Action</th></tr>';
-      table.querySelector('tbody').innerHTML=chapters.map(function(chapter,index){
+      var groupCounts={};
+      chapters.forEach(function(ch){if(ch.choice_group)groupCounts[ch.choice_group]=(groupCounts[ch.choice_group]||0)+1;});
+      var renderedGroups={};
+      var bodyHtml='';
+      chapters.forEach(function(chapter,index){
         var count=Array.isArray(chapter.situations)?chapter.situations.length:0;
-        var isAlternative=Boolean(chapter.choice_group);
-        var choiceBadge=isAlternative?'<span class="theme-choice-badge">Chapitre au choix'+(chapter.is_default_choice?' · présélectionné':'')+'</span>':'';
+        var hasChoice=Boolean(chapter.choice_group&&groupCounts[chapter.choice_group]>1);
+        if(hasChoice&&!renderedGroups[chapter.choice_group]){
+          renderedGroups[chapter.choice_group]=true;
+          var members=chapters.filter(function(x){return x.choice_group===chapter.choice_group;});
+          var labels=members.map(function(x){return '<strong>'+esc(x.title)+'</strong>';}).join(' ou ');
+          bodyHtml+='<tr class="theme-choice-explainer"><td colspan="4"><div class="theme-choice-explainer-box"><span class="theme-choice-kicker">Chapitre au choix</span><div><strong>À vous de choisir entre '+labels+'.</strong><p>Consultez le contenu et l’objectif de chaque proposition pour choisir l’approche la plus adaptée à votre campagne. Le choix présélectionné pourra être changé avant de composer.</p></div></div></td></tr>';
+        }
+        var choiceBadge=hasChoice?'<span class="theme-choice-badge">'+(chapter.is_default_choice?'Présélectionné':'Alternative')+'</span>':'';
         var description=String(chapter.client_description||'').trim()||'Consultez le contenu de ce chapitre pour choisir l’approche la plus adaptée à votre objectif.';
-        var usage=chapter.locked?(chapter.lock_reason||'Obligatoire · non modifiable'):(isAlternative?'Alternative du catalogue':'Catalogue Me&YouToo');
-        return '<tr class="'+(isAlternative?'is-choice-chapter':'')+'"><td><div class="theme-chapter-title"><strong>'+esc(chapter.title)+'</strong>'+choiceBadge+'</div><p class="theme-chapter-description">'+esc(description)+'</p></td><td>'+count+'</td><td>'+esc(usage)+'</td><td><button class="button button-secondary" type="button" data-preview-chapter="'+index+'">Voir le catalogue</button></td></tr>';
-      }).join('');
-      if(!document.getElementById('theme-chapter-description-styles')){var cs=document.createElement('style');cs.id='theme-chapter-description-styles';cs.textContent='.theme-chapter-title{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px}.theme-choice-badge{display:inline-flex;padding:5px 9px;border-radius:999px;background:#eef8fb;border:1px solid #b9dbe7;color:#0d4c72;font-size:.75rem;font-weight:800}.theme-chapter-description{max-width:720px;margin:8px 0 0;color:#536a82;line-height:1.48;font-size:.9rem}.data-table tr.is-choice-chapter td:first-child{border-left:3px solid #9ccfd5;padding-left:17px}';document.head.appendChild(cs);}
+        var usage=chapter.locked?(chapter.lock_reason||'Obligatoire · non modifiable'):(hasChoice?'Chapitre au choix':'Catalogue Me&YouToo');
+        bodyHtml+='<tr class="'+(hasChoice?'is-choice-chapter':'')+'"><td><div class="theme-chapter-title"><strong>'+esc(chapter.title)+'</strong>'+choiceBadge+'</div><p class="theme-chapter-description">'+esc(description)+'</p></td><td>'+count+'</td><td>'+esc(usage)+'</td><td><button class="button button-secondary" type="button" data-preview-chapter="'+index+'">Voir le catalogue</button></td></tr>';
+      });
+      table.querySelector('tbody').innerHTML=bodyHtml;
+      if(!document.getElementById('theme-chapter-description-styles')){var cs=document.createElement('style');cs.id='theme-chapter-description-styles';cs.textContent='.theme-chapter-title{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px}.theme-choice-badge{display:inline-flex;padding:5px 9px;border-radius:999px;background:#eef8fb;border:1px solid #b9dbe7;color:#0d4c72;font-size:.75rem;font-weight:800}.theme-chapter-description{max-width:720px;margin:8px 0 0;color:#536a82;line-height:1.48;font-size:.9rem}.data-table tr.is-choice-chapter td:first-child{border-left:3px solid #9ccfd5;padding-left:17px}.theme-choice-explainer td{padding:16px 20px!important;background:#f7fbfc}.theme-choice-explainer-box{display:flex;gap:14px;align-items:flex-start}.theme-choice-kicker{flex:0 0 auto;display:inline-flex;padding:6px 10px;border-radius:999px;background:#0d4c72;color:#fff;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em}.theme-choice-explainer-box p{margin:5px 0 0;color:#536a82;line-height:1.45}';document.head.appendChild(cs);}
       table.querySelectorAll('[data-preview-chapter]').forEach(function(button){button.onclick=function(){showChapterPreview(chapters[Number(button.dataset.previewChapter)],Number(button.dataset.previewChapter));};});
       // Côté client, la bibliothèque complémentaire reste un outil de personnalisation :
       // elle n'est pas exposée comme un second catalogue à parcourir.
