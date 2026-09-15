@@ -103,15 +103,42 @@
     var table=document.querySelector('.table-card .data-table');
     if(!themeSlug||!table)return;
     try{
-      var data=await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(themeSlug)+'/template');
+      async function resolveThemeSlug(slug){
+        try{return {slug:slug,data:await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(slug)+'/template')};}
+        catch(firstError){
+          if(!/introuvable|404/i.test(String(firstError&&firstError.message||'')))throw firstError;
+          var listing=await window.StudioAPI.request('/api/catalog/themes');
+          var aliases={collaborateur:['collaborateur inclusif','collègue inclusif','collegue inclusif']};
+          var wanted=aliases[slug]||[slug.replace(/[-_]/g,' ')];
+          var found=(listing.themes||[]).find(function(theme){var hay=(String(theme.slug||'')+' '+String(theme.title||'')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');return wanted.some(function(label){return hay.includes(String(label).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''));});});
+          if(!found)throw firstError;
+          return {slug:found.slug,data:await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(found.slug)+'/template')};
+        }
+      }
+      var resolved=await resolveThemeSlug(themeSlug),data=resolved.data;
+      themeSlug=resolved.slug;
+      if(startButton){startButton.dataset.startTheme=themeSlug;startButton.href='composer.html?theme='+encodeURIComponent(themeSlug);}
       var chapters=Array.isArray(data.chapters)?data.chapters:[];
-      table.querySelector('thead').innerHTML='<tr><th>Chapitre</th><th>Situations</th><th>Usage</th><th>Action</th></tr>';
+      table.querySelector('thead').innerHTML='<tr><th>Chapitre du catalogue</th><th>Situations de référence</th><th>Usage</th><th>Action</th></tr>';
       table.querySelector('tbody').innerHTML=chapters.map(function(chapter,index){
         var count=Array.isArray(chapter.situations)?chapter.situations.length:0;
-        var usage=chapter.locked?(chapter.lock_reason||'Obligatoire · non modifiable'):'Sélection personnalisable';
-        return '<tr><td><strong>'+esc(chapter.title)+'</strong></td><td>'+count+'</td><td>'+esc(usage)+'</td><td><button class="button button-secondary" type="button" data-preview-chapter="'+index+'">Voir les situations</button></td></tr>';
+        var usage=chapter.locked?(chapter.lock_reason||'Obligatoire · non modifiable'):'Catalogue Me&YouToo';
+        return '<tr><td><strong>'+esc(chapter.title)+'</strong></td><td>'+count+'</td><td>'+esc(usage)+'</td><td><button class="button button-secondary" type="button" data-preview-chapter="'+index+'">Voir le catalogue</button></td></tr>';
       }).join('');
       table.querySelectorAll('[data-preview-chapter]').forEach(function(button){button.onclick=function(){showChapterPreview(chapters[Number(button.dataset.previewChapter)],Number(button.dataset.previewChapter));};});
+      // Côté client, la bibliothèque complémentaire reste un outil de personnalisation :
+      // elle n'est pas exposée comme un second catalogue à parcourir.
+      var oldLibrarySection=document.getElementById('theme-library-complement');
+      if(oldLibrarySection)oldLibrarySection.remove();
+      var catalogCard=table.closest('.table-card');
+      if(catalogCard&&!document.getElementById('theme-personalization-note')){
+        var note=document.createElement('div');
+        note.id='theme-personalization-note';
+        note.className='section-desc';
+        note.style.cssText='padding:0 18px 18px';
+        note.innerHTML='<strong>Un catalogue personnalisable.</strong> Vous pourrez adapter cette sélection dans Composer grâce à la bibliothèque de contenus Me&amp;YouToo.';
+        catalogCard.appendChild(note);
+      }
       renderThemeVideos(chapters);
     }catch(error){
       var section=document.querySelector('.table-card');
@@ -122,6 +149,22 @@
   if(existingProjectId){
     var newCampaignPanel=document.querySelector('.hero-panel [data-start-theme]');
     if(newCampaignPanel)newCampaignPanel.closest('.hero-panel').hidden=true;
+  }
+
+  function localeFullLabel(code){
+    var key=String(code||'').toLowerCase().replaceAll('_','-');
+    var names={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',nl:'Néerlandais',pl:'Polonais',cs:'Tchèque',sk:'Slovaque',id:'Indonésien',ja:'Japonais',ko:'Coréen','ko-kr':'Coréen',zh:'Chinois',ar:'Arabe',ro:'Roumain',bg:'Bulgare',ru:'Russe',tr:'Turc',da:'Danois',no:'Norvégien',sv:'Suédois'};
+    return (names[key]||key.toUpperCase())+' ('+key.toUpperCase()+')';
+  }
+  function chooseCatalogVariant(variants){
+    return new Promise(function(resolve){
+      var dialog=document.createElement('dialog');dialog.className='studio-modal';
+      var scopes=[];variants.forEach(function(v){var k=(v.culturalScope||'')+'|'+(v.countryCode||'');if(!scopes.some(function(x){return x.key===k;}))scopes.push({key:k,label:v.scopeLabel||v.countryLabel||v.culturalScope||v.countryCode||'International',culturalScope:v.culturalScope||'',countryCode:v.countryCode||''});});
+      dialog.innerHTML='<form method="dialog" class="studio-modal-card" style="max-width:680px"><div class="studio-modal-body"><p class="eyebrow">Version du diagnostic</p><h2>Choisissez le périmètre et la langue</h2><p>Cette sélection détermine la version du catalogue utilisée pour votre campagne.</p><label style="display:grid;gap:7px;margin-top:20px"><strong>Périmètre culturel / pays</strong><select data-variant-scope class="input">'+scopes.map(function(x,i){return '<option value="'+i+'">'+esc(x.label)+'</option>';}).join('')+'</select></label><label style="display:grid;gap:7px;margin-top:16px"><strong>Langue du diagnostic</strong><select data-variant-locale class="input"></select></label></div><div class="studio-modal-actions"><button type="button" class="button button-secondary" data-cancel>Annuler</button><button type="button" class="button button-primary" data-confirm>Continuer vers la composition</button></div></form>';
+      document.body.appendChild(dialog);var scope=dialog.querySelector('[data-variant-scope]'),locale=dialog.querySelector('[data-variant-locale]');
+      function refresh(){var x=scopes[Number(scope.value)||0];var allowed=variants.filter(function(v){return (v.culturalScope||'')===x.culturalScope&&(v.countryCode||'')===x.countryCode;});var locales=[];allowed.forEach(function(v){(v.locales||[]).forEach(function(l){if(!locales.includes(l))locales.push(l);});});locale.innerHTML=locales.map(function(l){return '<option value="'+esc(l)+'">'+esc(localeFullLabel(l))+'</option>';}).join('');}
+      scope.onchange=refresh;refresh();dialog.querySelector('[data-cancel]').onclick=function(){dialog.close();resolve(null);};dialog.querySelector('[data-confirm]').onclick=function(){var x=scopes[Number(scope.value)||0];var out={culturalScope:x.culturalScope,countryCode:x.countryCode,locale:locale.value};dialog.close();resolve(out);};dialog.addEventListener('close',function(){setTimeout(function(){dialog.remove();},0);},{once:true});dialog.showModal();
+    });
   }
 
   // La création d'un brouillon est réservée au CTA principal de la page.
@@ -150,13 +193,25 @@
         return;
       }
 
+      // Avant toute création, le client choisit la version culturelle et linguistique réelle.
+      var variant={};
+      try{
+        var options=await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(themeSlug)+'/variants');
+        var variants=Array.isArray(options.variants)?options.variants:[];
+        if(variants.length){
+          variant=await chooseCatalogVariant(variants);
+          if(!variant)return;
+        }
+      }catch(optionError){
+        await window.StudioModal.alert({eyebrow:'Version du diagnostic',title:'Impossible de charger les versions disponibles',message:optionError.message,type:'error'});return;
+      }
       link.dataset.creating='true';
       link.setAttribute('aria-busy','true');
       var oldText=link.textContent;
       link.textContent='Création de la campagne…';
 
       try{
-        var project=await window.StudioProject.createNew(themeSlug,true);
+        var project=await window.StudioProject.createNew(themeSlug,true,variant);
         if(!project||!project.id) throw new Error('Le nouveau brouillon n’a pas pu être créé.');
         location.href=composerUrl(project.id);
       }catch(error){
