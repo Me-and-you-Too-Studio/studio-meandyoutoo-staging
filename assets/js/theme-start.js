@@ -202,16 +202,66 @@
     var names={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',br:'Portugais (Brésil)',nl:'Néerlandais','nl-be':'Néerlandais (Belgique)',pl:'Polonais',cs:'Tchèque',sk:'Slovaque',id:'Indonésien',ja:'Japonais',ko:'Coréen','ko-kr':'Coréen',zh:'Chinois traditionnel',zf:'Chinois simplifié',ar:'Arabe',ro:'Roumain',bg:'Bulgare',ru:'Russe',tr:'Turc',da:'Danois',no:'Norvégien',sv:'Suédois','sv-se':'Suédois'};
     return (names[key]||key.toUpperCase())+' ('+key.toUpperCase()+')';
   }
-  function chooseCatalogVariant(variants,isLegalScope){
+  function chooseCatalogVariant(options,isLegalScope){
     return new Promise(function(resolve){
+      var variants=Array.isArray(options.variants)?options.variants:[];
+      var caps=Array.isArray(options.chapterCapabilities)?options.chapterCapabilities:[];
+      var groups=options.choiceGroups||{};
       var dialog=document.createElement('dialog');dialog.className='studio-modal';
-      var scopes=[];variants.forEach(function(v){var k=(v.culturalScope||'')+'|'+(v.countryCode||'');if(!scopes.some(function(x){return x.key===k;}))scopes.push({key:k,label:v.scopeLabel||v.countryLabel||v.culturalScope||v.countryCode||'International',culturalScope:v.culturalScope||'',countryCode:v.countryCode||''});});
-      var scopeFieldLabel=isLegalScope?'Périmètre culturel et légal':'Périmètre culturel';
-      dialog.innerHTML='<form method="dialog" class="studio-modal-shell version-picker-shell"><div class="studio-modal-copy version-picker-copy"><p class="eyebrow">Version du diagnostic</p><h2>Choisissez le périmètre et la langue</h2><p class="studio-modal-message">Cette sélection détermine la version du catalogue utilisée pour votre campagne.</p></div><div class="version-picker-fields"><div class="studio-modal-field version-picker-field"><label>'+esc(scopeFieldLabel)+'</label><div class="version-picker-select-wrap"><select data-variant-scope class="version-picker-select">'+scopes.map(function(x,i){return '<option value="'+i+'">'+esc(x.label)+'</option>';}).join('')+'</select></div></div><div class="studio-modal-field version-picker-field"><label>Langue disponible</label><div class="version-picker-select-wrap"><select data-variant-locale class="version-picker-select"></select></div></div></div><div class="studio-modal-actions version-picker-actions"><button type="button" class="button button-secondary" data-cancel>Annuler</button><button type="button" class="button button-primary" data-confirm>Continuer vers la composition</button></div></form>';
-      if(!document.getElementById('version-picker-style')){var modalStyle=document.createElement('style');modalStyle.id='version-picker-style';modalStyle.textContent='.version-picker-shell{max-width:680px!important;grid-template-columns:1fr!important;padding:38px 38px 30px!important;border:0!important;border-radius:28px!important;box-shadow:0 28px 80px rgba(18,48,72,.28)!important;overflow:hidden}.version-picker-copy{padding-right:0!important;margin-bottom:6px}.version-picker-copy h2{margin:5px 0 10px}.version-picker-fields{display:grid;gap:18px;margin-top:16px}.version-picker-field{display:grid;gap:8px}.version-picker-field label{font-size:.9rem;font-weight:800;color:#203b68}.version-picker-select-wrap{position:relative}.version-picker-select{display:block;width:100%;height:54px;box-sizing:border-box;appearance:none;-webkit-appearance:none;border:1.5px solid #c9d9e4;border-radius:14px;background:#f8fbfc;padding:0 48px 0 16px;font:inherit;font-size:1rem;font-weight:650;color:#203b68;outline:none;box-shadow:0 1px 2px rgba(13,76,114,.04);transition:border-color .18s,box-shadow .18s,background .18s}.version-picker-select:hover{background:#fff;border-color:#91bcc9}.version-picker-select:focus{background:#fff;border-color:#078b93;box-shadow:0 0 0 4px rgba(7,139,147,.13)}.version-picker-select-wrap:after{content:"⌄";position:absolute;right:17px;top:50%;transform:translateY(-57%);font-size:24px;line-height:1;color:#0d4c72;pointer-events:none}.version-picker-actions{margin-top:28px!important;padding-top:24px!important;border-top:1px solid #e4edf2!important;gap:12px!important}.version-picker-actions .button{min-height:52px;border-radius:14px!important;padding-left:22px!important;padding-right:22px!important}@media(max-width:720px){.version-picker-shell{padding:28px 22px 22px!important;border-radius:22px!important}.version-picker-actions{display:grid!important;grid-template-columns:1fr!important}.version-picker-actions .button{width:100%}}';document.head.appendChild(modalStyle);}
-      document.body.appendChild(dialog);var scope=dialog.querySelector('[data-variant-scope]'),locale=dialog.querySelector('[data-variant-locale]');
-      function refresh(){var x=scopes[Number(scope.value)||0];var allowed=variants.filter(function(v){return (v.culturalScope||'')===x.culturalScope&&(v.countryCode||'')===x.countryCode;});var locales=[];allowed.forEach(function(v){(v.locales||[]).forEach(function(l){if(!locales.includes(l))locales.push(l);});});locale.innerHTML=locales.map(function(l){return '<option value="'+esc(l)+'">'+esc(localeFullLabel(l))+'</option>';}).join('');}
-      scope.onchange=refresh;refresh();dialog.querySelector('[data-cancel]').onclick=function(){dialog.close();resolve(null);};dialog.querySelector('[data-confirm]').onclick=function(){var x=scopes[Number(scope.value)||0];var out={culturalScope:x.culturalScope,countryCode:x.countryCode,locale:locale.value};dialog.close();resolve(out);};dialog.addEventListener('close',function(){setTimeout(function(){dialog.remove();},0);},{once:true});dialog.showModal();
+      var groupKeys=Object.keys(groups);
+      var defaults={};
+      groupKeys.forEach(function(g){var d=(groups[g]||[]).find(function(c){return c.isDefaultChoice;})||(groups[g]||[])[0];if(d)defaults[g]=String(d.id);});
+      var scopeFieldLabel=isLegalScope?'Périmètres culturels et légaux':'Périmètres de la campagne';
+      dialog.innerHTML='<form method="dialog" class="studio-modal-shell version-picker-shell"><div class="studio-modal-copy"><p class="eyebrow">Configuration du diagnostic</p><h2>Choisissez votre parcours, vos périmètres et vos langues</h2><p class="studio-modal-message">Les périmètres et langues proposés s’adaptent aux chapitres que vous retenez.</p></div><div data-choice-groups></div><div class="version-picker-section"><h3>'+esc(scopeFieldLabel)+'</h3><div data-country-checks class="version-check-grid"></div></div><div class="version-picker-section"><h3>Langues de la campagne</h3><p class="version-picker-help">Uniquement les langues compatibles avec les chapitres et périmètres sélectionnés.</p><div data-locale-checks class="version-check-grid"></div></div><div class="studio-modal-actions version-picker-actions"><button type="button" class="button button-secondary" data-cancel>Annuler</button><button type="button" class="button button-primary" data-confirm>Continuer vers la composition</button></div></form>';
+      if(!document.getElementById('version-picker-style')){var st=document.createElement('style');st.id='version-picker-style';st.textContent='.version-picker-shell{max-width:820px!important;grid-template-columns:1fr!important;padding:34px!important;border:0!important;border-radius:28px!important;box-shadow:0 28px 80px rgba(18,48,72,.28)!important}.version-picker-section{margin-top:24px}.version-picker-section h3{margin:0 0 10px;color:#203b68}.version-picker-help{margin:-4px 0 12px;color:#60758b;font-size:.9rem}.version-choice-group{margin-top:20px;padding:16px;border:1px solid #dbe7ee;border-radius:16px;background:#f8fbfc}.version-choice-group h3{margin:0 0 10px}.version-choice-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.version-choice-card,.version-check{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid #cbdce6;border-radius:14px;background:#fff;cursor:pointer}.version-choice-card:has(input:checked),.version-check:has(input:checked){border-color:#078b93;box-shadow:0 0 0 3px rgba(7,139,147,.10)}.version-choice-card strong{display:block;color:#203b68}.version-choice-card small{display:block;margin-top:5px;color:#60758b;line-height:1.35}.version-cap{display:block;margin-top:6px;font-size:.76rem;color:#0d6b75}.version-check-grid{display:flex;flex-wrap:wrap;gap:9px}.version-check{padding:9px 12px;align-items:center}.version-check input,.version-choice-card input{accent-color:#078b93}.version-picker-actions{margin-top:28px!important;padding-top:22px!important;border-top:1px solid #e4edf2!important}.version-empty{color:#a33;background:#fff4f2;padding:10px 12px;border-radius:10px}@media(max-width:720px){.version-picker-shell{padding:24px 18px!important}.version-choice-options{grid-template-columns:1fr}}';document.head.appendChild(st);}
+      document.body.appendChild(dialog);
+      var groupsRoot=dialog.querySelector('[data-choice-groups]'),countriesRoot=dialog.querySelector('[data-country-checks]'),localesRoot=dialog.querySelector('[data-locale-checks]');
+      function capLine(c){var p=c.worldwide?'Tous les périmètres disponibles':((c.countryCodes||[]).join(', ')||'Selon le référentiel');var ls=(c.locales||[]).map(localeFullLabel).join(' · ');return 'Périmètre : '+p+(ls?' · Langues : '+ls:'');}
+      groupKeys.forEach(function(g,gi){
+        var members=groups[g]||[];
+        var box=document.createElement('section');box.className='version-choice-group';
+        box.innerHTML='<h3>Chapitre au choix</h3><div class="version-choice-options">'+members.map(function(c){return '<label class="version-choice-card"><input type="radio" name="choice-'+gi+'" value="'+esc(String(c.id))+'" '+(String(c.id)===defaults[g]?'checked':'')+'><span><strong>'+esc(c.title)+'</strong><small>'+esc(c.description||'Consultez le contenu de ce chapitre pour choisir l’approche la plus adaptée à votre objectif.')+'</small><span class="version-cap">'+esc(capLine(c))+'</span></span></label>';}).join('')+'</div>';
+        groupsRoot.appendChild(box);
+      });
+      function selectedCaps(){
+        var chosen={};groupKeys.forEach(function(g,gi){var r=dialog.querySelector('input[name="choice-'+gi+'"]:checked');if(r)chosen[g]=r.value;});
+        return caps.filter(function(c){return !c.choiceGroup||String(c.id)===chosen[c.choiceGroup];});
+      }
+      function compatibleCountries(){
+        var selected=selectedCaps(),all=variants.map(function(v){return v.countryCode;}).filter(Boolean);
+        return all.filter(function(code){return selected.every(function(c){return c.worldwide||!(c.countryCodes||[]).length||(c.countryCodes||[]).includes(code);});});
+      }
+      function renderCountries(){
+        var previous=[].slice.call(countriesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
+        var allowed=compatibleCountries();
+        countriesRoot.innerHTML=allowed.length?allowed.map(function(code){var v=variants.find(function(x){return x.countryCode===code;});return '<label class="version-check"><input type="checkbox" value="'+esc(code)+'" '+(previous.includes(code)?'checked':'')+'><span>'+esc(v?v.scopeLabel:code)+'</span></label>';}).join(''):'<div class="version-empty">Aucun périmètre n’est compatible avec ce choix de chapitres.</div>';
+        if(!countriesRoot.querySelector('input:checked')&&countriesRoot.querySelector('input'))countriesRoot.querySelector('input').checked=true;
+        countriesRoot.querySelectorAll('input').forEach(function(i){i.onchange=renderLocales;});renderLocales();
+      }
+      function renderLocales(){
+        var chosenCountries=[].slice.call(countriesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
+        var previous=[].slice.call(localesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
+        var selected=selectedCaps(),allowed=null;
+        chosenCountries.forEach(function(code){
+          var v=variants.find(function(x){return x.countryCode===code;});var ls=(v&&v.locales||[]).slice();
+          selected.forEach(function(c){if((c.locales||[]).length)ls=ls.filter(function(l){return c.locales.includes(l);});});
+          allowed=allowed===null?ls:allowed.filter(function(l){return ls.includes(l);});
+        });
+        allowed=(allowed||[]).filter(Boolean);
+        localesRoot.innerHTML=allowed.length?allowed.map(function(l){return '<label class="version-check"><input type="checkbox" value="'+esc(l)+'" '+(previous.includes(l)?'checked':'')+'><span>'+esc(localeFullLabel(l))+'</span></label>';}).join(''):'<div class="version-empty">Aucune langue commune n’est disponible pour cette combinaison.</div>';
+        if(!localesRoot.querySelector('input:checked')&&localesRoot.querySelector('input'))localesRoot.querySelector('input').checked=true;
+      }
+      dialog.querySelectorAll('[data-choice-groups] input[type=radio]').forEach(function(i){i.onchange=renderCountries;});
+      renderCountries();
+      dialog.querySelector('[data-cancel]').onclick=function(){dialog.close();resolve(null);};
+      dialog.querySelector('[data-confirm]').onclick=function(){
+        var countries=[].slice.call(countriesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
+        var locales=[].slice.call(localesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
+        if(!countries.length||!locales.length)return;
+        var choiceSelections={};groupKeys.forEach(function(g,gi){var r=dialog.querySelector('input[name="choice-'+gi+'"]:checked');if(r)choiceSelections[g]=Number(r.value);});
+        dialog.close();resolve({culturalScope:'country',countryCode:countries[0],locale:locales[0],countryCodes:countries,locales:locales,choiceSelections:choiceSelections});
+      };
+      dialog.addEventListener('close',function(){setTimeout(function(){dialog.remove();},0);},{once:true});dialog.showModal();
     });
   }
 
@@ -247,7 +297,7 @@
         var options=await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(themeSlug)+'/variants');
         var variants=Array.isArray(options.variants)?options.variants:[];
         if(variants.length){
-          variant=await chooseCatalogVariant(variants,Boolean(options.theme&&options.theme.culturalLegalScope));
+          variant=await chooseCatalogVariant(options,Boolean(options.theme&&options.theme.culturalLegalScope));
           if(!variant)return;
         }
       }catch(optionError){

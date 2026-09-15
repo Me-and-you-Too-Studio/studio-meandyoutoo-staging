@@ -39,6 +39,8 @@
         culturalScope:variant&&variant.culturalScope||'',
         countryCode:variant&&variant.countryCode||'',
         locale:variant&&variant.locale||'',
+        countryCodes:variant&&variant.countryCodes||[],
+        locales:variant&&variant.locales||[],
         choiceSelections:variant&&variant.choiceSelections||{}
       })
     });
