@@ -1,32 +1,38 @@
 (function(){
-  const root=document.getElementById('library-topics'),search=document.getElementById('search-topic');if(!root)return;
+  const root=document.getElementById('library-topics'),search=document.getElementById('search-topic'),scopeFilter=document.getElementById('filter-scope'),localeFilter=document.getElementById('filter-locale'),reset=document.getElementById('reset-library-filters');if(!root)return;
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const norm=v=>String(v||'').trim().toLowerCase().replaceAll('_','-');
   const known={sexisme:'theme-sexisme.html',handicap:'theme-handicap.html',lgbt:'theme-lgbt.html',origines:'theme-origines.html',religion:'theme-religion.html',intergenerationnel:'theme-intergenerationnel.html',management:'theme-management.html',collaborateur:'theme-collaborateur.html'};
   const fallbackDescriptions={management:'Équité, reconnaissance, décisions, feedback et coopération au quotidien.',sexisme:'Stéréotypes, micro-agressions, comportements sexistes et prévention.',handicap:"Recrutement, intégration, accessibilité et maintien dans l'emploi.",origines:'Préjugés, représentations, équité et inclusion au quotidien.',lgbt:'Inclusion, expressions de soi, alliances et discriminations ordinaires.',religion:'Comprendre, respecter la neutralité et gérer les situations sensibles.',intergenerationnel:'Coopération, transmission, représentations entre générations.',collaborateur:'Comportements du quotidien, coopération, vigilance et posture inclusive.'};
-  const plannedThemes=[
-    {slug:'sexisme',title:'Sexisme au travail',description:fallbackDescriptions.sexisme,situation_count:27,chapter_count:4},
-    {slug:'handicap',title:'Handicap',description:fallbackDescriptions.handicap,situation_count:46,chapter_count:4},
-    {slug:'lgbt',title:'LGBT+',description:fallbackDescriptions.lgbt,situation_count:38,chapter_count:4},
-    {slug:'origines',title:'Diversité des origines',description:fallbackDescriptions.origines,situation_count:52,chapter_count:6},
-    {slug:'religion',title:'Diversité religieuse et convictions',description:fallbackDescriptions.religion,situation_count:34,chapter_count:4},
-    {slug:'intergenerationnel',title:'Intergénérationnel',description:fallbackDescriptions.intergenerationnel,situation_count:28,chapter_count:4},
-    {slug:'management',title:'Management inclusif',description:fallbackDescriptions.management,situation_count:62,chapter_count:6},
-    {slug:'collaborateur',title:'Collaborateur inclusif',description:fallbackDescriptions.collaborateur,situation_count:42,chapter_count:5}
-  ];
+  const plannedThemes=[{slug:'sexisme',title:'Sexisme au travail',description:fallbackDescriptions.sexisme,situation_count:27,chapter_count:4},{slug:'handicap',title:'Handicap',description:fallbackDescriptions.handicap,situation_count:46,chapter_count:4},{slug:'lgbt',title:'LGBT+',description:fallbackDescriptions.lgbt,situation_count:38,chapter_count:4},{slug:'origines',title:'Diversité des origines',description:fallbackDescriptions.origines,situation_count:52,chapter_count:6},{slug:'religion',title:'Diversité religieuse et convictions',description:fallbackDescriptions.religion,situation_count:34,chapter_count:4},{slug:'intergenerationnel',title:'Intergénérationnel',description:fallbackDescriptions.intergenerationnel,situation_count:28,chapter_count:4},{slug:'management',title:'Management inclusif',description:fallbackDescriptions.management,situation_count:62,chapter_count:6},{slug:'collaborateur',title:'Collaborateur inclusif',description:fallbackDescriptions.collaborateur,situation_count:42,chapter_count:5}];
+  const localeNames={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',br:'Portugais (Brésil)',bg:'Bulgare',ar:'Arabe',ja:'Japonais','ko-kr':'Coréen',ko:'Coréen',zh:'Chinois simplifié',zf:'Chinois traditionnel',nl:'Néerlandais','nl-be':'Néerlandais (Belgique)',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',sv:'Suédois',tr:'Turc',cs:'Tchèque',sk:'Slovaque',id:'Indonésien'};
+  const countryNames={FR:'France',BE:'Belgique',CH:'Suisse',DE:'Allemagne',AT:'Autriche',ES:'Espagne',IT:'Italie',PT:'Portugal',GB:'Royaume-Uni',IE:'Irlande',NL:'Pays-Bas',PL:'Pologne',CZ:'Tchéquie',SK:'Slovaquie',RO:'Roumanie',BG:'Bulgarie',SE:'Suède',TR:'Turquie',US:'États-Unis',CA:'Canada',MX:'Mexique',BR:'Brésil',JP:'Japon',CN:'Chine',KR:'Corée du Sud',ID:'Indonésie',IN:'Inde',SG:'Singapour',AU:'Australie'};
+  const scopeNames={worldwide:'International / Worldwide',international:'International / Worldwide',global:'International / Worldwide',europe:'Europe',asia:'Asie',asie:'Asie','north-america':'Amérique du Nord','south-america':'Amérique du Sud',africa:'Afrique',middleeast:'Moyen-Orient','middle-east':'Moyen-Orient',oceania:'Océanie'};
   let themes=[];
-  function href(t){return known[t.slug]||('theme.html?theme='+encodeURIComponent(t.slug));}
-  function render(){const q=(search?.value||'').trim().toLowerCase(),filtered=themes.filter(t=>!q||[t.title,t.description,t.slug].some(v=>String(v||'').toLowerCase().includes(q)));root.innerHTML=filtered.map(t=>`<article class="card topic-card"><div class="topic-illustration"><img src="assets/img/illustrations/theme-${esc(t.slug)}.png" alt="" onerror="this.closest('.topic-illustration').style.display='none'"></div><div class="topic-body"><h3>${esc(t.title)}</h3><p>${esc(t.description||fallbackDescriptions[t.slug]||'Une thématique issue du référentiel propriétaire Me&YouToo.')}</p><div class="meta-row"><span class="meta">${Number(t.situation_count||0)} situations</span><span class="meta">${Number(t.chapter_count||0)} chapitres</span></div><a class="button button-secondary" href="${href(t)}">Découvrir les situations</a></div></article>`).join('')||'<article class="card topic-card"><div class="topic-body"><h3>Aucune thématique trouvée</h3><p>Essayez une autre recherche.</p></div></article>';}
-  async function load(){
-    try{
-      const data=await StudioAPI.request('/api/catalog/themes');
-      const live=new Map((data.themes||[]).map(t=>[t.slug,t]));
-      themes=plannedThemes.map(base=>({...base,...(live.get(base.slug)||{})}));
-      for(const t of data.themes||[])if(!themes.some(x=>x.slug===t.slug))themes.push(t);
-      render();
-    }catch(e){
-      themes=plannedThemes.slice();
-      render();
-    }
+  const href=t=>known[t.slug]||('theme.html?theme='+encodeURIComponent(t.slug));
+  const locales=t=>[...new Set((Array.isArray(t.available_locales)?t.available_locales:[]).map(norm).filter(Boolean))];
+  const scopes=t=>[...new Set((Array.isArray(t.cultural_scopes)?t.cultural_scopes:[]).map(norm).filter(Boolean))];
+  const countries=t=>[...new Set((Array.isArray(t.country_codes)?t.country_codes:[]).map(x=>String(x||'').toUpperCase()).filter(Boolean))];
+  const localeLabel=x=>(localeNames[norm(x)]||String(x).toUpperCase())+' ('+String(x).toUpperCase()+')';
+  const scopeLabel=x=>scopeNames[norm(x)]||String(x).replaceAll('-',' ').replace(/^./,c=>c.toUpperCase());
+  const countryLabel=x=>countryNames[String(x).toUpperCase()]||String(x).toUpperCase();
+  function compact(items,formatter,max=2){if(!items.length)return '<span class="topic-capability-empty">Non renseigné</span>';const shown=items.slice(0,max).map(formatter);return shown.map(x=>`<span>${esc(x)}</span>`).join('')+(items.length>max?`<span class="topic-capability-more">+${items.length-max}</span>`:'');}
+  function fillFilters(){
+    const allScopes=[...new Set(themes.flatMap(t=>scopes(t).map(x=>'scope:'+x)).concat(themes.flatMap(t=>countries(t).map(x=>'country:'+x))))];
+    scopeFilter.innerHTML='<option value="">Tous les périmètres</option>';
+    const broad=allScopes.filter(x=>x.startsWith('scope:')).sort((a,b)=>scopeLabel(a.slice(6)).localeCompare(scopeLabel(b.slice(6)),'fr'));
+    const nations=allScopes.filter(x=>x.startsWith('country:')).sort((a,b)=>countryLabel(a.slice(8)).localeCompare(countryLabel(b.slice(8)),'fr'));
+    if(broad.length){const g=document.createElement('optgroup');g.label='Zones culturelles';broad.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=scopeLabel(v.slice(6));g.appendChild(o)});scopeFilter.appendChild(g)}
+    if(nations.length){const g=document.createElement('optgroup');g.label='Pays';nations.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=countryLabel(v.slice(8));g.appendChild(o)});scopeFilter.appendChild(g)}
+    const langs=[...new Set(themes.flatMap(locales))].sort((a,b)=>localeLabel(a).localeCompare(localeLabel(b),'fr'));
+    localeFilter.innerHTML='<option value="">Toutes les langues</option>'+langs.map(x=>`<option value="${esc(x)}">${esc(localeLabel(x))}</option>`).join('');
   }
-  if(search)search.addEventListener('input',render);load();
+  function render(){
+    const q=norm(search?.value),sf=scopeFilter?.value||'',lf=norm(localeFilter?.value);
+    const filtered=themes.filter(t=>{const scopeOk=!sf||(sf.startsWith('scope:')?scopes(t).includes(sf.slice(6)):countries(t).includes(sf.slice(8)));const langOk=!lf||locales(t).includes(lf);const hay=[t.title,t.description,t.slug,...scopes(t).map(scopeLabel),...countries(t).map(countryLabel),...locales(t).flatMap(x=>[x,localeLabel(x)])].join(' ').toLowerCase();return scopeOk&&langOk&&(!q||hay.includes(q));});
+    if(reset)reset.hidden=!(q||sf||lf);
+    root.innerHTML=filtered.map(t=>{const loc=locales(t),sc=scopes(t),co=countries(t),cat=Number(t.catalog_situation_count??t.situation_count??0),lib=Number(t.library_situation_count||0);return `<article class="card topic-card"><div class="topic-illustration"><img src="assets/img/illustrations/theme-${esc(t.slug)}.png" alt="" onerror="this.closest('.topic-illustration').style.display='none'"></div><div class="topic-body"><h3>${esc(t.title)}</h3><p>${esc(t.description||fallbackDescriptions[t.slug]||'Une thématique issue du référentiel propriétaire Me&YouToo.')}</p><div class="topic-capabilities"><div><strong>Périmètres</strong><div class="topic-capability-values">${compact([...sc.map(scopeLabel),...co.map(countryLabel)],x=>x,2)}</div></div><div><strong>Langues</strong><div class="topic-capability-values">${compact(loc,localeLabel,2)}</div></div></div><div class="topic-content-split"><div class="topic-content-count is-catalog"><span>Catalogue</span><strong>${cat}</strong><small>situations de référence</small></div><div class="topic-content-count is-library"><span>Bibliothèque</span><strong>${lib}</strong><small>situations complémentaires</small></div></div><div class="meta-row"><span class="meta">${Number(t.chapter_count||0)} chapitres</span></div><a class="button button-secondary" href="${href(t)}">Découvrir la thématique</a></div></article>`}).join('')||'<article class="card topic-card library-no-result"><div class="topic-body"><h3>Aucune thématique disponible</h3><p>Aucune thématique ne correspond à ces critères. Modifiez le périmètre ou la langue.</p></div></article>';
+  }
+  async function load(){try{const data=await StudioAPI.request('/api/catalog/themes');const live=new Map((data.themes||[]).map(t=>[t.slug,t]));themes=plannedThemes.map(base=>({...base,...(live.get(base.slug)||{})}));for(const t of data.themes||[])if(!themes.some(x=>x.slug===t.slug))themes.push(t);fillFilters();render()}catch(e){themes=plannedThemes.slice();fillFilters();render()}}
+  [search,scopeFilter,localeFilter].forEach(el=>el&&el.addEventListener(el===search?'input':'change',render));if(reset)reset.addEventListener('click',()=>{search.value='';scopeFilter.value='';localeFilter.value='';render()});load();
 })();

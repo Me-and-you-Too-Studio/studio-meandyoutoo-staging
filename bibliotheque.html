@@ -52,11 +52,18 @@
         <h2 class="section-title">Toutes les thématiques</h2>
         <p class="section-desc">Sélectionnez, remplacez et personnalisez des situations existantes : vous ne partez jamais d'une page blanche.</p>
       </div>
-      <div class="top-actions">
-        <label for="search-topic" class="visually-hidden" style="position:absolute;left:-9999px">Rechercher une thématique</label>
-        <input id="search-topic" aria-label="Rechercher une thématique" placeholder="Rechercher une thématique…" style="min-height:44px;border:1px solid var(--line);border-radius:14px;padding:0 14px;background:#fff">
+      <div class="top-actions library-discovery-actions">
+        <label for="search-topic" class="visually-hidden">Rechercher une thématique</label>
+        <input id="search-topic" aria-label="Rechercher une thématique" placeholder="Rechercher une thématique…">
       </div>
     </div>
+
+    <section class="library-filters" aria-label="Affiner les thématiques">
+      <div class="library-filter-intro"><strong>Affiner les thématiques</strong><span>Les thématiques restent votre point d’entrée. Utilisez ensuite les filtres selon votre contexte.</span></div>
+      <label><span>Périmètre</span><select id="filter-scope"><option value="">Tous les périmètres</option></select></label>
+      <label><span>Langue disponible</span><select id="filter-locale"><option value="">Toutes les langues</option></select></label>
+      <button class="button button-secondary library-filter-reset" id="reset-library-filters" type="button" hidden>Réinitialiser</button>
+    </section>
 
     <section class="topics-grid" id="library-topics" aria-label="Thématiques disponibles">
       <article class="card topic-card"><div class="topic-body"><h3>Chargement de la bibliothèque…</h3><p>Les thématiques Me&amp;YouToo sont en cours de chargement.</p></div></article>
@@ -68,6 +75,6 @@
 
 <script src="assets/js/api.js?v=20260713-2"></script>
 <script src="assets/js/app.js?v=20260824-navigation-popup-8"></script>
-<script src="assets/js/bibliotheque.js?v=20260907-8-themes-cachefix-2"></script>
+<script src="assets/js/bibliotheque.js?v=20260915-client-filters-catalog-library"></script>
 </body>
 </html>
