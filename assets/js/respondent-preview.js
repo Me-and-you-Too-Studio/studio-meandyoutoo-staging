@@ -1,8 +1,9 @@
 (()=>{
 const previewSource=new URLSearchParams(location.search).get('source')||'live';
-const previewLocale=String(new URLSearchParams(location.search).get('lang')||document.documentElement.lang||'fr').toLowerCase().replaceAll('_','-');
+let previewLocale=String(new URLSearchParams(location.search).get('lang')||document.documentElement.lang||'fr').toLowerCase().replaceAll('_','-');
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=h=>{let x=document.createElement('div');x.innerHTML=String(h||'').replace(/<\s*br\s*\/?\s*>/gi,'\n').replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi,'</$1>\n\n');return(x.textContent||'').replace(/\u00a0/g,' ').replace(/[ \t]+\n/g,'\n').replace(/\n[ \t]+/g,'\n').replace(/\n{3,}/g,'\n\n').trim()},q=new URLSearchParams(location.search),pid=q.get('projectId'),theme=q.get('theme')||'',mode=q.get('mode')||(pid?'project':'catalog'),root=$('#rp');
-let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[];
+let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[],availablePreviewLocales=['fr'],previewCountry='FR';
+if(!document.getElementById('rp-language-picker-style')){const st=document.createElement('style');st.id='rp-language-picker-style';st.textContent='.rp-head{display:flex;align-items:center;gap:14px}.rp-language-picker{margin-left:auto;display:flex;align-items:center;gap:8px}.rp-language-picker label{font-size:.78rem;font-weight:800;color:#536a82}.rp-language-picker select{min-width:165px;height:40px;padding:0 36px 0 12px;border:1px solid #cbdde5;border-radius:12px;background:#fff;color:#18375d;font:inherit;font-weight:700}.rp-language-picker select:focus{outline:3px solid rgba(0,136,145,.16);border-color:#008891}@media(max-width:680px){.rp-head{flex-wrap:wrap}.rp-language-picker{width:100%;margin-left:0}.rp-language-picker select{flex:1}}';document.head.appendChild(st)}
 
 function apiBase(){
   const host=String(location.hostname||'').toLowerCase(),path=String(location.pathname||'').toLowerCase();
@@ -51,7 +52,7 @@ function norm(x){
     if(Array.isArray(live.project.sociodemo))d.socio=normalizeSocio(live.project.sociodemo);
     if(Array.isArray(live.project.result_buttons))d.resources=normalizeResources(live.project.result_buttons);
   }
-  if(live?.chapters){
+  if(live?.chapters && previewLocale===String(pr.selected_locale||'fr').toLowerCase().replaceAll('_','-')){
     const profileMap=new Map(d.chapters.map(c=>[String(c.id),c.profiles]));
     d.chapters=live.chapters.map((c,cidx)=>({
       id:c.id||c.source_id||cidx,title:c.title||`Partie ${cidx+1}`,
@@ -66,7 +67,10 @@ function norm(x){
 }
 
 const modeLabel=()=>mode==='project'?'Votre campagne composée':'Version catalogue Me&YouToo';
-const head=t=>`<header class="rp-head"><img src="assets/img/brand/logo-meayt-color.png"><div><b>${mode==='project'?'Aperçu de ma campagne':'Aperçu répondant'}</b><span>${esc(t||modeLabel())}</span></div></header>`;
+const head=t=>`<header class="rp-head"><img src="assets/img/brand/logo-meayt-color.png"><div><b>${mode==='project'?'Aperçu de ma campagne':'Aperçu répondant'}</b><span>${esc(t||modeLabel())}</span></div>${languagePicker()}</header>`;
+function localeLabel(code){const k=String(code||'').toLowerCase().replaceAll('_','-'),n={fr:'Français',en:'English',es:'Español',de:'Deutsch',it:'Italiano',pt:'Português',br:'Português (Brasil)',nl:'Nederlands','nl-be':'Nederlands (België)',pl:'Polski',cs:'Čeština',sk:'Slovenčina',id:'Bahasa Indonesia',ja:'日本語','ko-kr':'한국어',ko:'한국어',zh:'繁體中文',zf:'简体中文',bg:'Български',ro:'Română',ru:'Русский','sv-se':'Svenska',tr:'Türkçe'};return (n[k]||k.toUpperCase())+' ('+k.toUpperCase()+')'}
+function languagePicker(){if(availablePreviewLocales.length<2)return'';return `<div class="rp-language-picker"><label for="rp-lang">Langue</label><select id="rp-lang">${availablePreviewLocales.map(l=>`<option value="${esc(l)}" ${l===previewLocale?'selected':''}>${esc(localeLabel(l))}</option>`).join('')}</select></div>`}
+function bindLanguagePicker(){const el=$('#rp-lang');if(el)el.onchange=async()=>{previewLocale=el.value;await loadPreviewData(true)}}
 const totalSituations=()=>d.chapters.reduce((n,c)=>n+c.situations.length,0);
 const situationNumber=()=>d.chapters.slice(0,ci).reduce((n,c)=>n+c.situations.length,0)+qi+1;
 const answerKey=(c=ci,s=qi)=>`${c}:${s}`;
@@ -193,5 +197,20 @@ function done(){
   bindFinalInteractions();
   $('#again').onclick=()=>{step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[];norm.lastShuffleSeed=Date.now();render()}
 }
-function render(){if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult();else if(step===3)showChapterResult()}
-(async()=>{try{let x=mode==='project'&&pid?await api(`/api/projects/${pid}/composer`):await api(`/api/catalog/themes/${theme}/template`);norm(x);render()}catch(e){root.innerHTML=head()+`<section class="rp-card"><h1>Aperçu indisponible</h1><p>${esc(e.message)}</p></section>`}})()})();
+function render(){if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult();else if(step===3)showChapterResult();bindLanguagePicker()}
+async function loadPreviewData(preserveStep=false){try{
+  if(mode==='project'&&pid){
+    const base=await api(`/api/projects/${pid}/composer?locale=${encodeURIComponent(previewLocale)}`);
+    previewCountry=String(base.project?.selected_country_code||'FR').toUpperCase();
+    const slug=base.project?.theme_slug||theme;
+    if(slug){try{const v=await api(`/api/catalog/themes/${encodeURIComponent(slug)}/variants`);const match=(v.variants||[]).find(x=>String(x.countryCode||'').toUpperCase()===previewCountry)||(v.variants||[]).find(x=>String(x.culturalScope||'').toLowerCase()===String(base.project?.selected_cultural_scope||'').toLowerCase());availablePreviewLocales=(match?.locales||[base.project?.selected_locale||'fr']).map(x=>String(x).toLowerCase().replaceAll('_','-'));}catch(_){availablePreviewLocales=[base.project?.selected_locale||'fr'];}}
+    norm(base);
+  }else{
+    previewCountry='FR';
+    try{const v=await api(`/api/catalog/themes/${encodeURIComponent(theme)}/variants`);const fr=(v.variants||[]).find(x=>String(x.countryCode||'').toUpperCase()==='FR');availablePreviewLocales=(fr?.locales||['fr']).map(x=>String(x).toLowerCase().replaceAll('_','-'));if(!availablePreviewLocales.includes(previewLocale))previewLocale=availablePreviewLocales.includes('fr')?'fr':availablePreviewLocales[0];}catch(_){availablePreviewLocales=['fr'];previewLocale='fr';}
+    norm(await api(`/api/catalog/themes/${encodeURIComponent(theme)}/template?countryCode=FR&locale=${encodeURIComponent(previewLocale)}`));
+  }
+  if(!preserveStep){step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[];}
+  render();bindLanguagePicker();
+}catch(e){root.innerHTML=head()+`<section class="rp-card"><h1>Aperçu indisponible</h1><p>${esc(e.message)}</p></section>`;bindLanguagePicker();}}
+loadPreviewData();})();

@@ -134,7 +134,7 @@
     if(!themeSlug||!table)return;
     try{
       async function resolveThemeSlug(slug){
-        try{return {slug:slug,data:await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(slug)+'/template')};}
+        try{return {slug:slug,data:await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(slug)+'/template?countryCode=FR&locale=fr')};}
         catch(firstError){
           if(!/introuvable|404/i.test(String(firstError&&firstError.message||'')))throw firstError;
           var listing=await window.StudioAPI.request('/api/catalog/themes');
@@ -142,7 +142,7 @@
           var wanted=aliases[slug]||[slug.replace(/[-_]/g,' ')];
           var found=(listing.themes||[]).find(function(theme){var hay=(String(theme.slug||'')+' '+String(theme.title||'')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');return wanted.some(function(label){return hay.includes(String(label).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''));});});
           if(!found)throw firstError;
-          return {slug:found.slug,data:await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(found.slug)+'/template')};
+          return {slug:found.slug,data:await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(found.slug)+'/template?countryCode=FR&locale=fr')};
         }
       }
       var resolved=await resolveThemeSlug(themeSlug),data=resolved.data;
