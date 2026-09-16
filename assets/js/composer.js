@@ -44,7 +44,7 @@
     let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
     const label=code=>{try{return regionNames?.of(code)||code;}catch(_){return code;}};
     root.hidden=false;
-    root.innerHTML=`<div class="composer-country-tabs-label"><strong>Composer par périmètre</strong><span>${state.country?'Vous composez actuellement le périmètre '+esc(label(state.country))+'.':'Choisissez un périmètre pour afficher sa composition.'}</span></div><div class="composer-country-tabs-list">${countries.map(code=>`<button type="button" class="composer-country-tab ${code===state.country?'is-active':''}" data-country-tab="${esc(code)}" aria-pressed="${code===state.country?'true':'false'}">${esc(label(code))}</button>`).join('')}</div>`;
+    root.innerHTML=`<div class="composer-country-tabs-label"><strong>Composer par périmètre</strong><span>${state.country?'Vous composez actuellement le périmètre '+esc(label(state.country))+'.':'Choisissez un périmètre ci-dessous pour ouvrir sa composition.'}</span></div><div class="composer-country-tabs-list">${countries.map(code=>`<button type="button" class="composer-country-tab ${code===state.country?'is-active':''}" data-country-tab="${esc(code)}" aria-pressed="${code===state.country?'true':'false'}">${esc(label(code))}</button>`).join('')}</div>`;
     root.querySelectorAll('[data-country-tab]').forEach(button=>button.onclick=()=>switchCountry(button.dataset.countryTab));
   }
 
@@ -54,12 +54,20 @@
     const live=document.querySelector('.composer-live');
     const sticky=document.querySelector('.creation-sticky-actions');
     const gate=$('composer-country-gate');
-    if(live)live.hidden=gated;
-    if(sticky)sticky.hidden=gated;
+    if(live){
+      live.hidden=gated;
+      live.style.display=gated?'none':'';
+    }
+    if(sticky){
+      sticky.hidden=gated;
+      sticky.style.display=gated?'none':'';
+    }
+    // L'instruction reste volontairement dans le sélecteur de périmètre situé en haut.
+    // On évite un second encart sous la frise d'étapes, qui donnait l'impression
+    // que les boutons pays étaient ailleurs.
     if(gate){
-      gate.hidden=!gated;
-      if(gated)gate.innerHTML='<div class="composer-country-gate-card"><span class="composer-country-gate-icon" aria-hidden="true">🌍</span><div><strong>Choisissez un périmètre pour commencer la composition</strong><p>Chaque pays peut utiliser des situations et des formulations différentes. Sélectionnez un bouton ci-dessus pour afficher uniquement le contenu réellement diffusé dans ce périmètre.</p></div></div>';
-      else gate.innerHTML='';
+      gate.hidden=true;
+      gate.innerHTML='';
     }
   }
 
@@ -198,14 +206,20 @@
         const result=await api(`/api/projects/${projectId}/context`,{method:'PATCH',body:JSON.stringify({countries:selectedCountriesNow,locales:selectedLocalesNow,localesByCountry})});
         state.project=result.project;state.translationContexts.clear();close();
         const refreshedCountries=campaignCountries(state.project);
-        if(!refreshedCountries.includes(state.country))state.country=refreshedCountries.length===1?refreshedCountries[0]:'';
+        // Après une modification du contexte, une campagne multi-pays repart sans pays actif :
+        // le client choisit explicitement le périmètre qu'il veut composer.
+        state.country=refreshedCountries.length===1?refreshedCountries[0]:'';
         if(state.country){
           const refreshed=await api(`/api/projects/${projectId}/composer?countryCode=${encodeURIComponent(state.country)}`);
           state.project=refreshed.project;state.chapters=refreshed.chapters;state.country=refreshed.composer_context?.countryCode||state.country;
+          render();
+        }else{
+          // Évite qu'un ancien Composer reste visible avec les situations du pays précédent.
+          state.chapters=[];
+          history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`);
         }
         renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();
-        if(state.country)render();
-        showMessage('Périmètres et langues de campagne mis à jour.','success');
+        showMessage('Périmètres et langues de campagne mis à jour. Choisissez maintenant le périmètre à composer.','success');
       }catch(e){
         save.disabled=false;save.textContent='Mettre à jour la campagne';error.hidden=false;error.textContent=e.message;
       }
