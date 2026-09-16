@@ -13014,3 +13014,17 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .campaign-context-selection-row>span{display:flex;flex-wrap:wrap;gap:7px}
 .campaign-context-selection-row em{color:#b13a32;font-style:normal;font-size:.9rem}
 @media(max-width:720px){.campaign-context-selection-row{grid-template-columns:1fr}.campaign-context-selection-row>span{margin-top:2px}}
+
+
+/* Composer — matrice guidée périmètres / langues */
+.campaign-context-selection-help{margin:-2px 0 10px;color:#60758b;font-size:.88rem;line-height:1.45}
+.campaign-context-country-languages{display:flex;flex-direction:column;gap:7px}
+.campaign-context-country-selected,.campaign-context-country-available{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.campaign-context-country-available>small{color:#60758b;font-weight:700;margin-right:2px}
+.campaign-context-country-missing{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:#fff4ef;border:1px solid #f3d5ca;color:#9a3b31}
+.campaign-context-country-missing strong{font-size:.9rem}
+.campaign-context-country-missing small{font-size:.78rem;color:#8b5a54}
+.campaign-context-summary-lang{appearance:none;border:1px solid #b9ddea;background:#fff;color:#0b5671;border-radius:999px;padding:6px 10px;display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer}
+.campaign-context-summary-lang:hover,.campaign-context-summary-lang:focus-visible{border-color:#078b93;box-shadow:0 0 0 3px rgba(7,139,147,.12);outline:none}
+.campaign-context-summary-lang.is-selected{background:#eaf8f8;border-color:#8cced2;color:#075f65}
+.campaign-context-summary-lang span{font-size:.9rem;line-height:1}

@@ -81,7 +81,7 @@
     }).filter(v=>v.supported&&v.locales.length);
 
     const overlay=document.createElement('div');overlay.className='translation-overlay';
-    overlay.innerHTML=`<section class="translation-modal campaign-context-modal" role="dialog" aria-modal="true"><header class="translation-head"><div><small>CONTEXTE DE CAMPAGNE</small><h2>Modifier les périmètres et les langues</h2></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="campaign-context-scroll"><p class="campaign-context-help">Ajoutez ou retirez des périmètres, puis choisissez explicitement les langues à activer. Seules les langues compatibles avec les périmètres cochés et les chapitres de votre parcours sont proposées.</p><section><h3>Périmètres</h3><div class="version-check-grid">${countryOptions.map(v=>`<label class="version-check"><input type="checkbox" data-context-country value="${esc(v.code)}" ${currentCountries.includes(v.code)?'checked':''}> ${esc(countryName(v.code))}${currentCountries.includes(v.code)?' <small>· retenu</small>':''}</label>`).join('')}</div></section><section><h3>Langues de la campagne</h3><p class="hint">Choisissez au moins une langue compatible pour chaque périmètre retenu. Une langue n’est jamais ajoutée automatiquement.</p><div class="version-check-grid" data-context-locales></div><div class="campaign-context-selection-summary" data-context-selection-summary></div><div class="version-empty" data-context-error hidden></div></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-context-cancel>Annuler</button><button class="button button-primary" type="button" data-context-save>Mettre à jour la campagne</button></footer></section>`;
+    overlay.innerHTML=`<section class="translation-modal campaign-context-modal" role="dialog" aria-modal="true"><header class="translation-head"><div><small>CONTEXTE DE CAMPAGNE</small><h2>Modifier les périmètres et les langues</h2></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="campaign-context-scroll"><p class="campaign-context-help">1. Choisissez vos périmètres. 2. Pour chacun, choisissez au moins une langue. Seules les langues réellement compatibles avec vos chapitres sont proposées.</p><section><h3>Périmètres</h3><div class="version-check-grid">${countryOptions.map(v=>`<label class="version-check"><input type="checkbox" data-context-country value="${esc(v.code)}" ${currentCountries.includes(v.code)?'checked':''}> ${esc(countryName(v.code))}</label>`).join('')}</div></section><section><h3>Langues de la campagne</h3><p class="hint">Les langues ci-dessous dépendent des périmètres cochés. Aucune langue n’est ajoutée automatiquement.</p><div class="version-check-grid" data-context-locales></div><div class="campaign-context-selection-summary" data-context-selection-summary></div><div class="version-empty" data-context-error hidden></div></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-context-cancel>Annuler</button><button class="button button-primary" type="button" data-context-save>Mettre à jour la campagne</button></footer></section>`;
     document.body.appendChild(overlay);
 
     const close=()=>overlay.remove(), localeRoot=overlay.querySelector('[data-context-locales]'), selectionSummary=overlay.querySelector('[data-context-selection-summary]'), error=overlay.querySelector('[data-context-error]'), save=overlay.querySelector('[data-context-save]');
@@ -116,8 +116,7 @@
       }
       localeRoot.innerHTML=available.length?available.map(locale=>{
         const compatibleCountries=countries.filter(code=>localesForCountry(code).includes(locale));
-        const retained=currentLocales.includes(locale);
-        return `<label class="version-check campaign-context-locale-option"><input type="checkbox" data-context-locale value="${esc(locale)}" ${localeSelection.has(locale)?'checked':''}><span class="campaign-context-locale-copy"><span>${esc(localeLabel(locale))}${retained?' <small>· retenue</small>':''}</span><small class="campaign-context-locale-scope">Compatible avec : ${compatibleCountries.map(countryName).map(esc).join(' · ')}</small></span></label>`;
+        return `<label class="version-check campaign-context-locale-option"><input type="checkbox" data-context-locale value="${esc(locale)}" ${localeSelection.has(locale)?'checked':''}><span class="campaign-context-locale-copy"><span>${esc(localeLabel(locale))}</span><small class="campaign-context-locale-scope">Disponible pour : ${compatibleCountries.map(countryName).map(esc).join(' · ')}</small></span></label>`;
       }).join(''):'<p class="hint">Aucune langue disponible pour ces périmètres.</p>';
       localeRoot.querySelectorAll('[data-context-locale]').forEach(input=>input.onchange=()=>{
         if(input.checked)localeSelection.add(input.value);else localeSelection.delete(input.value);
@@ -133,10 +132,23 @@
       if(!selectionSummary)return;
       if(!countries.length){selectionSummary.innerHTML='';return;}
       const rows=countries.map(code=>{
-        const langs=[...localeSelection].filter(locale=>localesForCountry(code).includes(locale));
-        return `<div class="campaign-context-selection-row"><strong>${esc(countryName(code))}</strong><span>${langs.length?langs.map(locale=>`<span class="theme-availability-pill is-language">${esc(localeLabel(locale))}</span>`).join(''):'<em>Aucune langue sélectionnée</em>'}</span></div>`;
+        const available=localesForCountry(code);
+        const selected=available.filter(locale=>localeSelection.has(locale));
+        const remaining=available.filter(locale=>!localeSelection.has(locale));
+        const selectedHtml=selected.length
+          ? `<div class="campaign-context-country-selected">${selected.map(locale=>`<button type="button" class="campaign-context-summary-lang is-selected" data-summary-locale="${esc(locale)}" aria-label="Retirer ${esc(localeLabel(locale))}"><span>✓</span>${esc(localeLabel(locale))}</button>`).join('')}</div>`
+          : `<div class="campaign-context-country-missing"><strong>Choisissez au moins une langue</strong><small>Les langues disponibles pour ${esc(countryName(code))} sont proposées juste dessous.</small></div>`;
+        const availableHtml=remaining.length
+          ? `<div class="campaign-context-country-available"><small>${selected.length?'Autres langues disponibles':'Disponibles'} :</small>${remaining.map(locale=>`<button type="button" class="campaign-context-summary-lang" data-summary-locale="${esc(locale)}"><span>+</span>${esc(localeLabel(locale))}</button>`).join('')}</div>`
+          : '';
+        return `<div class="campaign-context-selection-row"><strong>${esc(countryName(code))}</strong><div class="campaign-context-country-languages">${selectedHtml}${availableHtml}</div></div>`;
       }).join('');
-      selectionSummary.innerHTML=`<div class="campaign-context-selection-title">Votre sélection par périmètre</div>${rows}`;
+      selectionSummary.innerHTML=`<div class="campaign-context-selection-title">Choix des langues par périmètre</div><p class="campaign-context-selection-help">Pour chaque périmètre, activez au moins une langue. Vous pouvez cliquer directement sur les langues ci-dessous.</p>${rows}`;
+      selectionSummary.querySelectorAll('[data-summary-locale]').forEach(button=>button.onclick=()=>{
+        const locale=button.dataset.summaryLocale;
+        if(localeSelection.has(locale))localeSelection.delete(locale);else localeSelection.add(locale);
+        redrawLocales();
+      });
     }
 
     function validate(){
