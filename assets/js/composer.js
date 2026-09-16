@@ -110,7 +110,9 @@
       [...localeSelection].forEach(locale=>{if(!available.includes(locale))localeSelection.delete(locale);});
       if(!countries.length){
         localeRoot.innerHTML='<p class="hint">Choisissez au moins un périmètre pour afficher les langues disponibles.</p>';
-        validate();return;
+        renderSelectionSummary();
+        validate();
+        return;
       }
       localeRoot.innerHTML=available.length?available.map(locale=>{
         const compatibleCountries=countries.filter(code=>localesForCountry(code).includes(locale));
