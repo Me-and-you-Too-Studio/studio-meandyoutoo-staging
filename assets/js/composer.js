@@ -81,10 +81,10 @@
     }).filter(v=>v.supported&&v.locales.length);
 
     const overlay=document.createElement('div');overlay.className='translation-overlay';
-    overlay.innerHTML=`<section class="translation-modal campaign-context-modal" role="dialog" aria-modal="true"><header class="translation-head"><div><small>CONTEXTE DE CAMPAGNE</small><h2>Modifier les périmètres et les langues</h2></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="campaign-context-scroll"><p class="campaign-context-help">Ajoutez ou retirez des périmètres, puis choisissez explicitement les langues à activer. Seules les langues compatibles avec les périmètres cochés et les chapitres de votre parcours sont proposées.</p><section><h3>Périmètres</h3><div class="version-check-grid">${countryOptions.map(v=>`<label class="version-check"><input type="checkbox" data-context-country value="${esc(v.code)}" ${currentCountries.includes(v.code)?'checked':''}> ${esc(countryName(v.code))}${currentCountries.includes(v.code)?' <small>· retenu</small>':''}</label>`).join('')}</div></section><section><h3>Langues de la campagne</h3><p class="hint">Choisissez au moins une langue compatible pour chaque périmètre retenu. Une langue n’est jamais ajoutée automatiquement.</p><div class="version-check-grid" data-context-locales></div><div class="version-empty" data-context-error hidden></div></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-context-cancel>Annuler</button><button class="button button-primary" type="button" data-context-save>Mettre à jour la campagne</button></footer></section>`;
+    overlay.innerHTML=`<section class="translation-modal campaign-context-modal" role="dialog" aria-modal="true"><header class="translation-head"><div><small>CONTEXTE DE CAMPAGNE</small><h2>Modifier les périmètres et les langues</h2></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="campaign-context-scroll"><p class="campaign-context-help">Ajoutez ou retirez des périmètres, puis choisissez explicitement les langues à activer. Seules les langues compatibles avec les périmètres cochés et les chapitres de votre parcours sont proposées.</p><section><h3>Périmètres</h3><div class="version-check-grid">${countryOptions.map(v=>`<label class="version-check"><input type="checkbox" data-context-country value="${esc(v.code)}" ${currentCountries.includes(v.code)?'checked':''}> ${esc(countryName(v.code))}${currentCountries.includes(v.code)?' <small>· retenu</small>':''}</label>`).join('')}</div></section><section><h3>Langues de la campagne</h3><p class="hint">Choisissez au moins une langue compatible pour chaque périmètre retenu. Une langue n’est jamais ajoutée automatiquement.</p><div class="version-check-grid" data-context-locales></div><div class="campaign-context-selection-summary" data-context-selection-summary></div><div class="version-empty" data-context-error hidden></div></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-context-cancel>Annuler</button><button class="button button-primary" type="button" data-context-save>Mettre à jour la campagne</button></footer></section>`;
     document.body.appendChild(overlay);
 
-    const close=()=>overlay.remove(), localeRoot=overlay.querySelector('[data-context-locales]'), error=overlay.querySelector('[data-context-error]'), save=overlay.querySelector('[data-context-save]');
+    const close=()=>overlay.remove(), localeRoot=overlay.querySelector('[data-context-locales]'), selectionSummary=overlay.querySelector('[data-context-selection-summary]'), error=overlay.querySelector('[data-context-error]'), save=overlay.querySelector('[data-context-save]');
     overlay.querySelector('.translation-close').onclick=close;overlay.querySelector('[data-context-cancel]').onclick=close;
     const selectedCountries=()=>[...new Set([...overlay.querySelectorAll('[data-context-country]:checked')].map(x=>x.value))];
     const localesForCountry=code=>countryOptions.find(v=>v.code===code)?.locales||[];
@@ -115,13 +115,26 @@
       localeRoot.innerHTML=available.length?available.map(locale=>{
         const compatibleCountries=countries.filter(code=>localesForCountry(code).includes(locale));
         const retained=currentLocales.includes(locale);
-        return `<label class="version-check"><input type="checkbox" data-context-locale value="${esc(locale)}" ${localeSelection.has(locale)?'checked':''}> ${esc(localeLabel(locale))}${retained?' <small>· retenue</small>':''}<small class="campaign-context-locale-scope"> · ${compatibleCountries.map(countryName).map(esc).join(' · ')}</small></label>`;
+        return `<label class="version-check campaign-context-locale-option"><input type="checkbox" data-context-locale value="${esc(locale)}" ${localeSelection.has(locale)?'checked':''}><span class="campaign-context-locale-copy"><span>${esc(localeLabel(locale))}${retained?' <small>· retenue</small>':''}</span><small class="campaign-context-locale-scope">Compatible avec : ${compatibleCountries.map(countryName).map(esc).join(' · ')}</small></span></label>`;
       }).join(''):'<p class="hint">Aucune langue disponible pour ces périmètres.</p>';
       localeRoot.querySelectorAll('[data-context-locale]').forEach(input=>input.onchange=()=>{
         if(input.checked)localeSelection.add(input.value);else localeSelection.delete(input.value);
+        renderSelectionSummary();
         validate();
       });
+      renderSelectionSummary();
       validate();
+    }
+
+    function renderSelectionSummary(){
+      const countries=selectedCountries();
+      if(!selectionSummary)return;
+      if(!countries.length){selectionSummary.innerHTML='';return;}
+      const rows=countries.map(code=>{
+        const langs=[...localeSelection].filter(locale=>localesForCountry(code).includes(locale));
+        return `<div class="campaign-context-selection-row"><strong>${esc(countryName(code))}</strong><span>${langs.length?langs.map(locale=>`<span class="theme-availability-pill is-language">${esc(localeLabel(locale))}</span>`).join(''):'<em>Aucune langue sélectionnée</em>'}</span></div>`;
+      }).join('');
+      selectionSummary.innerHTML=`<div class="campaign-context-selection-title">Votre sélection par périmètre</div>${rows}`;
     }
 
     function validate(){
@@ -140,11 +153,11 @@
     redrawLocales();
 
     save.onclick=async()=>{
-      const countries=selectedCountries(),locales=selectedLocales();
+      const selectedCountriesNow=selectedCountries(),selectedLocalesNow=selectedLocales();
       save.disabled=true;save.textContent='Enregistrement…';
       try{
-        const result=await api(`/api/projects/${projectId}/context`,{method:'PATCH',body:JSON.stringify({countries,locales})});
-        state.project=result.project;state.translationContexts.clear();close();const countries=campaignCountries(state.project);if(!countries.includes(state.country))state.country=countries[0]||'';const refreshed=await api(`/api/projects/${projectId}/composer?countryCode=${encodeURIComponent(state.country||'')}`);state.project=refreshed.project;state.chapters=refreshed.chapters;state.country=refreshed.composer_context?.countryCode||state.country;renderCampaignContext(state.project);renderCountryTabs(state.project);render();showMessage('Périmètres et langues de campagne mis à jour.','success');
+        const result=await api(`/api/projects/${projectId}/context`,{method:'PATCH',body:JSON.stringify({countries:selectedCountriesNow,locales:selectedLocalesNow})});
+        state.project=result.project;state.translationContexts.clear();close();const refreshedCountries=campaignCountries(state.project);if(!refreshedCountries.includes(state.country))state.country=refreshedCountries[0]||'';const refreshed=await api(`/api/projects/${projectId}/composer?countryCode=${encodeURIComponent(state.country||'')}`);state.project=refreshed.project;state.chapters=refreshed.chapters;state.country=refreshed.composer_context?.countryCode||state.country;renderCampaignContext(state.project);renderCountryTabs(state.project);render();showMessage('Périmètres et langues de campagne mis à jour.','success');
       }catch(e){
         save.disabled=false;save.textContent='Mettre à jour la campagne';error.hidden=false;error.textContent=e.message;
       }
