@@ -239,7 +239,11 @@
         var selected=selectedCaps(),allowed=null;
         chosenCountries.forEach(function(code){
           var v=variants.find(function(x){return x.countryCode===code;});var ls=(v&&v.locales||[]).slice();
-          selected.forEach(function(c){if((c.locales||[]).length)ls=ls.filter(function(l){return c.locales.includes(l);});});
+          selected.forEach(function(c){
+            var capLocales=(c.localesByCountry&&c.localesByCountry[code])||(c.locales||[]);
+            if(capLocales.length)ls=ls.filter(function(l){return capLocales.includes(l);});
+            else ls=[];
+          });
           allowed=allowed===null?ls:allowed.filter(function(l){return ls.includes(l);});
         });
         allowed=(allowed||[]).filter(Boolean);
