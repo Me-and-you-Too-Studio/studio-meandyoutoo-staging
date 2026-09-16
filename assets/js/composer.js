@@ -14,6 +14,21 @@
   function totalSelected(){ return state.chapters.reduce((sum,ch)=>sum+ch.situations.length,0); }
   async function saveStep(step){ if(projectId) await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:step})}); }
 
+  function renderCampaignContext(project){
+    const root=$('composer-campaign-context');if(!root)return;
+    const countries=[...new Set((Array.isArray(project?.countries)?project.countries:[])
+      .concat(project?.selected_country_code?[project.selected_country_code]:[])
+      .map(code=>String(code||'').trim().toUpperCase()).filter(Boolean))];
+    const locales=[...new Set((Array.isArray(project?.locales)?project.locales:[])
+      .concat(project?.selected_locale?[project.selected_locale]:[])
+      .map(locale=>String(locale||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
+    if(!countries.length&&!locales.length){root.hidden=true;root.innerHTML='';return;}
+    let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
+    const countryLabel=code=>{try{return regionNames?.of(code)||code;}catch(_){return code;}};
+    root.innerHTML=`<div class="theme-availability-group"><strong>Périmètre${countries.length>1?'s':''} retenu${countries.length>1?'s':''}</strong><div class="theme-availability-pills">${countries.map(code=>`<span class="theme-availability-pill is-scope">${esc(countryLabel(code))}</span>`).join('')}</div></div><div class="theme-availability-group"><strong>Langue${locales.length>1?'s':''} retenue${locales.length>1?'s':''}</strong><div class="theme-availability-pills">${locales.map(locale=>`<span class="theme-availability-pill is-language">${esc(localeLabel(locale))}</span>`).join('')}</div></div>`;
+    root.hidden=false;
+  }
+
   function renderNav(){
     const total=totalSelected();
     $('catalog-summary').textContent=`${state.chapters.length} chapitres · ${total} situations retenues`;
@@ -394,7 +409,7 @@
     else if(!project.can_edit){href=`campagne-detail.html?projectId=${encodeURIComponent(projectId)}`;label='← Retour à la campagne';}
     ['composer-top-back','composer-theme-back'].forEach(id=>{const link=$(id);if(link){link.href=href;link.textContent=label;}});
   }
-  async function load(){try{await ensureProject();const data=await api(`/api/projects/${projectId}/composer`);state.project=data.project;state.chapters=data.chapters;state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title;configureContextBack(data.project);if(data.project.can_edit)await saveStep('composer');render();if(requestedSituation){requestAnimationFrame(()=>{const card=document.querySelector(`[data-situation-card="${CSS.escape(String(requestedSituation))}"]`);if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea,button')?.focus({preventScroll:true});}});}if(data.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!data.project.can_edit)showMessage('Configuration verrouillée pendant la relecture Me&YouToo.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
+  async function load(){try{await ensureProject();const data=await api(`/api/projects/${projectId}/composer`);state.project=data.project;state.chapters=data.chapters;state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title;renderCampaignContext(data.project);configureContextBack(data.project);if(data.project.can_edit)await saveStep('composer');render();if(requestedSituation){requestAnimationFrame(()=>{const card=document.querySelector(`[data-situation-card="${CSS.escape(String(requestedSituation))}"]`);if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea,button')?.focus({preventScroll:true});}});}if(data.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!data.project.can_edit)showMessage('Configuration verrouillée pendant la relecture Me&YouToo.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
 
   $('library-button').onclick=async()=>{
     const status=chapterCountStatus(state.chapters[state.active]);
