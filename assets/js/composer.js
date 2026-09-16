@@ -25,39 +25,52 @@
     if(!countries.length&&!locales.length){root.hidden=true;root.innerHTML='';return;}
     let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
     const countryLabel=code=>{try{return regionNames?.of(code)||code;}catch(_){return code;}};
-    root.innerHTML=`<div class="theme-availability-group"><strong>Périmètre${countries.length>1?'s':''} retenu${countries.length>1?'s':''}</strong><div class="theme-availability-pills">${countries.map(code=>`<span class="theme-availability-pill is-scope">${esc(countryLabel(code))}</span>`).join('')}</div></div><div class="theme-availability-group"><strong>Langue${locales.length>1?'s':''} retenue${locales.length>1?'s':''}</strong><div class="theme-availability-pills">${locales.map(locale=>`<span class="theme-availability-pill is-language">${esc(localeLabel(locale))}</span>`).join('')}</div></div>${state.project?.can_edit===false?'':`<button class="button button-ghost button-small composer-context-edit" type="button" data-edit-campaign-context>+ Ajouter un périmètre ou une langue</button>`}`;
+    root.innerHTML=`<div class="theme-availability-group"><strong>Périmètre${countries.length>1?'s':''} retenu${countries.length>1?'s':''}</strong><div class="theme-availability-pills">${countries.map(code=>`<span class="theme-availability-pill is-scope">${esc(countryLabel(code))}</span>`).join('')}</div></div><div class="theme-availability-group"><strong>Langue${locales.length>1?'s':''} retenue${locales.length>1?'s':''}</strong><div class="theme-availability-pills">${locales.map(locale=>`<span class="theme-availability-pill is-language">${esc(localeLabel(locale))}</span>`).join('')}</div></div>${state.project?.can_edit===false?'':`<button class="button button-ghost button-small composer-context-edit" type="button" data-edit-campaign-context>Modifier les périmètres</button>`}`;
     root.hidden=false;
     root.querySelector('[data-edit-campaign-context]')?.addEventListener('click',openCampaignContextModal);
   }
 
   async function openCampaignContextModal(){
     const currentCountries=[...new Set((Array.isArray(state.project?.countries)?state.project.countries:[]).concat(state.project?.selected_country_code?[state.project.selected_country_code]:[]).map(x=>String(x||'').toUpperCase()).filter(Boolean))];
-    const currentLocales=[...new Set((Array.isArray(state.project?.locales)?state.project.locales:[]).concat(state.project?.selected_locale?[state.project.selected_locale]:[]).map(x=>String(x||'').toLowerCase().replaceAll('_','-')).filter(Boolean))];
     const data=await api(`/api/catalog/themes/${encodeURIComponent(themeSlug)}/variants`);
     const variants=Array.isArray(data?.variants)?data.variants:[];
+    const caps=Array.isArray(data?.chapterCapabilities)?data.chapterCapabilities:[];
+    const selectedChapterIds=new Set((state.chapters||[]).map(ch=>String(ch.catalog_chapter_id||'')).filter(Boolean));
+    const selectedCaps=caps.filter(cap=>selectedChapterIds.has(String(cap.id)));
     let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
     const countryName=code=>{try{return regionNames?.of(code)||code;}catch(_){return code;}};
-    const countryOptions=variants.filter(v=>v.countryCode).map(v=>({code:String(v.countryCode).toUpperCase(),locales:(v.locales||[]).map(x=>String(x).toLowerCase().replaceAll('_','-'))}));
+    const normalizeLocales=list=>[...new Set((Array.isArray(list)?list:[]).map(x=>String(x||'').toLowerCase().replaceAll('_','-')).filter(Boolean))];
+    const intersect=(sets)=>{if(!sets.length)return [];let out=[...sets[0]];for(const list of sets.slice(1))out=out.filter(x=>list.includes(x));return [...new Set(out)];};
+    const localesForCapCountry=(cap,code)=>normalizeLocales(cap?.worldwide?cap.locales:cap?.localesByCountry?.[code]);
+    const countryOptions=variants.filter(v=>v.countryCode).map(v=>{
+      const code=String(v.countryCode).toUpperCase();
+      const perChapter=selectedCaps.map(cap=>localesForCapCountry(cap,code));
+      const locales=selectedCaps.length?intersect(perChapter):normalizeLocales(v.locales);
+      return {code,locales,supported:!selectedCaps.length||perChapter.every(list=>list.length>0)};
+    }).filter(v=>v.supported&&v.locales.length);
     const overlay=document.createElement('div');overlay.className='translation-overlay';
-    overlay.innerHTML=`<section class="translation-modal campaign-context-modal" role="dialog" aria-modal="true"><header class="translation-head"><div><small>CONTEXTE DE CAMPAGNE</small><h2>Ajouter un périmètre ou une langue</h2></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="campaign-context-scroll"><p class="campaign-context-help">Vous pouvez étendre votre campagne pendant la composition. Les choix déjà retenus restent conservés.</p><section><h3>Périmètres</h3><div class="version-check-grid">${countryOptions.map(v=>`<label class="version-check"><input type="checkbox" data-context-country value="${esc(v.code)}" ${currentCountries.includes(v.code)?'checked disabled':''}> ${esc(countryName(v.code))}${currentCountries.includes(v.code)?' <small>· déjà retenu</small>':''}</label>`).join('')}</div></section><section><h3>Langues</h3><p class="hint">Les langues proposées s’adaptent aux périmètres cochés.</p><div class="version-check-grid" data-context-locales></div><div class="version-empty" data-context-error hidden></div></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-context-cancel>Annuler</button><button class="button button-primary" type="button" data-context-save>Ajouter à la campagne</button></footer></section>`;
+    overlay.innerHTML=`<section class="translation-modal campaign-context-modal" role="dialog" aria-modal="true"><header class="translation-head"><div><small>CONTEXTE DE CAMPAGNE</small><h2>Modifier les périmètres de campagne</h2></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="campaign-context-scroll"><p class="campaign-context-help">Ajoutez ou retirez des périmètres. Les langues sont déterminées automatiquement à partir des périmètres retenus et des chapitres de votre parcours.</p><section><h3>Périmètres</h3><div class="version-check-grid">${countryOptions.map(v=>`<label class="version-check"><input type="checkbox" data-context-country value="${esc(v.code)}" ${currentCountries.includes(v.code)?'checked':''}> ${esc(countryName(v.code))}${currentCountries.includes(v.code)?' <small>· retenu</small>':''}</label>`).join('')}</div></section><section><h3>Langues disponibles</h3><p class="hint">Elles se mettent à jour automatiquement selon les périmètres cochés. Une langue ne peut pas être ajoutée indépendamment de son périmètre.</p><div data-context-locales></div><div class="version-empty" data-context-error hidden></div></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-context-cancel>Annuler</button><button class="button button-primary" type="button" data-context-save>Mettre à jour la campagne</button></footer></section>`;
     document.body.appendChild(overlay);
     const close=()=>overlay.remove(), localeRoot=overlay.querySelector('[data-context-locales]'), error=overlay.querySelector('[data-context-error]'), save=overlay.querySelector('[data-context-save]');
     overlay.querySelector('.translation-close').onclick=close;overlay.querySelector('[data-context-cancel]').onclick=close;
-    const selectedCountries=()=>[...new Set([...currentCountries,...[...overlay.querySelectorAll('[data-context-country]:checked')].map(x=>x.value)])];
+    const selectedCountries=()=>[...new Set([...overlay.querySelectorAll('[data-context-country]:checked')].map(x=>x.value))];
+    const localesForCountry=code=>countryOptions.find(v=>v.code===code)?.locales||[];
+    function derivedLocales(countries){return [...new Set(countries.flatMap(localesForCountry))].sort();}
     function redrawLocales(){
-      const countries=selectedCountries();const allowed=new Set();countryOptions.filter(v=>countries.includes(v.code)).forEach(v=>v.locales.forEach(l=>allowed.add(l)));currentLocales.forEach(l=>allowed.add(l));
-      localeRoot.innerHTML=[...allowed].sort().map(l=>`<label class="version-check"><input type="checkbox" data-context-locale value="${esc(l)}" ${currentLocales.includes(l)?'checked disabled':''}> ${esc(localeLabel(l))}${currentLocales.includes(l)?' <small>· déjà retenue</small>':''}</label>`).join('')||'<p class="hint">Aucune langue disponible pour ces périmètres.</p>';
+      const countries=selectedCountries();
+      if(!countries.length){localeRoot.innerHTML='<p class="hint">Choisissez au moins un périmètre pour afficher les langues disponibles.</p>';validate();return;}
+      localeRoot.innerHTML=countries.map(code=>{const locales=localesForCountry(code);return `<div class="campaign-context-language-group"><strong>${esc(countryName(code))}</strong><div class="theme-availability-pills">${locales.map(l=>`<span class="theme-availability-pill is-language">${esc(localeLabel(l))}</span>`).join('')}</div></div>`;}).join('');
       validate();
     }
     function validate(){
-      const countries=selectedCountries(), locales=[...new Set([...currentLocales,...[...overlay.querySelectorAll('[data-context-locale]:checked')].map(x=>x.value)])];
-      const uncovered=countries.filter(cc=>{const cap=countryOptions.find(v=>v.code===cc);return cap&&!cap.locales.some(l=>locales.includes(l));});
-      error.hidden=!uncovered.length;if(uncovered.length)error.textContent=`Choisissez au moins une langue compatible pour : ${uncovered.map(countryName).join(', ')}.`;
-      save.disabled=Boolean(uncovered.length)||(!countries.some(c=>!currentCountries.includes(c))&&!locales.some(l=>!currentLocales.includes(l)));
+      const countries=selectedCountries();
+      const unchanged=countries.length===currentCountries.length&&countries.every(c=>currentCountries.includes(c));
+      error.hidden=Boolean(countries.length);
+      if(!countries.length)error.textContent='Choisissez au moins un périmètre.';
+      save.disabled=!countries.length||unchanged;
     }
     overlay.querySelectorAll('[data-context-country]').forEach(x=>x.onchange=redrawLocales);redrawLocales();
-    overlay.addEventListener('change',e=>{if(e.target.matches('[data-context-locale]'))validate();});
-    save.onclick=async()=>{const countries=selectedCountries(),locales=[...new Set([...currentLocales,...[...overlay.querySelectorAll('[data-context-locale]:checked')].map(x=>x.value)])];save.disabled=true;save.textContent='Enregistrement…';try{const result=await api(`/api/projects/${projectId}/context`,{method:'PATCH',body:JSON.stringify({countries,locales})});state.project=result.project;renderCampaignContext(state.project);state.translationContexts.clear();close();showMessage('Périmètres et langues de campagne mis à jour.','success');}catch(e){save.disabled=false;save.textContent='Ajouter à la campagne';error.hidden=false;error.textContent=e.message;}};
+    save.onclick=async()=>{const countries=selectedCountries();save.disabled=true;save.textContent='Enregistrement…';try{const result=await api(`/api/projects/${projectId}/context`,{method:'PATCH',body:JSON.stringify({countries})});state.project=result.project;renderCampaignContext(state.project);state.translationContexts.clear();close();showMessage('Périmètres et langues de campagne mis à jour.','success');}catch(e){save.disabled=false;save.textContent='Mettre à jour la campagne';error.hidden=false;error.textContent=e.message;}};
   }
 
   function renderNav(){
@@ -166,7 +179,8 @@
       ${situationText}
       <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="false"><span data-toggle-label>Voir les réponses et les scores</span> <span aria-hidden="true">⌄</span></button>
       <div class="composer-answers" id="answers-${esc(s.id)}" hidden>${answerRows}</div>
-      <div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" hidden>🌐 Traduction et adaptation locale éventuelle</button></div>${customized&&((state.project?.locales||[]).length>1)?'<div class="translation-sync-warning">⚠️ Le contenu dans la langue de référence a été modifié : vérifiez les traductions et adaptations locales éventuelles.</div>':''}
+      <div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" hidden>🌐 Traduction et adaptation locale éventuelle</button></div>
+      <div class="translation-sync-warning" data-live-translation-warning ${customized&&((state.project?.locales||[]).length>1)?'':'hidden'}>⚠️ Vous modifiez le contenu de référence. Les traductions et adaptations locales existantes ne sont pas mises à jour automatiquement et doivent être vérifiées.</div>
       ${!locked?`<div class="composer-inline-help composer-context-help"><strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span></div>
       <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${customized?'Enregistré':'Enregistrement automatique'}</span></span></div>
       <div class="composer-actions">
@@ -193,6 +207,16 @@
     clearTimeout(autosaveTimers.get(String(id)));
     autosaveTimers.set(String(id),setTimeout(()=>saveInlineSituation(id),800));
   }
+  function updateLiveTranslationWarning(card){
+    if(!card)return;
+    const warning=card.querySelector('[data-live-translation-warning]');
+    if(!warning)return;
+    const hasOtherLocales=[...new Set((Array.isArray(state.project?.locales)?state.project.locales:[]).map(x=>String(x||'').toLowerCase()))].length>1;
+    const situationInput=card.querySelector('[data-situation-input]');
+    const situationChanged=situationInput&&String(situationInput.value||'').trim()!==String(situationInput.dataset.originalSituation||'').trim();
+    const answerChanged=[...card.querySelectorAll('[data-answer-input]')].some(input=>String(input.value||'').trim()!==String(input.dataset.originalAnswer||'').trim());
+    warning.hidden=!(hasOtherLocales&&(situationChanged||answerChanged));
+  }
   function bindSituations(){
     document.querySelectorAll('[data-collapse-situation]').forEach(b=>b.onclick=()=>{const body=$(`situation-body-${b.dataset.collapseSituation}`);if(!body)return;body.hidden=!body.hidden;b.setAttribute('aria-expanded',String(!body.hidden));b.textContent=body.hidden?'Déplier':'Replier';});
     document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{
@@ -203,7 +227,7 @@
       if(label)label.textContent=box.hidden?'Voir les réponses et les scores':'Masquer les réponses et les scores';
     });
     document.querySelectorAll('[data-situation-input],[data-answer-input]').forEach(input=>{
-      input.addEventListener('input',()=>scheduleAutosave(input.closest('[data-situation-card]')?.dataset.situationCard));
+      input.addEventListener('input',()=>{const card=input.closest('[data-situation-card]');updateLiveTranslationWarning(card);scheduleAutosave(card?.dataset.situationCard);});
       input.addEventListener('blur',()=>{
         const id=input.closest('[data-situation-card]')?.dataset.situationCard;
         if(id&&autosaveTimers.has(String(id))){clearTimeout(autosaveTimers.get(String(id)));autosaveTimers.delete(String(id));saveInlineSituation(id);}
