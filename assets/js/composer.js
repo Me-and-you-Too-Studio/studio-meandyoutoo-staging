@@ -15,18 +15,27 @@
   function totalSelected(){ return state.chapters.reduce((sum,ch)=>sum+ch.situations.length,0); }
   async function saveStep(step){ if(projectId) await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:step})}); }
 
+  function projectCountryLocales(project=state.project){
+    const raw=project?.country_locales&&typeof project.country_locales==='object'&&!Array.isArray(project.country_locales)?project.country_locales:{};
+    const countries=campaignCountries(project);
+    const normalize=list=>[...new Set((Array.isArray(list)?list:[]).map(locale=>String(locale||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
+    const global=normalize((Array.isArray(project?.locales)?project.locales:[]).concat(project?.selected_locale?[project.selected_locale]:[]));
+    const out={};
+    countries.forEach(code=>{
+      const explicit=normalize(raw?.[code]);
+      out[code]=explicit.length?explicit:(countries.length===1?global:[]);
+    });
+    return out;
+  }
+
   function renderCampaignContext(project){
     const root=$('composer-campaign-context');if(!root)return;
-    const countries=[...new Set((Array.isArray(project?.countries)?project.countries:[])
-      .concat(project?.selected_country_code?[project.selected_country_code]:[])
-      .map(code=>String(code||'').trim().toUpperCase()).filter(Boolean))];
-    const locales=[...new Set((Array.isArray(project?.locales)?project.locales:[])
-      .concat(project?.selected_locale?[project.selected_locale]:[])
-      .map(locale=>String(locale||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
-    if(!countries.length&&!locales.length){root.hidden=true;root.innerHTML='';return;}
+    const countries=campaignCountries(project);
+    if(!countries.length){root.hidden=true;root.innerHTML='';return;}
+    const byCountry=projectCountryLocales(project);
     let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
     const countryLabel=code=>{try{return regionNames?.of(code)||code;}catch(_){return code;}};
-    root.innerHTML=`<div class="theme-availability-group"><strong>Périmètre${countries.length>1?'s':''} retenu${countries.length>1?'s':''}</strong><div class="theme-availability-pills">${countries.map(code=>`<span class="theme-availability-pill is-scope">${esc(countryLabel(code))}</span>`).join('')}</div></div><div class="theme-availability-group"><strong>Langue${locales.length>1?'s':''} retenue${locales.length>1?'s':''}</strong><div class="theme-availability-pills">${locales.map(locale=>`<span class="theme-availability-pill is-language">${esc(localeLabel(locale))}</span>`).join('')}</div></div>${state.project?.can_edit===false?'':`<button class="button button-ghost button-small composer-context-edit" type="button" data-edit-campaign-context>Modifier les périmètres</button>`}`;
+    root.innerHTML=`<div class="composer-context-matrix-head"><div><strong>Périmètres et langues de campagne</strong><span>Chaque périmètre conserve ses propres langues activées.</span></div>${state.project?.can_edit===false?'':`<button class="button button-ghost button-small composer-context-edit" type="button" data-edit-campaign-context>Modifier</button>`}</div><div class="composer-context-matrix">${countries.map(code=>{const langs=byCountry[code]||[];return `<div class="composer-context-matrix-row ${code===state.country?'is-current':''}"><strong>${esc(countryLabel(code))}</strong><div>${langs.length?langs.map(locale=>`<span class="theme-availability-pill is-language">${esc(localeLabel(locale))}</span>`).join(''):'<span class="composer-context-no-language">Langue à préciser</span>'}</div></div>`;}).join('')}</div>`;
     root.hidden=false;
     root.querySelector('[data-edit-campaign-context]')?.addEventListener('click',openCampaignContextModal);
   }
@@ -41,10 +50,11 @@
     const root=$('composer-country-tabs');if(!root)return;
     const countries=campaignCountries(project);
     if(countries.length<=1){root.hidden=true;root.innerHTML='';return;}
+    const byCountry=projectCountryLocales(project);
     let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
     const label=code=>{try{return regionNames?.of(code)||code;}catch(_){return code;}};
     root.hidden=false;
-    root.innerHTML=`<div class="composer-country-tabs-label"><strong>Composer par périmètre</strong><span>${state.country?'Vous composez actuellement le périmètre '+esc(label(state.country))+'.':'Choisissez un périmètre ci-dessous pour ouvrir sa composition.'}</span></div><div class="composer-country-tabs-list">${countries.map(code=>`<button type="button" class="composer-country-tab ${code===state.country?'is-active':''}" data-country-tab="${esc(code)}" aria-pressed="${code===state.country?'true':'false'}">${esc(label(code))}</button>`).join('')}</div>`;
+    root.innerHTML=`<div class="composer-country-tabs-label"><strong>Composer par périmètre</strong><span>${state.country?'Vous composez '+esc(label(state.country))+' avec '+((byCountry[state.country]||[]).map(localeLabel).join(' · ')||'les langues configurées')+'.':'Choisissez un périmètre ci-dessous. Les langues à gérer sont indiquées sur chaque bouton.'}</span></div><div class="composer-country-tabs-list">${countries.map(code=>{const langs=byCountry[code]||[];return `<button type="button" class="composer-country-tab composer-country-tab-with-locales ${code===state.country?'is-active':''}" data-country-tab="${esc(code)}" aria-pressed="${code===state.country?'true':'false'}"><strong>${esc(label(code))}</strong><span>${langs.length?langs.map(locale=>esc(localeLabel(locale))).join(' · '):'Langue à préciser'}</span></button>`;}).join('')}</div>`;
     root.querySelectorAll('[data-country-tab]').forEach(button=>button.onclick=()=>switchCountry(button.dataset.countryTab));
   }
 

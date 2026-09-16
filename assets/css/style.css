@@ -13071,3 +13071,21 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 @media(max-width:720px){
   .composer-context-country-row{grid-template-columns:1fr;gap:6px}
 }
+
+/* Composer — association explicite périmètre ↔ langues */
+.composer-context-matrix-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+.composer-context-matrix-head>div{display:flex;flex-direction:column;gap:3px}
+.composer-context-matrix-head strong{color:var(--royal-blue);font-size:1rem}
+.composer-context-matrix-head span{color:var(--muted);font-size:.88rem}
+.composer-context-matrix{display:flex;flex-direction:column;border:1px solid #dbe8ee;border-radius:16px;overflow:hidden;background:#fff}
+.composer-context-matrix-row{display:grid;grid-template-columns:minmax(130px,190px) 1fr;align-items:center;gap:14px;padding:10px 14px;border-top:1px solid #e8f0f3}
+.composer-context-matrix-row:first-child{border-top:0}
+.composer-context-matrix-row.is-current{background:#f2fbfb}
+.composer-context-matrix-row>strong{color:var(--royal-blue)}
+.composer-context-matrix-row>div{display:flex;flex-wrap:wrap;gap:7px}
+.composer-context-no-language{font-size:.88rem;color:#9a5e00;font-weight:700}
+.composer-country-tab-with-locales{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:138px;text-align:left}
+.composer-country-tab-with-locales>strong{font:inherit;font-weight:800}
+.composer-country-tab-with-locales>span{font-size:.76rem;font-weight:650;color:#60758b;line-height:1.25}
+.composer-country-tab-with-locales.is-active>span{color:#237079}
+@media(max-width:720px){.composer-context-matrix-row{grid-template-columns:1fr;gap:7px}.composer-context-matrix-head{flex-direction:column}.composer-country-tab-with-locales{min-width:0}}
