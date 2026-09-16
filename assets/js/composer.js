@@ -548,14 +548,14 @@
     }catch(e){showMessage(e.message);}
   }
 
-  function renderChapterChoice(ch){
+  function renderChapterChoice(){
     const box=$('chapter-choice');if(!box)return;
-    const options=Array.isArray(ch.alternatives)?ch.alternatives:[];
-    if(options.length<2){box.hidden=true;box.innerHTML='';return;}
-    box.hidden=false;
-    const disabled=state.project?.can_edit===false;
-    box.innerHTML=`<div class="chapter-choice-copy"><strong>Choisissez l’orientation de ce chapitre</strong><span>Le choix porte sur le chapitre complet : situations, réponses et profils.</span></div><div class="chapter-choice-options">${options.map(option=>`<button type="button" class="chapter-choice-option ${option.selected?'is-selected':''}" data-chapter-choice="${esc(option.id)}" ${disabled?'disabled':''}><span>${esc(option.choice_label||option.title)}</span>${option.selected?'<strong>✓ Sélectionné</strong>':'<strong>Choisir</strong>'}</button>`).join('')}</div>`;
-    box.querySelectorAll('[data-chapter-choice]').forEach(button=>button.onclick=()=>changeWholeChapter(button.dataset.chapterChoice));
+    // Le choix des chapitres alternatifs est fait avant Composer dans le wizard.
+    // Composer doit uniquement afficher et personnaliser le parcours déjà retenu :
+    // on ne repropose jamais ici des alternatives potentiellement incompatibles
+    // avec les périmètres/langues choisis pour la campagne.
+    box.hidden=true;
+    box.innerHTML='';
   }
 
   function render(){
