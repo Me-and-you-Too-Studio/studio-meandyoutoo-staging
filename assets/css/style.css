@@ -12950,3 +12950,12 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .translation-answer{padding:12px 0;border-top:1px solid #e5edf1}.translation-field-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.translation-status{display:inline-flex;margin-left:8px;padding:4px 9px;border-radius:999px;background:#edf7f7;font-size:12px}.translation-status.is-incomplete{background:#fff3d6}
 .translation-foot{padding:18px 28px 24px;border-top:1px solid #dce7ed;display:flex;justify-content:flex-end;gap:12px}
 @media(max-width:760px){.translation-grid{grid-template-columns:1fr}.translation-modal{max-height:96vh}.translation-toolbar{align-items:flex-start;flex-direction:column}.translation-field-head{align-items:flex-start;flex-direction:column}.translation-status{margin-left:0}}
+
+
+/* Composer — UX blocs, contexte de campagne et adaptations locales */
+.composer-situation-head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.composer-collapse-situation{min-width:78px}.composer-situation-body[hidden]{display:none!important}
+.composer-context-edit{align-self:flex-end;margin-left:auto}.campaign-context-modal{width:min(920px,96vw)}.campaign-context-scroll{padding:22px 28px;overflow:auto}.campaign-context-scroll section+section{margin-top:24px}.campaign-context-help{margin:0 0 20px;color:var(--text-muted)}
+.translation-sync-warning{margin:10px 0;padding:10px 12px;border-radius:10px;background:#fff3d6;color:#7c5700;font-size:.9rem;line-height:1.4}.translation-local-note{margin:8px 0 14px;padding:9px 11px;border-radius:10px;background:#f5f8fa;color:#526b7a;font-size:.86rem}.translation-inline-warning{display:block;margin-top:8px;color:#7c5700;font-size:.82rem}
+.translation-profile-block strong{display:block;margin-top:12px}.translation-profile-field{display:block;margin:14px 0}.translation-profile-field strong{display:block;margin-bottom:7px}.translation-profile-field input,.translation-profile-field textarea{width:100%;box-sizing:border-box;border:1px solid #bfd2dc;border-radius:12px;padding:12px 14px;font:inherit;line-height:1.5}.translation-profile-field input{height:46px}
+@media(max-width:760px){.composer-situation-head-actions{align-items:flex-end;flex-direction:column}.composer-context-edit{align-self:flex-start;margin-left:0}.campaign-context-scroll{padding:18px}}
