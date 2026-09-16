@@ -5,7 +5,7 @@
   const requestedChapter = Math.max(0, Number(params.get('chapter')||0));
   const requestedSituation = params.get('situation') || '';
   const requestedCountry = String(params.get('countryCode')||'').trim().toUpperCase();
-  const state = { chapters: [], active: requestedChapter, project: null, country: requestedCountry, library: [], libraryMode: 'add', replaceId: '', translationContexts:new Map(), collapsedSituations:new Set() };
+  const state = { chapters: [], active: requestedChapter, project: null, country: requestedCountry, library: [], libraryMode: 'add', replaceId: '', translationContexts:new Map(), libraryAvailability:new Map(), collapsedSituations:new Set() };
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const canonical = value => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -28,16 +28,13 @@
     return out;
   }
 
-  function renderCampaignContext(project){
+  function renderCampaignContext(){
     const root=$('composer-campaign-context');if(!root)return;
-    const countries=campaignCountries(project);
-    if(!countries.length){root.hidden=true;root.innerHTML='';return;}
-    const byCountry=projectCountryLocales(project);
-    let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
-    const countryLabel=code=>{try{return regionNames?.of(code)||code;}catch(_){return code;}};
-    root.innerHTML=`<div class="composer-context-matrix-head"><div><strong>Périmètres et langues de campagne</strong><span>Chaque périmètre conserve ses propres langues activées.</span></div>${state.project?.can_edit===false?'':`<button class="button button-ghost button-small composer-context-edit" type="button" data-edit-campaign-context>Modifier</button>`}</div><div class="composer-context-matrix">${countries.map(code=>{const langs=byCountry[code]||[];return `<div class="composer-context-matrix-row ${code===state.country?'is-current':''}"><strong>${esc(countryLabel(code))}</strong><div>${langs.length?langs.map(locale=>`<span class="theme-availability-pill is-language">${esc(localeLabel(locale))}</span>`).join(''):'<span class="composer-context-no-language">Langue à préciser</span>'}</div></div>`;}).join('')}</div>`;
-    root.hidden=false;
-    root.querySelector('[data-edit-campaign-context]')?.addEventListener('click',openCampaignContextModal);
+    // Le couple périmètre → langues est désormais affiché directement
+    // dans « Composer par périmètre » pour éviter de répéter deux fois
+    // la même information dans l'en-tête.
+    root.hidden=true;
+    root.innerHTML='';
   }
 
   function campaignCountries(project=state.project){
@@ -49,13 +46,19 @@
   function renderCountryTabs(project=state.project){
     const root=$('composer-country-tabs');if(!root)return;
     const countries=campaignCountries(project);
-    if(countries.length<=1){root.hidden=true;root.innerHTML='';return;}
+    if(!countries.length){root.hidden=true;root.innerHTML='';return;}
     const byCountry=projectCountryLocales(project);
     let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
     const label=code=>{try{return regionNames?.of(code)||code;}catch(_){return code;}};
+    const activeCopy=state.country
+      ? `Vous composez ${esc(label(state.country))} avec ${((byCountry[state.country]||[]).map(localeLabel).join(' · ')||'les langues configurées')}.`
+      : (countries.length>1
+          ? 'Choisissez un périmètre pour ouvrir sa composition. Les langues à gérer sont indiquées sur chaque bouton.'
+          : 'Le périmètre et ses langues à gérer sont indiqués ci-dessous.');
     root.hidden=false;
-    root.innerHTML=`<div class="composer-country-tabs-label"><strong>Composer par périmètre</strong><span>${state.country?'Vous composez '+esc(label(state.country))+' avec '+((byCountry[state.country]||[]).map(localeLabel).join(' · ')||'les langues configurées')+'.':'Choisissez un périmètre ci-dessous. Les langues à gérer sont indiquées sur chaque bouton.'}</span></div><div class="composer-country-tabs-list">${countries.map(code=>{const langs=byCountry[code]||[];return `<button type="button" class="composer-country-tab composer-country-tab-with-locales ${code===state.country?'is-active':''}" data-country-tab="${esc(code)}" aria-pressed="${code===state.country?'true':'false'}"><strong>${esc(label(code))}</strong><span>${langs.length?langs.map(locale=>esc(localeLabel(locale))).join(' · '):'Langue à préciser'}</span></button>`;}).join('')}</div>`;
+    root.innerHTML=`<div class="composer-country-tabs-label"><div class="composer-country-tabs-label-copy"><strong>Composer par périmètre</strong><span>${activeCopy}</span></div>${state.project?.can_edit===false?'':`<button class="button button-ghost button-small composer-country-edit" type="button" data-edit-campaign-context>Modifier périmètres et langues</button>`}</div><div class="composer-country-tabs-list">${countries.map(code=>{const langs=byCountry[code]||[];return `<button type="button" class="composer-country-tab composer-country-tab-with-locales ${code===state.country?'is-active':''}" data-country-tab="${esc(code)}" aria-pressed="${code===state.country?'true':'false'}"><strong>${esc(label(code))}</strong><span>${langs.length?langs.map(locale=>esc(localeLabel(locale))).join(' · '):'Langue à préciser'}</span></button>`;}).join('')}</div>`;
     root.querySelectorAll('[data-country-tab]').forEach(button=>button.onclick=()=>switchCountry(button.dataset.countryTab));
+    root.querySelector('[data-edit-campaign-context]')?.addEventListener('click',openCampaignContextModal);
   }
 
   function renderComposerCountryGate(){
