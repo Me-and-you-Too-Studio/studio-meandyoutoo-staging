@@ -325,9 +325,9 @@
     return `<article class="composer-situation ${tone} ${locked?'is-locked':''} ${customized?'has-customization':''}" data-situation-card="${esc(s.id)}">
       <div class="composer-situation-head">
         <div class="composer-situation-tags">${locked?'<span class="composer-lock-chip">🔒 Contenu méthodologique obligatoire</span>':`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':''}</div>
-        <div class="composer-situation-head-actions"><span class="composer-origin">Situation Me&YouToo</span><button class="button button-ghost button-small composer-collapse-situation" type="button" data-collapse-situation="${esc(s.id)}" aria-expanded="true">Replier</button></div>
+        <div class="composer-situation-head-actions"><span class="composer-origin">Situation Me&YouToo</span><button class="button button-ghost button-small composer-collapse-situation" type="button" data-collapse-situation="${esc(s.id)}" aria-expanded="false">Déplier</button></div>
       </div>
-      <div class="composer-situation-body" id="situation-body-${esc(s.id)}">
+      <div class="composer-situation-body" id="situation-body-${esc(s.id)}" hidden>
       ${linkedLabel?`<div class="composer-linked-chip">🔗 ${esc(linkedLabel)}</div>`:''}
       ${situationText}
       <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="false"><span data-toggle-label>Voir les réponses et les scores</span> <span aria-hidden="true">⌄</span></button>
