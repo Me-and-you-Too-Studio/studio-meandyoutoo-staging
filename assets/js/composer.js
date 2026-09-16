@@ -204,7 +204,7 @@
       save.disabled=true;save.textContent='Enregistrement…';
       try{
         const result=await api(`/api/projects/${projectId}/context`,{method:'PATCH',body:JSON.stringify({countries:selectedCountriesNow,locales:selectedLocalesNow,localesByCountry})});
-        state.project=result.project;state.translationContexts.clear();close();
+        state.project=result.project;state.translationContexts.clear();state.libraryAvailability.clear();close();
         const refreshedCountries=campaignCountries(state.project);
         // Après une modification du contexte, une campagne multi-pays repart sans pays actif :
         // le client choisit explicitement le périmètre qu'il veut composer.
@@ -219,7 +219,7 @@
           history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`);
         }
         renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();
-        showMessage('Périmètres et langues de campagne mis à jour. Choisissez maintenant le périmètre à composer.','success');
+        clearMessage();
       }catch(e){
         save.disabled=false;save.textContent='Mettre à jour la campagne';error.hidden=false;error.textContent=e.message;
       }
@@ -533,6 +533,7 @@
         return;
       }
       ch.situations.push(...added);
+      state.libraryAvailability.clear();
       closeLibrary();render();
       showMessage(data.linked?'Les situations liées ont été ajoutées et enregistrées ensemble.':'La situation a été ajoutée et enregistrée dans le brouillon.','success');
     }catch(e){showMessage(e.message);}
