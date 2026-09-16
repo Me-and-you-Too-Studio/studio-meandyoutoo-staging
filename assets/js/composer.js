@@ -4,7 +4,8 @@
   let projectId = params.get('projectId') || '';
   const requestedChapter = Math.max(0, Number(params.get('chapter')||0));
   const requestedSituation = params.get('situation') || '';
-  const state = { chapters: [], active: requestedChapter, project: null, library: [], libraryMode: 'add', replaceId: '', translationContexts:new Map(), collapsedSituations:new Set() };
+  const requestedCountry = String(params.get('countryCode')||'').trim().toUpperCase();
+  const state = { chapters: [], active: requestedChapter, project: null, country: requestedCountry, library: [], libraryMode: 'add', replaceId: '', translationContexts:new Map(), collapsedSituations:new Set() };
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const canonical = value => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -28,6 +29,35 @@
     root.innerHTML=`<div class="theme-availability-group"><strong>Périmètre${countries.length>1?'s':''} retenu${countries.length>1?'s':''}</strong><div class="theme-availability-pills">${countries.map(code=>`<span class="theme-availability-pill is-scope">${esc(countryLabel(code))}</span>`).join('')}</div></div><div class="theme-availability-group"><strong>Langue${locales.length>1?'s':''} retenue${locales.length>1?'s':''}</strong><div class="theme-availability-pills">${locales.map(locale=>`<span class="theme-availability-pill is-language">${esc(localeLabel(locale))}</span>`).join('')}</div></div>${state.project?.can_edit===false?'':`<button class="button button-ghost button-small composer-context-edit" type="button" data-edit-campaign-context>Modifier les périmètres</button>`}`;
     root.hidden=false;
     root.querySelector('[data-edit-campaign-context]')?.addEventListener('click',openCampaignContextModal);
+  }
+
+  function campaignCountries(project=state.project){
+    return [...new Set((Array.isArray(project?.countries)?project.countries:[])
+      .concat(project?.selected_country_code?[project.selected_country_code]:[])
+      .map(code=>String(code||'').trim().toUpperCase()).filter(Boolean))];
+  }
+
+  function renderCountryTabs(project=state.project){
+    const root=$('composer-country-tabs');if(!root)return;
+    const countries=campaignCountries(project);
+    if(countries.length<=1){root.hidden=true;root.innerHTML='';return;}
+    let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
+    const label=code=>{try{return regionNames?.of(code)||code;}catch(_){return code;}};
+    root.hidden=false;
+    root.innerHTML=`<div class="composer-country-tabs-label"><strong>Composer par périmètre</strong><span>Chaque onglet affiche les situations réellement utilisées dans ce pays.</span></div><div class="composer-country-tabs-list">${countries.map(code=>`<button type="button" class="composer-country-tab ${code===state.country?'is-active':''}" data-country-tab="${esc(code)}">${esc(label(code))}</button>`).join('')}</div>`;
+    root.querySelectorAll('[data-country-tab]').forEach(button=>button.onclick=()=>switchCountry(button.dataset.countryTab));
+  }
+
+  async function switchCountry(code){
+    const country=String(code||'').trim().toUpperCase();if(!country||country===state.country)return;
+    try{
+      const data=await api(`/api/projects/${projectId}/composer?countryCode=${encodeURIComponent(country)}`);
+      state.project=data.project;state.chapters=data.chapters;state.country=data.composer_context?.countryCode||country;
+      state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));
+      state.translationContexts.clear();
+      history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${state.active}&countryCode=${encodeURIComponent(state.country)}`);
+      renderCampaignContext(state.project);renderCountryTabs(state.project);render();window.scrollTo({top:0,behavior:'smooth'});
+    }catch(e){showMessage(e.message);}
   }
 
   async function openCampaignContextModal(){
@@ -114,7 +144,7 @@
       save.disabled=true;save.textContent='Enregistrement…';
       try{
         const result=await api(`/api/projects/${projectId}/context`,{method:'PATCH',body:JSON.stringify({countries,locales})});
-        state.project=result.project;renderCampaignContext(state.project);state.translationContexts.clear();close();showMessage('Périmètres et langues de campagne mis à jour.','success');
+        state.project=result.project;state.translationContexts.clear();close();const countries=campaignCountries(state.project);if(!countries.includes(state.country))state.country=countries[0]||'';const refreshed=await api(`/api/projects/${projectId}/composer?countryCode=${encodeURIComponent(state.country||'')}`);state.project=refreshed.project;state.chapters=refreshed.chapters;state.country=refreshed.composer_context?.countryCode||state.country;renderCampaignContext(state.project);renderCountryTabs(state.project);render();showMessage('Périmètres et langues de campagne mis à jour.','success');
       }catch(e){
         save.disabled=false;save.textContent='Mettre à jour la campagne';error.hidden=false;error.textContent=e.message;
       }
@@ -129,7 +159,7 @@
     $('duration-estimate').textContent=`${Math.max(3,Math.round(total*.35))} à ${Math.max(5,Math.round(total*.45))} minutes · ${total} situations`;
     $('chapter-nav').innerHTML=state.chapters.map((ch,i)=>{const blocking=firstInvalidIndex(i),blocked=blocking!==-1,st=chapterCountStatus(ch);return `<article class="creation-chapter-item ${i===state.active?'is-active':''} ${st.below||st.above?'is-incomplete':''}"><button class="creation-chapter-head" data-chapter="${i}" type="button"><span><small>Partie ${i+1}</small>${esc(ch.title)}</span><strong>${ch.situations.length}</strong></button><div class="creation-chapter-tabs"><button class="${i===state.active?'is-active':''}" data-chapter="${i}" type="button">Questions</button><button class="${blocked?'is-disabled':''}" data-profile-chapter="${i}" data-blocking-chapter="${blocking}" aria-disabled="${blocked}" type="button">Profils</button></div></article>`;}).join('');
     document.querySelectorAll('[data-chapter]').forEach(button=>button.onclick=()=>{state.active=Number(button.dataset.chapter);history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${state.active}`);render();window.scrollTo({top:0,behavior:'smooth'});});
-    document.querySelectorAll('[data-profile-chapter]').forEach(button=>button.onclick=async()=>{const blocking=Number(button.dataset.blockingChapter);if(blocking>=0){await showIncompleteChapterModal(blocking,'Complétez les situations avant de personnaliser les profils');return;}location.href=`personnalisation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${button.dataset.profileChapter}`;});
+    document.querySelectorAll('[data-profile-chapter]').forEach(button=>button.onclick=async()=>{const blocking=Number(button.dataset.blockingChapter);if(blocking>=0){await showIncompleteChapterModal(blocking,'Complétez les situations avant de personnaliser les profils');return;}location.href=`personnalisation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${button.dataset.profileChapter}${state.country?`&countryCode=${encodeURIComponent(state.country)}`:''}`;});
   }
 
   function isLegalChapter(ch=state.chapters[state.active]){return canonical(ch?.slug||ch?.title).includes('harcelement')||canonical(ch?.slug||ch?.title).includes('agression sexuelle');}
@@ -148,7 +178,7 @@
   function firstInvalidIndex(limit=state.chapters.length-1){for(let i=0;i<=Math.min(limit,state.chapters.length-1);i++){const st=chapterCountStatus(state.chapters[i]);if(st.below||st.above)return i;}return -1;}
   async function showIncompleteChapterModal(index,title){
     const ch=state.chapters[index],status=chapterCountStatus(ch);if(!ch)return;
-    state.active=index;history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${index}`);render();window.scrollTo({top:0,behavior:'smooth'});
+    state.active=index;history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${index}${state.country?`&countryCode=${encodeURIComponent(state.country)}`:''}`);render();window.scrollTo({top:0,behavior:'smooth'});
     if(status.below){const goLibrary=await window.StudioModal.confirm({eyebrow:'Composition du diagnostic',title:title||`Il vous faut ${status.rules.min} situations minimum`,message:`« ${ch.title} » contient ${status.count} situation${status.count>1?'s':''}. Ajoutez-en ${status.rules.min-status.count} avant de personnaliser les profils.`,type:'info',cancelLabel:'Rester sur le chapitre',confirmLabel:'Piocher dans la bibliothèque'});if(goLibrary)openLibrary('add');return;}
     await window.StudioModal.alert({eyebrow:'Composition du diagnostic',title:`Maximum de ${status.rules.max} situations`,message:`« ${ch.title} » contient plus de ${status.rules.max} situations. Supprimez-en une avant de personnaliser les profils.`,type:'warning',confirmLabel:'J’ai compris'});
   }
@@ -388,7 +418,7 @@
   async function openLibrary(mode='add',replaceId=''){
     const ch=state.chapters[state.active];state.libraryMode=mode;state.replaceId=replaceId;
     try{
-      const data=await api(`/api/catalog/themes/${themeSlug}/library?chapterId=${encodeURIComponent(ch.catalog_chapter_id||ch.id)}&projectId=${encodeURIComponent(projectId)}`);
+      const data=await api(`/api/catalog/themes/${themeSlug}/library?chapterId=${encodeURIComponent(ch.catalog_chapter_id||ch.id)}&projectId=${encodeURIComponent(projectId)}&countryCode=${encodeURIComponent(state.country||'')}`);
       const existing=currentCatalogIds();
       state.library=(data.situations||[]).filter(s=>![String(s.id||''),String(s.source_id||''),String(s.metadata?.duplicate_of_source_id||''),canonical(s.content)].filter(Boolean).some(k=>existing.has(k)));
       $('library-title').textContent=mode==='replace'?`Remplacer une situation · ${ch.title}`:`Ajouter une situation · ${ch.title}`;
@@ -421,7 +451,7 @@
       return;
     }
     try{
-      const data=await api(`/api/projects/${projectId}/chapters/${ch.id}/situations`,{method:'POST',body:JSON.stringify({catalogSituationId:Number(catalogSituationId)})});
+      const data=await api(`/api/projects/${projectId}/chapters/${ch.id}/situations`,{method:'POST',body:JSON.stringify({catalogSituationId:Number(catalogSituationId),countryCode:state.country})});
       const added=(data.situations||[data.situation]).filter(Boolean);
       if(status.rules.max!=null&&ch.situations.length+added.length>status.rules.max){
         showMessage(`Cette sélection dépasserait le maximum de ${status.rules.max} situations.`);
@@ -432,7 +462,7 @@
       showMessage(data.linked?'Les situations liées ont été ajoutées et enregistrées ensemble.':'La situation a été ajoutée et enregistrée dans le brouillon.','success');
     }catch(e){showMessage(e.message);}
   }
-  async function replaceSituation(projectSituationId,catalogSituationId){try{const data=await api(`/api/projects/${projectId}/situations/${projectSituationId}/replace`,{method:'PATCH',body:JSON.stringify({catalogSituationId:Number(catalogSituationId)})});closeLibrary();const refreshed=await api(`/api/projects/${projectId}/composer`);state.project=refreshed.project;state.chapters=refreshed.chapters;render();showMessage(data.linked?'La sélection liée a été remplacée et enregistrée ensemble.':'La situation a été remplacée et enregistrée.','success');}catch(e){showMessage(e.message);}}
+  async function replaceSituation(projectSituationId,catalogSituationId){try{const data=await api(`/api/projects/${projectId}/situations/${projectSituationId}/replace`,{method:'PATCH',body:JSON.stringify({catalogSituationId:Number(catalogSituationId),countryCode:state.country})});closeLibrary();const refreshed=await api(`/api/projects/${projectId}/composer`);state.project=refreshed.project;state.chapters=refreshed.chapters;render();showMessage(data.linked?'La sélection liée a été remplacée et enregistrée ensemble.':'La situation a été remplacée et enregistrée.','success');}catch(e){showMessage(e.message);}}
 
   async function changeWholeChapter(catalogChapterId){
     const ch=state.chapters[state.active];
@@ -496,7 +526,7 @@
     if(next){
       if(state.project?.review_mode){next.href=`validation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`;next.textContent='Enregistrer et revenir au contrôle qualité →';next.classList.remove('is-disabled');next.setAttribute('aria-disabled','false');next.onclick=async event=>{event.preventDefault();next.setAttribute('aria-busy','true');next.textContent='Enregistrement…';await returnToReview();};}
       else{
-      next.href=`personnalisation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${state.active}`;
+      next.href=`personnalisation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${state.active}${state.country?`&countryCode=${encodeURIComponent(state.country)}`:''}`;
       const blocked=status.below||status.above;
       next.classList.toggle('is-disabled',blocked);
       next.setAttribute('aria-disabled',String(blocked));
@@ -515,7 +545,7 @@
     else if(!project.can_edit){href=`campagne-detail.html?projectId=${encodeURIComponent(projectId)}`;label='← Retour à la campagne';}
     ['composer-top-back','composer-theme-back'].forEach(id=>{const link=$(id);if(link){link.href=href;link.textContent=label;}});
   }
-  async function load(){try{await ensureProject();const data=await api(`/api/projects/${projectId}/composer`);state.project=data.project;state.chapters=data.chapters;state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title;renderCampaignContext(data.project);configureContextBack(data.project);if(data.project.can_edit)await saveStep('composer');render();if(requestedSituation){requestAnimationFrame(()=>{const card=document.querySelector(`[data-situation-card="${CSS.escape(String(requestedSituation))}"]`);if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea,button')?.focus({preventScroll:true});}});}if(data.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!data.project.can_edit)showMessage('Configuration verrouillée pendant la relecture Me&YouToo.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
+  async function load(){try{await ensureProject();const data=await api(`/api/projects/${projectId}/composer${state.country?`?countryCode=${encodeURIComponent(state.country)}`:''}`);state.project=data.project;state.chapters=data.chapters;state.country=data.composer_context?.countryCode||campaignCountries(data.project)[0]||'';state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title;renderCampaignContext(data.project);renderCountryTabs(data.project);configureContextBack(data.project);if(data.project.can_edit)await saveStep('composer');render();if(requestedSituation){requestAnimationFrame(()=>{const card=document.querySelector(`[data-situation-card="${CSS.escape(String(requestedSituation))}"]`);if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea,button')?.focus({preventScroll:true});}});}if(data.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!data.project.can_edit)showMessage('Configuration verrouillée pendant la relecture Me&YouToo.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
 
   $('library-button').onclick=async()=>{
     const status=chapterCountStatus(state.chapters[state.active]);
