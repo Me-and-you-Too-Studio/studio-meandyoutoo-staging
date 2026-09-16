@@ -1627,7 +1627,15 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   const findTheme=id=>state.catalogThemes.find(t=>String(t.id)===String(id));
   const findChapter=id=>state.catalogThemes.flatMap(t=>t.chapters||[]).find(c=>String(c.id)===String(id));
   const findSituation=id=>state.catalogThemes.flatMap(t=>(t.chapters||[]).flatMap(c=>c.situations||[])).find(si=>String(si.id)===String(id));
-  const situationKey=si=>String(si?.content||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+  const situationKey=si=>{
+    const text=String(si?.content||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+    // Deux contenus identiques peuvent être deux variantes de diffusion distinctes.
+    // Le périmètre fait donc partie de l'identité d'affichage ; on ne dédoublonne
+    // que les vraies copies techniques ayant même texte ET même périmètre.
+    const scope=Array.isArray(si?.country_codes)?[...new Set(si.country_codes.map(x=>String(x||'').trim().toUpperCase()).filter(Boolean))].sort().join(','):'';
+    const worldwide=String(si?.country_scope||'').toLowerCase()==='worldwide'?'worldwide':'';
+    return `${text}|${worldwide||scope}`;
+  };
   function canonicalSituations(chapter){
     const groups=new Map(),rank=si=>(si.active!==false&&!si.archived_at&&!si.deleted_at?3:(si.archived_at||si.deleted_at?2:1));
     for(const si of chapter?.situations||[]){
@@ -1742,20 +1750,6 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const locales=[...new Set(['fr',...base].map(x=>String(x).toLowerCase()))];
     const countryCodes=[...new Set([...(entity?.cultural_legal_scope?[String(entity.cultural_legal_scope)]:[]),...libraryCountryVariants(entity).map(t=>String(t.country_code||'').trim()).filter(Boolean)])];
     return `<span class="admin-library-localization-badges"><span class="admin-library-localization-chip is-language">Langues disponibles : ${locales.map(libraryLocaleLabel).join(' · ')}</span>${countryCodes.map(c=>`<span class="admin-library-localization-chip is-country">Périmètre culturel et légal : ${esc(libraryCountryLabel(c))}</span>`).join('')}</span>`;
-  }
-  const libraryCountryLocalesMap={
-    US:['en'], CA:['en'], FR:['fr'], DE:['de','en'], AT:['de','en'], BR:['br','en'],
-    CN:['zh','en'], JP:['ja','en'], KR:['ko-kr','en'], CH:['de','fr','it'],
-    ES:['es'], PT:['br'], AR:['en','es'], CL:['en','es'], MX:['en','es'],
-    PA:['en','es'], UY:['en','es'], DK:['en'], NO:['en'], SE:['en'],
-    HK:['en','zf'], TW:['en','zf']
-  };
-  function libraryAllowedLocalesForCountries(countryCodes=[]){
-    const allowed=new Set(['fr']); // FR toujours visible pour la gestion
-    (Array.isArray(countryCodes)?countryCodes:[]).forEach(code=>{
-      (libraryCountryLocalesMap[String(code||'').toUpperCase()]||[]).forEach(locale=>allowed.add(locale));
-    });
-    return allowed;
   }
   function libraryFilteredTranslations(entity,countryCodes=[]){
     const rows=libraryTranslationRows(entity);
