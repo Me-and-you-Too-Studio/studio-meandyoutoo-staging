@@ -13028,3 +13028,14 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .campaign-context-summary-lang:hover,.campaign-context-summary-lang:focus-visible{border-color:#078b93;box-shadow:0 0 0 3px rgba(7,139,147,.12);outline:none}
 .campaign-context-summary-lang.is-selected{background:#eaf8f8;border-color:#8cced2;color:#075f65}
 .campaign-context-summary-lang span{font-size:.9rem;line-height:1}
+
+
+/* Composer — sélection explicite du périmètre avant affichage du contenu */
+.composer-country-gate{margin:14px 0 18px}
+.composer-country-gate-card{display:flex;align-items:flex-start;gap:14px;padding:18px 20px;border:1px solid #cfe3ea;border-radius:18px;background:#f7fbfc;color:#203b68}
+.composer-country-gate-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#e8f7f8;font-size:1.2rem;flex:0 0 auto}
+.composer-country-gate-card strong{display:block;font-size:1rem;margin-bottom:4px}
+.composer-country-gate-card p{margin:0;color:#60758b;line-height:1.5}
+.campaign-context-available-locales{margin-top:8px}
+.campaign-context-available-locales .theme-availability-pills{gap:8px}
+@media(max-width:720px){.composer-country-gate-card{padding:15px 16px}.composer-country-gate-icon{width:36px;height:36px}}
