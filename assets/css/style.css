@@ -13237,37 +13237,28 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .profile-autosave-note{margin:.55rem 0 0;color:var(--muted);font-size:.86rem;line-height:1.4}
 .profile-autosave-note strong{color:var(--royal-blue)}
 
-/* Mes campagnes — contexte réel de campagne : périmètres, langues et filtres */
-.campaign-context-tags{
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  margin-top:9px;
+/* Mes campagnes — contexte réel de campagne : boutons compacts + détails à la demande */
+.campaign-context-disclosure{margin-top:10px}
+.campaign-context-toggle-row{display:flex;flex-wrap:wrap;gap:8px}
+.campaign-context-toggle{
+  display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:7px 11px;
+  border:1px solid #d6e2ee;border-radius:999px;background:#fff;color:var(--royal-blue);
+  font:inherit;font-size:.78rem;font-weight:800;line-height:1;cursor:pointer;
 }
-.campaign-scope-tag,
-.campaign-locale-tag{
-  display:inline-flex;
-  align-items:center;
-  min-height:28px;
-  padding:5px 9px;
-  border-radius:999px;
-  border:1px solid #d6e2ee;
-  font-size:.75rem;
-  font-weight:800;
-  line-height:1.15;
-}
-.campaign-scope-tag{
-  background:#eef8f7;
-  color:#0a6f75;
-  border-color:#cce7e5;
-}
-.campaign-locale-tag{
-  background:#f4f1fb;
-  color:#56447f;
-  border-color:#ded5f1;
-}
+.campaign-context-toggle:hover,.campaign-context-toggle:focus-visible{border-color:#98b5d1;background:#f7fafc;outline:none}
+.campaign-context-toggle[aria-expanded="true"]{background:#eef4fa;border-color:#aac1d8}
+.campaign-context-chevron{font-size:.9rem;line-height:1;transition:transform .16s ease}
+.campaign-context-toggle[aria-expanded="true"] .campaign-context-chevron{transform:rotate(180deg)}
+.campaign-context-panel{margin-top:8px;padding:10px 12px;border:1px solid #dfe7ef;border-radius:12px;background:#f9fbfd}
+.campaign-context-panel[hidden]{display:none!important}
+.campaign-context-panel>strong{display:block;margin-bottom:7px;color:#425d78;font-size:.75rem;text-transform:uppercase;letter-spacing:.03em}
+.campaign-context-values{display:flex;flex-wrap:wrap;gap:6px 14px}
+.campaign-context-values span{color:#26435f;font-size:.82rem;font-weight:700}
 .campaign-context-filter select{min-width:190px}
 @media(max-width:760px){
   .campaign-context-filter{width:100%}
   .campaign-context-filter select{width:100%;min-width:0}
+  .campaign-context-toggle-row{gap:6px}
+  .campaign-context-toggle{font-size:.75rem;padding:7px 10px}
+  .campaign-context-values{flex-direction:column;gap:6px}
 }

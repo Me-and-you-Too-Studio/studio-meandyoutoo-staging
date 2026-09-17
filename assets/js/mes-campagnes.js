@@ -228,15 +228,24 @@
     return Array.from(new Set(fromMap.concat(fallback)));
   }
 
-  function projectContextTags(p) {
-    var countryTags = projectCountries(p).map(function (code) {
-      return '<span class="campaign-scope-tag" title="Périmètre">🌍 ' + esc(countryLabel(code)) + '</span>';
-    });
-    var localeTags = projectLocales(p).map(function (locale) {
-      return '<span class="campaign-locale-tag" title="Langue">🗣 ' + esc(locale.toUpperCase()) + ' · ' + esc(localeLabel(locale)) + '</span>';
-    });
-    if (!countryTags.length && !localeTags.length) return "";
-    return '<div class="campaign-context-tags" aria-label="Périmètres et langues">' + countryTags.concat(localeTags).join("") + '</div>';
+  function projectContextDisclosure(p) {
+    var countries = projectCountries(p);
+    var locales = projectLocales(p);
+    if (!countries.length && !locales.length) return "";
+    var pid = esc(String(p.id || "project").replace(/[^a-zA-Z0-9_-]/g, "-"));
+    var countryButton = countries.length
+      ? '<button type="button" class="campaign-context-toggle" data-context-toggle="countries" aria-expanded="false" aria-controls="campaign-countries-' + pid + '">🌍 Périmètres · ' + countries.length + '<span aria-hidden="true" class="campaign-context-chevron">⌄</span></button>'
+      : "";
+    var localeButton = locales.length
+      ? '<button type="button" class="campaign-context-toggle" data-context-toggle="locales" aria-expanded="false" aria-controls="campaign-locales-' + pid + '">🗣 Langues · ' + locales.length + '<span aria-hidden="true" class="campaign-context-chevron">⌄</span></button>'
+      : "";
+    var countryPanel = countries.length
+      ? '<div class="campaign-context-panel" id="campaign-countries-' + pid + '" data-context-panel="countries" hidden><strong>Périmètres</strong><div class="campaign-context-values">' + countries.map(function (code) { return '<span>🌍 ' + esc(countryLabel(code)) + '</span>'; }).join("") + '</div></div>'
+      : "";
+    var localePanel = locales.length
+      ? '<div class="campaign-context-panel" id="campaign-locales-' + pid + '" data-context-panel="locales" hidden><strong>Langues</strong><div class="campaign-context-values">' + locales.map(function (locale) { return '<span>🗣 ' + esc(locale.toUpperCase()) + ' · ' + esc(localeLabel(locale)) + '</span>'; }).join("") + '</div></div>'
+      : "";
+    return '<div class="campaign-context-disclosure" aria-label="Périmètres et langues"><div class="campaign-context-toggle-row">' + countryButton + localeButton + '</div>' + countryPanel + localePanel + '</div>';
   }
 
   function renderContextFilters() {
@@ -710,7 +719,7 @@
       (folderById(p.folder_id) ? '<span class="campaign-folder-tag">📁 ' + esc(folderById(p.folder_id).name) + '</span>' : "") +
       extraBadges(p) +
       "</div>" +
-      projectContextTags(p) +
+      projectContextDisclosure(p) +
       themeWarning +
       (["unpublished", "closed", "completed", "archived"].includes(p.status)
         ? '<div class="campaign-reprogram-hint"><strong>Relancer ce même autodiagnostic</strong><span>Utilisez « Reprogrammer » pour conserver le contenu et les mêmes liens. Il n’est pas nécessaire de reconstruire une campagne sur ce thème.</span></div>'
@@ -900,6 +909,28 @@
           },
         );
       };
+    });
+
+    document.querySelectorAll(".campaign-context-disclosure").forEach(function (root) {
+      root.querySelectorAll("[data-context-toggle]").forEach(function (button) {
+        button.onclick = function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var target = button.getAttribute("data-context-toggle");
+          var wasOpen = button.getAttribute("aria-expanded") === "true";
+          root.querySelectorAll("[data-context-toggle]").forEach(function (other) {
+            other.setAttribute("aria-expanded", "false");
+          });
+          root.querySelectorAll("[data-context-panel]").forEach(function (panel) {
+            panel.hidden = true;
+          });
+          if (!wasOpen) {
+            button.setAttribute("aria-expanded", "true");
+            var panel = root.querySelector('[data-context-panel="' + target + '"]');
+            if (panel) panel.hidden = false;
+          }
+        };
+      });
     });
   }
 
