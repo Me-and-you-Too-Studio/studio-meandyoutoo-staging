@@ -10,7 +10,7 @@
     m=document.createElement('div');
     m.id='rp-modal';
     m.hidden=true;
-    m.innerHTML=`<div class="rp-window"><header><div><b>${isProject?'Aperçu de ma campagne':'Aperçu répondant du diagnostic'}</b><span>${isProject?'Version composée par le client — aucune réponse enregistrée':'Version catalogue Me&YouToo — aucune réponse enregistrée'}</span></div><button aria-label="Fermer">×</button></header><iframe title="${isProject?'Aperçu de ma campagne':'Aperçu répondant du diagnostic'}"></iframe></div>`;
+    m.innerHTML=`<div class="rp-window"><header><div><b>${isProject?'Aperçu de ma campagne':'Aperçu répondant du diagnostic'}</b><span>${isProject?'Contenu réel enregistré pour cette campagne — aucune réponse enregistrée':'Version catalogue Me&YouToo — aucune réponse enregistrée'}</span></div><button aria-label="Fermer">×</button></header><iframe title="${isProject?'Aperçu de ma campagne':'Aperçu répondant du diagnostic'}"></iframe></div>`;
     document.body.appendChild(m);
     m.querySelector('header button').onclick=close;
     m.onclick=e=>{if(e.target===m)close()};
@@ -43,7 +43,7 @@
     b.className='button button-secondary';
     b.innerHTML=isProject?'👁 Aperçu de ma campagne':'👁 Voir l’aperçu répondant';
     b.title=isProject
-      ?'Voir exactement le parcours répondant avec le contenu réellement composé et enregistré pour cette campagne'
+      ?'Voir le parcours répondant avec le contenu réel enregistré pour cette campagne'
       :'Découvrir le parcours répondant standard de ce diagnostic Me&YouToo';
     b.onclick=open;
     return b;
