@@ -3634,6 +3634,17 @@ legend {
   border-radius: 50%;
   flex: 0 0 auto;
 }
+.profile-excel-card input.is-customized,
+.profile-excel-card textarea.is-customized {
+  border-color: #dfbd57;
+  background: #fffef9;
+  box-shadow: 0 0 0 1px rgba(223, 189, 87, 0.12);
+}
+.profile-excel-card input.is-customized:focus,
+.profile-excel-card textarea.is-customized:focus {
+  border-color: #c8a63f;
+  box-shadow: 0 0 0 3px rgba(223, 189, 87, 0.18);
+}
 .profile-method {
   background: var(--royal-blue-soft);
   border-radius: 10px;
