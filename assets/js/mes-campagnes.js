@@ -163,9 +163,37 @@
     return normalized;
   }
 
+  var studioLocaleNames = {
+    fr: "Français",
+    en: "Anglais",
+    es: "Espagnol",
+    de: "Allemand",
+    it: "Italien",
+    pt: "Portugais",
+    br: "Portugais Brésil",
+    bg: "Bulgare",
+    ja: "Japonais",
+    "ko-kr": "Coréen",
+    ko: "Coréen",
+    zf: "Chinois simplifié",
+    zh: "Chinois traditionnel",
+    nl: "Néerlandais",
+    "nl-be": "Néerlandais (Belgique)",
+    pl: "Polonais",
+    ro: "Roumain",
+    ru: "Russe",
+    "sv-se": "Suédois",
+    tr: "Turc",
+    cs: "Tchèque",
+    sk: "Slovaque",
+    id: "Indonésien",
+    ar: "Arabe"
+  };
+
   function localeLabel(locale) {
     var normalized = normalizeLocaleCode(locale);
     if (!normalized) return "";
+    if (studioLocaleNames[normalized]) return studioLocaleNames[normalized];
     try {
       var label = languageNames && languageNames.of(normalized);
       if (label && label.toLowerCase() !== normalized) return label.charAt(0).toUpperCase() + label.slice(1);
