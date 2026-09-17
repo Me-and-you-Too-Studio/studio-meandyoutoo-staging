@@ -12,8 +12,104 @@
   const api = (path, options={}) => window.StudioAPI.request(path, options);
   const campaignContextInfoText=`Ajouter un périmètre ou une langue conserve ce que vous avez déjà composé sur les autres périmètres. Retirer un périmètre supprime uniquement le contenu rattaché à ce pays dans la campagne.`;
 
-  function infoDot(message,label='Informations importantes'){
-    return `<span class="composer-info-wrap"><button type="button" class="composer-info-dot" tabindex="0" aria-label="${esc(label)}" aria-expanded="false">i</button><span class="composer-info-bubble" role="tooltip">${esc(message)}</span></span>`;
+  function infoDot(message,label='Informations importantes',floating=false){
+    return `<span class="composer-info-wrap${floating?' composer-info-wrap-floating':''}"${floating?' data-floating-info':''}><button type="button" class="composer-info-dot" tabindex="0" aria-label="${esc(label)}" aria-expanded="false">i</button><span class="composer-info-bubble" role="tooltip">${esc(message)}</span></span>`;
+  }
+
+  function setupFloatingInfoTooltip(root){
+    const wrap=root?.querySelector?.('[data-floating-info]');
+    const button=wrap?.querySelector?.('.composer-info-dot');
+    const source=wrap?.querySelector?.('.composer-info-bubble');
+    if(!wrap||!button||!source)return ()=>{};
+
+    const tooltip=document.createElement('div');
+    const tooltipId=`composer-floating-tooltip-${Math.random().toString(36).slice(2)}`;
+    tooltip.id=tooltipId;
+    tooltip.className='composer-floating-info-tooltip';
+    tooltip.setAttribute('role','tooltip');
+    tooltip.textContent=source.textContent||'';
+    document.body.appendChild(tooltip);
+    button.setAttribute('aria-describedby',tooltipId);
+
+    let clickPinned=false;
+    const clamp=(value,min,max)=>Math.max(min,Math.min(value,max));
+    const position=()=>{
+      if(tooltip.hidden)return;
+      const triggerRect=button.getBoundingClientRect();
+      const modalRect=root.querySelector('.campaign-context-modal')?.getBoundingClientRect();
+      const viewportWidth=document.documentElement.clientWidth;
+      const viewportHeight=document.documentElement.clientHeight;
+      const margin=16;
+      const gap=10;
+      const maxWidth=Math.min(420,viewportWidth-(margin*2));
+      tooltip.style.maxWidth=`${maxWidth}px`;
+      tooltip.style.width=`${maxWidth}px`;
+
+      const tipRect=tooltip.getBoundingClientRect();
+      const safeLeft=modalRect?Math.max(margin,modalRect.left+margin):margin;
+      const safeRight=modalRect?Math.min(viewportWidth-margin,modalRect.right-margin):viewportWidth-margin;
+      const availableWidth=Math.max(0,safeRight-safeLeft);
+      if(availableWidth&&tipRect.width>availableWidth){
+        tooltip.style.width=`${availableWidth}px`;
+      }
+      const measured=tooltip.getBoundingClientRect();
+      const idealLeft=triggerRect.left+(triggerRect.width/2)-(measured.width/2);
+      const maxLeft=Math.max(safeLeft,safeRight-measured.width);
+      const left=clamp(idealLeft,safeLeft,maxLeft);
+      const belowTop=triggerRect.bottom+gap;
+      const aboveTop=triggerRect.top-gap-measured.height;
+      const top=(belowTop+measured.height<=viewportHeight-margin||aboveTop<margin)?belowTop:aboveTop;
+      tooltip.style.left=`${Math.round(left)}px`;
+      tooltip.style.top=`${Math.round(Math.max(margin,top))}px`;
+    };
+    const show=()=>{
+      tooltip.hidden=false;
+      tooltip.classList.add('is-visible');
+      button.setAttribute('aria-expanded','true');
+      position();
+    };
+    const hide=(force=false)=>{
+      if(clickPinned&&!force)return;
+      clickPinned=false;
+      tooltip.classList.remove('is-visible');
+      tooltip.hidden=true;
+      button.setAttribute('aria-expanded','false');
+    };
+    const onDocumentPointerDown=event=>{
+      if(!wrap.contains(event.target)&&event.target!==tooltip)hide(true);
+    };
+    const onKeyDown=event=>{
+      if(event.key==='Escape'&&!tooltip.hidden){
+        hide(true);
+        button.focus();
+      }
+    };
+    const onViewportChange=()=>{if(!tooltip.hidden)position();};
+
+    tooltip.hidden=true;
+    button.addEventListener('mouseenter',show);
+    button.addEventListener('mouseleave',()=>hide());
+    button.addEventListener('focus',show);
+    button.addEventListener('blur',()=>setTimeout(()=>hide(),0));
+    button.addEventListener('click',event=>{
+      event.preventDefault();
+      event.stopPropagation();
+      if(clickPinned){hide(true);return;}
+      clickPinned=true;
+      show();
+    });
+    document.addEventListener('pointerdown',onDocumentPointerDown,true);
+    document.addEventListener('keydown',onKeyDown);
+    window.addEventListener('resize',onViewportChange);
+    window.addEventListener('scroll',onViewportChange,true);
+
+    return ()=>{
+      document.removeEventListener('pointerdown',onDocumentPointerDown,true);
+      document.removeEventListener('keydown',onKeyDown);
+      window.removeEventListener('resize',onViewportChange);
+      window.removeEventListener('scroll',onViewportChange,true);
+      tooltip.remove();
+    };
   }
 
   function showMessage(message, tone='error') { const el=$('composer-alert'); el.hidden=false; el.textContent=message; el.dataset.tone=tone; }
@@ -131,10 +227,11 @@
     });
 
     const overlay=document.createElement('div');overlay.className='translation-overlay';
-    overlay.innerHTML=`<section class="translation-modal campaign-context-modal" role="dialog" aria-modal="true"><header class="translation-head campaign-context-modal-head"><div class="campaign-context-modal-heading"><small>CONTEXTE DE CAMPAGNE</small><div class="composer-inline-title campaign-context-modal-title"><h2>Périmètres et langues</h2>${infoDot(campaignContextInfoText,'Impact d’une modification de périmètre ou de langue')}</div><p>Ajoutez ou retirez des périmètres, puis choisissez les langues activées pour chacun.</p></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="campaign-context-scroll"><section><h3>Périmètres</h3><p class="hint">Choisissez les pays ou périmètres à inclure dans la campagne.</p><div class="version-check-grid">${countryOptions.map(v=>`<label class="version-check"><input type="checkbox" data-context-country value="${esc(v.code)}" ${currentCountries.includes(v.code)?'checked':''}> ${esc(countryName(v.code))}</label>`).join('')}</div></section><section><h3>Langues disponibles</h3><p class="hint">Les langues proposées dépendent des périmètres cochés. Activez-les ensuite, pays par pays, dans le bloc ci-dessous.</p><div class="campaign-context-available-locales" data-context-locales></div><div class="campaign-context-selection-summary" data-context-selection-summary></div><div class="version-empty" data-context-error hidden></div></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-context-cancel>Annuler</button><button class="button button-primary" type="button" data-context-save>Mettre à jour la campagne</button></footer></section>`;
+    overlay.innerHTML=`<section class="translation-modal campaign-context-modal" role="dialog" aria-modal="true"><header class="translation-head campaign-context-modal-head"><div class="campaign-context-modal-heading"><small>CONTEXTE DE CAMPAGNE</small><div class="composer-inline-title campaign-context-modal-title"><h2>Périmètres et langues</h2>${infoDot(campaignContextInfoText,'Impact d’une modification de périmètre ou de langue',true)}</div><p>Ajoutez ou retirez des périmètres, puis choisissez les langues activées pour chacun.</p></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="campaign-context-scroll"><section><h3>Périmètres</h3><p class="hint">Choisissez les pays ou périmètres à inclure dans la campagne.</p><div class="version-check-grid">${countryOptions.map(v=>`<label class="version-check"><input type="checkbox" data-context-country value="${esc(v.code)}" ${currentCountries.includes(v.code)?'checked':''}> ${esc(countryName(v.code))}</label>`).join('')}</div></section><section><h3>Langues disponibles</h3><p class="hint">Les langues proposées dépendent des périmètres cochés. Activez-les ensuite, pays par pays, dans le bloc ci-dessous.</p><div class="campaign-context-available-locales" data-context-locales></div><div class="campaign-context-selection-summary" data-context-selection-summary></div><div class="version-empty" data-context-error hidden></div></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-context-cancel>Annuler</button><button class="button button-primary" type="button" data-context-save>Mettre à jour la campagne</button></footer></section>`;
     document.body.appendChild(overlay);
+    const destroyFloatingInfo=setupFloatingInfoTooltip(overlay);
 
-    const close=()=>overlay.remove(), localeRoot=overlay.querySelector('[data-context-locales]'), selectionSummary=overlay.querySelector('[data-context-selection-summary]'), error=overlay.querySelector('[data-context-error]'), save=overlay.querySelector('[data-context-save]');
+    const close=()=>{destroyFloatingInfo();overlay.remove();}, localeRoot=overlay.querySelector('[data-context-locales]'), selectionSummary=overlay.querySelector('[data-context-selection-summary]'), error=overlay.querySelector('[data-context-error]'), save=overlay.querySelector('[data-context-save]');
     overlay.querySelector('.translation-close').onclick=close;overlay.querySelector('[data-context-cancel]').onclick=close;
     const selectedCountries=()=>[...new Set([...overlay.querySelectorAll('[data-context-country]:checked')].map(x=>x.value))];
     const localesForCountry=code=>countryOptions.find(v=>v.code===code)?.locales||[];

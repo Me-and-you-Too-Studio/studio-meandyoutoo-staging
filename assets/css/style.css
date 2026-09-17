@@ -13204,3 +13204,30 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
     max-width:none;
   }
 }
+
+
+/* Composer — tooltip modal rendu hors de la modale pour ne jamais être coupé par overflow. */
+.composer-info-wrap-floating>.composer-info-bubble{display:none!important}
+.composer-floating-info-tooltip{
+  position:fixed;
+  z-index:20050;
+  box-sizing:border-box;
+  margin:0;
+  padding:12px 14px;
+  border-radius:12px;
+  background:#173862;
+  color:#fff;
+  font-size:.84rem;
+  font-weight:600;
+  line-height:1.45;
+  box-shadow:0 12px 32px rgba(15,45,78,.28);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  overflow-wrap:anywhere;
+  transition:opacity .12s ease,visibility .12s ease;
+}
+.composer-floating-info-tooltip.is-visible{opacity:1;visibility:visible}
+@media(max-width:720px){
+  .composer-floating-info-tooltip{font-size:.82rem;padding:11px 12px}
+}
