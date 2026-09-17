@@ -1,9 +1,9 @@
 (()=>{
 const previewSource=new URLSearchParams(location.search).get('source')||'live';
-const liveProjectPreview=(new URLSearchParams(location.search).get('mode')||((new URLSearchParams(location.search).get('projectId'))?'project':'catalog'))==='project'&&previewSource!=='saved';
 let previewLocale=String(new URLSearchParams(location.search).get('lang')||document.documentElement.lang||'fr').toLowerCase().replaceAll('_','-');
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=h=>{let x=document.createElement('div');x.innerHTML=String(h||'').replace(/<\s*br\s*\/?\s*>/gi,'\n').replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi,'</$1>\n\n');return(x.textContent||'').replace(/\u00a0/g,' ').replace(/[ \t]+\n/g,'\n').replace(/\n[ \t]+/g,'\n').replace(/\n{3,}/g,'\n\n').trim()},q=new URLSearchParams(location.search),pid=q.get('projectId'),theme=q.get('theme')||'',mode=q.get('mode')||(pid?'project':'catalog'),root=$('#rp');
-let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[],availablePreviewLocales=['fr'],previewCountry='FR',previewCountries=[],previewCountryLocales={},contextLoading=false,contextError='';
+let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[],availablePreviewLocales=['fr'],previewCountry='FR';
+if(!document.getElementById('rp-language-picker-style')){const st=document.createElement('style');st.id='rp-language-picker-style';st.textContent='.rp-head{display:flex;align-items:center;gap:14px}.rp-language-picker{margin-left:auto;display:flex;align-items:center;gap:8px}.rp-language-picker label{font-size:.78rem;font-weight:800;color:#536a82}.rp-language-picker select{min-width:165px;height:40px;padding:0 36px 0 12px;border:1px solid #cbdde5;border-radius:12px;background:#fff;color:#18375d;font:inherit;font-weight:700}.rp-language-picker select:focus{outline:3px solid rgba(0,136,145,.16);border-color:#008891}@media(max-width:680px){.rp-head{flex-wrap:wrap}.rp-language-picker{width:100%;margin-left:0}.rp-language-picker select{flex:1}}';document.head.appendChild(st)}
 
 function apiBase(){
   const host=String(location.hostname||'').toLowerCase(),path=String(location.pathname||'').toLowerCase();
@@ -27,7 +27,21 @@ function normalizeOptions(s){return (s.opts||s.options||[]).map((o,i)=>typeof o=
 function normalizeSocio(list){return (Array.isArray(list)?list:[]).filter(Boolean).map((s,i)=>({key:String(s.kind||s.key||s.source_id||i),label:s.q||s.question||s.label||s.name||s.title||`Question ${i+1}`,options:normalizeOptions(s)})).filter(s=>s.options.length)}
 function fallbackSocio(){return [{key:'gender',label:'Vous êtes :',options:[{label:'Une femme'},{label:'Un homme'},{label:'Non-binaire'},{label:'Autre'}]}]}
 function normalizeProfile(p){return {...p,title:p.title||p.titre||'Profil',summary:clean(p.summary||p.resume||p.phrase||''),content:clean(p.content||p.description||p.desc||''),scoring_min:num(p.scoring_min??p.min,0),scoring_max:num(p.scoring_max??p.max,0),top_score:num(p.top_score,0)}}
-function normalizeAnswer(a,i){return typeof a==='object'?{...a,label:a.text||a.content||a.label||`Réponse ${i+1}`,score:num(a.score,0)}:{label:String(a),score:0}}
+function normalizeAnswer(a,i){return typeof a==='object'?{...a,label:a.text||a.content||a.label||`Réponse ${i+1}`,score:num(a.score,0),display_order:num(a.display_order??a.position??i,i)}:{label:String(a),score:0,display_order:i}}
+function isFivePointScaleAnswers(list){
+  const answers=Array.isArray(list)?list:[];
+  if(answers.length!==5)return false;
+  const normalized=answers.map((a,i)=>normalizeAnswer(a,i));
+  const scores=normalized.map(a=>num(a.score,NaN));
+  if(scores.some(v=>!Number.isFinite(v)))return false;
+  const uniq=[...new Set(scores)].sort((a,b)=>a-b);
+  if(uniq.length!==5)return false;
+  for(let i=1;i<uniq.length;i++){if(Math.abs((uniq[i]-uniq[i-1])-1)>1e-9)return false}
+  const keywordRe=/(accord|désaccord|disaccord|agree|disagree|neutral|neither|acuerdo|desacuerdo|desacuerdo|medianamente|totalmente|plutôt|plutot|moyennement|tout à fait|pas du tout|muy)/i;
+  const hits=normalized.filter(a=>keywordRe.test(String(a.label||''))).length;
+  return hits>=3;
+}
+function orderScaleAnswers(list){return (Array.isArray(list)?list:[]).map((a,i)=>normalizeAnswer(a,i)).sort((a,b)=>{const scoreDiff=num(a.score,0)-num(b.score,0);return scoreDiff||num(a.display_order,0)-num(b.display_order,0)})}
 function normalizeResources(list){return (Array.isArray(list)?list:[]).map((r,i)=>({title:String(r?.title||r?.titre||r?.label||r?.text||`Ressource ${i+1}`).trim(),url:String(r?.url||r?.href||r?.link||'').trim()})).filter(r=>r.title&&/^https?:\/\//i.test(r.url))}
 function normalizeMedia(list){const rows=(Array.isArray(list)?list:[]).map(m=>({id:m.id,title:String(m.title||'Vidéo'),placement:m.placement,profile_position:m.profile_position===null||m.profile_position===undefined?null:Number(m.profile_position),locale:String(m.locale||'').toLowerCase().replaceAll('_','-'),playback_path:String(m.playback_path||'')})).filter(m=>m.id&&m.playback_path);const exact=rows.filter(m=>m.locale===previewLocale);return exact.length?exact:(previewLocale==='fr'?rows.filter(m=>!m.locale):[])}
 function norm(x){
@@ -43,7 +57,7 @@ function norm(x){
       id:c.id||c.source_id||cidx,title:c.title||`Partie ${cidx+1}`,
       profiles:(c.profiles||c.profils||[]).map(normalizeProfile),
       media:normalizeMedia(c.media||[]),
-      situations:(c.situations||c.questions||[]).map((s,sidx)=>({id:s.id||s.source_id||`${cidx}-${sidx}`,content:s.content||s.original_content||s.text||'',answers:shuffle((s.answers||[]).map(normalizeAnswer))}))
+      situations:(c.situations||c.questions||[]).map((s,sidx)=>{const rawAnswers=Array.isArray(s.answers)?s.answers:[];const isScale=isFivePointScaleAnswers(rawAnswers);return{id:s.id||s.source_id||`${cidx}-${sidx}`,content:s.content||s.original_content||s.text||'',scaleType:isScale?'five-point':null,answers:isScale?orderScaleAnswers(rawAnswers):shuffle(rawAnswers.map(normalizeAnswer))}})
     }))
   };
   if(live?.project){
@@ -52,13 +66,13 @@ function norm(x){
     if(Array.isArray(live.project.sociodemo))d.socio=normalizeSocio(live.project.sociodemo);
     if(Array.isArray(live.project.result_buttons))d.resources=normalizeResources(live.project.result_buttons);
   }
-  if(live?.chapters && !liveProjectPreview && previewLocale===String(pr.selected_locale||'fr').toLowerCase().replaceAll('_','-')){
+  if(live?.chapters && previewLocale===String(pr.selected_locale||'fr').toLowerCase().replaceAll('_','-')){
     const profileMap=new Map(d.chapters.map(c=>[String(c.id),c.profiles]));
     d.chapters=live.chapters.map((c,cidx)=>({
       id:c.id||c.source_id||cidx,title:c.title||`Partie ${cidx+1}`,
       profiles:(c.profiles||profileMap.get(String(c.id))||[]).map(normalizeProfile),
       media:normalizeMedia(c.media||d.chapters.find(x=>String(x.id)===String(c.id))?.media||[]),
-      situations:(c.situations||[]).map((s,sidx)=>({id:s.id||s.source_id||`${cidx}-${sidx}`,content:s.content||s.original_content||'',answers:shuffle((s.answers||[]).map(normalizeAnswer))}))
+      situations:(c.situations||[]).map((s,sidx)=>{const rawAnswers=Array.isArray(s.answers)?s.answers:[];const isScale=isFivePointScaleAnswers(rawAnswers);return{id:s.id||s.source_id||`${cidx}-${sidx}`,content:s.content||s.original_content||'',scaleType:isScale?'five-point':null,answers:isScale?orderScaleAnswers(rawAnswers):shuffle(rawAnswers.map(normalizeAnswer))}})
     }));
   }
   d.chapters=d.chapters.filter(c=>c.situations.length);
@@ -66,82 +80,8 @@ function norm(x){
   if(mode==='catalog'&&!d.socio.length)d.socio=fallbackSocio();
 }
 
-
-function normalizeLocaleCode(value){return String(value||'').trim().toLowerCase().replaceAll('_','-')}
-function normalizeCountryCode(value){return String(value||'').trim().toUpperCase()}
-function projectPreviewContext(payload){
-  const project=payload?.project||{},ctx=payload?.composer_context||{};
-  const rawMap=(ctx.countryLocales&&typeof ctx.countryLocales==='object'&&!Array.isArray(ctx.countryLocales))
-    ?ctx.countryLocales
-    :((project.country_locales&&typeof project.country_locales==='object'&&!Array.isArray(project.country_locales))?project.country_locales:{});
-  const countries=[...new Set([...(Array.isArray(ctx.countries)?ctx.countries:[]),...(Array.isArray(project.countries)?project.countries:[]),...Object.keys(rawMap||{}),project.selected_country_code].map(normalizeCountryCode).filter(Boolean))];
-  const global=[...new Set([...(Array.isArray(project.locales)?project.locales:[]),project.selected_locale].map(normalizeLocaleCode).filter(Boolean))];
-  const byCountry={};
-  countries.forEach(code=>{
-    const exact=[...new Set((Array.isArray(rawMap?.[code])?rawMap[code]:[]).map(normalizeLocaleCode).filter(Boolean))];
-    byCountry[code]=exact.length?exact:(countries.length===1?global:[]);
-  });
-  return {countries,byCountry};
-}
-function countryLabel(code){
-  const cc=normalizeCountryCode(code),special={WW:'International',WORLDWIDE:'International',INT:'International',GLOBAL:'International',ASIA:'Asie'};
-  if(special[cc])return special[cc];
-  try{return new Intl.DisplayNames(['fr'],{type:'region'}).of(cc)||cc}catch(_){return cc}
-}
-const localeNamesFr={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',br:'Portugais Brésil',bg:'Bulgare',ja:'Japonais','ko-kr':'Coréen',ko:'Coréen',zf:'Chinois simplifié',zh:'Chinois traditionnel',nl:'Néerlandais','nl-be':'Néerlandais (Belgique)',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',tr:'Turc',cs:'Tchèque',sk:'Slovaque',id:'Indonésien',ar:'Arabe'};
-function localeLabelFr(code){const loc=normalizeLocaleCode(code);return `${loc.toUpperCase()} · ${localeNamesFr[loc]||loc.toUpperCase()}`}
-function resetPreviewProgress(){step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[]}
-function contextChooser(){
-  if(!liveProjectPreview)return'';
-  const countryButtons=previewCountries.map(code=>`<button type="button" class="rp-context-choice ${code===previewCountry?'selected':''}" data-preview-country="${esc(code)}" aria-pressed="${code===previewCountry?'true':'false'}"><span>🌍</span><strong>${esc(countryLabel(code))}</strong></button>`).join('');
-  const locales=previewCountry?(previewCountryLocales[previewCountry]||[]): [];
-  const languageBlock=previewCountry
-    ? `<div class="rp-context-step rp-context-language-step"><div class="rp-context-step-head"><span>2</span><div><strong>Choisissez la langue</strong><small>Langues activées pour ${esc(countryLabel(previewCountry))}</small></div></div><div class="rp-context-options">${locales.length?locales.map(loc=>`<button type="button" class="rp-context-choice rp-context-locale ${loc===previewLocale?'selected':''}" data-preview-locale="${esc(loc)}" aria-pressed="${loc===previewLocale?'true':'false'}"><strong>${esc(localeLabelFr(loc))}</strong></button>`).join(''):`<div class="rp-context-empty">Aucune langue n’est activée pour ce périmètre.</div>`}</div></div>`
-    :'';
-  const ready=previewCountry&&previewLocale&&!contextLoading
-    ? `<div class="rp-context-ready"><span>✓</span><div><strong>Aperçu prêt</strong><small>${esc(countryLabel(previewCountry))} · ${esc(localeLabelFr(previewLocale))}</small></div></div>`
-    :'';
-  const loading=contextLoading?`<div class="rp-context-loading" role="status">Chargement du contenu ${esc(countryLabel(previewCountry))} · ${esc(localeLabelFr(previewLocale))}…</div>`:'';
-  const error=contextError?`<div class="rp-context-error" role="alert">${esc(contextError)}</div>`:'';
-  return `<section class="rp-context-chooser" aria-label="Choix du périmètre et de la langue"><div class="rp-context-intro"><strong>Prévisualisez le parcours réel d’un répondant</strong><p>Choisissez d’abord son périmètre, puis une langue réellement activée pour ce périmètre.</p></div><div class="rp-context-step"><div class="rp-context-step-head"><span>1</span><div><strong>Choisissez le périmètre</strong><small>${previewCountries.length} ${previewCountries.length>1?'périmètres disponibles':'périmètre disponible'}</small></div></div><div class="rp-context-options">${countryButtons||'<div class="rp-context-empty">Aucun périmètre configuré pour cette campagne.</div>'}</div></div>${languageBlock}${loading}${error}${ready}</section>`;
-}
-function bindContextChooser(){
-  if(!liveProjectPreview)return;
-  root.querySelectorAll('[data-preview-country]').forEach(button=>button.onclick=()=>{
-    const country=normalizeCountryCode(button.dataset.previewCountry);
-    if(country===previewCountry&&previewLocale==='')return;
-    previewCountry=country;
-    previewLocale='';
-    availablePreviewLocales=previewCountryLocales[country]||[];
-    contextError='';
-    contextLoading=false;
-    resetPreviewProgress();
-    render();
-  });
-  root.querySelectorAll('[data-preview-locale]').forEach(button=>button.onclick=async()=>{
-    const locale=normalizeLocaleCode(button.dataset.previewLocale);
-    if(!previewCountry||!locale||contextLoading)return;
-    previewLocale=locale;
-    availablePreviewLocales=previewCountryLocales[previewCountry]||[];
-    contextError='';
-    contextLoading=true;
-    render();
-    try{
-      const payload=await api(`/api/projects/${pid}/composer?respondentPreview=1&countryCode=${encodeURIComponent(previewCountry)}&locale=${encodeURIComponent(previewLocale)}`);
-      norm(payload);
-      resetPreviewProgress();
-    }catch(error){
-      contextError=error.message||'Impossible de charger ce parcours.';
-      previewLocale='';
-    }finally{
-      contextLoading=false;
-      render();
-    }
-  });
-}
-
 const modeLabel=()=>mode==='project'?'Votre campagne composée':'Version catalogue Me&YouToo';
-const head=t=>`<header class="rp-head"><img src="assets/img/brand/logo-meayt-color.png"><div><b>${mode==='project'?'Aperçu de ma campagne':'Aperçu répondant'}</b><span>${esc(t||modeLabel())}</span></div>${liveProjectPreview?'':languagePicker()}</header>`;
+const head=t=>`<header class="rp-head"><img src="assets/img/brand/logo-meayt-color.png"><div><b>${mode==='project'?'Aperçu de ma campagne':'Aperçu répondant'}</b><span>${esc(t||modeLabel())}</span></div>${languagePicker()}</header>`;
 function localeLabel(code){const k=String(code||'').toLowerCase().replaceAll('_','-'),n={fr:'Français',en:'English',es:'Español',de:'Deutsch',it:'Italiano',pt:'Português',br:'Português (Brasil)',nl:'Nederlands','nl-be':'Nederlands (België)',pl:'Polski',cs:'Čeština',sk:'Slovenčina',id:'Bahasa Indonesia',ja:'日本語','ko-kr':'한국어',ko:'한국어',zh:'繁體中文',zf:'简体中文',bg:'Български',ro:'Română',ru:'Русский','sv-se':'Svenska',tr:'Türkçe'};return (n[k]||k.toUpperCase())+' ('+k.toUpperCase()+')'}
 function languagePicker(){if(availablePreviewLocales.length<2)return'';return `<div class="rp-language-picker"><label for="rp-lang">Langue</label><select id="rp-lang">${availablePreviewLocales.map(l=>`<option value="${esc(l)}" ${l===previewLocale?'selected':''}>${esc(localeLabel(l))}</option>`).join('')}</select></div>`}
 function bindLanguagePicker(){const el=$('#rp-lang');if(el)el.onchange=async()=>{previewLocale=el.value;await loadPreviewData(true)}}
@@ -149,12 +89,7 @@ const totalSituations=()=>d.chapters.reduce((n,c)=>n+c.situations.length,0);
 const situationNumber=()=>d.chapters.slice(0,ci).reduce((n,c)=>n+c.situations.length,0)+qi+1;
 const answerKey=(c=ci,s=qi)=>`${c}:${s}`;
 
-function intro(){
-  const contextReady=!liveProjectPreview||Boolean(previewCountry&&previewLocale&&!contextLoading&&!contextError);
-  root.innerHTML=head()+`<section class="rp-card rp-intro"><em>${esc(modeLabel())}</em><h1>${esc(d.title)}</h1><p class="rp-intro-copy">${esc(d.intro)}</p>${contextChooser()}<aside>${mode==='project'?'Cet aperçu reprend le contenu actuellement composé et paramétré pour cette campagne.':'Cet aperçu présente le parcours standard proposé dans le catalogue, avant personnalisation.'} Les réponses utilisées ici servent uniquement à calculer le rendu de l’aperçu et ne sont jamais enregistrées.</aside><button id="start" class="button button-primary" ${contextReady?'':'disabled'}>${liveProjectPreview&&!contextReady?'Choisissez un périmètre et une langue':'Commencer l’autodiagnostic'}</button></section>`;
-  bindContextChooser();
-  const start=$('#start');if(start)start.onclick=()=>{if(!contextReady)return;step=0;render()}
-}
+function intro(){root.innerHTML=head()+`<section class="rp-card rp-intro"><em>${esc(modeLabel())}</em><h1>${esc(d.title)}</h1><p class="rp-intro-copy">${esc(d.intro)}</p><aside>${mode==='project'?'Cet aperçu reprend le contenu actuellement composé et paramétré pour cette campagne.':'Cet aperçu présente le parcours standard proposé dans le catalogue, avant personnalisation.'} Les réponses utilisées ici servent uniquement à calculer le rendu de l’aperçu et ne sont jamais enregistrées.</aside><button id="start" class="button button-primary">Commencer l’autodiagnostic</button></section>`;$('#start').onclick=()=>{step=0;render()}}
 
 function socio(){
   if(!d.socio.length){step=1;render();return}
@@ -195,11 +130,19 @@ function profileMedia(ch,p){
   const profileIndex=Math.max(0,(ch?.profiles||[]).indexOf(p));
   return (ch?.media||[]).filter(m=>m.placement==='profile_result'&&(m.profile_position===null||Number(m.profile_position)===profileIndex));
 }
+function renderScaleAnswers(s,selected){
+  const answers=Array.isArray(s?.answers)?s.answers:[];
+  const legendIndexes=[0,2,4];
+  return `<div class="rp-scale"><div class="rp-scale-grid">${answers.map((a,i)=>`<button type="button" class="rp-scale-option ${selected===i?'selected':''}" data-i="${i}" aria-label="${esc(`${i+1} - ${a.label}`)}"><span>${i+1}</span></button>`).join('')}</div><div class="rp-scale-legend">${legendIndexes.map(i=>`<div class="rp-scale-legend-item rp-scale-legend-${i+1}"><span>${i+1}</span><small>${esc(answers[i]?.label||'')}</small></div>`).join('')}</div></div>`
+}
 function question(){
   let ch=d.chapters[ci],s=ch?.situations?.[qi];if(!s){done();return}
   const selected=answers[answerKey()];
-  root.innerHTML=head(`Partie ${ci+1} sur ${d.chapters.length}`)+`<section class="rp-card"><div class="rp-progress-row"><div><span>Partie ${ci+1}/${d.chapters.length}</span><strong class="rp-chapter-title">${esc(ch.title)}</strong></div><span>Situation ${qi+1} / ${ch.situations.length}</span></div><div class="rp-bar"><i style="width:${Math.round(((qi+1)/Math.max(1,ch.situations.length))*100)}%"></i></div><h1>${esc(s.content)}</h1><p class="rp-help">Choisissez la réponse qui correspond le mieux à ce que vous pensez ou feriez spontanément.</p><div class="rp-answers">${(s.answers||[]).map((a,i)=>`<button type="button" class="rp-answer ${selected===i?'selected':''}" data-i="${i}"><span>${String.fromCharCode(65+i)}</span>${esc(a.label)}</button>`).join('')}</div><div class="rp-actions"><button id="prev" class="button button-secondary">Précédent</button><button id="next" class="button button-primary" ${selected===undefined?'disabled':''}>Continuer</button></div></section>`;
-  root.querySelectorAll('.rp-answer').forEach(b=>b.onclick=()=>{answers[answerKey()]=Number(b.dataset.i);question()});
+  const isScale=s.scaleType==='five-point';
+  const helpText=isScale?'Répondez à cette série de questions en choisissant une valeur de 1 à 5.':'Choisissez la réponse qui correspond le mieux à ce que vous pensez ou feriez spontanément.';
+  const answerHtml=isScale?renderScaleAnswers(s,selected):`<div class="rp-answers">${(s.answers||[]).map((a,i)=>`<button type="button" class="rp-answer ${selected===i?'selected':''}" data-i="${i}"><span>${String.fromCharCode(65+i)}</span>${esc(a.label)}</button>`).join('')}</div>`;
+  root.innerHTML=head(`Partie ${ci+1} sur ${d.chapters.length}`)+`<section class="rp-card ${isScale?'rp-card-scale':''}"><div class="rp-progress-row"><div><span>Partie ${ci+1}/${d.chapters.length}</span><strong class="rp-chapter-title">${esc(ch.title)}</strong></div><span>Situation ${qi+1} / ${ch.situations.length}</span></div><div class="rp-bar"><i style="width:${Math.round(((qi+1)/Math.max(1,ch.situations.length))*100)}%"></i></div><h1>${esc(s.content)}</h1><p class="rp-help">${esc(helpText)}</p>${answerHtml}<div class="rp-actions"><button id="prev" class="button button-secondary">Précédent</button><button id="next" class="button button-primary" ${selected===undefined?'disabled':''}>Continuer</button></div></section>`;
+  root.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{answers[answerKey()]=Number(b.dataset.i);question()});
   $('#prev').onclick=()=>{if(qi>0)qi--;else if(ci>0){ci--;qi=d.chapters[ci].situations.length-1;step=1}else{step=d.socio.length?0:-1}render()};
   $('#next').onclick=()=>{if(answers[answerKey()]===undefined)return;if(qi+1<ch.situations.length){qi++;render()}else{showChapterResult()}}
 }
@@ -279,31 +222,21 @@ function done(){
 function render(){if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult();else if(step===3)showChapterResult();bindLanguagePicker()}
 async function loadPreviewData(preserveStep=false){try{
   if(mode==='project'&&pid){
-    if(liveProjectPreview){
-      const base=await api(`/api/projects/${pid}/composer?respondentPreview=1`);
-      const context=projectPreviewContext(base);
-      previewCountries=context.countries;
-      previewCountryLocales=context.byCountry;
-      previewCountry='';
-      previewLocale='';
-      availablePreviewLocales=[];
-      contextLoading=false;
-      contextError='';
-      norm(base);
-    }else{
-      const base=await api(`/api/projects/${pid}/composer?respondentPreview=1&locale=${encodeURIComponent(previewLocale)}`);
-      previewCountry=String(base.project?.selected_country_code||'FR').toUpperCase();
-      const campaignLocale=String(base.project?.selected_locale||'fr').toLowerCase().replaceAll('_','-');
-      availablePreviewLocales=[campaignLocale];
-      previewLocale=campaignLocale;
-      norm(base);
-    }
+    const base=await api(`/api/projects/${pid}/composer?locale=${encodeURIComponent(previewLocale)}`);
+    previewCountry=String(base.project?.selected_country_code||'FR').toUpperCase();
+    const slug=base.project?.theme_slug||theme;
+    // For an existing campaign, expose only the language(s) retained for that campaign,
+    // not every translation available in the catalogue for the perimeter.
+    const campaignLocale=String(base.project?.selected_locale||'fr').toLowerCase().replaceAll('_','-');
+    availablePreviewLocales=[campaignLocale];
+    previewLocale=campaignLocale;
+    norm(base);
   }else{
     previewCountry='FR';
     try{const v=await api(`/api/catalog/themes/${encodeURIComponent(theme)}/variants`);const fr=(v.variants||[]).find(x=>String(x.countryCode||'').toUpperCase()==='FR');availablePreviewLocales=(fr?.locales||['fr']).map(x=>String(x).toLowerCase().replaceAll('_','-'));if(!availablePreviewLocales.includes(previewLocale))previewLocale=availablePreviewLocales.includes('fr')?'fr':availablePreviewLocales[0];}catch(_){availablePreviewLocales=['fr'];previewLocale='fr';}
     norm(await api(`/api/catalog/themes/${encodeURIComponent(theme)}/template?countryCode=FR&locale=${encodeURIComponent(previewLocale)}`));
   }
-  if(!preserveStep)resetPreviewProgress();
+  if(!preserveStep){step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[];}
   render();bindLanguagePicker();
 }catch(e){root.innerHTML=head()+`<section class="rp-card"><h1>Aperçu indisponible</h1><p>${esc(e.message)}</p></section>`;bindLanguagePicker();}}
 loadPreviewData();})();
