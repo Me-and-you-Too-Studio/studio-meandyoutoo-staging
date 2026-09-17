@@ -268,7 +268,14 @@
         '<a class="button button-secondary" href="campagne-detail.html' +
           q +
           '">👁️ Voir la campagne</a>';
-    const kit = '<a class="button button-secondary" href="kit-communication.html' + q + '">📣 Kit de com</a>';
+    const kit = '<a class="button button-secondary" href="kit-communication.html' + q + '">📣 Kit de com</a>',
+      openCampaign = String(p.communication_share_url || "").trim()
+        ? '<a class="button button-secondary" href="' + esc(p.communication_share_url) + '" target="_blank" rel="noopener">↗ Ouvrir la campagne</a>'
+        : "",
+      openStats = String(p.communication_results_url || "").trim()
+        ? '<a class="button button-secondary" href="' + esc(p.communication_results_url) + '" target="_blank" rel="noopener">📊 Ouvrir les stats</a>'
+        : "",
+      manage = '<button class="button button-secondary" type="button" data-manage-campaign="' + id + '">⚙️ Infos campagne</button>';
     if (["scheduled", "published", "active"].includes(st))
       more.push(
         '<button type="button" data-extend="' +
@@ -303,19 +310,20 @@
           id +
           '">🗑️ Supprimer</button>',
       );
-    return primary + kit + '<details class="campaign-more"><summary>Autres actions</summary><div class="campaign-more-menu">' + more.join("") + '</div></details>';
+    return primary + openCampaign + openStats + kit + manage + '<details class="campaign-more"><summary>Autres actions</summary><div class="campaign-more-menu">' + more.join("") + '</div></details>';
   }
   function card(p) {
     const st = normalizedStatus(p),
       theme = p.theme_title || p.legacy_theme_title || "Thématique",
       title = p.campaign_name || p.title || "Sans nom",
       respondent = p.respondent_title || title,
-      contact = orgUsers(organization)[0],
-      commanditaire = contact
-        ? esc((contact.first_name || "") + " " + (contact.last_name || "")) +
-          " — " +
-          esc(contact.email || "")
-        : "Non renseigné dans cet AD.",
+      contact = orgUsers(organization).find((u) => u.access_level === "owner") || orgUsers(organization)[0],
+      explicitCommanditaire = [p.commanditaire_name, p.commanditaire_job_title, p.commanditaire_email].filter(Boolean),
+      commanditaire = explicitCommanditaire.length
+        ? explicitCommanditaire.map(esc).join(" — ")
+        : contact
+          ? [((contact.first_name || "") + " " + (contact.last_name || "")).trim(), contact.job_title, contact.email].filter(Boolean).map(esc).join(" — ")
+          : "Non renseigné dans cet AD.",
       days = daysUntilClose(p),
       startDays = daysUntilStart(p),
       starting = isStartingSoon(p)
@@ -616,13 +624,17 @@
       orgUsers(organization).map(userRow).join("") ||
       '<p class="admin-empty">Aucun compte.</p>';
     $("#client-credits").innerHTML =
-      '<div class="admin-pack-heading"><div><span class="eyebrow">Gestion du pack</span><h2>Crédits et validité</h2><p>Ajustez uniquement les valeurs réellement validées pour ce client.</p></div><span class="admin-pack-status ' + (organization.pack_unlimited ? 'is-unlimited' : '') + '">' + (organization.pack_unlimited ? 'Pack illimité' : fmt(rem) + ' restants') + '</span></div>' +
+      '<div class="admin-pack-heading"><div><span class="eyebrow">Gestion du pack</span><h2>Crédits et validité</h2><p>Renseignez manuellement les crédits et les dates tant que la synchronisation automatique du moteur n’est pas connectée.</p></div><span id="client-pack-status" class="admin-pack-status ' + (organization.pack_unlimited ? 'is-unlimited' : '') + '">' + (organization.pack_unlimited ? 'Pack illimité' : fmt(rem) + ' restants') + '</span></div>' +
       '<label>Crédits attribués<input id="client-quota" type="number" min="0" value="' +
       (organization.passations_quota || 0) +
       '"></label><label>Crédits utilisés<input id="client-used" type="number" min="0" value="' +
       (organization.passations_used || 0) +
       '"></label><label>Crédits restants<input id="client-remaining" type="text" readonly value="' +
       (organization.pack_unlimited ? 'Illimité' : fmt(rem)) +
+      '"></label><label>Date de début du pack<input id="client-pack-start" type="date" value="' +
+      (organization.pack_started_at
+        ? String(organization.pack_started_at).slice(0, 10)
+        : "") +
       '"></label><label>Date de fin de validité<input id="client-expiry" type="date" value="' +
       (organization.pack_expires_at
         ? String(organization.pack_expires_at).slice(0, 10)
@@ -795,7 +807,78 @@
       dialog.querySelector("#admin-internal-name").select();
     });
   }
+  async function openCampaignManagement(p) {
+    document.getElementById("admin-campaign-management-dialog")?.remove();
+    const dialog = document.createElement("dialog");
+    dialog.id = "admin-campaign-management-dialog";
+    dialog.className = "admin-dialog admin-dialog-wide campaign-management-dialog";
+    dialog.innerHTML =
+      '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button>' +
+      '<p class="eyebrow">Administration de la campagne</p>' +
+      '<h2>' + esc(p.campaign_name || p.title || "Campagne") + '</h2>' +
+      '<p>Renseignez ici les informations qui ne remontent pas encore automatiquement du moteur historique.</p>' +
+      '<div class="admin-form-grid">' +
+      '<label class="field"><span>Date de début</span><input id="admin-management-launch" type="date" value="' + esc(isoDay(p.launch_date)) + '"></label>' +
+      '<label class="field"><span>Date de fin</span><input id="admin-management-close" type="date" value="' + esc(isoDay(p.close_date)) + '"></label>' +
+      '<label class="field"><span>Nom du commanditaire</span><input id="admin-management-commanditaire-name" maxlength="160" value="' + esc(p.commanditaire_name || "") + '" placeholder="Prénom Nom"></label>' +
+      '<label class="field"><span>Fonction du commanditaire</span><input id="admin-management-commanditaire-job" maxlength="160" value="' + esc(p.commanditaire_job_title || "") + '" placeholder="DRH, Responsable DEI…"></label>' +
+      '<label class="field"><span>Email du commanditaire</span><input id="admin-management-commanditaire-email" type="email" maxlength="200" value="' + esc(p.commanditaire_email || "") + '" placeholder="prenom.nom@entreprise.com"></label>' +
+      '<label class="field"><span>URL de la campagne</span><input id="admin-management-share-url" type="url" value="' + esc(p.communication_share_url || "") + '" placeholder="https://…"></label>' +
+      '<label class="field"><span>URL analytics / statistiques</span><input id="admin-management-results-url" type="url" value="' + esc(p.communication_results_url || "") + '" placeholder="https://stats.meandyoutoo.app/…"></label>' +
+      '</div>' +
+      '<div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" id="admin-management-save" type="button">Enregistrer</button></div></form>';
+    document.body.append(dialog);
+    dialog.querySelector("#admin-management-save").onclick = async () => {
+      const launchDate = dialog.querySelector("#admin-management-launch").value,
+        closeDate = dialog.querySelector("#admin-management-close").value;
+      if (launchDate && closeDate && closeDate <= launchDate) {
+        showError("La date de fin doit être postérieure à la date de début");
+        return;
+      }
+      const emailInput = dialog.querySelector("#admin-management-commanditaire-email");
+      if (emailInput.value && !emailInput.checkValidity()) {
+        emailInput.reportValidity();
+        return;
+      }
+      try {
+        await StudioAPI.request("/api/admin/projects/" + p.id + "/management", {
+          method: "PATCH",
+          body: JSON.stringify({
+            launchDate: launchDate || null,
+            closeDate: closeDate || null,
+            commanditaireName: dialog.querySelector("#admin-management-commanditaire-name").value.trim(),
+            commanditaireJobTitle: dialog.querySelector("#admin-management-commanditaire-job").value.trim(),
+            commanditaireEmail: emailInput.value.trim(),
+            shareUrl: dialog.querySelector("#admin-management-share-url").value.trim(),
+            resultsUrl: dialog.querySelector("#admin-management-results-url").value.trim(),
+          }),
+        });
+        dialog.close();
+        dialog.remove();
+        await load();
+        await StudioModal.alert({
+          eyebrow: "Campagne mise à jour",
+          title: "Les informations ont été enregistrées",
+          message: "Dates, commanditaire et liens sont maintenant disponibles dans le dossier client.",
+          type: "success",
+          confirmLabel: "Fermer",
+        });
+      } catch (e) {
+        showError(e.message);
+      }
+    };
+    dialog.addEventListener("close", () => dialog.remove(), { once: true });
+    dialog.showModal();
+  }
+
   function bindProjectActions() {
+    $$('[data-manage-campaign]').forEach(
+      (b) =>
+        (b.onclick = () => {
+          const p = projects.get(String(b.dataset.manageCampaign));
+          if (p) openCampaignManagement(p);
+        }),
+    );
     $$('[data-move-folder]').forEach(
       (b) =>
         (b.onclick = async () => {
@@ -945,6 +1028,26 @@
         }),
     );
   }
+  function refreshCreditBalance() {
+    const quotaInput = $("#client-quota"),
+      usedInput = $("#client-used"),
+      remainingInput = $("#client-remaining"),
+      unlimitedInput = $("#client-unlimited"),
+      status = $("#client-pack-status");
+    if (!quotaInput || !usedInput || !remainingInput || !unlimitedInput) return;
+    const unlimited = unlimitedInput.checked,
+      quota = Math.max(0, Number(quotaInput.value) || 0),
+      used = Math.max(0, Number(usedInput.value) || 0),
+      rem = Math.max(0, quota - used);
+    quotaInput.disabled = unlimited;
+    usedInput.disabled = unlimited;
+    remainingInput.value = unlimited ? "Illimité" : fmt(rem);
+    if (status) {
+      status.textContent = unlimited ? "Pack illimité" : fmt(rem) + " restants";
+      status.classList.toggle("is-unlimited", unlimited);
+    }
+  }
+
   function bind() {
     $('#admin-theme-filter')?.addEventListener('change', (event) => { activeTheme = event.target.value; applyFilter(); });
     $$('[data-admin-folder-filter]').forEach((btn) => btn.onclick = () => { activeFolder = btn.dataset.adminFolderFilter; render(); });
@@ -992,6 +1095,10 @@
       render();
     };
     $("#save-client-credits").onclick = saveCredits;
+    $("#client-quota")?.addEventListener("input", refreshCreditBalance);
+    $("#client-used")?.addEventListener("input", refreshCreditBalance);
+    $("#client-unlimited")?.addEventListener("change", refreshCreditBalance);
+    refreshCreditBalance();
     $("#archive-client-cockpit").onclick = toggleCockpitArchive;
     $("#delete-client-cockpit").onclick = deleteCockpit;
     bindUserActions();
@@ -1100,15 +1207,28 @@
     );
   }
   async function saveCredits() {
+    const unlimited = $("#client-unlimited").checked,
+      quota = Math.max(0, Number($("#client-quota").value) || 0),
+      used = Math.max(0, Number($("#client-used").value) || 0),
+      packStartedAt = $("#client-pack-start").value || null,
+      packExpiresAt = $("#client-expiry").value || null;
+    if (!unlimited && used > quota) {
+      showError("Les crédits utilisés ne peuvent pas dépasser les crédits attribués.");
+      return;
+    }
+    if (packStartedAt && packExpiresAt && packExpiresAt <= packStartedAt) {
+      showError("La date de fin du pack doit être postérieure à la date de début.");
+      return;
+    }
     try {
       await StudioAPI.request("/api/admin/organizations/" + organization.id, {
         method: "PATCH",
         body: JSON.stringify({
-          passationsQuota: Number($("#client-quota").value) || 0,
-          passationsUsed: Number($("#client-used").value) || 0,
-          packStartedAt: $("#client-pack-start").value || null,
-          packExpiresAt: $("#client-expiry").value || null,
-          packUnlimited: $("#client-unlimited").checked,
+          passationsQuota: quota,
+          passationsUsed: used,
+          packStartedAt,
+          packExpiresAt,
+          packUnlimited: unlimited,
         }),
       });
       await load();
