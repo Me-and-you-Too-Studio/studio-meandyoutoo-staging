@@ -135,6 +135,7 @@
     // dans « Composer par périmètre » pour éviter de répéter deux fois
     // la même information dans l'en-tête.
     root.hidden=true;
+    root.style.display='none';
     root.innerHTML='';
   }
 
@@ -149,7 +150,7 @@
     const countries=campaignCountries(project);
     // Un seul périmètre n'est pas un choix à faire : on masque tout le bloc pour
     // éviter les libellés techniques (ex. 250) et alléger le Composer national.
-    if(countries.length<=1){root.hidden=true;root.innerHTML='';return;}
+    if(countries.length<=1){root.hidden=true;root.style.display='none';root.innerHTML='';return;}
     const byCountry=projectCountryLocales(project);
     const numericCountryNames={'032':'Argentine','040':'Autriche','076':'Brésil','124':'Canada','152':'Chili','156':'Chine','158':'Taïwan','208':'Danemark','250':'France','276':'Allemagne','344':'Hong Kong','392':'Japon','410':'Corée du Sud','484':'Mexique','578':'Norvège','591':'Panama','620':'Portugal','724':'Espagne','752':'Suède','756':'Suisse','840':'États-Unis','858':'Uruguay'};
     let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
@@ -160,6 +161,7 @@
           ? 'Choisissez un périmètre pour ouvrir sa composition. Les langues à gérer sont indiquées sur chaque bouton.'
           : 'Le périmètre et ses langues à gérer sont indiqués ci-dessous.');
     root.hidden=false;
+    root.style.display='';
     root.innerHTML=`<div class="composer-country-tabs-label"><div class="composer-country-tabs-label-copy"><div class="composer-inline-title"><strong>Composer par périmètre</strong>${infoDot(campaignContextInfoText,'Impact d’une modification de périmètre ou de langue')}</div><span>${activeCopy}</span></div>${state.project?.can_edit===false?'':`<button class="button button-ghost button-small composer-country-edit" type="button" data-edit-campaign-context>Modifier périmètres et langues</button>`}</div><div class="composer-country-tabs-list">${countries.map(code=>{const langs=byCountry[code]||[];return `<button type="button" class="composer-country-tab composer-country-tab-with-locales ${code===state.country?'is-active':''}" data-country-tab="${esc(code)}" aria-pressed="${code===state.country?'true':'false'}"><strong>${esc(label(code))}</strong><span>${langs.length?langs.map(locale=>esc(localeLabel(locale))).join(' · '):'Langue à préciser'}</span></button>`;}).join('')}</div>`;
     root.querySelectorAll('[data-country-tab]').forEach(button=>button.onclick=()=>switchCountry(button.dataset.countryTab));
     root.querySelector('[data-edit-campaign-context]')?.addEventListener('click',openCampaignContextModal);
@@ -422,13 +424,15 @@
   function situationHtml(s,index){
     const ch=state.chapters[state.active];
     const stereotypes=themeSlug==='sexisme'&&canonical(ch.slug||ch.title).includes('stereotype');
-    // Pour Sexisme, seul le chapitre Stéréotypes est un socle non éditable.
-    // Les flags historiques de chapitre/situation ne doivent pas verrouiller les autres parties.
-    const methodologyLocked=themeSlug==='sexisme'?stereotypes:Boolean(ch.locked||s.locked);
+    // Règle produit : le seul contenu méthodologique non éditable dans Composer
+    // est le chapitre Stéréotypes du diagnostic Sexisme.
+    // Une campagne en lecture seule est un état de campagne, pas un « contenu obligatoire ».
+    const methodologyLocked=Boolean(themeSlug==='sexisme'&&stereotypes);
     const adminCorrection=Boolean(state.project?.review_mode&&state.project?.can_edit===true);
-    const locked=Boolean(methodologyLocked||(!adminCorrection&&state.project?.can_edit===false));
-    const canReplaceLocked=Boolean(methodologyLocked&&state.project?.can_edit!==false);
-    const lockChip=stereotypes?'🔒 Situation socle — texte non modifiable':'🔒 Contenu non modifiable';
+    const readOnly=Boolean(!adminCorrection&&state.project?.can_edit===false);
+    const locked=Boolean(methodologyLocked||readOnly);
+    const canReplaceLocked=Boolean(methodologyLocked&&!readOnly);
+    const lockChip=methodologyLocked?'🔒 Situation socle — texte non modifiable':'Lecture seule';
     const linkedLabel=linkedSituationLabel(s,index,ch.situations);
     const originalText=s.original_content||s.content||'';
     const submitted=submittedSituation(s.id);
@@ -701,9 +705,12 @@
     const stereotypes=isStereotypesChapter(ch),status=chapterCountStatus(ch);
     $('chapter-kicker').textContent=`Chapitre ${state.active+1} · Questions`;
     $('chapter-title').textContent=ch.title;
-    const effectiveChapterLocked=themeSlug==='sexisme'?stereotypes:Boolean(ch.locked);
+    const effectiveChapterLocked=Boolean(themeSlug==='sexisme'&&stereotypes);
+    const campaignReadOnly=Boolean(state.project?.can_edit===false&&!state.project?.review_mode);
     $('chapter-desc').textContent=effectiveChapterLocked
-      ?(stereotypes?'Les situations de ce chapitre constituent le socle Stéréotypes : leur texte et leurs réponses ne se modifient pas directement, mais chaque situation peut être remplacée par une autre de la bibliothèque Me&YouToo.':(ch.lock_reason||'Ce chapitre est non modifiable.'))
+      ?'Les situations de ce chapitre constituent le socle Stéréotypes : leur texte et leurs réponses ne se modifient pas directement, mais chaque situation peut être remplacée par une autre de la bibliothèque Me&YouToo.'
+      :campaignReadOnly
+        ?`${status.count} situation${status.count>1?'s':''} dans cette campagne historique · consultation en lecture seule.`
       :status.rules.min!=null
         ?`${status.count} situation${status.count>1?'s':''} retenue${status.count>1?'s':''} · ${status.rules.min} minimum et ${status.rules.max} maximum dans ce chapitre.`
         :`${status.count} situations retenues · consultez les réponses et scores avant de modifier votre sélection.`;
@@ -711,7 +718,7 @@
     renderChapterChoice(ch);
 
     const libraryButton=$('library-button');
-    libraryButton.hidden=Boolean((themeSlug==='sexisme'?stereotypes:ch.locked)||state.project?.can_edit===false);
+    libraryButton.hidden=Boolean(stereotypes||state.project?.can_edit===false);
     if(!libraryButton.hidden){
       libraryButton.classList.toggle('is-disabled',status.atMax);
       libraryButton.setAttribute('aria-disabled',String(status.atMax));
