@@ -419,7 +419,9 @@
   function situationHtml(s,index){
     const ch=state.chapters[state.active];
     const stereotypes=themeSlug==='sexisme'&&canonical(ch.slug||ch.title).includes('stereotype');
-    const methodologyLocked=Boolean(ch.locked||s.locked||stereotypes);
+    // Pour Sexisme, seul le chapitre Stéréotypes est méthodologiquement verrouillé.
+    // Les flags historiques/catalogue ne doivent pas verrouiller les autres chapitres.
+    const methodologyLocked=themeSlug==='sexisme'?stereotypes:Boolean(ch.locked||s.locked);
     const adminCorrection=Boolean(state.project?.review_mode&&state.project?.can_edit===true);
     const locked=Boolean(methodologyLocked||(!adminCorrection&&state.project?.can_edit===false));
     const linkedLabel=linkedSituationLabel(s,index,ch.situations);
@@ -447,7 +449,7 @@
       ${situationText}
       <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="false"><span data-toggle-label>Voir les réponses et les scores</span> <span aria-hidden="true">⌄</span></button>
       <div class="composer-answers" id="answers-${esc(s.id)}" hidden>${answerRows}</div>
-      <div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" hidden>🌐 Traduction et adaptation locale éventuelle</button></div>
+      ${((state.project?.locales||[]).length>1)?`<div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" hidden>🌐 Traduction et adaptation locale éventuelle</button></div>`:''}
       <div class="translation-sync-warning" data-live-translation-warning ${customized&&((state.project?.locales||[]).length>1)?'':'hidden'}>⚠️ Vous modifiez le contenu de référence. Les traductions et adaptations locales existantes ne sont pas mises à jour automatiquement et doivent être vérifiées.</div>
       ${!locked?`<div class="composer-inline-help composer-context-help"><strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span></div>
       <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${customized?'Enregistré':'Enregistrement automatique'}</span></span></div>
