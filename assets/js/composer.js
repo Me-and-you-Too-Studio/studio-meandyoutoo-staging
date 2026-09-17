@@ -13,7 +13,7 @@
   const campaignContextInfoText=`Ajouter un périmètre ou une langue conserve ce que vous avez déjà composé sur les autres périmètres. Retirer un périmètre supprime uniquement le contenu rattaché à ce pays dans la campagne.`;
 
   function infoDot(message,label='Informations importantes'){
-    return `<span class="composer-info-wrap"><button type="button" class="composer-info-dot" tabindex="0" aria-label="${esc(label)}">i</button><span class="composer-info-bubble">${esc(message)}</span></span>`;
+    return `<span class="composer-info-wrap"><button type="button" class="composer-info-dot" tabindex="0" aria-label="${esc(label)}" aria-expanded="false">i</button><span class="composer-info-bubble" role="tooltip">${esc(message)}</span></span>`;
   }
 
   function showMessage(message, tone='error') { const el=$('composer-alert'); el.hidden=false; el.textContent=message; el.dataset.tone=tone; }

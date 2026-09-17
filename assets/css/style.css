@@ -13115,10 +13115,15 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 }
 
 /* Composer — points info sur le contexte de campagne */
-.composer-inline-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.composer-inline-title{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;position:relative}
 .composer-inline-title h2{margin:0}
-.composer-info-wrap{position:relative;display:inline-flex;vertical-align:middle}
-.composer-info-dot{width:20px;height:20px;border:0;border-radius:50%;background:#e8f5f6;color:#087b89;font:800 12px/20px Arial;text-align:center;padding:0;cursor:help}
-.composer-info-bubble{position:absolute;z-index:40;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);width:min(340px,72vw);padding:10px 12px;border-radius:10px;background:#173862;color:#fff;font-size:.78rem;font-weight:500;line-height:1.4;box-shadow:0 8px 24px rgba(15,45,78,.18);opacity:0;visibility:hidden;pointer-events:none;transition:.15s}
+.composer-info-wrap{position:relative;display:inline-flex;vertical-align:middle;flex:0 0 auto}
+.composer-info-dot{width:22px;height:22px;border:1px solid #0a8893;border-radius:50%;background:#e8f5f6;color:#0a7580;font:800 12px/20px Arial;text-align:center;padding:0;cursor:help;display:inline-flex;align-items:center;justify-content:center}
+.composer-info-dot:hover,.composer-info-dot:focus-visible{background:#0a7580;color:#fff;border-color:#0a7580;outline:none;box-shadow:0 0 0 4px rgba(10,117,128,.14)}
+.composer-info-bubble{position:absolute;z-index:80;left:0;top:calc(100% + 10px);bottom:auto;transform:none;width:min(360px,calc(100vw - 48px));padding:12px 14px;border-radius:12px;background:#173862;color:#fff;font-size:.84rem;font-weight:600;line-height:1.45;box-shadow:0 12px 32px rgba(15,45,78,.24);opacity:0;visibility:hidden;pointer-events:none;transition:.15s}
+.composer-country-tabs-label .composer-info-bubble,.translation-head .composer-info-bubble{color:#fff}
 .composer-info-wrap:hover .composer-info-bubble,.composer-info-wrap:focus-within .composer-info-bubble{opacity:1;visibility:visible}
-@media(max-width:720px){.composer-info-bubble{left:auto;right:0;transform:none}}
+.translation-head .composer-inline-title{overflow:visible}
+.translation-head .composer-info-wrap{position:relative}
+.translation-head .composer-info-bubble{left:0;right:auto;top:calc(100% + 10px);bottom:auto;transform:none;width:min(360px,calc(100vw - 96px))}
+@media(max-width:720px){.composer-inline-title{align-items:flex-start}.composer-info-bubble,.translation-head .composer-info-bubble{left:0;right:auto;width:min(320px,calc(100vw - 40px))}}
