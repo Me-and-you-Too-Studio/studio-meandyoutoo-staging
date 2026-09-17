@@ -13127,3 +13127,10 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .translation-head .composer-info-wrap{position:relative}
 .translation-head .composer-info-bubble{left:auto;right:0;top:calc(100% + 10px);bottom:auto;transform:none;width:min(340px,calc(100vw - 120px));max-width:340px}
 @media(max-width:720px){.composer-inline-title{align-items:flex-start}.composer-info-bubble{left:0;right:auto;width:min(320px,calc(100vw - 40px))}.translation-head .composer-info-bubble{left:auto;right:0;width:min(300px,calc(100vw - 64px))}}
+
+/* Modale contexte campagne — hiérarchie verticale du titre */
+.translation-head>div:first-child{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.translation-head>div:first-child>small{display:block;margin:0;color:#60758b;font-weight:800;letter-spacing:.04em}
+.translation-head .composer-inline-title{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+.translation-head .composer-inline-title h2{margin:0;font-size:1.35rem;line-height:1.2}
+@media(max-width:720px){.translation-head .composer-inline-title h2{font-size:1.18rem}.translation-head>div:first-child{gap:3px}}
