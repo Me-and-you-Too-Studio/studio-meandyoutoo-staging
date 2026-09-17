@@ -4,6 +4,8 @@
   var search = document.getElementById("campaignSearch");
   var sort = document.getElementById("campaignSort");
   var themeFilter = document.getElementById("campaignTheme");
+  var countryFilter = document.getElementById("campaignCountry");
+  var localeFilter = document.getElementById("campaignLocale");
   var noResults = document.getElementById("noResults");
   if (!cardRoot || !filtersRoot) return;
 
@@ -11,6 +13,8 @@
   var folders = [];
   var activeFolder = "all";
   var activeTheme = "all";
+  var activeCountry = "all";
+  var activeLocale = "all";
   var activeFilter = "all";
   var currentUser = (window.StudioAPI.user && window.StudioAPI.user()) || {};
   function can(permission) {
@@ -130,6 +134,104 @@
       "collaborateur-inclusif": "Collaborateur inclusif",
     };
     return labels[slug] || raw;
+  }
+
+  var regionNames = null;
+  var languageNames = null;
+  try {
+    if (window.Intl && Intl.DisplayNames) {
+      regionNames = new Intl.DisplayNames(["fr"], { type: "region" });
+      languageNames = new Intl.DisplayNames(["fr"], { type: "language" });
+    }
+  } catch (e) {}
+
+  function normalizeCountryCode(value) {
+    return String(value || "").trim().toUpperCase();
+  }
+
+  function normalizeLocaleCode(value) {
+    return String(value || "").trim().replace(/_/g, "-").toLowerCase();
+  }
+
+  function countryLabel(code) {
+    var normalized = normalizeCountryCode(code);
+    if (!normalized) return "";
+    try {
+      var label = regionNames && regionNames.of(normalized);
+      if (label && label !== normalized) return label.charAt(0).toUpperCase() + label.slice(1);
+    } catch (e) {}
+    return normalized;
+  }
+
+  function localeLabel(locale) {
+    var normalized = normalizeLocaleCode(locale);
+    if (!normalized) return "";
+    try {
+      var label = languageNames && languageNames.of(normalized);
+      if (label && label.toLowerCase() !== normalized) return label.charAt(0).toUpperCase() + label.slice(1);
+    } catch (e) {}
+    return normalized.toUpperCase();
+  }
+
+  function projectCountryLocaleMap(p) {
+    var raw = p && p.country_locales && typeof p.country_locales === "object" && !Array.isArray(p.country_locales)
+      ? p.country_locales
+      : {};
+    var map = {};
+    Object.keys(raw).forEach(function (country) {
+      var code = normalizeCountryCode(country);
+      if (!code) return;
+      map[code] = Array.from(new Set((Array.isArray(raw[country]) ? raw[country] : []).map(normalizeLocaleCode).filter(Boolean)));
+    });
+    return map;
+  }
+
+  function projectCountries(p) {
+    var map = projectCountryLocaleMap(p);
+    var fromMap = Object.keys(map);
+    var fallback = Array.isArray(p && p.countries) ? p.countries.map(normalizeCountryCode).filter(Boolean) : [];
+    return Array.from(new Set(fromMap.concat(fallback)));
+  }
+
+  function projectLocales(p) {
+    var map = projectCountryLocaleMap(p);
+    var fromMap = Object.keys(map).reduce(function (all, country) { return all.concat(map[country]); }, []);
+    var fallback = Array.isArray(p && p.locales) ? p.locales.map(normalizeLocaleCode).filter(Boolean) : [];
+    return Array.from(new Set(fromMap.concat(fallback)));
+  }
+
+  function projectContextTags(p) {
+    var countryTags = projectCountries(p).map(function (code) {
+      return '<span class="campaign-scope-tag" title="Périmètre">🌍 ' + esc(countryLabel(code)) + '</span>';
+    });
+    var localeTags = projectLocales(p).map(function (locale) {
+      return '<span class="campaign-locale-tag" title="Langue">🗣 ' + esc(locale.toUpperCase()) + ' · ' + esc(localeLabel(locale)) + '</span>';
+    });
+    if (!countryTags.length && !localeTags.length) return "";
+    return '<div class="campaign-context-tags" aria-label="Périmètres et langues">' + countryTags.concat(localeTags).join("") + '</div>';
+  }
+
+  function renderContextFilters() {
+    if (countryFilter) {
+      var countries = Array.from(new Set(projects.reduce(function (all, p) { return all.concat(projectCountries(p)); }, [])))
+        .sort(function (a, b) { return countryLabel(a).localeCompare(countryLabel(b), "fr", { sensitivity: "base" }); });
+      if (activeCountry !== "all" && !countries.includes(activeCountry)) activeCountry = "all";
+      countryFilter.innerHTML = '<option value="all">Tous les périmètres</option>' + countries.map(function (code) {
+        var count = projects.filter(function (p) { return projectCountries(p).includes(code); }).length;
+        return '<option value="' + esc(code) + '" ' + (activeCountry === code ? "selected" : "") + '>' + esc(countryLabel(code)) + ' · ' + count + '</option>';
+      }).join("");
+      countryFilter.onchange = function (event) { activeCountry = event.target.value; renderCards(); };
+    }
+    if (localeFilter) {
+      var locales = Array.from(new Set(projects.reduce(function (all, p) { return all.concat(projectLocales(p)); }, [])))
+        .sort(function (a, b) { return localeLabel(a).localeCompare(localeLabel(b), "fr", { sensitivity: "base" }); });
+      if (activeLocale !== "all" && !locales.includes(activeLocale)) activeLocale = "all";
+      localeFilter.innerHTML = '<option value="all">Toutes les langues</option>' + locales.map(function (locale) {
+        var count = projects.filter(function (p) { return projectLocales(p).includes(locale); }).length;
+        return '<option value="' + esc(locale) + '" ' + (activeLocale === locale ? "selected" : "") + '>' + esc(locale.toUpperCase()) + ' · ' + esc(localeLabel(locale)) + ' · ' + count + '</option>';
+      }).join("");
+      localeFilter.onchange = function (event) { activeLocale = event.target.value; renderCards(); };
+    }
   }
 
   function query(p) {
@@ -580,6 +682,7 @@
       (folderById(p.folder_id) ? '<span class="campaign-folder-tag">📁 ' + esc(folderById(p.folder_id).name) + '</span>' : "") +
       extraBadges(p) +
       "</div>" +
+      projectContextTags(p) +
       themeWarning +
       (["unpublished", "closed", "completed", "archived"].includes(p.status)
         ? '<div class="campaign-reprogram-hint"><strong>Relancer ce même autodiagnostic</strong><span>Utilisez « Reprogrammer » pour conserver le contenu et les mêmes liens. Il n’est pas nécessaire de reconstruire une campagne sur ce thème.</span></div>'
@@ -994,12 +1097,18 @@
       .trim()
       .toLowerCase();
     var filtered = projects.filter(function (p) {
+      var countries = projectCountries(p);
+      var locales = projectLocales(p);
       var haystack = [campaignName(p), themeLabel(p), statusLabel(p.status)]
+        .concat(countries.map(countryLabel))
+        .concat(locales.map(function (locale) { return locale + " " + localeLabel(locale); }))
         .join(" ")
         .toLowerCase();
       var inFolder = activeFolder === "all" || (activeFolder === "unclassified" ? !p.folder_id : String(p.folder_id || "") === activeFolder);
       var inTheme = activeTheme === "all" || themeLabel(p) === activeTheme;
-      return inFolder && inTheme && matchesFilter(p) && (!term || haystack.indexOf(term) !== -1);
+      var inCountry = activeCountry === "all" || countries.includes(activeCountry);
+      var inLocale = activeLocale === "all" || locales.includes(activeLocale);
+      return inFolder && inTheme && inCountry && inLocale && matchesFilter(p) && (!term || haystack.indexOf(term) !== -1);
     });
     var mode = (sort && sort.value) || "updated-desc";
     filtered.sort(function (a, b) {
@@ -1074,6 +1183,7 @@
       await Promise.all(projects.map(enrichCommunication));
       renderAlerts();
       renderFolderBar();
+      renderContextFilters();
       buildFilters();
       renderCards();
       if (!initialActionHandled && initialAction && initialProjectId) {
