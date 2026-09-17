@@ -174,6 +174,8 @@
         scheduled: "Programmée",
         published: "Publiée",
         active: "Publiée",
+        completed: "Terminée",
+        closed: "Terminée",
         unpublished: "Dépubliée",
         archived: "Archivée",
       }[normalizedStatus(p)] ||
@@ -305,7 +307,7 @@
   }
   function card(p) {
     const st = normalizedStatus(p),
-      theme = p.theme_title || "Thématique",
+      theme = p.theme_title || p.legacy_theme_title || "Thématique",
       title = p.campaign_name || p.title || "Sans nom",
       respondent = p.respondent_title || title,
       contact = orgUsers(organization)[0],
@@ -354,7 +356,9 @@
       esc(theme) +
       '</strong></div><div class="admin-ad-meta">Titre répondants : <strong>' +
       esc(respondent) +
-      '</strong></div><div class="admin-ad-tags"><span class="admin-ad-theme">' +
+      '</strong></div>' +
+      (p.legacy_history && p.legacy_slug ? '<div class="admin-ad-meta">Slug historique : <strong>' + esc(p.legacy_slug) + '</strong></div>' : '') +
+      '<div class="admin-ad-tags"><span class="admin-ad-theme">' +
       esc(theme) +
       '</span><span class="admin-ad-status status-' +
       st +
@@ -505,7 +509,9 @@
     $("#client-summary").innerHTML =
       "<article><span>Crédits attribués</span><strong>" +
       (organization.pack_unlimited ? "Illimité" : fmt(quota)) +
-      "</strong><small>Fin : " +
+      "</strong><small>Début : " +
+      date(organization.pack_started_at) +
+      " · Fin : " +
       date(organization.pack_expires_at) +
       "</small></article><article><span>Restants</span><strong>" +
       (organization.pack_unlimited ? "∞" : fmt(rem)) +
@@ -1100,6 +1106,7 @@
         body: JSON.stringify({
           passationsQuota: Number($("#client-quota").value) || 0,
           passationsUsed: Number($("#client-used").value) || 0,
+          packStartedAt: $("#client-pack-start").value || null,
           packExpiresAt: $("#client-expiry").value || null,
           packUnlimited: $("#client-unlimited").checked,
         }),

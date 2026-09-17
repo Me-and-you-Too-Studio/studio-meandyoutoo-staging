@@ -668,6 +668,8 @@
 
   function extraBadges(p) {
     var parts = [];
+    if (p && p.legacy_history)
+      parts.push('<span class="campaign-context-tag">Import Me&YouToo</span>');
     if (p.reprogrammed_at || p.reprogrammedAt)
       parts.push(
         '<span class="campaign-context-tag reprogrammed">Reprogrammée</span>',
@@ -702,6 +704,7 @@
       " · " +
       esc(campaignDates(p)) +
       "<br>" +
+      (p.legacy_history && p.legacy_slug ? "Slug historique : " + esc(p.legacy_slug) + "<br>" : "") +
       "Lien de diffusion : " +
       esc(links.shareText) +
       " · Résultats : " +
