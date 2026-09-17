@@ -1,9 +1,9 @@
 (()=>{
 const previewSource=new URLSearchParams(location.search).get('source')||'live';
+const liveProjectPreview=(new URLSearchParams(location.search).get('mode')||((new URLSearchParams(location.search).get('projectId'))?'project':'catalog'))==='project'&&previewSource!=='saved';
 let previewLocale=String(new URLSearchParams(location.search).get('lang')||document.documentElement.lang||'fr').toLowerCase().replaceAll('_','-');
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=h=>{let x=document.createElement('div');x.innerHTML=String(h||'').replace(/<\s*br\s*\/?\s*>/gi,'\n').replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi,'</$1>\n\n');return(x.textContent||'').replace(/\u00a0/g,' ').replace(/[ \t]+\n/g,'\n').replace(/\n[ \t]+/g,'\n').replace(/\n{3,}/g,'\n\n').trim()},q=new URLSearchParams(location.search),pid=q.get('projectId'),theme=q.get('theme')||'',mode=q.get('mode')||(pid?'project':'catalog'),root=$('#rp');
-let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[],availablePreviewLocales=['fr'],previewCountry='FR';
-if(!document.getElementById('rp-language-picker-style')){const st=document.createElement('style');st.id='rp-language-picker-style';st.textContent='.rp-head{display:flex;align-items:center;gap:14px}.rp-language-picker{margin-left:auto;display:flex;align-items:center;gap:8px}.rp-language-picker label{font-size:.78rem;font-weight:800;color:#536a82}.rp-language-picker select{min-width:165px;height:40px;padding:0 36px 0 12px;border:1px solid #cbdde5;border-radius:12px;background:#fff;color:#18375d;font:inherit;font-weight:700}.rp-language-picker select:focus{outline:3px solid rgba(0,136,145,.16);border-color:#008891}@media(max-width:680px){.rp-head{flex-wrap:wrap}.rp-language-picker{width:100%;margin-left:0}.rp-language-picker select{flex:1}}';document.head.appendChild(st)}
+let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[],availablePreviewLocales=['fr'],previewCountry='FR',previewCountries=[],previewCountryLocales={},contextLoading=false,contextError='';
 
 function apiBase(){
   const host=String(location.hostname||'').toLowerCase(),path=String(location.pathname||'').toLowerCase();
@@ -52,7 +52,7 @@ function norm(x){
     if(Array.isArray(live.project.sociodemo))d.socio=normalizeSocio(live.project.sociodemo);
     if(Array.isArray(live.project.result_buttons))d.resources=normalizeResources(live.project.result_buttons);
   }
-  if(live?.chapters && previewLocale===String(pr.selected_locale||'fr').toLowerCase().replaceAll('_','-')){
+  if(live?.chapters && !liveProjectPreview && previewLocale===String(pr.selected_locale||'fr').toLowerCase().replaceAll('_','-')){
     const profileMap=new Map(d.chapters.map(c=>[String(c.id),c.profiles]));
     d.chapters=live.chapters.map((c,cidx)=>({
       id:c.id||c.source_id||cidx,title:c.title||`Partie ${cidx+1}`,
@@ -66,8 +66,82 @@ function norm(x){
   if(mode==='catalog'&&!d.socio.length)d.socio=fallbackSocio();
 }
 
+
+function normalizeLocaleCode(value){return String(value||'').trim().toLowerCase().replaceAll('_','-')}
+function normalizeCountryCode(value){return String(value||'').trim().toUpperCase()}
+function projectPreviewContext(payload){
+  const project=payload?.project||{},ctx=payload?.composer_context||{};
+  const rawMap=(ctx.countryLocales&&typeof ctx.countryLocales==='object'&&!Array.isArray(ctx.countryLocales))
+    ?ctx.countryLocales
+    :((project.country_locales&&typeof project.country_locales==='object'&&!Array.isArray(project.country_locales))?project.country_locales:{});
+  const countries=[...new Set([...(Array.isArray(ctx.countries)?ctx.countries:[]),...(Array.isArray(project.countries)?project.countries:[]),...Object.keys(rawMap||{}),project.selected_country_code].map(normalizeCountryCode).filter(Boolean))];
+  const global=[...new Set([...(Array.isArray(project.locales)?project.locales:[]),project.selected_locale].map(normalizeLocaleCode).filter(Boolean))];
+  const byCountry={};
+  countries.forEach(code=>{
+    const exact=[...new Set((Array.isArray(rawMap?.[code])?rawMap[code]:[]).map(normalizeLocaleCode).filter(Boolean))];
+    byCountry[code]=exact.length?exact:(countries.length===1?global:[]);
+  });
+  return {countries,byCountry};
+}
+function countryLabel(code){
+  const cc=normalizeCountryCode(code),special={WW:'International',WORLDWIDE:'International',INT:'International',GLOBAL:'International',ASIA:'Asie'};
+  if(special[cc])return special[cc];
+  try{return new Intl.DisplayNames(['fr'],{type:'region'}).of(cc)||cc}catch(_){return cc}
+}
+const localeNamesFr={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',br:'Portugais Brésil',bg:'Bulgare',ja:'Japonais','ko-kr':'Coréen',ko:'Coréen',zf:'Chinois simplifié',zh:'Chinois traditionnel',nl:'Néerlandais','nl-be':'Néerlandais (Belgique)',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',tr:'Turc',cs:'Tchèque',sk:'Slovaque',id:'Indonésien',ar:'Arabe'};
+function localeLabelFr(code){const loc=normalizeLocaleCode(code);return `${loc.toUpperCase()} · ${localeNamesFr[loc]||loc.toUpperCase()}`}
+function resetPreviewProgress(){step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[]}
+function contextChooser(){
+  if(!liveProjectPreview)return'';
+  const countryButtons=previewCountries.map(code=>`<button type="button" class="rp-context-choice ${code===previewCountry?'selected':''}" data-preview-country="${esc(code)}" aria-pressed="${code===previewCountry?'true':'false'}"><span>🌍</span><strong>${esc(countryLabel(code))}</strong></button>`).join('');
+  const locales=previewCountry?(previewCountryLocales[previewCountry]||[]): [];
+  const languageBlock=previewCountry
+    ? `<div class="rp-context-step rp-context-language-step"><div class="rp-context-step-head"><span>2</span><div><strong>Choisissez la langue</strong><small>Langues activées pour ${esc(countryLabel(previewCountry))}</small></div></div><div class="rp-context-options">${locales.length?locales.map(loc=>`<button type="button" class="rp-context-choice rp-context-locale ${loc===previewLocale?'selected':''}" data-preview-locale="${esc(loc)}" aria-pressed="${loc===previewLocale?'true':'false'}"><strong>${esc(localeLabelFr(loc))}</strong></button>`).join(''):`<div class="rp-context-empty">Aucune langue n’est activée pour ce périmètre.</div>`}</div></div>`
+    :'';
+  const ready=previewCountry&&previewLocale&&!contextLoading
+    ? `<div class="rp-context-ready"><span>✓</span><div><strong>Aperçu prêt</strong><small>${esc(countryLabel(previewCountry))} · ${esc(localeLabelFr(previewLocale))}</small></div></div>`
+    :'';
+  const loading=contextLoading?`<div class="rp-context-loading" role="status">Chargement du contenu ${esc(countryLabel(previewCountry))} · ${esc(localeLabelFr(previewLocale))}…</div>`:'';
+  const error=contextError?`<div class="rp-context-error" role="alert">${esc(contextError)}</div>`:'';
+  return `<section class="rp-context-chooser" aria-label="Choix du périmètre et de la langue"><div class="rp-context-intro"><strong>Prévisualisez le parcours réel d’un répondant</strong><p>Choisissez d’abord son périmètre, puis une langue réellement activée pour ce périmètre.</p></div><div class="rp-context-step"><div class="rp-context-step-head"><span>1</span><div><strong>Choisissez le périmètre</strong><small>${previewCountries.length} ${previewCountries.length>1?'périmètres disponibles':'périmètre disponible'}</small></div></div><div class="rp-context-options">${countryButtons||'<div class="rp-context-empty">Aucun périmètre configuré pour cette campagne.</div>'}</div></div>${languageBlock}${loading}${error}${ready}</section>`;
+}
+function bindContextChooser(){
+  if(!liveProjectPreview)return;
+  root.querySelectorAll('[data-preview-country]').forEach(button=>button.onclick=()=>{
+    const country=normalizeCountryCode(button.dataset.previewCountry);
+    if(country===previewCountry&&previewLocale==='')return;
+    previewCountry=country;
+    previewLocale='';
+    availablePreviewLocales=previewCountryLocales[country]||[];
+    contextError='';
+    contextLoading=false;
+    resetPreviewProgress();
+    render();
+  });
+  root.querySelectorAll('[data-preview-locale]').forEach(button=>button.onclick=async()=>{
+    const locale=normalizeLocaleCode(button.dataset.previewLocale);
+    if(!previewCountry||!locale||contextLoading)return;
+    previewLocale=locale;
+    availablePreviewLocales=previewCountryLocales[previewCountry]||[];
+    contextError='';
+    contextLoading=true;
+    render();
+    try{
+      const payload=await api(`/api/projects/${pid}/composer?respondentPreview=1&countryCode=${encodeURIComponent(previewCountry)}&locale=${encodeURIComponent(previewLocale)}`);
+      norm(payload);
+      resetPreviewProgress();
+    }catch(error){
+      contextError=error.message||'Impossible de charger ce parcours.';
+      previewLocale='';
+    }finally{
+      contextLoading=false;
+      render();
+    }
+  });
+}
+
 const modeLabel=()=>mode==='project'?'Votre campagne composée':'Version catalogue Me&YouToo';
-const head=t=>`<header class="rp-head"><img src="assets/img/brand/logo-meayt-color.png"><div><b>${mode==='project'?'Aperçu de ma campagne':'Aperçu répondant'}</b><span>${esc(t||modeLabel())}</span></div>${languagePicker()}</header>`;
+const head=t=>`<header class="rp-head"><img src="assets/img/brand/logo-meayt-color.png"><div><b>${mode==='project'?'Aperçu de ma campagne':'Aperçu répondant'}</b><span>${esc(t||modeLabel())}</span></div>${liveProjectPreview?'':languagePicker()}</header>`;
 function localeLabel(code){const k=String(code||'').toLowerCase().replaceAll('_','-'),n={fr:'Français',en:'English',es:'Español',de:'Deutsch',it:'Italiano',pt:'Português',br:'Português (Brasil)',nl:'Nederlands','nl-be':'Nederlands (België)',pl:'Polski',cs:'Čeština',sk:'Slovenčina',id:'Bahasa Indonesia',ja:'日本語','ko-kr':'한국어',ko:'한국어',zh:'繁體中文',zf:'简体中文',bg:'Български',ro:'Română',ru:'Русский','sv-se':'Svenska',tr:'Türkçe'};return (n[k]||k.toUpperCase())+' ('+k.toUpperCase()+')'}
 function languagePicker(){if(availablePreviewLocales.length<2)return'';return `<div class="rp-language-picker"><label for="rp-lang">Langue</label><select id="rp-lang">${availablePreviewLocales.map(l=>`<option value="${esc(l)}" ${l===previewLocale?'selected':''}>${esc(localeLabel(l))}</option>`).join('')}</select></div>`}
 function bindLanguagePicker(){const el=$('#rp-lang');if(el)el.onchange=async()=>{previewLocale=el.value;await loadPreviewData(true)}}
@@ -75,7 +149,12 @@ const totalSituations=()=>d.chapters.reduce((n,c)=>n+c.situations.length,0);
 const situationNumber=()=>d.chapters.slice(0,ci).reduce((n,c)=>n+c.situations.length,0)+qi+1;
 const answerKey=(c=ci,s=qi)=>`${c}:${s}`;
 
-function intro(){root.innerHTML=head()+`<section class="rp-card rp-intro"><em>${esc(modeLabel())}</em><h1>${esc(d.title)}</h1><p class="rp-intro-copy">${esc(d.intro)}</p><aside>${mode==='project'?'Cet aperçu reprend le contenu actuellement composé et paramétré pour cette campagne.':'Cet aperçu présente le parcours standard proposé dans le catalogue, avant personnalisation.'} Les réponses utilisées ici servent uniquement à calculer le rendu de l’aperçu et ne sont jamais enregistrées.</aside><button id="start" class="button button-primary">Commencer l’autodiagnostic</button></section>`;$('#start').onclick=()=>{step=0;render()}}
+function intro(){
+  const contextReady=!liveProjectPreview||Boolean(previewCountry&&previewLocale&&!contextLoading&&!contextError);
+  root.innerHTML=head()+`<section class="rp-card rp-intro"><em>${esc(modeLabel())}</em><h1>${esc(d.title)}</h1><p class="rp-intro-copy">${esc(d.intro)}</p>${contextChooser()}<aside>${mode==='project'?'Cet aperçu reprend le contenu actuellement composé et paramétré pour cette campagne.':'Cet aperçu présente le parcours standard proposé dans le catalogue, avant personnalisation.'} Les réponses utilisées ici servent uniquement à calculer le rendu de l’aperçu et ne sont jamais enregistrées.</aside><button id="start" class="button button-primary" ${contextReady?'':'disabled'}>${liveProjectPreview&&!contextReady?'Choisissez un périmètre et une langue':'Commencer l’autodiagnostic'}</button></section>`;
+  bindContextChooser();
+  const start=$('#start');if(start)start.onclick=()=>{if(!contextReady)return;step=0;render()}
+}
 
 function socio(){
   if(!d.socio.length){step=1;render();return}
@@ -200,21 +279,31 @@ function done(){
 function render(){if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult();else if(step===3)showChapterResult();bindLanguagePicker()}
 async function loadPreviewData(preserveStep=false){try{
   if(mode==='project'&&pid){
-    const base=await api(`/api/projects/${pid}/composer?locale=${encodeURIComponent(previewLocale)}`);
-    previewCountry=String(base.project?.selected_country_code||'FR').toUpperCase();
-    const slug=base.project?.theme_slug||theme;
-    // For an existing campaign, expose only the language(s) retained for that campaign,
-    // not every translation available in the catalogue for the perimeter.
-    const campaignLocale=String(base.project?.selected_locale||'fr').toLowerCase().replaceAll('_','-');
-    availablePreviewLocales=[campaignLocale];
-    previewLocale=campaignLocale;
-    norm(base);
+    if(liveProjectPreview){
+      const base=await api(`/api/projects/${pid}/composer?respondentPreview=1`);
+      const context=projectPreviewContext(base);
+      previewCountries=context.countries;
+      previewCountryLocales=context.byCountry;
+      previewCountry='';
+      previewLocale='';
+      availablePreviewLocales=[];
+      contextLoading=false;
+      contextError='';
+      norm(base);
+    }else{
+      const base=await api(`/api/projects/${pid}/composer?respondentPreview=1&locale=${encodeURIComponent(previewLocale)}`);
+      previewCountry=String(base.project?.selected_country_code||'FR').toUpperCase();
+      const campaignLocale=String(base.project?.selected_locale||'fr').toLowerCase().replaceAll('_','-');
+      availablePreviewLocales=[campaignLocale];
+      previewLocale=campaignLocale;
+      norm(base);
+    }
   }else{
     previewCountry='FR';
     try{const v=await api(`/api/catalog/themes/${encodeURIComponent(theme)}/variants`);const fr=(v.variants||[]).find(x=>String(x.countryCode||'').toUpperCase()==='FR');availablePreviewLocales=(fr?.locales||['fr']).map(x=>String(x).toLowerCase().replaceAll('_','-'));if(!availablePreviewLocales.includes(previewLocale))previewLocale=availablePreviewLocales.includes('fr')?'fr':availablePreviewLocales[0];}catch(_){availablePreviewLocales=['fr'];previewLocale='fr';}
     norm(await api(`/api/catalog/themes/${encodeURIComponent(theme)}/template?countryCode=FR&locale=${encodeURIComponent(previewLocale)}`));
   }
-  if(!preserveStep){step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[];}
+  if(!preserveStep)resetPreviewProgress();
   render();bindLanguagePicker();
 }catch(e){root.innerHTML=head()+`<section class="rp-card"><h1>Aperçu indisponible</h1><p>${esc(e.message)}</p></section>`;bindLanguagePicker();}}
 loadPreviewData();})();
