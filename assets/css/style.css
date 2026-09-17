@@ -3634,17 +3634,6 @@ legend {
   border-radius: 50%;
   flex: 0 0 auto;
 }
-.profile-excel-card input.is-customized,
-.profile-excel-card textarea.is-customized {
-  border-color: #dfbd57;
-  background: #fffef9;
-  box-shadow: 0 0 0 1px rgba(223, 189, 87, 0.12);
-}
-.profile-excel-card input.is-customized:focus,
-.profile-excel-card textarea.is-customized:focus {
-  border-color: #c8a63f;
-  box-shadow: 0 0 0 3px rgba(223, 189, 87, 0.18);
-}
 .profile-method {
   background: var(--royal-blue-soft);
   border-radius: 10px;
@@ -13242,3 +13231,8 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 @media(max-width:720px){
   .composer-floating-info-tooltip{font-size:.82rem;padding:11px 12px}
 }
+
+/* Profils — diff mot à mot identique à Composer + indication de sauvegarde */
+[data-live-profile-diff] .composer-diff{margin-top:10px;animation:composerDiffReveal .18s ease-out}
+.profile-autosave-note{margin:.55rem 0 0;color:var(--muted);font-size:.86rem;line-height:1.4}
+.profile-autosave-note strong{color:var(--royal-blue)}
