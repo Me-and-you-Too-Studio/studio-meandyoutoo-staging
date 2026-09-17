@@ -147,10 +147,13 @@
   function renderCountryTabs(project=state.project){
     const root=$('composer-country-tabs');if(!root)return;
     const countries=campaignCountries(project);
-    if(!countries.length){root.hidden=true;root.innerHTML='';return;}
+    // Un seul périmètre n'est pas un choix à faire : on masque tout le bloc pour
+    // éviter les libellés techniques (ex. 250) et alléger le Composer national.
+    if(countries.length<=1){root.hidden=true;root.innerHTML='';return;}
     const byCountry=projectCountryLocales(project);
+    const numericCountryNames={'032':'Argentine','040':'Autriche','076':'Brésil','124':'Canada','152':'Chili','156':'Chine','158':'Taïwan','208':'Danemark','250':'France','276':'Allemagne','344':'Hong Kong','392':'Japon','410':'Corée du Sud','484':'Mexique','578':'Norvège','591':'Panama','620':'Portugal','724':'Espagne','752':'Suède','756':'Suisse','840':'États-Unis','858':'Uruguay'};
     let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
-    const label=code=>{try{return regionNames?.of(code)||code;}catch(_){return code;}};
+    const label=code=>{const key=String(code||'').toUpperCase();if(numericCountryNames[key])return numericCountryNames[key];if(['WW','WORLDWIDE','INT','GLOBAL'].includes(key))return'International';if(key==='ASIA')return'Asie';try{return regionNames?.of(key)||key;}catch(_){return key;}};
     const activeCopy=state.country
       ? `Vous composez ${esc(label(state.country))} avec ${((byCountry[state.country]||[]).map(localeLabel).join(' · ')||'les langues configurées')}.`
       : (countries.length>1
@@ -419,11 +422,13 @@
   function situationHtml(s,index){
     const ch=state.chapters[state.active];
     const stereotypes=themeSlug==='sexisme'&&canonical(ch.slug||ch.title).includes('stereotype');
-    // Pour Sexisme, seul le chapitre Stéréotypes est méthodologiquement verrouillé.
-    // Les flags historiques/catalogue ne doivent pas verrouiller les autres chapitres.
+    // Pour Sexisme, seul le chapitre Stéréotypes est un socle non éditable.
+    // Les flags historiques de chapitre/situation ne doivent pas verrouiller les autres parties.
     const methodologyLocked=themeSlug==='sexisme'?stereotypes:Boolean(ch.locked||s.locked);
     const adminCorrection=Boolean(state.project?.review_mode&&state.project?.can_edit===true);
     const locked=Boolean(methodologyLocked||(!adminCorrection&&state.project?.can_edit===false));
+    const canReplaceLocked=Boolean(methodologyLocked&&state.project?.can_edit!==false);
+    const lockChip=stereotypes?'🔒 Situation socle — texte non modifiable':'🔒 Contenu non modifiable';
     const linkedLabel=linkedSituationLabel(s,index,ch.situations);
     const originalText=s.original_content||s.content||'';
     const submitted=submittedSituation(s.id);
@@ -441,7 +446,7 @@
     const tone=situationTone(s,index,ch);
     return `<article class="composer-situation ${tone} ${locked?'is-locked':''} ${customized?'has-customization':''}" data-situation-card="${esc(s.id)}">
       <div class="composer-situation-head">
-        <div class="composer-situation-tags">${locked?'<span class="composer-lock-chip">🔒 Contenu méthodologique obligatoire</span>':`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':''}</div>
+        <div class="composer-situation-tags">${locked?`<span class="composer-lock-chip">${lockChip}</span>`:`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':''}</div>
         <div class="composer-situation-head-actions"><span class="composer-origin">Situation Me&YouToo</span><button class="button button-ghost button-small composer-collapse-situation" type="button" data-collapse-situation="${esc(s.id)}" aria-expanded="false">Déplier</button></div>
       </div>
       <div class="composer-situation-body" id="situation-body-${esc(s.id)}" hidden>
@@ -449,7 +454,7 @@
       ${situationText}
       <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="false"><span data-toggle-label>Voir les réponses et les scores</span> <span aria-hidden="true">⌄</span></button>
       <div class="composer-answers" id="answers-${esc(s.id)}" hidden>${answerRows}</div>
-      ${((state.project?.locales||[]).length>1)?`<div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" hidden>🌐 Traduction et adaptation locale éventuelle</button></div>`:''}
+      <div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" hidden>🌐 Traduction et adaptation locale éventuelle</button></div>
       <div class="translation-sync-warning" data-live-translation-warning ${customized&&((state.project?.locales||[]).length>1)?'':'hidden'}>⚠️ Vous modifiez le contenu de référence. Les traductions et adaptations locales existantes ne sont pas mises à jour automatiquement et doivent être vérifiées.</div>
       ${!locked?`<div class="composer-inline-help composer-context-help"><strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span></div>
       <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${customized?'Enregistré':'Enregistrement automatique'}</span></span></div>
@@ -457,7 +462,7 @@
         ${customized?`<button class="button button-ghost" type="button" data-reset="${esc(s.id)}">↶ ${state.project?.review_mode?'Annuler ma correction':'Annuler mes modifications'}</button>`:''}
         <button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer</button>
         <button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button>
-      </div>`:''}
+      </div>`:canReplaceLocked?`<div class="composer-inline-help composer-context-help composer-socle-help"><strong>Situation socle Stéréotypes</strong><span>Le texte et les réponses ne se modifient pas directement. Vous pouvez toutefois remplacer cette situation par une autre situation validée de la bibliothèque Me&YouToo.</span></div><div class="composer-actions"><button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer via la bibliothèque</button></div>`:''}
       </div>
     </article>`;
   }
@@ -506,7 +511,8 @@
     document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=()=>resetSituationCustomization(b.dataset.reset));
     document.querySelectorAll('[data-replace]').forEach(b=>b.onclick=()=>openLibrary('replace',b.dataset.replace));
     document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removeSituation(b.dataset.remove));
-    document.querySelectorAll('[data-translations]').forEach(async b=>{const id=b.dataset.translations;try{const ctx=await getTranslationContext(id);if((ctx.locales||[]).filter(x=>x!==ctx.referenceLocale).length){b.hidden=false;b.onclick=()=>openTranslationModal(id);}}catch(_){b.hidden=true;}});
+    const campaignLocales=state.country?(projectCountryLocales(state.project)[state.country]||[]):[...new Set((state.project?.locales||[]).map(x=>String(x||'').toLowerCase().replaceAll('_','-')).filter(Boolean))];
+    document.querySelectorAll('[data-translations]').forEach(async b=>{if(campaignLocales.length<=1){b.hidden=true;return;}const id=b.dataset.translations;try{const ctx=await getTranslationContext(id);if((ctx.locales||[]).filter(x=>x!==ctx.referenceLocale).length){b.hidden=false;b.onclick=()=>openTranslationModal(id);}}catch(_){b.hidden=true;}});
   }
 
   const localeNames={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',br:'Portugais Brésil',ja:'Japonais','ko-kr':'Coréen',zf:'Chinois simplifié',zh:'Chinois traditionnel',bg:'Bulgare',nl:'Néerlandais','nl-be':'Néerlandais Belgique',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',tr:'Turc',cs:'Tchèque',sk:'Slovaque',id:'Indonésien'};
@@ -695,8 +701,9 @@
     const stereotypes=isStereotypesChapter(ch),status=chapterCountStatus(ch);
     $('chapter-kicker').textContent=`Chapitre ${state.active+1} · Questions`;
     $('chapter-title').textContent=ch.title;
-    $('chapter-desc').textContent=ch.locked
-      ?(ch.lock_reason||'Ce chapitre méthodologique est obligatoire et non modifiable.')
+    const effectiveChapterLocked=themeSlug==='sexisme'?stereotypes:Boolean(ch.locked);
+    $('chapter-desc').textContent=effectiveChapterLocked
+      ?(stereotypes?'Les situations de ce chapitre constituent le socle Stéréotypes : leur texte et leurs réponses ne se modifient pas directement, mais chaque situation peut être remplacée par une autre de la bibliothèque Me&YouToo.':(ch.lock_reason||'Ce chapitre est non modifiable.'))
       :status.rules.min!=null
         ?`${status.count} situation${status.count>1?'s':''} retenue${status.count>1?'s':''} · ${status.rules.min} minimum et ${status.rules.max} maximum dans ce chapitre.`
         :`${status.count} situations retenues · consultez les réponses et scores avant de modifier votre sélection.`;
@@ -704,7 +711,7 @@
     renderChapterChoice(ch);
 
     const libraryButton=$('library-button');
-    libraryButton.hidden=Boolean(ch.locked||stereotypes||state.project?.can_edit===false);
+    libraryButton.hidden=Boolean((themeSlug==='sexisme'?stereotypes:ch.locked)||state.project?.can_edit===false);
     if(!libraryButton.hidden){
       libraryButton.classList.toggle('is-disabled',status.atMax);
       libraryButton.setAttribute('aria-disabled',String(status.atMax));
