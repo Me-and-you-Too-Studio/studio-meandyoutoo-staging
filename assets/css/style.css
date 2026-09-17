@@ -13127,3 +13127,22 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .translation-head .composer-info-wrap{position:relative}
 .translation-head .composer-info-bubble{left:0;right:auto;top:calc(100% + 10px);bottom:auto;transform:none;width:min(360px,calc(100vw - 96px))}
 @media(max-width:720px){.composer-inline-title{align-items:flex-start}.composer-info-bubble,.translation-head .composer-info-bubble{left:0;right:auto;width:min(320px,calc(100vw - 40px))}}
+
+
+/* Composer — hiérarchie visuelle de la modale contexte */
+.campaign-context-modal-head{align-items:flex-start;padding:24px 28px 20px;overflow:visible}
+.campaign-context-modal-heading{display:flex;flex-direction:column;gap:5px;min-width:0;max-width:760px}
+.campaign-context-modal-heading>small{font-size:.72rem;letter-spacing:.08em;color:#5f7388;font-weight:800}
+.campaign-context-modal-title{align-items:center;gap:8px;flex-wrap:nowrap}
+.campaign-context-modal-title h2{font-size:1.55rem!important;line-height:1.18;margin:0;color:var(--royal-blue);letter-spacing:-.01em}
+.campaign-context-modal-heading>p{margin:0;color:#60758b;font-size:.92rem;line-height:1.45}
+.campaign-context-modal-head .translation-close{margin-left:auto;flex:0 0 auto}
+.campaign-context-modal-title .composer-info-wrap{align-self:center}
+.campaign-context-modal-title .composer-info-bubble{left:auto!important;right:0!important;top:calc(100% + 10px)!important;bottom:auto!important;transform:none!important;width:min(340px,calc(100vw - 120px))!important;color:#fff!important;font-weight:600}
+.composer-country-tabs-label .composer-info-bubble{color:#fff!important}
+@media(max-width:720px){
+  .campaign-context-modal-head{padding:20px 18px 16px}
+  .campaign-context-modal-title{align-items:center;flex-wrap:wrap}
+  .campaign-context-modal-title h2{font-size:1.3rem!important}
+  .campaign-context-modal-title .composer-info-bubble{right:auto!important;left:0!important;width:min(310px,calc(100vw - 64px))!important}
+}
