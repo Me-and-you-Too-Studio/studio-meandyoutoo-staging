@@ -13331,3 +13331,22 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .rp-resource-link[disabled]{opacity:.6;cursor:not-allowed;background:#fbfcfd}
 @media(max-width:700px){.result-resource-type-choice{grid-template-columns:1fr}.result-resource-admin-upload{grid-template-columns:1fr}.result-resource-admin-upload .button{width:100%}}
 .result-resource-document-field[hidden],.result-resource-admin-upload[hidden]{display:none!important}
+
+/* Client resource media library */
+.admin-client-media-library{scroll-margin-top:24px}
+.admin-client-media-title{align-items:flex-start}
+.admin-media-client-badge{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:#eef6ff;color:#23446f;font-size:.78rem;font-weight:800;white-space:nowrap}
+.admin-client-media-upload{display:grid;grid-template-columns:minmax(240px,1fr) minmax(260px,1fr) auto;gap:14px;align-items:end;padding:16px;border:1px solid #d9e7ed;border-radius:16px;background:#f8fbfc;margin-bottom:14px}
+.admin-client-media-upload .field{margin:0}
+.admin-client-media-file input{padding:9px;background:#fff}
+.admin-client-media-list{display:grid;gap:10px}
+.admin-client-media-card{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 16px;border:1px solid #dbe7ed;border-radius:15px;background:#fff}
+.admin-client-media-icon{display:grid;place-items:center;width:50px;height:50px;border-radius:12px;background:#f2f6fb;color:#173d61;font-size:.72rem;font-weight:900;border:1px solid #d7e2ea}
+.admin-client-media-copy{display:grid;gap:4px;min-width:0}
+.admin-client-media-copy strong{color:#173d61}
+.admin-client-media-copy span,.admin-client-media-copy small{color:#6c8292;overflow-wrap:anywhere}
+.admin-client-media-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.admin-client-media-empty{display:grid;gap:6px;padding:22px;border:1px dashed #c8d9e1;border-radius:15px;background:#fbfdfe;color:#6b8292}
+.admin-client-media-empty strong{color:#173d61}
+.admin-media-association-dialog .field{margin-top:14px}
+@media(max-width:900px){.admin-client-media-upload{grid-template-columns:1fr}.admin-client-media-card{grid-template-columns:48px 1fr}.admin-client-media-actions{grid-column:1/-1;justify-content:flex-start}}
