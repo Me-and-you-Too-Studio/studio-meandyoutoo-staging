@@ -85,6 +85,21 @@
     [label,url,uploadFile].forEach(input=>input.oninput=()=>{error.hidden=true});
     document.body.classList.add('studio-modal-open');dialog.showModal();setTimeout(()=>label.focus(),0);
   }
+  async function openResultPdf(item){
+    const documentId=String(item?.documentId||'').trim();
+    if(!documentId)return window.StudioModal.alert({title:'PDF indisponible',message:'Aucun fichier PDF consultable n’est rattaché à cette ressource.',type:'info',confirmLabel:'Fermer'});
+    const popup=window.open('about:blank','_blank');
+    if(popup){popup.document.title='Ouverture du PDF…';popup.document.body.innerHTML='<p style="font-family:Arial,sans-serif;padding:24px">Ouverture du PDF…</p>';}
+    try{
+      const base=typeof window.StudioAPI?.base==='function'?window.StudioAPI.base():String(window.STUDIO_API_BASE||'').replace(/\/$/,'');
+      const response=await fetch(`${base}/api/projects/${encodeURIComponent(projectId)}/resource-library/${encodeURIComponent(documentId)}/download?inline=1`,{headers:{Authorization:`Bearer ${window.StudioAPI.token()}`}});
+      if(!response.ok){const payload=await response.json().catch(()=>({}));throw new Error(payload.error||'Impossible d’ouvrir ce PDF.');}
+      const blob=await response.blob(),url=URL.createObjectURL(blob);
+      if(popup)popup.location.replace(url);else window.open(url,'_blank','noopener');
+      setTimeout(()=>URL.revokeObjectURL(url),60000);
+    }catch(e){if(popup)popup.close();await window.StudioModal.alert({title:'PDF indisponible',message:e.message||'Impossible d’ouvrir ce PDF.',type:'error',confirmLabel:'Fermer'});}
+  }
+
   async function attachLegacyResourceDocument(index){
     const item=resultResources[index];if(!item||item.type!=='legacy_document'||currentUser.role!=='admin')return;
     const input=document.createElement('input');input.type='file';input.accept='application/pdf,.pdf';input.hidden=true;document.body.appendChild(input);
@@ -95,7 +110,8 @@
   function renderResultResources(){
     const list=$('result-resources-list');if(!list)return;const ro=isReadOnly();
     if(!resultResources.length)list.innerHTML='<div class="result-resource-empty">Aucune ressource ajoutée pour le moment.</div>';
-    else list.innerHTML=resultResources.map((item,i)=>{const doc=item.type==='document'?resourceDocumentById(item.documentId):null;const meta=item.type==='document'?`📄 ${doc?.filename||item.filename||'Document PDF'}`:item.type==='legacy_document'?`📄 Document historique : ${item.legacyFilename} · PDF à rattacher`:`🔗 ${item.url}`;const legacyAdminAction=item.type==='legacy_document'&&currentUser.role==='admin'?`<div class="result-resource-actions"><button type="button" class="button button-secondary button-small" data-attach-legacy-document="${i}">Rattacher le PDF</button></div>`:'';const editActions=(ro&&currentUser.role!=='admin')?'':`<div class="result-resource-actions"><button type="button" class="button button-secondary button-small" data-result-edit="${i}">Modifier</button><button type="button" class="button button-ghost button-small result-resource-delete" data-result-remove="${i}">Supprimer</button></div>`;return `<article class="result-resource-row ${item.type==='legacy_document'?'is-legacy-pending':''}"><div class="result-resource-copy"><strong>${esc(item.title)}</strong><span>${esc(meta)}</span></div>${legacyAdminAction||editActions}</article>`}).join('');
+    else list.innerHTML=resultResources.map((item,i)=>{const doc=item.type==='document'?resourceDocumentById(item.documentId):null;const meta=item.type==='document'?`📄 ${doc?.filename||item.filename||'Document PDF'}`:item.type==='legacy_document'?`📄 Document historique : ${item.legacyFilename} · PDF à rattacher`:`🔗 ${item.url}`;const viewAction=item.type==='document'&&item.documentId?`<button type="button" class="button button-secondary button-small" data-result-view-pdf="${i}">Voir le PDF</button>`:'';const legacyAdminAction=item.type==='legacy_document'&&currentUser.role==='admin'?`<button type="button" class="button button-secondary button-small" data-attach-legacy-document="${i}">Rattacher le PDF</button>`:'';const editActions=(ro&&currentUser.role!=='admin')?'':`<button type="button" class="button button-secondary button-small" data-result-edit="${i}">Modifier</button><button type="button" class="button button-ghost button-small result-resource-delete" data-result-remove="${i}">Supprimer</button>`;const actions=viewAction||legacyAdminAction||editActions?`<div class="result-resource-actions">${viewAction}${legacyAdminAction}${editActions}</div>`:'';return `<article class="result-resource-row ${item.type==='legacy_document'?'is-legacy-pending':''}"><div class="result-resource-copy"><strong>${esc(item.title)}</strong><span>${esc(meta)}</span></div>${actions}</article>`}).join('');
+    list.querySelectorAll('[data-result-view-pdf]').forEach(el=>el.onclick=()=>openResultPdf(resultResources[Number(el.dataset.resultViewPdf)]));
     list.querySelectorAll('[data-attach-legacy-document]').forEach(el=>el.onclick=()=>attachLegacyResourceDocument(Number(el.dataset.attachLegacyDocument)));
     list.querySelectorAll('[data-result-edit]').forEach(el=>el.onclick=()=>openResourceModal(Number(el.dataset.resultEdit)));
     list.querySelectorAll('[data-result-remove]').forEach(el=>el.onclick=async()=>{const i=Number(el.dataset.resultRemove),ok=await window.StudioModal.confirm({eyebrow:'Ressource après les résultats',title:'Supprimer cette ressource ?',message:`« ${resultResources[i]?.title||'Cette ressource'} » ne sera plus proposée aux répondants.`,type:'danger',cancelLabel:'Conserver',confirmLabel:'Supprimer'});if(ok){const before=clone(resultResources);resultResources.splice(i,1);try{if(isReadOnly()&&currentUser.role==='admin')await saveAdminResultResources();else renderResultResources();}catch(e){resultResources=before;renderResultResources();show(e.message||'Suppression impossible.');}}});
