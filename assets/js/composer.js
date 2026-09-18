@@ -432,7 +432,7 @@
     const readOnly=Boolean(!adminCorrection&&state.project?.can_edit===false);
     const locked=Boolean(methodologyLocked||readOnly);
     const canReplaceLocked=Boolean(methodologyLocked&&!readOnly);
-    const lockChip=methodologyLocked?'🔒 Situation socle — texte non modifiable':'Lecture seule';
+    const showMethodologyChip=Boolean(methodologyLocked&&!readOnly);
     const linkedLabel=linkedSituationLabel(s,index,ch.situations);
     const originalText=s.original_content||s.content||'';
     const submitted=submittedSituation(s.id);
@@ -450,7 +450,7 @@
     const tone=situationTone(s,index,ch);
     return `<article class="composer-situation ${tone} ${locked?'is-locked':''} ${customized?'has-customization':''}" data-situation-card="${esc(s.id)}">
       <div class="composer-situation-head">
-        <div class="composer-situation-tags">${locked?`<span class="composer-lock-chip">${lockChip}</span>`:`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':''}</div>
+        <div class="composer-situation-tags">${showMethodologyChip?`<span class="composer-lock-chip">🔒 Situation socle — texte non modifiable</span>`:`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':''}</div>
         <div class="composer-situation-head-actions"><span class="composer-origin">Situation Me&YouToo</span><button class="button button-ghost button-small composer-collapse-situation" type="button" data-collapse-situation="${esc(s.id)}" aria-expanded="false">Déplier</button></div>
       </div>
       <div class="composer-situation-body" id="situation-body-${esc(s.id)}" hidden>
@@ -458,8 +458,7 @@
       ${situationText}
       <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="false"><span data-toggle-label>Voir les réponses et les scores</span> <span aria-hidden="true">⌄</span></button>
       <div class="composer-answers" id="answers-${esc(s.id)}" hidden>${answerRows}</div>
-      <div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" hidden>🌐 Traduction et adaptation locale éventuelle</button></div>
-      <div class="translation-sync-warning" data-live-translation-warning ${customized&&((state.project?.locales||[]).length>1)?'':'hidden'}>⚠️ Vous modifiez le contenu de référence. Les traductions et adaptations locales existantes ne sont pas mises à jour automatiquement et doivent être vérifiées.</div>
+      ${((projectCountryLocales(state.project)[state.country]||state.project?.locales||[]).length>1)?`<div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" hidden>🌐 Vérifier les versions linguistiques</button></div><div class="translation-sync-warning" data-live-translation-warning ${customized?'':'hidden'}>⚠️ Vous modifiez le contenu de référence. Les autres versions linguistiques doivent être vérifiées.</div>`:''}
       ${!locked?`<div class="composer-inline-help composer-context-help"><strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span></div>
       <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${customized?'Enregistré':'Enregistrement automatique'}</span></span></div>
       <div class="composer-actions">

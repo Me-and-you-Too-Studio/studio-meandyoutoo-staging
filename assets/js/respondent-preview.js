@@ -2,7 +2,7 @@
 const previewSource=new URLSearchParams(location.search).get('source')||'live';
 const liveProjectPreview=(new URLSearchParams(location.search).get('mode')||((new URLSearchParams(location.search).get('projectId'))?'project':'catalog'))==='project'&&previewSource!=='saved';
 let previewLocale=String(new URLSearchParams(location.search).get('lang')||document.documentElement.lang||'fr').toLowerCase().replaceAll('_','-');
-const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=h=>{let x=document.createElement('div');x.innerHTML=String(h||'').replace(/<\s*br\s*\/?\s*>/gi,'\n').replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi,'</$1>\n\n');return(x.textContent||'').replace(/\u00a0/g,' ').replace(/[ \t]+\n/g,'\n').replace(/\n[ \t]+/g,'\n').replace(/\n{3,}/g,'\n\n').trim()},q=new URLSearchParams(location.search),pid=q.get('projectId'),theme=q.get('theme')||'',mode=q.get('mode')||(pid?'project':'catalog'),root=$('#rp');
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=h=>{let x=document.createElement('div');x.innerHTML=String(h||'').replace(/<\s*br\s*\/?\s*>/gi,'\n').replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi,'</$1>\n\n');return(x.textContent||'').replace(/\u00a0/g,' ').replace(/[ \t]+\n/g,'\n').replace(/\n[ \t]+/g,'\n').replace(/\n{3,}/g,'\n\n').replace(/([.!?])(?=[A-ZÀ-ÖØ-Þ])/g,'$1 ').trim()},q=new URLSearchParams(location.search),pid=q.get('projectId'),theme=q.get('theme')||'',mode=q.get('mode')||(pid?'project':'catalog'),root=$('#rp');
 let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[],availablePreviewLocales=['fr'],previewCountry='FR',previewCountries=[],previewCountryLocales={},contextLoading=false,contextError='';
 
 function apiBase(){
@@ -57,7 +57,7 @@ function normalizeSituation(s,sidx,cidx){
   const scale=isFivePointScaleAnswers(raw);
   return {id:s.id||s.source_id||`${cidx}-${sidx}`,content:s.content||s.original_content||s.text||'',scaleType:scale?'five-point':null,answers:scale?normalizeScaleAnswers(raw):shuffle(raw.map(normalizeAnswer))};
 }
-function normalizeResources(list){return (Array.isArray(list)?list:[]).map((r,i)=>({title:String(r?.title||r?.titre||r?.label||r?.text||`Ressource ${i+1}`).trim(),url:String(r?.url||r?.href||r?.link||'').trim()})).filter(r=>r.title&&/^https?:\/\//i.test(r.url))}
+function normalizeResources(list){return (Array.isArray(list)?list:[]).map((r,i)=>{const title=String(r?.title||r?.titre||r?.label||r?.text||`Ressource ${i+1}`).trim(),url=String(r?.url||r?.href||r?.link||'').trim(),documentId=String(r?.documentId??r?.document_id??'').trim(),legacyFilename=String(r?.legacyFilename||r?.legacy_filename||r?.filename||'').trim(),type=String(r?.type||'').toLowerCase()||(documentId?'document':legacyFilename&&!url?'legacy_document':'link');return{title,type,url,documentId,legacyFilename,filename:String(r?.filename||legacyFilename||'').trim()}}).filter(r=>r.title&&(r.type==='document'?r.documentId:r.type==='legacy_document'?r.legacyFilename:/^https?:\/\//i.test(r.url)))}
 function normalizeMedia(list){const rows=(Array.isArray(list)?list:[]).map(m=>({id:m.id,title:String(m.title||'Vidéo'),placement:m.placement,profile_position:m.profile_position===null||m.profile_position===undefined?null:Number(m.profile_position),locale:String(m.locale||'').toLowerCase().replaceAll('_','-'),playback_path:String(m.playback_path||'')})).filter(m=>m.id&&m.playback_path);const exact=rows.filter(m=>m.locale===previewLocale);return exact.length?exact:(previewLocale==='fr'?rows.filter(m=>!m.locale):[])}
 function norm(x){
   let pr=x.project||{},live=mode==='project'&&previewSource!=='saved'?JSON.parse(sessionStorage.getItem('meayt_preview')||'null'):null;
@@ -113,59 +113,63 @@ function projectPreviewContext(payload){
   return {countries,byCountry};
 }
 function countryLabel(code){
-  const cc=normalizeCountryCode(code),special={WW:'International',WORLDWIDE:'International',INT:'International',GLOBAL:'International',ASIA:'Asie'};
+  const cc=normalizeCountryCode(code),special={WW:'International',WORLDWIDE:'International',INT:'International',GLOBAL:'International',ASIA:'Asie','250':'France','276':'Allemagne','032':'Argentine','040':'Autriche','076':'Brésil','124':'Canada','152':'Chili','156':'Chine','158':'Taïwan','208':'Danemark','724':'Espagne','840':'États-Unis','344':'Hong Kong','392':'Japon','484':'Mexique','578':'Norvège','591':'Panama','620':'Portugal','752':'Suède','756':'Suisse','858':'Uruguay','410':'Corée du Sud'};
   if(special[cc])return special[cc];
   try{return new Intl.DisplayNames(['fr'],{type:'region'}).of(cc)||cc}catch(_){return cc}
 }
 const localeNamesFr={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',br:'Portugais Brésil',bg:'Bulgare',ja:'Japonais','ko-kr':'Coréen',ko:'Coréen',zf:'Chinois simplifié',zh:'Chinois traditionnel',nl:'Néerlandais','nl-be':'Néerlandais (Belgique)',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',tr:'Turc',cs:'Tchèque',sk:'Slovaque',id:'Indonésien',ar:'Arabe'};
 function localeLabelFr(code){const loc=normalizeLocaleCode(code);return `${loc.toUpperCase()} · ${localeNamesFr[loc]||loc.toUpperCase()}`}
 function resetPreviewProgress(){step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[]}
+function contextSelectionState(){
+  const countries=previewCountries||[],countryCount=countries.length;
+  const locales=previewCountry?(previewCountryLocales[previewCountry]||[]):[];
+  const needsCountry=countryCount>1;
+  const needsLocale=Boolean(previewCountry&&locales.length>1);
+  return {countryCount,locales,needsCountry,needsLocale,ready:Boolean(previewCountry&&previewLocale&&!contextLoading&&!contextError)};
+}
 function contextChooser(){
   if(!liveProjectPreview)return'';
-  const countryButtons=previewCountries.map(code=>`<button type="button" class="rp-context-choice ${code===previewCountry?'selected':''}" data-preview-country="${esc(code)}" aria-pressed="${code===previewCountry?'true':'false'}"><span>🌍</span><strong>${esc(countryLabel(code))}</strong></button>`).join('');
-  const locales=previewCountry?(previewCountryLocales[previewCountry]||[]): [];
-  const languageBlock=previewCountry
-    ? `<div class="rp-context-step rp-context-language-step"><div class="rp-context-step-head"><span>2</span><div><strong>Choisissez la langue</strong><small>Langues activées pour ${esc(countryLabel(previewCountry))}</small></div></div><div class="rp-context-options">${locales.length?locales.map(loc=>`<button type="button" class="rp-context-choice rp-context-locale ${loc===previewLocale?'selected':''}" data-preview-locale="${esc(loc)}" aria-pressed="${loc===previewLocale?'true':'false'}"><strong>${esc(localeLabelFr(loc))}</strong></button>`).join(''):`<div class="rp-context-empty">Aucune langue n’est activée pour ce périmètre.</div>`}</div></div>`
-    :'';
-  const ready=previewCountry&&previewLocale&&!contextLoading
-    ? `<div class="rp-context-ready"><span>✓</span><div><strong>Aperçu prêt</strong><small>${esc(countryLabel(previewCountry))} · ${esc(localeLabelFr(previewLocale))}</small></div></div>`
-    :'';
-  const loading=contextLoading?`<div class="rp-context-loading" role="status">Chargement du contenu ${esc(countryLabel(previewCountry))} · ${esc(localeLabelFr(previewLocale))}…</div>`:'';
+  const state=contextSelectionState();
+  if(state.countryCount===1&&state.locales.length===1)return'';
+  const blocks=[];
+  let stepNumber=1;
+  if(state.needsCountry){
+    const countryButtons=previewCountries.map(code=>`<button type="button" class="rp-context-choice ${code===previewCountry?'selected':''}" data-preview-country="${esc(code)}" aria-pressed="${code===previewCountry?'true':'false'}"><span>🌍</span><strong>${esc(countryLabel(code))}</strong></button>`).join('');
+    blocks.push(`<div class="rp-context-step"><div class="rp-context-step-head"><span>${stepNumber++}</span><div><strong>Choisissez le périmètre</strong><small>${previewCountries.length} périmètres disponibles</small></div></div><div class="rp-context-options">${countryButtons||'<div class="rp-context-empty">Aucun périmètre configuré pour cette campagne.</div>'}</div></div>`);
+  }
+  if(previewCountry&&state.needsLocale){
+    blocks.push(`<div class="rp-context-step ${state.needsCountry?'rp-context-language-step':''}"><div class="rp-context-step-head"><span>${stepNumber++}</span><div><strong>Choisissez la langue</strong><small>${state.locales.length} langues disponibles</small></div></div><div class="rp-context-options">${state.locales.map(loc=>`<button type="button" class="rp-context-choice rp-context-locale ${loc===previewLocale?'selected':''}" data-preview-locale="${esc(loc)}" aria-pressed="${loc===previewLocale?'true':'false'}"><strong>${esc(localeLabelFr(loc))}</strong></button>`).join('')}</div></div>`);
+  }
+  const loading=contextLoading?`<div class="rp-context-loading" role="status">Chargement du parcours…</div>`:'';
   const error=contextError?`<div class="rp-context-error" role="alert">${esc(contextError)}</div>`:'';
-  return `<section class="rp-context-chooser" aria-label="Choix du périmètre et de la langue"><div class="rp-context-intro"><strong>Prévisualisez le parcours réel d’un répondant</strong><p>Choisissez d’abord son périmètre, puis une langue réellement activée pour ce périmètre.</p></div><div class="rp-context-step"><div class="rp-context-step-head"><span>1</span><div><strong>Choisissez le périmètre</strong><small>${previewCountries.length} ${previewCountries.length>1?'périmètres disponibles':'périmètre disponible'}</small></div></div><div class="rp-context-options">${countryButtons||'<div class="rp-context-empty">Aucun périmètre configuré pour cette campagne.</div>'}</div></div>${languageBlock}${loading}${error}${ready}</section>`;
+  const instruction=state.needsCountry&&(!previewCountry||!state.ready)?'Choisissez le périmètre correspondant au répondant.':state.needsLocale&&!previewLocale?'Choisissez la langue du répondant.':'Le parcours réel de la campagne est prêt.';
+  return `<section class="rp-context-chooser" aria-label="Choix du parcours répondant"><div class="rp-context-intro"><strong>Prévisualisez le parcours réel d’un répondant</strong><p>${esc(instruction)}</p></div>${blocks.join('')}${loading}${error}</section>`;
+}
+async function loadSelectedPreviewContext(){
+  if(!previewCountry||!previewLocale)return;
+  contextError='';contextLoading=true;render();
+  try{
+    const payload=await api(`/api/projects/${pid}/composer?respondentPreview=1&countryCode=${encodeURIComponent(previewCountry)}&locale=${encodeURIComponent(previewLocale)}`);
+    norm(payload);resetPreviewProgress();
+  }catch(error){contextError=error.message||'Impossible de charger ce parcours.';previewLocale='';}
+  finally{contextLoading=false;render();}
 }
 function bindContextChooser(){
   if(!liveProjectPreview)return;
-  root.querySelectorAll('[data-preview-country]').forEach(button=>button.onclick=()=>{
+  root.querySelectorAll('[data-preview-country]').forEach(button=>button.onclick=async()=>{
     const country=normalizeCountryCode(button.dataset.previewCountry);
-    if(country===previewCountry&&previewLocale==='')return;
+    if(!country||contextLoading)return;
     previewCountry=country;
-    previewLocale='';
     availablePreviewLocales=previewCountryLocales[country]||[];
-    contextError='';
-    contextLoading=false;
-    resetPreviewProgress();
-    render();
+    previewLocale=availablePreviewLocales.length===1?availablePreviewLocales[0]:'';
+    contextError='';resetPreviewProgress();
+    if(previewLocale)await loadSelectedPreviewContext();else render();
   });
   root.querySelectorAll('[data-preview-locale]').forEach(button=>button.onclick=async()=>{
     const locale=normalizeLocaleCode(button.dataset.previewLocale);
     if(!previewCountry||!locale||contextLoading)return;
-    previewLocale=locale;
-    availablePreviewLocales=previewCountryLocales[previewCountry]||[];
-    contextError='';
-    contextLoading=true;
-    render();
-    try{
-      const payload=await api(`/api/projects/${pid}/composer?respondentPreview=1&countryCode=${encodeURIComponent(previewCountry)}&locale=${encodeURIComponent(previewLocale)}`);
-      norm(payload);
-      resetPreviewProgress();
-    }catch(error){
-      contextError=error.message||'Impossible de charger ce parcours.';
-      previewLocale='';
-    }finally{
-      contextLoading=false;
-      render();
-    }
+    previewLocale=locale;availablePreviewLocales=previewCountryLocales[previewCountry]||[];resetPreviewProgress();
+    await loadSelectedPreviewContext();
   });
 }
 
@@ -180,7 +184,9 @@ const answerKey=(c=ci,s=qi)=>`${c}:${s}`;
 
 function intro(){
   const contextReady=!liveProjectPreview||Boolean(previewCountry&&previewLocale&&!contextLoading&&!contextError);
-  root.innerHTML=head()+`<section class="rp-card rp-intro"><em>${esc(modeLabel())}</em><h1>${esc(d.title)}</h1><p class="rp-intro-copy">${esc(d.intro)}</p>${contextChooser()}<aside>${mode==='project'?'Cet aperçu reprend le contenu actuellement composé et paramétré pour cette campagne.':'Cet aperçu présente le parcours standard proposé dans le catalogue, avant personnalisation.'} Les réponses utilisées ici servent uniquement à calculer le rendu de l’aperçu et ne sont jamais enregistrées.</aside><button id="start" class="button button-primary" ${contextReady?'':'disabled'}>${liveProjectPreview&&!contextReady?'Choisissez un périmètre et une langue':'Commencer l’autodiagnostic'}</button></section>`;
+  const selection=contextSelectionState();
+  const startLabel=!liveProjectPreview||contextReady?'Commencer l’autodiagnostic':selection.needsCountry&&!previewCountry?'Choisissez un périmètre':selection.needsLocale&&!previewLocale?'Choisissez une langue':'Chargement du parcours…';
+  root.innerHTML=head()+`<section class="rp-card rp-intro"><em>${esc(modeLabel())}</em><h1>${esc(d.title)}</h1><p class="rp-intro-copy">${esc(d.intro)}</p>${contextChooser()}<aside>${mode==='project'?'Cet aperçu reprend le contenu actuellement composé et paramétré pour cette campagne.':'Cet aperçu présente le parcours standard proposé dans le catalogue, avant personnalisation.'} Les réponses utilisées ici servent uniquement à calculer le rendu de l’aperçu et ne sont jamais enregistrées.</aside><button id="start" class="button button-primary" ${contextReady?'':'disabled'}>${esc(startLabel)}</button></section>`;
   bindContextChooser();
   const start=$('#start');if(start)start.onclick=()=>{if(!contextReady)return;step=0;render()}
 }
@@ -274,21 +280,38 @@ function colleaguesHtml(chapter,result,chapterIndex){
   const dist=colleagueDistribution(chapter,result?.profile,chapterIndex),mine=dist.find(x=>x.own)||dist[0];
   return `<div class="rp-colleague-wrap"><button type="button" class="rp-colleague-toggle" data-colleague-toggle="${chapterIndex}"><span>Afficher le résultat de mes collègues</span><span aria-hidden="true">⌄</span></button><div class="rp-colleague-body" data-colleague-body="${chapterIndex}" hidden><div class="rp-colleague-own"><strong>${mine?.pct??0}<small>%</small></strong><span>de vos collègues ont le même profil que vous</span></div><div class="rp-colleague-dist">${dist.map(x=>`<div class="rp-colleague-row"><span class="rp-colleague-dot ${profileTone(x.profile)}"></span><strong>${x.pct}%</strong><div><b>${esc(x.profile?.title||'Profil')}</b>${x.own?'<em>Votre profil</em>':''}</div></div>`).join('')}</div><p class="rp-fictive-note">Comparaison fictive affichée uniquement pour simuler la restitution répondant.</p></div></div>`;
 }
+async function downloadResourceDocument(documentId,filename){
+  try{
+    const base=typeof window.StudioAPI?.base==='function'?window.StudioAPI.base():apiBase();
+    const token=localStorage.getItem('studio_token')||'';
+    const response=await fetch(`${String(base).replace(/\/$/,'')}/api/projects/${encodeURIComponent(pid)}/resource-library/${encodeURIComponent(documentId)}/download`,{headers:token?{Authorization:`Bearer ${token}`}:{}});
+    if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data.error||'Téléchargement impossible');}
+    const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename||'document.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }catch(error){const note=root.querySelector('[data-resource-download-note]');if(note){note.textContent=error.message;note.hidden=false;setTimeout(()=>{note.hidden=true},3200)}}
+}
 function bindFinalInteractions(){
   root.querySelectorAll('[data-colleague-toggle]').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.colleagueToggle,body=root.querySelector(`[data-colleague-body="${id}"]`),open=body&&!body.hidden;if(body)body.hidden=open;btn.classList.toggle('open',!open);btn.querySelector('span:last-child').textContent=open?'⌄':'⌃';});
   const resourceToggle=root.querySelector('[data-resource-toggle]');if(resourceToggle)resourceToggle.onclick=()=>{const body=root.querySelector('[data-resource-body]'),open=body&&!body.hidden;if(body)body.hidden=open;resourceToggle.classList.toggle('open',!open);resourceToggle.querySelector('span:last-child').textContent=open?'⌄':'⌃';};
+  root.querySelectorAll('[data-resource-document]').forEach(btn=>btn.onclick=()=>downloadResourceDocument(btn.dataset.resourceDocument,btn.dataset.resourceFilename));
   const reportBtn=root.querySelector('[data-report-download]');if(reportBtn)reportBtn.onclick=()=>{const note=root.querySelector('[data-report-note]');if(note){note.hidden=false;setTimeout(()=>{note.hidden=true},2600)}};
 }
 function resourcesHtml(){
   const catalogResources=[
-    {title:'Contactez vos référents',url:''},
-    {title:'Consultez notre règlement intérieur',url:''},
-    {title:'Découvrez nos ressources internes',url:''}
+    {title:'Contactez vos référents',type:'demo',url:''},
+    {title:'Consultez notre règlement intérieur',type:'demo',url:''},
+    {title:'Découvrez nos ressources internes',type:'demo',url:''}
   ];
   const list=mode==='catalog'?catalogResources:(d.resources||[]);
   if(!list.length)return'';
-  return `<section class="rp-resources"><button type="button" class="rp-resource-toggle" data-resource-toggle><span>Approfondissez vos connaissances</span><span aria-hidden="true">⌄</span></button><div class="rp-resource-body" data-resource-body hidden>${list.map((r,i)=>r.url?`<a class="rp-resource-link" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer"><span>↗</span>${esc(r.title)}</a>`:`<button type="button" class="rp-resource-link rp-resource-link-demo" title="Exemple fictif dans l’aperçu"><span>›</span>${esc(r.title)}</button>`).join('')}</div></section>`
+  const rows=list.map(r=>{
+    if(r.type==='document'&&r.documentId)return `<button type="button" class="rp-resource-link" data-resource-document="${esc(r.documentId)}" data-resource-filename="${esc(r.filename||'document.pdf')}"><span>↓</span>${esc(r.title)}</button>`;
+    if(r.type==='legacy_document')return `<button type="button" class="rp-resource-link rp-resource-link-demo" disabled title="Document historique à rattacher à la médiathèque"><span>PDF</span>${esc(r.title)}</button>`;
+    if(r.url)return `<a class="rp-resource-link" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer"><span>↗</span>${esc(r.title)}</a>`;
+    return `<button type="button" class="rp-resource-link rp-resource-link-demo" title="Exemple fictif dans l’aperçu"><span>›</span>${esc(r.title)}</button>`;
+  }).join('');
+  return `<section class="rp-resources"><button type="button" class="rp-resource-toggle" data-resource-toggle><span>Approfondissez vos connaissances</span><span aria-hidden="true">⌄</span></button><div class="rp-resource-body" data-resource-body hidden>${rows}<p class="rp-report-preview-note" data-resource-download-note hidden></p></div></section>`
 }
+
 function reportDownloadHtml(){return `<button type="button" class="rp-report-download" data-report-download>Téléchargez ce rapport (PDF)</button><p class="rp-report-preview-note" data-report-note hidden>Aperçu : aucun PDF n’est généré.</p>`}
 
 function radarValue(result,chapter){
@@ -321,12 +344,15 @@ async function loadPreviewData(preserveStep=false){try{
       const context=projectPreviewContext(base);
       previewCountries=context.countries;
       previewCountryLocales=context.byCountry;
-      previewCountry='';
-      previewLocale='';
-      availablePreviewLocales=[];
+      previewCountry=previewCountries.length===1?previewCountries[0]:'';
+      availablePreviewLocales=previewCountry?(previewCountryLocales[previewCountry]||[]):[];
+      previewLocale=availablePreviewLocales.length===1?availablePreviewLocales[0]:'';
       contextLoading=false;
       contextError='';
-      norm(base);
+      if(previewCountry&&previewLocale){
+        const exact=await api(`/api/projects/${pid}/composer?respondentPreview=1&countryCode=${encodeURIComponent(previewCountry)}&locale=${encodeURIComponent(previewLocale)}`);
+        norm(exact);
+      }else norm(base);
     }else{
       const base=await api(`/api/projects/${pid}/composer?respondentPreview=1&locale=${encodeURIComponent(previewLocale)}`);
       previewCountry=String(base.project?.selected_country_code||'FR').toUpperCase();

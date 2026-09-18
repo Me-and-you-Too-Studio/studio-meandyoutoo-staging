@@ -13312,3 +13312,22 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 /* Composer — masquage strict des contrôles inutiles sur campagne mono-périmètre / mono-contexte */
 #composer-country-tabs[hidden],
 #composer-campaign-context[hidden]{display:none!important}
+
+/* 2026-09-18 — contexte simple + ressources documentaires */
+.profiles-context-grid.is-single{grid-template-columns:1fr}
+.result-resource-copy>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#61798c;font-size:.8rem}
+.result-resource-row.is-legacy-pending{border-color:#f0cf91;background:#fffaf0}
+.result-resource-type-choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.result-resource-type-choice label{display:flex;cursor:pointer}
+.result-resource-type-choice input{position:absolute;opacity:0;pointer-events:none}
+.result-resource-type-choice span{display:flex;align-items:center;justify-content:center;width:100%;min-height:46px;padding:10px 14px;border:1.5px solid var(--line);border-radius:13px;background:#fff;color:var(--ink);font-weight:800}
+.result-resource-type-choice input:checked+span{border-color:var(--teal);background:#edf8f8;color:#08727b;box-shadow:inset 0 0 0 1px var(--teal)}
+.result-resource-document-field{display:grid;gap:9px}
+.result-resource-document-field select{width:100%;border:1px solid var(--line);border-radius:14px;padding:13px 14px;background:#fbfcfd;color:var(--ink);font:500 .95rem Asap,sans-serif}
+.result-resource-document-field small{color:#718497;font-size:.76rem;line-height:1.45}
+.result-resource-admin-upload{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center;margin-top:6px;padding:12px;border:1px dashed #cfdde5;border-radius:13px;background:#f8fbfc}
+.result-resource-admin-upload small{grid-column:1/-1}
+.result-preview-resource{display:flex;align-items:center;justify-content:center;gap:8px}
+.rp-resource-link[disabled]{opacity:.6;cursor:not-allowed;background:#fbfcfd}
+@media(max-width:700px){.result-resource-type-choice{grid-template-columns:1fr}.result-resource-admin-upload{grid-template-columns:1fr}.result-resource-admin-upload .button{width:100%}}
+.result-resource-document-field[hidden],.result-resource-admin-upload[hidden]{display:none!important}

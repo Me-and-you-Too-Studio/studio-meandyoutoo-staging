@@ -51,7 +51,7 @@
   async function refreshValidationQuota(){
     if(document.hidden||!project||currentUser?.role==='admin'||Date.now()-lastQuotaRefresh<800)return;
     lastQuotaRefresh=Date.now();
-    try{const quotaData=await api('/api/me/organization-quota');renderValidationQuota(quotaData.organization);}catch(error){console.warn('Actualisation des passations impossible',error);}
+    try{const quotaData=await api(`/api/projects/${projectId}/quota`);renderValidationQuota(quotaData.organization);}catch(error){console.warn('Actualisation des passations impossible',error);}
   }
   async function saveValidationSettings({silent=false}={}){
     if(!project||project.status!=='draft')return true;
@@ -175,7 +175,7 @@
   async function load(){
     try{
       if(!projectId){location.href='mes-campagnes.html';return;}
-      const [d,quotaData,me]=await Promise.all([api(`/api/projects/${projectId}/composer`),api('/api/me/organization-quota').catch(()=>({organization:null})),api('/api/me')]);
+      const [d,quotaData,me]=await Promise.all([api(`/api/projects/${projectId}/composer`),api(`/api/projects/${projectId}/quota`).catch(()=>({organization:null})),api('/api/me')]);
       project=d.project;reviewEvents=d.reviewEvents||[];currentChapters=d.chapters||[];currentUser=me.user;studioSubscription=me.studioSubscription||null;if(!theme)theme=project?.theme_slug||'';const chapters=currentChapters,quota=quotaData.organization;
       if(project.status!=='draft'){document.querySelector('.page-title').textContent='Relecture de la configuration';document.querySelector('.topbar .lead').textContent=currentUser?.role==='admin'?'Contrôlez et corrigez la configuration avant sa publication.':'Suivez la relecture Me&YouToo et validez les modifications importantes si nécessaire.';}if(currentUser?.role==='admin')$('validation-credit').hidden=true;
       const socioLabels=(project.sociodemo||[]).flatMap(item=>[item.q,...(item.opts||[]).filter(option=>option.subcriterion).map(option=>`${option.subcriterion.q} (si « ${option.label} »)`)]);
