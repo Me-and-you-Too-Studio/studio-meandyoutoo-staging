@@ -232,10 +232,96 @@
           body: JSON.stringify({ title, documentId: documentItem.id }),
         });
         dialog.close();
+        await loadMediaLibrary();
+        renderMediaLibrary();
         showMediaMessage("PDF associé à la campagne. Il apparaîtra dans les ressources proposées après les résultats.");
       } catch (error) {
         button.disabled = false;
         showMediaMessage(error.message || "Association impossible.", "danger");
+      }
+    };
+    dialog.showModal();
+  }
+  async function updateMediaAssociationTitles(documentItem, inputs) {
+    const grouped = new Map();
+    inputs.forEach((input) => {
+      const projectId = String(input.dataset.mediaEditProject || "");
+      const title = input.value.trim();
+      if (!projectId || !title) return;
+      if (!grouped.has(projectId)) grouped.set(projectId, []);
+      grouped.get(projectId).push({ index: Number(input.dataset.mediaEditResourceIndex), title });
+    });
+    for (const [projectId, changes] of grouped.entries()) {
+      const data = await StudioAPI.request("/api/admin/projects/" + encodeURIComponent(projectId) + "/result-resources");
+      const resources = Array.isArray(data?.resources) ? data.resources : [];
+      let changed = false;
+      resources.forEach((item, index) => {
+        if (String(item?.documentId ?? item?.document_id ?? "") !== String(documentItem.id)) return;
+        const match = changes.find((change) => change.index === index) || changes.shift();
+        if (match && match.title && match.title !== item.title) {
+          item.title = match.title;
+          changed = true;
+        }
+      });
+      if (changed) {
+        await StudioAPI.request("/api/admin/projects/" + encodeURIComponent(projectId) + "/result-resources", {
+          method: "PATCH",
+          body: JSON.stringify({ resultButtons: resources }),
+        });
+      }
+    }
+  }
+  function openMediaEdit(documentItem) {
+    const dialog = document.createElement("dialog");
+    dialog.className = "admin-dialog admin-media-association-dialog";
+    const associations = Array.isArray(documentItem.associations) ? documentItem.associations : [];
+    const associationFields = associations.length
+      ? '<div class="admin-media-edit-associations"><h3>Texte affiché dans les campagnes</h3><p class="hint">Vous pouvez corriger ici le texte visible par les répondants pour chaque campagne utilisant ce PDF.</p>' + associations.map((association) => '<label class="field"><span>' + esc(association.campaignName || ("Campagne " + association.projectId)) + '</span><input maxlength="160" required data-media-edit-project="' + esc(association.projectId) + '" data-media-edit-resource-index="' + esc(association.resourceIndex) + '" value="' + esc(association.title || "") + '"></label>').join("") + '</div>'
+      : '<p class="hint">Ce PDF n’est associé à aucune campagne pour le moment.</p>';
+    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Médiathèque client</p><h2>Modifier le document</h2><label class="field"><span>Nom du document</span><input id="media-edit-title" maxlength="160" value="' + esc(documentItem.title || "") + '" placeholder="Nom interne du document"></label><div class="field"><span>Fichier actuel</span><strong>' + esc(documentItem.filename || "document.pdf") + '</strong></div><label class="field"><span>Remplacer le PDF <small>(facultatif)</small></span><input id="media-edit-file" type="file" accept="application/pdf,.pdf"><small>Laissez vide pour conserver le fichier actuel.</small></label>' + associationFields + '<p class="composer-alert" id="media-edit-error" data-tone="danger" hidden></p><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" type="button" id="media-edit-confirm">Enregistrer les modifications</button></div></form>';
+    document.body.appendChild(dialog);
+    dialog.addEventListener("close", () => dialog.remove(), { once: true });
+    dialog.querySelector("#media-edit-confirm").onclick = async () => {
+      const button = dialog.querySelector("#media-edit-confirm");
+      const error = dialog.querySelector("#media-edit-error");
+      const file = dialog.querySelector("#media-edit-file")?.files?.[0];
+      if (file && (!/\.pdf$/i.test(file.name) || (file.type && file.type !== "application/pdf"))) {
+        error.textContent = "Le fichier doit être un PDF.";
+        error.hidden = false;
+        return;
+      }
+      if (file && file.size > 6 * 1024 * 1024) {
+        error.textContent = "Le PDF ne doit pas dépasser 6 Mo.";
+        error.hidden = false;
+        return;
+      }
+      const associationInputs = [...dialog.querySelectorAll("[data-media-edit-project]")];
+      if (associationInputs.some((input) => !input.value.trim())) {
+        error.textContent = "Le texte affiché aux répondants ne peut pas être vide.";
+        error.hidden = false;
+        return;
+      }
+      button.disabled = true;
+      try {
+        const payload = { title: dialog.querySelector("#media-edit-title").value.trim() };
+        if (file) {
+          payload.filename = file.name;
+          payload.mimeType = "application/pdf";
+          payload.contentBase64 = await fileToBase64(file);
+        }
+        await StudioAPI.request("/api/admin/organizations/" + encodeURIComponent(organization.id) + "/resource-library/" + encodeURIComponent(documentItem.id), {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        });
+        await updateMediaAssociationTitles(documentItem, associationInputs);
+        dialog.close();
+        await loadMediaLibrary();
+        renderMediaLibrary();
+        showMediaMessage("Document et textes associés mis à jour.");
+      } catch (err) {
+        button.disabled = false;
+        error.textContent = err.message || "Modification impossible.";
+        error.hidden = false;
       }
     };
     dialog.showModal();
@@ -246,12 +332,20 @@
     if (!resourceDocuments.length) {
       root.innerHTML = '<div class="admin-client-media-empty"><strong>Aucun PDF dans la médiathèque de ce client.</strong><span>Ajoutez le premier document ci-dessus. Il pourra ensuite être utilisé dans ses campagnes.</span></div>';
     } else {
-      root.innerHTML = resourceDocuments.map((doc) => '<article class="admin-client-media-card"><div class="admin-client-media-icon">PDF</div><div class="admin-client-media-copy"><strong>' + esc(doc.title || doc.filename) + '</strong><span>' + esc(doc.filename) + ' · ' + formatBytes(doc.size_bytes) + '</span><small>Ajouté le ' + date(doc.created_at) + '</small></div><div class="admin-client-media-actions"><button class="button button-secondary button-small" type="button" data-media-download="' + esc(doc.id) + '">Télécharger</button><button class="button button-primary button-small" type="button" data-media-associate="' + esc(doc.id) + '">Associer à une campagne</button><button class="button button-ghost button-small" type="button" data-media-delete="' + esc(doc.id) + '">Supprimer</button></div></article>').join("");
+      root.innerHTML = resourceDocuments.map((doc) => {
+        const associations = Array.isArray(doc.associations) ? doc.associations : [];
+        const usage = associations.length ? ' · ' + associations.length + ' campagne' + (associations.length > 1 ? 's' : '') : '';
+        return '<article class="admin-client-media-card"><div class="admin-client-media-icon">PDF</div><div class="admin-client-media-copy"><strong>' + esc(doc.title || doc.filename) + '</strong><span>' + esc(doc.filename) + ' · ' + formatBytes(doc.size_bytes) + usage + '</span><small>Ajouté le ' + date(doc.created_at) + '</small></div><div class="admin-client-media-actions"><button class="button button-secondary button-small" type="button" data-media-download="' + esc(doc.id) + '">Télécharger</button><button class="button button-secondary button-small" type="button" data-media-edit="' + esc(doc.id) + '">Modifier</button><button class="button button-primary button-small" type="button" data-media-associate="' + esc(doc.id) + '">Associer à une campagne</button><button class="button button-ghost button-small" type="button" data-media-delete="' + esc(doc.id) + '">Supprimer</button></div></article>';
+      }).join("");
     }
     root.querySelectorAll("[data-media-download]").forEach((button) => button.onclick = async () => {
       const doc = resourceDocuments.find((item) => String(item.id) === String(button.dataset.mediaDownload));
       if (!doc) return;
       try { await downloadMediaDocument(doc.id, doc.filename); } catch (error) { showMediaMessage(error.message, "danger"); }
+    });
+    root.querySelectorAll("[data-media-edit]").forEach((button) => button.onclick = () => {
+      const doc = resourceDocuments.find((item) => String(item.id) === String(button.dataset.mediaEdit));
+      if (doc) openMediaEdit(doc);
     });
     root.querySelectorAll("[data-media-associate]").forEach((button) => button.onclick = () => {
       const doc = resourceDocuments.find((item) => String(item.id) === String(button.dataset.mediaAssociate));
@@ -590,7 +684,6 @@
     const hasProjects = orgProjects(organization).length > 0;
     const deleteBtn = $("#delete-client-cockpit");
     const archiveBtn = $("#archive-client-cockpit");
-    $("#open-client-folder").href = "client.html?organizationId=" + encodeURIComponent(organization.id);
     archiveBtn.textContent = organization.active === false ? "Réactiver le cockpit" : "Archiver le cockpit";
     archiveBtn.dataset.nextActive = organization.active === false ? "true" : "false";
     $("#client-delete-note").textContent = hasProjects

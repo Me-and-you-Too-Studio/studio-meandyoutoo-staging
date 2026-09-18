@@ -8,7 +8,7 @@
     <link rel="icon" href="assets/img/brand/favicon.png" />
     <link
       rel="stylesheet"
-      href="assets/css/style.css?v=20260918-client-media-library-1"
+      href="assets/css/style.css?v=20260918-client-media-library-2"
     />
   </head>
   <body>
@@ -27,7 +27,7 @@
           <div class="top-actions">
             <button class="button button-secondary" id="refresh-client">
               Actualiser</button
-            ><a class="button button-secondary" href="#client-media-library" id="open-client-media">📄 Médiathèque</a><button class="button button-primary" id="add-client-user">
+            ><button class="button button-primary" id="add-client-user">
               + Ajouter un accès
             </button>
           </div>
@@ -42,22 +42,6 @@
             </div>
           </div>
           <div id="client-contacts" class="admin-client-contacts"></div>
-        </section>
-        <section class="admin-folder-panel admin-client-media-library" id="client-media-library">
-          <div class="admin-section-title admin-client-media-title">
-            <div>
-              <h2>Médiathèque du client</h2>
-              <p>Ajoutez ici les PDF propres à cette entreprise. Ils pourront ensuite être associés aux ressources de fin de n’importe quelle campagne du client.</p>
-            </div>
-            <span class="admin-media-client-badge">Réservé à Me&amp;YouToo</span>
-          </div>
-          <div class="admin-client-media-upload">
-            <label class="field"><span>Nom du document <small>(facultatif)</small></span><input id="client-media-title" maxlength="160" placeholder="Ex. Harcèlement au travail — guide Infomil"></label>
-            <label class="field admin-client-media-file"><span>Fichier PDF</span><input id="client-media-file" type="file" accept="application/pdf,.pdf"></label>
-            <button class="button button-primary" type="button" id="client-media-upload">+ Ajouter le PDF</button>
-          </div>
-          <div id="client-media-alert" class="composer-alert" hidden></div>
-          <div id="client-media-list" class="admin-client-media-list"><p class="admin-empty">Chargement de la médiathèque…</p></div>
         </section>
         <section class="admin-client-folder-page">
           <div class="admin-section-title">
@@ -94,11 +78,26 @@
             </div>
           </div>
           <div class="admin-client-management-actions">
-            <a class="button button-primary" id="open-client-folder" href="#">Ouvrir le dossier client</a>
             <button class="button button-secondary" type="button" id="archive-client-cockpit">Archiver le cockpit</button>
             <button class="button button-danger" type="button" id="delete-client-cockpit">Supprimer le cockpit</button>
           </div>
           <p class="admin-client-management-note" id="client-delete-note"></p>
+        </section>
+        <section class="admin-folder-panel admin-client-media-library" id="client-media-library">
+          <div class="admin-section-title admin-client-media-title">
+            <div>
+              <h2>Médiathèque du client</h2>
+              <p>Ajoutez ici les PDF propres à cette entreprise. Ils pourront ensuite être associés aux ressources de fin de n’importe quelle campagne du client.</p>
+            </div>
+            <span class="admin-media-client-badge">Réservé à Me&amp;YouToo</span>
+          </div>
+          <div class="admin-client-media-upload">
+            <label class="field"><span>Nom du document <small>(facultatif)</small></span><input id="client-media-title" maxlength="160" placeholder="Ex. Harcèlement au travail — guide Infomil"></label>
+            <label class="field admin-client-media-file"><span>Fichier PDF</span><input id="client-media-file" type="file" accept="application/pdf,.pdf"></label>
+            <button class="button button-primary" type="button" id="client-media-upload">+ Ajouter le PDF</button>
+          </div>
+          <div id="client-media-alert" class="composer-alert" hidden></div>
+          <div id="client-media-list" class="admin-client-media-list"><p class="admin-empty">Chargement de la médiathèque…</p></div>
         </section>
       </main>
     </div>
@@ -236,6 +235,6 @@
     </dialog>
     <script src="assets/js/api.js?v=20260823-roles-1"></script>
     <script src="assets/js/app.js?v=20260902-notification-refresh-1"></script>
-    <script src="assets/js/client.js?v=20260918-client-media-library-1"></script>
+    <script src="assets/js/client.js?v=20260918-client-media-library-3"></script>
   </body>
 </html>
