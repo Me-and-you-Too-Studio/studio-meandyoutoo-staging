@@ -383,7 +383,10 @@
 
   function isLegalChapter(ch=state.chapters[state.active]){return canonical(ch?.slug||ch?.title).includes('harcelement')||canonical(ch?.slug||ch?.title).includes('agression sexuelle');}
   function bestAnswerLabel(){return isLegalChapter()?'Réponse correcte':'Réponse la plus appropriée';}
-  function isStereotypesChapter(ch=state.chapters[state.active]){return themeSlug==='sexisme'&&canonical(ch?.slug||ch?.title).includes('stereotype');}
+  function isStereotypesChapter(ch=state.chapters[state.active]){
+    return ['sexisme','mixite'].includes(String(themeSlug||'').toLowerCase())
+      && canonical(ch?.slug||ch?.title).includes('stereotype');
+  }
   function isAggressionChapter(ch=state.chapters[state.active]){return canonical(ch?.slug||ch?.title).includes('agression sexuelle');}
   function isHostileChapter(ch=state.chapters[state.active]){return themeSlug==='sexisme'&&canonical(ch?.slug||ch?.title).includes('sexisme hostile');}
   function chapterSituationRules(ch=state.chapters[state.active]){
@@ -447,15 +450,14 @@
 
   function situationHtml(s,index){
     const ch=state.chapters[state.active];
-    const stereotypes=themeSlug==='sexisme'&&canonical(ch.slug||ch.title).includes('stereotype');
-    // Règle produit : le seul contenu méthodologique non éditable dans Composer
-    // est le chapitre Stéréotypes du diagnostic Sexisme.
-    // Une campagne en lecture seule est un état de campagne, pas un « contenu obligatoire ».
-    const methodologyLocked=Boolean(themeSlug==='sexisme'&&stereotypes);
+    const stereotypes=isStereotypesChapter(ch);
+    // Règle méthodologique Me&YouToo : le chapitre Stéréotypes est un socle
+    // non modifiable dans Sexisme et dans Alliés de la mixité.
+    const methodologyLocked=Boolean(stereotypes);
     const adminCorrection=Boolean(state.project?.review_mode&&state.project?.can_edit===true);
     const readOnly=Boolean(!adminCorrection&&state.project?.can_edit===false);
     const locked=Boolean(methodologyLocked||readOnly);
-    const canReplaceLocked=Boolean(methodologyLocked&&!readOnly);
+    const canReplaceLocked=false;
     const showMethodologyChip=Boolean(methodologyLocked&&!readOnly);
     const linkedLabel=linkedSituationLabel(s,index,ch.situations);
     const originalText=s.original_content||s.content||'';
@@ -728,10 +730,10 @@
     const stereotypes=isStereotypesChapter(ch),status=chapterCountStatus(ch);
     $('chapter-kicker').textContent=`Chapitre ${state.active+1} · Questions`;
     $('chapter-title').textContent=ch.title;
-    const effectiveChapterLocked=Boolean(themeSlug==='sexisme'&&stereotypes);
+    const effectiveChapterLocked=Boolean(stereotypes);
     const campaignReadOnly=Boolean(state.project?.can_edit===false&&!state.project?.review_mode);
     $('chapter-desc').textContent=effectiveChapterLocked
-      ?'Les situations de ce chapitre constituent le socle Stéréotypes : leur texte et leurs réponses ne se modifient pas directement, mais chaque situation peut être remplacée par une autre de la bibliothèque Me&YouToo.'
+      ?'Les situations de ce chapitre constituent un socle méthodologique Me&YouToo : leur texte, leurs réponses et leur sélection ne sont pas modifiables.'
       :campaignReadOnly
         ?`${status.count} situation${status.count>1?'s':''} dans cette campagne historique · consultation en lecture seule.`
       :status.rules.min!=null
