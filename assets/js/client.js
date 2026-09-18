@@ -43,7 +43,9 @@
     filter = "all",
     sortMode = "updated-desc",
     publishOpened = false,
-    resourceDocuments = [];
+    resourceDocuments = [],
+    selectedExistingUser = null,
+    existingSearchTimer = null;
   const orgUsers = (o) => (Array.isArray(o?.users) ? o.users : []),
     orgProjects = (o) => (Array.isArray(o?.projects) ? o.projects : []),
     orgSectors = (o) =>
@@ -644,7 +646,7 @@
         : "") +
       '<button data-edit-client="' +
       u.id +
-      '">Modifier les droits</button><button data-toggle-client="' +
+      '">Modifier</button><button data-toggle-client="' +
       u.id +
       '" data-active="' +
       (u.active ? "false" : "true") +
@@ -1336,17 +1338,122 @@
     bindUserActions();
     bindProjectActions();
   }
+  function setUserAccessMode(mode) {
+    const editing = Boolean($("#user-form")?.dataset.editId);
+    const normalized = editing ? "edit" : mode === "existing" ? "existing" : "new";
+    const modeRoot = $("#user-access-mode"),
+      existingPanel = $("#user-existing-panel"),
+      newFields = $("#user-new-fields"),
+      saveButton = $("#save-user");
+    if (modeRoot) modeRoot.hidden = editing;
+    if (existingPanel) existingPanel.hidden = normalized !== "existing";
+    if (newFields) newFields.hidden = normalized === "existing";
+    ["#user-first", "#user-last", "#user-job-title", "#user-email"].forEach((selector) => {
+      const input = $(selector);
+      if (input) input.required = normalized !== "existing";
+    });
+    $$("[name='user-access-mode']").forEach((input) => {
+      input.checked = input.value === normalized;
+      input.closest(".user-access-mode-choice")?.classList.toggle("is-selected", input.checked);
+    });
+    if (!editing && normalized === "existing") {
+      if (saveButton) {
+        saveButton.textContent = selectedExistingUser?.active === false
+          ? "Rattacher et réactiver"
+          : "Rattacher ce compte";
+        saveButton.disabled = !selectedExistingUser;
+      }
+    } else if (saveButton) {
+      saveButton.disabled = false;
+      saveButton.textContent = editing ? "Enregistrer les droits" : "Créer et envoyer l’invitation";
+    }
+  }
+  function selectExistingUser(user) {
+    selectedExistingUser = user || null;
+    $("#user-existing-selected-id").value = user?.id || "";
+    const selected = $("#user-existing-selected"), results = $("#user-existing-results");
+    if (!user) {
+      selected.hidden = true;
+      selected.innerHTML = "";
+      setUserAccessMode("existing");
+      return;
+    }
+    if (results) results.innerHTML = "";
+    const organizations = Array.isArray(user.organizations) ? user.organizations : [];
+    selected.innerHTML =
+      '<div class="user-existing-selected-card"><span class="user-existing-avatar">' +
+      esc((user.first_name || user.email || "U").charAt(0).toUpperCase()) +
+      '</span><div><strong>' + esc(((user.first_name || "") + " " + (user.last_name || "")).trim() || user.email) +
+      '</strong><span>' + esc(user.email || "") + '</span><small>' +
+      (organizations.length ? "Accès actuel : " + organizations.map((item) => esc(item.name || item.id)).join(" · ") : "Aucun client actuellement rattaché") +
+      (user.active === false ? " · compte désactivé" : "") +
+      '</small></div><button type="button" class="button button-ghost" data-change-existing-user>Changer</button></div>';
+    selected.hidden = false;
+    selected.querySelector("[data-change-existing-user]")?.addEventListener("click", () => {
+      selectedExistingUser = null;
+      $("#user-existing-selected-id").value = "";
+      selected.hidden = true;
+      $("#user-existing-search").value = "";
+      $("#user-existing-search").focus();
+      setUserAccessMode("existing");
+    });
+    setUserAccessMode("existing");
+  }
+  function renderExistingUserResults(list, queryText) {
+    const root = $("#user-existing-results");
+    if (!root) return;
+    if (!queryText || queryText.length < 2) {
+      root.innerHTML = '<p class="hint">Commencez à saisir un nom, un prénom ou un email.</p>';
+      return;
+    }
+    if (!list.length) {
+      root.innerHTML = '<div class="user-existing-empty">Aucun compte Studio trouvé.</div>';
+      return;
+    }
+    root.innerHTML = list.map((user) => {
+      const organizations = Array.isArray(user.organizations) ? user.organizations : [];
+      const attached = user.attachedToTarget === true;
+      const current = organizations.map((item) => item.name || item.id).filter(Boolean).join(" · ");
+      return '<article class="user-existing-result ' + (attached ? 'is-attached' : '') + '">' +
+        '<div><strong>' + esc(((user.first_name || "") + " " + (user.last_name || "")).trim() || user.email) + '</strong>' +
+        '<span>' + esc(user.email || "") + '</span>' +
+        '<small>' + esc(current ? "Déjà rattaché : " + current : "Aucun client rattaché") + (user.active === false ? " · Compte désactivé" : "") + '</small></div>' +
+        (attached
+          ? '<span class="badge badge-muted">Déjà sur ce client</span>'
+          : '<button class="button button-secondary" type="button" data-select-existing-user="' + esc(user.id) + '">Sélectionner</button>') +
+        '</article>';
+    }).join("");
+    root.querySelectorAll("[data-select-existing-user]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const user = list.find((item) => String(item.id) === String(button.dataset.selectExistingUser));
+        if (user) selectExistingUser(user);
+      });
+    });
+  }
+  async function searchExistingUsers(value) {
+    const q = String(value || "").trim();
+    if (q.length < 2) return renderExistingUserResults([], q);
+    const root = $("#user-existing-results");
+    if (root) root.innerHTML = '<p class="hint">Recherche…</p>';
+    try {
+      const data = await StudioAPI.request(
+        "/api/admin/users/search-existing?q=" + encodeURIComponent(q) +
+        "&organizationId=" + encodeURIComponent(organization.id),
+      );
+      if ($("#user-existing-search").value.trim() !== q) return;
+      renderExistingUserResults(data.users || [], q);
+    } catch (error) {
+      if (root) root.innerHTML = '<div class="user-existing-empty is-error">' + esc(error.message) + '</div>';
+    }
+  }
   function openUser(u = null) {
     const f = $("#user-form");
     f.reset();
     f.dataset.editId = u?.id || "";
     $("#user-org-id").value = organization.id;
-    $("#user-dialog h2").textContent = u
-      ? "Modifier le compte et ses droits"
-      : "Ajouter un accès supplémentaire";
-    $("#save-user").textContent = u
-      ? "Enregistrer les droits"
-      : "Créer et envoyer l’invitation";
+    $("#user-existing-selected-id").value = "";
+    selectedExistingUser = null;
+    $("#user-dialog h2").textContent = u ? "Modifier le compte et ses droits" : "Ajouter un accès";
     const level = u?.access_level || "manager";
     $("#user-access-level").value = level;
     renderPermissionFields(
@@ -1360,12 +1467,34 @@
       $("#user-job-title").value = u.job_title || "";
       $("#user-phone").value = u.phone || "";
       $("#user-email").value = u.email || "";
+      setUserAccessMode("edit");
+    } else {
+      $("#user-existing-results").innerHTML = '<p class="hint">Commencez à saisir un nom, un prénom ou un email.</p>';
+      $("#user-existing-selected").hidden = true;
+      $("#user-existing-selected").innerHTML = "";
+      setUserAccessMode("new");
     }
     $("#user-access-level").onchange = () =>
       renderPermissionFields(
-        permissionPresets[$("#user-access-level").value] ||
-          permissionPresets.manager,
+        permissionPresets[$("#user-access-level").value] || permissionPresets.manager,
       );
+    $$("[name='user-access-mode']").forEach((input) => {
+      input.onchange = () => {
+        if (input.checked) {
+          if (input.value !== "existing") selectExistingUser(null);
+          setUserAccessMode(input.value);
+        }
+      };
+    });
+    const search = $("#user-existing-search");
+    search.oninput = () => {
+      clearTimeout(existingSearchTimer);
+      selectedExistingUser = null;
+      $("#user-existing-selected-id").value = "";
+      $("#user-existing-selected").hidden = true;
+      setUserAccessMode("existing");
+      existingSearchTimer = setTimeout(() => searchExistingUsers(search.value), 280);
+    };
     $("#user-dialog").showModal();
   }
   function bindUserActions() {
@@ -1406,7 +1535,7 @@
               "/api/admin/client-users/" + b.dataset.toggleClient,
               {
                 method: "PATCH",
-                body: JSON.stringify({ active: b.dataset.active === "true" }),
+                body: JSON.stringify({ organizationId: organization.id, active: b.dataset.active === "true" }),
               },
             );
             load();
@@ -1427,13 +1556,13 @@
                 (u?.first_name || "") +
                 " " +
                 (u?.last_name || "") +
-                " sera définitivement supprimé.",
+                " sera retiré de ce client. Son compte Studio sera conservé s’il possède d’autres accès.",
               confirmLabel: "Supprimer",
             });
           if (!ok) return;
           try {
             await StudioAPI.request(
-              "/api/admin/client-users/" + b.dataset.deleteClient,
+              "/api/admin/client-users/" + b.dataset.deleteClient + "?organizationId=" + encodeURIComponent(organization.id),
               { method: "DELETE" },
             );
             load();
@@ -1503,19 +1632,48 @@
   }
 
   async function saveUser() {
-    const f = $("#user-form");
-    if (!f.reportValidity()) return;
-    const id = f.dataset.editId,
-      payload = {
-        organizationId: organization.id,
-        firstName: $("#user-first").value.trim(),
-        lastName: $("#user-last").value.trim(),
-        jobTitle: $("#user-job-title").value.trim(),
-        phone: $("#user-phone").value.trim(),
-        email: $("#user-email").value.trim(),
+    const f = $("#user-form"), id = f.dataset.editId;
+    const selectedMode = !id && $("[name='user-access-mode']:checked")?.value === "existing"
+      ? "existing"
+      : "new";
+    if (selectedMode === "existing") {
+      if (!selectedExistingUser) {
+        await StudioModal.alert({
+          title: "Choisissez un compte Studio",
+          message: "Recherchez puis sélectionnez la personne à rattacher à ce client.",
+          confirmLabel: "Fermer",
+        });
+        return;
+      }
+      const payload = {
+        userId: selectedExistingUser.id,
         accessLevel: $("#user-access-level").value,
         permissions: selectedPermissions(),
+        reactivate: selectedExistingUser.active === false,
       };
+      try {
+        await StudioAPI.request(
+          "/api/admin/organizations/" + encodeURIComponent(organization.id) + "/attach-existing-user",
+          { method: "POST", body: JSON.stringify(payload) },
+        );
+        $("#user-dialog").close();
+        await load();
+      } catch (e) {
+        showError(e.message);
+      }
+      return;
+    }
+    if (!f.reportValidity()) return;
+    const payload = {
+      organizationId: organization.id,
+      firstName: $("#user-first").value.trim(),
+      lastName: $("#user-last").value.trim(),
+      jobTitle: $("#user-job-title").value.trim(),
+      phone: $("#user-phone").value.trim(),
+      email: $("#user-email").value.trim(),
+      accessLevel: $("#user-access-level").value,
+      permissions: selectedPermissions(),
+    };
     try {
       await StudioAPI.request(
         id ? "/api/admin/client-users/" + id : "/api/admin/users",

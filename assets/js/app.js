@@ -13,6 +13,7 @@
   var IS_ADMIN = Boolean(CURRENT_USER && CURRENT_USER.role === 'admin');
   var INTERFACE_MODE = IS_ADMIN && sessionStorage.getItem('studio_interface_mode') !== 'client' ? 'admin' : 'client';
   var ADMIN_PAGES = ['admin.html','client.html','notifications.html','kit-communication.html','validation.html','campagne-detail.html','composer.html','personnalisation.html','parametrage.html'];
+  function escapeHtml(value){return String(value==null?'':value).replace(/[&<>"']/g,function(char){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];});}
   var REQUESTED_NOTIFICATION_AUDIENCE = new URLSearchParams(location.search).get('audience');
   if (IS_ADMIN && CURRENT === 'notifications.html' && REQUESTED_NOTIFICATION_AUDIENCE === 'client') {
     INTERFACE_MODE = 'client';
@@ -228,6 +229,10 @@
     var avatarHtml=(CURRENT_USER&&CURRENT_USER.profileImageData)?'<img src="'+CURRENT_USER.profileImageData+'" alt="">':((CURRENT_USER && (CURRENT_USER.firstName || CURRENT_USER.email)) ? String(CURRENT_USER.firstName || CURRENT_USER.email).charAt(0).toUpperCase() : 'C');
     var clientLogoHtml=(!adminInterface&&CURRENT_USER&&CURRENT_USER.organizationLogoData)?'<div class="profile-company-logo"><img src="'+CURRENT_USER.organizationLogoData+'" alt="Logo '+String(CURRENT_USER.organizationName||'entreprise').replace(/["<>]/g,'')+'"></div>':'';
     var switchButton = IS_ADMIN ? '<button class="interface-switch" type="button" data-interface-switch="' + (adminInterface ? 'client' : 'admin') + '">' + (adminInterface ? 'Voir mon espace client' : 'Revenir à l’administration') + '</button>' : '';
+    var clientOrganizations = (!adminInterface && CURRENT_USER && CURRENT_USER.role === 'client' && StudioAPI.organizations) ? StudioAPI.organizations().filter(function(item){ return item && item.active !== false; }) : [];
+    var organizationSwitcher = clientOrganizations.length > 1
+      ? '<label class="sidebar-organization-switch"><span>Espace client</span><select data-organization-switch>' + clientOrganizations.map(function(item){return '<option value="'+escapeHtml(item.id)+'" '+(String(item.id)===String(CURRENT_USER.organizationId)?'selected':'')+'>'+escapeHtml(item.name||item.id)+'</option>';}).join('') + '</select></label>'
+      : '';
     root.classList.toggle('sidebar-admin', adminInterface);
     root.innerHTML =
       '<div class="sidebar-head">' +
@@ -244,6 +249,7 @@
       '<div class="sidebar-footer">' +
         (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><strong>Besoin d’aide&nbsp;?</strong><p>Une question sur votre campagne, vos contenus ou le fonctionnement du Studio&nbsp;?</p><a class="button button-primary" href="contact-client.html">Contacter Me&YouToo</a></div>') +
         switchButton +
+        organizationSwitcher +
         '<div class="profile"><div class="profile-person"><div class="avatar">' + avatarHtml + '</div><strong class="profile-person-name">' + (CURRENT_USER ? ((CURRENT_USER.firstName || '') + ' ' + (CURRENT_USER.lastName || '')).trim() || CURRENT_USER.email : 'Compte') + '</strong></div><div class="profile-copy">' + clientLogoHtml + '<small>' + roleLabel + ' · ' + (CURRENT_USER ? (CURRENT_USER.organizationName || 'Me&YouToo') : '') + '</small><button class="sidebar-logout" type="button" data-logout>Se déconnecter</button></div></div>' +
       '</div>';
   }
@@ -432,11 +438,23 @@
     StudioAPI.setInterfaceMode(next);
     location.href = next === 'admin' ? 'admin.html' : 'accueil.html';
   });
+  var organizationSelect = document.querySelector('[data-organization-switch]');
+  if (organizationSelect) organizationSelect.addEventListener('change', async function(){
+    organizationSelect.disabled = true;
+    try {
+      await StudioAPI.setOrganization(organizationSelect.value);
+      location.reload();
+    } catch (error) {
+      organizationSelect.disabled = false;
+      if (window.StudioModal) StudioModal.alert({title:'Changement de client impossible',message:error.message||'Impossible d’ouvrir cet espace client.',type:'warning'});
+    }
+  });
   var logoutButton = document.querySelector('[data-logout]');
   if (logoutButton) logoutButton.addEventListener('click', function(){
     localStorage.removeItem('studio_token');
     localStorage.removeItem('studio_user');
     localStorage.removeItem('studio_organization_id');
+    localStorage.removeItem('studio_organizations');
     sessionStorage.removeItem('studio_interface_mode');
     location.href='login.html';
   });

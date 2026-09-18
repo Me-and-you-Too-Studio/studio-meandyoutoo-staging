@@ -8,7 +8,7 @@
     <link rel="icon" href="assets/img/brand/favicon.png" />
     <link
       rel="stylesheet"
-      href="assets/css/style.css?v=20260918-client-folder-order-1"
+      href="assets/css/style.css?v=20260918-existing-account-link-1"
     />
   </head>
   <body>
@@ -112,29 +112,52 @@
         >
           ×
         </button>
-        <h2>Ajouter un accès supplémentaire</h2>
+        <h2>Ajouter un accès</h2>
         <input id="user-org-id" type="hidden" />
-        <div class="parameter-grid">
-          <div class="field">
-            <label for="user-first">Prénom</label
-            ><input id="user-first" required />
-          </div>
-          <div class="field">
-            <label for="user-last">Nom</label><input id="user-last" required />
-          </div>
-          <div class="field">
-            <label for="user-job-title">Fonction</label
-            ><input id="user-job-title" required />
-          </div>
-          <div class="field">
-            <label for="user-phone"
-              >Téléphone <span class="hint">(facultatif)</span></label
-            ><input id="user-phone" type="tel" />
-          </div>
+        <input id="user-existing-selected-id" type="hidden" />
+        <div class="user-access-mode" id="user-access-mode">
+          <p class="user-access-mode-title">Comment souhaitez-vous ajouter cette personne ?</p>
+          <label class="user-access-mode-choice is-selected">
+            <input type="radio" name="user-access-mode" value="new" checked />
+            <span><strong>Inviter une nouvelle personne</strong><small>Créer un nouveau compte Studio et envoyer une invitation.</small></span>
+          </label>
+          <label class="user-access-mode-choice">
+            <input type="radio" name="user-access-mode" value="existing" />
+            <span><strong>Rattacher un compte Studio existant</strong><small>La personne conserve son compte et son mot de passe actuels.</small></span>
+          </label>
         </div>
-        <div class="field">
-          <label for="user-email">Email professionnel</label
-          ><input id="user-email" type="email" required />
+        <div id="user-existing-panel" class="user-existing-panel" hidden>
+          <div class="field">
+            <label for="user-existing-search">Rechercher un utilisateur Studio</label>
+            <input id="user-existing-search" autocomplete="off" placeholder="Nom, prénom ou email professionnel" />
+            <span class="hint">Saisissez au moins 2 caractères. Aucun nouveau mot de passe ne sera créé.</span>
+          </div>
+          <div id="user-existing-results" class="user-existing-results"></div>
+          <div id="user-existing-selected" class="user-existing-selected" hidden></div>
+        </div>
+        <div id="user-new-fields">
+          <div class="parameter-grid">
+            <div class="field">
+              <label for="user-first">Prénom</label
+              ><input id="user-first" required />
+            </div>
+            <div class="field">
+              <label for="user-last">Nom</label><input id="user-last" required />
+            </div>
+            <div class="field">
+              <label for="user-job-title">Fonction</label
+              ><input id="user-job-title" required />
+            </div>
+            <div class="field">
+              <label for="user-phone"
+                >Téléphone <span class="hint">(facultatif)</span></label
+              ><input id="user-phone" type="tel" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="user-email">Email professionnel</label
+            ><input id="user-email" type="email" required />
+          </div>
         </div>
         <div class="field">
           <label for="user-access-level">Niveau d’accès</label
@@ -234,8 +257,8 @@
         </div>
       </form>
     </dialog>
-    <script src="assets/js/api.js?v=20260823-roles-1"></script>
-    <script src="assets/js/app.js?v=20260902-notification-refresh-1"></script>
-    <script src="assets/js/client.js?v=20260918-client-folder-order-1"></script>
+    <script src="assets/js/api.js?v=20260918-multi-client-access-1"></script>
+    <script src="assets/js/app.js?v=20260918-multi-client-access-1"></script>
+    <script src="assets/js/client.js?v=20260918-existing-account-link-1"></script>
   </body>
 </html>

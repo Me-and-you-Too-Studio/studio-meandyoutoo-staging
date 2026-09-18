@@ -14,15 +14,18 @@
     localStorage.setItem('studio_token',data.token);
     localStorage.setItem('studio_user',JSON.stringify(data.user));
     if(Object.prototype.hasOwnProperty.call(data,'studioSubscription'))localStorage.setItem('studio_subscription',JSON.stringify(data.studioSubscription));
+    if(Array.isArray(data.organizations))localStorage.setItem('studio_organizations',JSON.stringify(data.organizations));
     if(data.user&&data.user.organizationId)localStorage.setItem('studio_organization_id',data.user.organizationId);
   }
   function clearSession(){
-    localStorage.removeItem('studio_token');localStorage.removeItem('studio_user');localStorage.removeItem('studio_organization_id');localStorage.removeItem('studio_subscription');
+    localStorage.removeItem('studio_token');localStorage.removeItem('studio_user');localStorage.removeItem('studio_organization_id');localStorage.removeItem('studio_organizations');localStorage.removeItem('studio_subscription');
   }
   async function request(path,options){
     options=options||{};
     var headers={'Content-Type':'application/json',...(options.headers||{})};
     if(token())headers.Authorization='Bearer '+token();
+    var activeOrganization=localStorage.getItem('studio_organization_id')||'';
+    if(token()&&activeOrganization)headers['X-Studio-Organization-Id']=activeOrganization;
     var response=await fetch(resolveApiBase()+path,{...options,headers:headers});
     if(response.status===204)return null;
     var data=await response.json().catch(function(){return {};});
@@ -31,13 +34,31 @@
       location.href='login.html?expired=1';
       throw new Error('Session expirée');
     }
-    if(path==='/api/me'&&Object.prototype.hasOwnProperty.call(data,'studioSubscription'))localStorage.setItem('studio_subscription',JSON.stringify(data.studioSubscription));
+    if(path==='/api/me'){
+      if(Object.prototype.hasOwnProperty.call(data,'studioSubscription'))localStorage.setItem('studio_subscription',JSON.stringify(data.studioSubscription));
+      if(data.user)localStorage.setItem('studio_user',JSON.stringify(data.user));
+      if(Array.isArray(data.organizations))localStorage.setItem('studio_organizations',JSON.stringify(data.organizations));
+    }
     if(!response.ok){var err=new Error(data.error||('Erreur API '+response.status));err.code=data.code||null;err.studioSubscription=data.studioSubscription||null;throw err;}
     return data;
   }
   function organizationId(){
     var current=user();
     return current&&current.organizationId?current.organizationId:(localStorage.getItem('studio_organization_id')||'');
+  }
+  function organizations(){
+    try{return JSON.parse(localStorage.getItem('studio_organizations')||'[]')||[];}catch(e){return [];}
+  }
+  async function setOrganization(id){
+    var target=String(id||'').trim();
+    if(!target)return null;
+    var data=await request('/api/me/switch-organization',{method:'POST',body:JSON.stringify({organizationId:target})});
+    if(data&&data.token)localStorage.setItem('studio_token',data.token);
+    if(data&&data.user)localStorage.setItem('studio_user',JSON.stringify(data.user));
+    if(Array.isArray(data&&data.organizations))localStorage.setItem('studio_organizations',JSON.stringify(data.organizations));
+    if(data&&data.user&&data.user.organizationId)localStorage.setItem('studio_organization_id',data.user.organizationId);
+    if(Object.prototype.hasOwnProperty.call(data||{},'studioSubscription'))localStorage.setItem('studio_subscription',JSON.stringify(data.studioSubscription));
+    return data;
   }
   function interfaceMode(){
     var current=user();
@@ -61,5 +82,5 @@
     return true;
   }
   function logout(){clearSession();sessionStorage.removeItem('studio_interface_mode');location.href='login.html';}
-  window.StudioAPI={base:resolveApiBase,request:request,organizationId:organizationId,token:token,user:user,login:login,logout:logout,requireAuth:requireAuth,interfaceMode:interfaceMode,setInterfaceMode:setInterfaceMode};
+  window.StudioAPI={base:resolveApiBase,request:request,organizationId:organizationId,organizations:organizations,setOrganization:setOrganization,token:token,user:user,login:login,logout:logout,requireAuth:requireAuth,interfaceMode:interfaceMode,setInterfaceMode:setInterfaceMode};
 })();
