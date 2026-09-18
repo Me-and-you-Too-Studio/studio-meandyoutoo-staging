@@ -131,9 +131,19 @@
 
   function renderCampaignContext(){
     const root=$('composer-campaign-context');if(!root)return;
-    // Le couple périmètre → langues est désormais affiché directement
-    // dans « Composer par périmètre » pour éviter de répéter deux fois
-    // la même information dans l'en-tête.
+    const readOnly=Boolean(window.STUDIO_COMPOSER_READ_ONLY||document.body.dataset.campaignReadOnly==='true');
+    if(readOnly){
+      const names={fr:'Français',nl:'Néerlandais','nl-be':'Néerlandais Belgique',en:'Anglais',de:'Allemand',es:'Espagnol',it:'Italien',pt:'Portugais',br:'Portugais Brésil',bg:'Bulgare',ja:'Japonais','ko-kr':'Coréen',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',tr:'Turc',zf:'Chinois simplifié',zh:'Chinois traditionnel',cs:'Tchèque',sk:'Slovaque',id:'Indonésien',ar:'Arabe'};
+      const locales=[...new Set((Array.isArray(state.project?.locales)?state.project.locales:[])
+        .concat(state.project?.selected_locale?[state.project.selected_locale]:[])
+        .map(v=>String(v||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
+      if(locales.length){
+        root.hidden=false;
+        root.style.display='';
+        root.innerHTML=`<div class="theme-availability-pills"><strong>Langues de la campagne</strong>${locales.map(loc=>`<span>${esc(names[loc]||loc.toUpperCase())} (${esc(loc.toUpperCase())})</span>`).join('')}</div>`;
+        return;
+      }
+    }
     root.hidden=true;
     root.style.display='none';
     root.innerHTML='';

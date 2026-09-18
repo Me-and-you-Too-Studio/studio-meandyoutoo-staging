@@ -61,6 +61,26 @@
             0,
             Number(o?.passations_quota || 0) - Number(o?.passations_used || 0),
           );
+  const campaignLocaleNames = {
+    fr:"Français", nl:"Néerlandais", "nl-be":"Néerlandais Belgique", en:"Anglais",
+    de:"Allemand", es:"Espagnol", it:"Italien", pt:"Portugais", br:"Portugais Brésil",
+    bg:"Bulgare", ja:"Japonais", "ko-kr":"Coréen", pl:"Polonais", ro:"Roumain",
+    ru:"Russe", "sv-se":"Suédois", tr:"Turc", zf:"Chinois simplifié", zh:"Chinois traditionnel",
+    cs:"Tchèque", sk:"Slovaque", id:"Indonésien", ar:"Arabe"
+  };
+  function campaignLocales(p){
+    return [...new Set((Array.isArray(p?.locales)?p.locales:[])
+      .concat(p?.selected_locale?[p.selected_locale]:[])
+      .map(v=>String(v||"").trim().toLowerCase().replaceAll("_","-")).filter(Boolean))];
+  }
+  function campaignLocalesHtml(p){
+    const locales=campaignLocales(p);
+    if(!locales.length)return "";
+    return '<div class="admin-ad-meta">Langues : <strong>' +
+      locales.map(loc=>esc((campaignLocaleNames[loc]||loc.toUpperCase())+' ('+loc.toUpperCase()+')')).join(' · ') +
+      '</strong></div>';
+  }
+
   const accessLabels = {
       owner: "Responsable du compte",
       manager: "Gestionnaire de campagnes",
@@ -598,6 +618,7 @@
       '</strong></div><div class="admin-ad-meta">Titre répondants : <strong>' +
       esc(respondent) +
       '</strong></div>' +
+      campaignLocalesHtml(p) +
       (p.legacy_history && p.legacy_slug ? '<div class="admin-ad-meta">Slug historique : <strong>' + esc(p.legacy_slug) + '</strong></div>' : '') +
       '<div class="admin-ad-tags"><span class="admin-ad-theme">' +
       esc(theme) +

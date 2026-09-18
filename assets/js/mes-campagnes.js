@@ -240,7 +240,14 @@
     return map;
   }
 
+  function isLegacyClientProject(p) {
+    return Boolean(p && (p.source_type === "legacy_client" || p.legacy_history === true || p.legacy_source === "meayt-legacy"));
+  }
+
   function projectCountries(p) {
+    // Sur les campagnes client historiques, le code pays legacy est un repère technique.
+    // Il ne doit pas être présenté comme le périmètre métier de la campagne.
+    if (isLegacyClientProject(p)) return [];
     var map = projectCountryLocaleMap(p);
     var fromMap = Object.keys(map);
     var fallback = Array.isArray(p && p.countries) ? p.countries.map(normalizeCountryCode).filter(Boolean) : [];
