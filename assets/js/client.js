@@ -854,7 +854,7 @@
     renderContacts();
     $("#client-users").innerHTML =
       orgUsers(organization).map(userRow).join("") ||
-      '<p class="admin-empty">Aucun compte.</p>';
+      '<div class="admin-empty admin-empty-with-action"><strong>Aucun compte utilisateur</strong><span>Ajoutez le premier accès pour ce client directement depuis son dossier.</span><button class="button button-primary" type="button" data-add-client-user-empty>+ Ajouter un accès</button></div>';
     $("#client-credits").innerHTML =
       '<div class="admin-pack-heading"><div><span class="eyebrow">Gestion du pack</span><h2>Crédits et validité</h2><p>Renseignez manuellement les crédits et les dates tant que la synchronisation automatique du moteur n’est pas connectée.</p></div><span id="client-pack-status" class="admin-pack-status ' + (organization.pack_unlimited ? 'is-unlimited' : '') + '">' + (organization.pack_unlimited ? 'Pack illimité' : fmt(rem) + ' restants') + '</span></div>' +
       '<label>Crédits attribués<input id="client-quota" type="number" min="0" value="' +
@@ -1369,6 +1369,11 @@
     $("#user-dialog").showModal();
   }
   function bindUserActions() {
+    const inlineAdd = $("#add-client-user-accounts");
+    if (inlineAdd) inlineAdd.onclick = () => openUser();
+    $$('[data-add-client-user-empty]').forEach((button) => {
+      button.onclick = () => openUser();
+    });
     $$("[data-resend-client]").forEach(
       (b) =>
         (b.onclick = async () => {

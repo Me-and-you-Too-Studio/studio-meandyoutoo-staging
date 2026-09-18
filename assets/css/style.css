@@ -631,6 +631,17 @@
   text-align: center;
   color: #718497;
 }
+.admin-empty-with-action {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+.admin-empty-with-action strong {
+  color: #17385d;
+}
+.admin-empty-with-action .button {
+  margin-top: 4px;
+}
 .admin-team-list {
   display: grid;
 }

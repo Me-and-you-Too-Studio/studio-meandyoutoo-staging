@@ -8,7 +8,7 @@
     <link rel="icon" href="assets/img/brand/favicon.png" />
     <link
       rel="stylesheet"
-      href="assets/css/style.css?v=20260918-client-media-library-2"
+      href="assets/css/style.css?v=20260918-client-folder-order-1"
     />
   </head>
   <body>
@@ -57,12 +57,13 @@
           <div id="client-ad-filters" class="admin-ad-filterbar"></div>
           <div id="client-ads" class="admin-ad-grid"></div>
         </section>
-        <section class="admin-folder-accounts admin-folder-panel">
+        <section class="admin-folder-accounts admin-folder-panel" id="client-user-accounts">
           <div class="admin-section-title">
             <div>
               <h2>Comptes utilisateurs</h2>
-              <p>Accès, rôles et droits des personnes rattachées à cette entreprise.</p>
+              <p>Ajoutez, modifiez, désactivez ou supprimez les accès des personnes rattachées à cette entreprise.</p>
             </div>
+            <button class="button button-primary" type="button" id="add-client-user-accounts">+ Ajouter un accès</button>
           </div>
           <div id="client-users"></div>
         </section>
@@ -70,19 +71,6 @@
           class="admin-credit-editor admin-folder-panel"
           id="client-credits"
         ></section>
-        <section class="admin-folder-panel admin-client-management" id="client-management">
-          <div class="admin-section-title">
-            <div>
-              <h2>Gestion du cockpit</h2>
-              <p>Archiver conserve toutes les données. La suppression définitive n’est autorisée que pour un cockpit sans historique métier.</p>
-            </div>
-          </div>
-          <div class="admin-client-management-actions">
-            <button class="button button-secondary" type="button" id="archive-client-cockpit">Archiver le cockpit</button>
-            <button class="button button-danger" type="button" id="delete-client-cockpit">Supprimer le cockpit</button>
-          </div>
-          <p class="admin-client-management-note" id="client-delete-note"></p>
-        </section>
         <section class="admin-folder-panel admin-client-media-library" id="client-media-library">
           <div class="admin-section-title admin-client-media-title">
             <div>
@@ -98,6 +86,19 @@
           </div>
           <div id="client-media-alert" class="composer-alert" hidden></div>
           <div id="client-media-list" class="admin-client-media-list"><p class="admin-empty">Chargement de la médiathèque…</p></div>
+        </section>
+        <section class="admin-folder-panel admin-client-management" id="client-management">
+          <div class="admin-section-title">
+            <div>
+              <h2>Gestion du cockpit</h2>
+              <p>Actions de fin de vie du cockpit : archivez-le sans perdre les données, ou supprimez-le uniquement lorsqu’aucun historique métier ne doit être conservé.</p>
+            </div>
+          </div>
+          <div class="admin-client-management-actions">
+            <button class="button button-secondary" type="button" id="archive-client-cockpit">Archiver le cockpit</button>
+            <button class="button button-danger" type="button" id="delete-client-cockpit">Supprimer le cockpit</button>
+          </div>
+          <p class="admin-client-management-note" id="client-delete-note"></p>
         </section>
       </main>
     </div>
@@ -235,6 +236,6 @@
     </dialog>
     <script src="assets/js/api.js?v=20260823-roles-1"></script>
     <script src="assets/js/app.js?v=20260902-notification-refresh-1"></script>
-    <script src="assets/js/client.js?v=20260918-client-media-library-3"></script>
+    <script src="assets/js/client.js?v=20260918-client-folder-order-1"></script>
   </body>
 </html>
