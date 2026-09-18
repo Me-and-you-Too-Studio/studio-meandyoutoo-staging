@@ -145,8 +145,34 @@
     }
   } catch (e) {}
 
+  var legacyNumericCountryCodes = {
+    "032": "AR", "32": "AR",
+    "040": "AT", "40": "AT",
+    "076": "BR", "76": "BR",
+    "124": "CA",
+    "152": "CL",
+    "156": "CN",
+    "158": "TW",
+    "208": "DK",
+    "250": "FR",
+    "276": "DE",
+    "344": "HK",
+    "392": "JP",
+    "410": "KR",
+    "484": "MX",
+    "578": "NO",
+    "591": "PA",
+    "620": "PT",
+    "724": "ES",
+    "752": "SE",
+    "756": "CH",
+    "840": "US",
+    "858": "UY"
+  };
+
   function normalizeCountryCode(value) {
-    return String(value || "").trim().toUpperCase();
+    var raw = String(value || "").trim().toUpperCase();
+    return legacyNumericCountryCodes[raw] || raw;
   }
 
   function normalizeLocaleCode(value) {
@@ -499,7 +525,7 @@
           '" target="_blank" rel="noopener" title="Voir exactement le parcours répondant avec le contenu réel enregistré pour cette campagne">👁 Aperçu répondant</a>',
       );
     }
-    if (p.legacy_history) {
+    if (p.legacy_history && Number(p.legacy_pdf_count || 0) > 0) {
       visible.push(
         '<button class="campaign-btn" type="button" data-project-action="view-legacy-pdf" data-project-id="' +
           id +
