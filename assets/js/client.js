@@ -1050,10 +1050,10 @@
       '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button>' +
       '<p class="eyebrow">Administration de la campagne</p>' +
       '<h2>' + esc(p.campaign_name || p.title || "Campagne") + '</h2>' +
-      '<p>Renseignez ici les informations qui ne remontent pas encore automatiquement du moteur historique.</p>' +
+      '<p>Pour une campagne historique, les dates sont initialisées à partir du pack de passations du client. Vous pouvez les modifier ici si la campagne suit un calendrier différent.</p>' +
       '<div class="admin-form-grid">' +
-      '<label class="field"><span>Date de début</span><input id="admin-management-launch" type="date" value="' + esc(isoDay(p.launch_date)) + '"></label>' +
-      '<label class="field"><span>Date de fin</span><input id="admin-management-close" type="date" value="' + esc(isoDay(p.close_date)) + '"></label>' +
+      '<label class="field"><span>Date de début</span><input id="admin-management-launch" type="date" value="' + esc(isoDay(p.launch_date || organization?.pack_started_at)) + '"></label>' +
+      '<label class="field"><span>Date de fin</span><input id="admin-management-close" type="date" value="' + esc(isoDay(p.close_date || organization?.pack_expires_at)) + '"></label>' +
       '<label class="field"><span>Nom du commanditaire</span><input id="admin-management-commanditaire-name" maxlength="160" value="' + esc(p.commanditaire_name || "") + '" placeholder="Prénom Nom"></label>' +
       '<label class="field"><span>Fonction du commanditaire</span><input id="admin-management-commanditaire-job" maxlength="160" value="' + esc(p.commanditaire_job_title || "") + '" placeholder="DRH, Responsable DEI…"></label>' +
       '<label class="field"><span>Email du commanditaire</span><input id="admin-management-commanditaire-email" type="email" maxlength="200" value="' + esc(p.commanditaire_email || "") + '" placeholder="prenom.nom@entreprise.com"></label>' +
