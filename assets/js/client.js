@@ -1360,7 +1360,9 @@
       if (saveButton) {
         saveButton.textContent = selectedExistingUser?.active === false
           ? "Rattacher et réactiver"
-          : "Rattacher ce compte";
+          : selectedExistingUser
+            ? "Rattacher à " + (organization.name || "ce client")
+            : "Rattacher ce compte";
         saveButton.disabled = !selectedExistingUser;
       }
     } else if (saveButton) {
@@ -1379,15 +1381,22 @@
       return;
     }
     if (results) results.innerHTML = "";
-    const organizations = Array.isArray(user.organizations) ? user.organizations : [];
+    const currentOrganization = user.currentOrganization || null;
+    const movesFromAnotherClient = Boolean(
+      currentOrganization && String(currentOrganization.id || "") !== String(organization.id || ""),
+    );
     selected.innerHTML =
       '<div class="user-existing-selected-card"><span class="user-existing-avatar">' +
       esc((user.first_name || user.email || "U").charAt(0).toUpperCase()) +
       '</span><div><strong>' + esc(((user.first_name || "") + " " + (user.last_name || "")).trim() || user.email) +
       '</strong><span>' + esc(user.email || "") + '</span><small>' +
-      (organizations.length ? "Accès actuel : " + organizations.map((item) => esc(item.name || item.id)).join(" · ") : "Aucun client actuellement rattaché") +
+      (currentOrganization ? "Client actuel : " + esc(currentOrganization.name || currentOrganization.id) : "Aucun client actuellement rattaché") +
       (user.active === false ? " · compte désactivé" : "") +
-      '</small></div><button type="button" class="button button-ghost" data-change-existing-user>Changer</button></div>';
+      '</small>' +
+      (movesFromAnotherClient
+        ? '<em class="user-existing-reassignment">Le rattachement actuel sera remplacé par ' + esc(organization.name || "ce client") + '.</em>'
+        : '') +
+      '</div><button type="button" class="button button-ghost" data-change-existing-user>Changer</button></div>';
     selected.hidden = false;
     selected.querySelector("[data-change-existing-user]")?.addEventListener("click", () => {
       selectedExistingUser = null;
@@ -1411,13 +1420,13 @@
       return;
     }
     root.innerHTML = list.map((user) => {
-      const organizations = Array.isArray(user.organizations) ? user.organizations : [];
+      const currentOrganization = user.currentOrganization || null;
       const attached = user.attachedToTarget === true;
-      const current = organizations.map((item) => item.name || item.id).filter(Boolean).join(" · ");
+      const currentLabel = currentOrganization ? (currentOrganization.name || currentOrganization.id) : "";
       return '<article class="user-existing-result ' + (attached ? 'is-attached' : '') + '">' +
         '<div><strong>' + esc(((user.first_name || "") + " " + (user.last_name || "")).trim() || user.email) + '</strong>' +
         '<span>' + esc(user.email || "") + '</span>' +
-        '<small>' + esc(current ? "Déjà rattaché : " + current : "Aucun client rattaché") + (user.active === false ? " · Compte désactivé" : "") + '</small></div>' +
+        '<small>' + esc(currentLabel ? "Client actuel : " + currentLabel : "Aucun client rattaché") + (user.active === false ? " · Compte désactivé" : "") + '</small></div>' +
         (attached
           ? '<span class="badge badge-muted">Déjà sur ce client</span>'
           : '<button class="button button-secondary" type="button" data-select-existing-user="' + esc(user.id) + '">Sélectionner</button>') +
@@ -1535,7 +1544,7 @@
               "/api/admin/client-users/" + b.dataset.toggleClient,
               {
                 method: "PATCH",
-                body: JSON.stringify({ organizationId: organization.id, active: b.dataset.active === "true" }),
+                body: JSON.stringify({ active: b.dataset.active === "true" }),
               },
             );
             load();
@@ -1556,13 +1565,13 @@
                 (u?.first_name || "") +
                 " " +
                 (u?.last_name || "") +
-                " sera retiré de ce client. Son compte Studio sera conservé s’il possède d’autres accès.",
+                " sera définitivement supprimé du Studio.",
               confirmLabel: "Supprimer",
             });
           if (!ok) return;
           try {
             await StudioAPI.request(
-              "/api/admin/client-users/" + b.dataset.deleteClient + "?organizationId=" + encodeURIComponent(organization.id),
+              "/api/admin/client-users/" + b.dataset.deleteClient,
               { method: "DELETE" },
             );
             load();
@@ -1645,11 +1654,29 @@
         });
         return;
       }
+      const currentOrganization = selectedExistingUser.currentOrganization || null;
+      const replacesAnotherClient = Boolean(
+        currentOrganization && String(currentOrganization.id || "") !== String(organization.id || ""),
+      );
+      if (replacesAnotherClient) {
+        const confirmed = await StudioModal.confirm({
+          type: "warning",
+          title: "Rattacher ce compte à " + (organization.name || "ce client") + " ?",
+          message:
+            "Ce compte est actuellement rattaché à " +
+            (currentOrganization.name || currentOrganization.id) +
+            ". Son rattachement actuel sera remplacé. À sa prochaine connexion, la personne accédera directement à " +
+            (organization.name || "ce client") + ".",
+          confirmLabel: "Rattacher à " + (organization.name || "ce client"),
+        });
+        if (!confirmed) return;
+      }
       const payload = {
         userId: selectedExistingUser.id,
         accessLevel: $("#user-access-level").value,
         permissions: selectedPermissions(),
         reactivate: selectedExistingUser.active === false,
+        replaceExistingOrganization: replacesAnotherClient,
       };
       try {
         await StudioAPI.request(
