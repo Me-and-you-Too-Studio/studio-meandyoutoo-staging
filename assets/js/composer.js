@@ -155,12 +155,26 @@
       .map(code=>String(code||'').trim().toUpperCase()).filter(Boolean))];
   }
 
+  function isLegacyClientCampaign(project=state.project){
+    return Boolean(project&&(
+      project.source_type==='legacy_client' ||
+      project.legacy_history===true ||
+      project.legacy_source==='meayt-legacy'
+    ));
+  }
+
   function renderCountryTabs(project=state.project){
     const root=$('composer-country-tabs');if(!root)return;
     const countries=campaignCountries(project);
-    // Un seul périmètre n'est pas un choix à faire : on masque tout le bloc pour
-    // éviter les libellés techniques (ex. 250) et alléger le Composer national.
-    if(countries.length<=1){root.hidden=true;root.style.display='none';root.innerHTML='';return;}
+    // Les campagnes historiques importées restent une copie du legacy :
+    // on ne repropose pas au client de modifier leur périmètre/langues.
+    if(isLegacyClientCampaign(project)){
+      root.hidden=true;root.style.display='none';root.innerHTML='';return;
+    }
+    // Pour une campagne créée depuis le catalogue, le contexte reste modifiable
+    // même avec un seul périmètre : le client doit pouvoir ouvrir la modale et
+    // activer les langues disponibles du catalogue.
+    if(!countries.length){root.hidden=true;root.style.display='none';root.innerHTML='';return;}
     const byCountry=projectCountryLocales(project);
     const numericCountryNames={'032':'Argentine','040':'Autriche','076':'Brésil','124':'Canada','152':'Chili','156':'Chine','158':'Taïwan','208':'Danemark','250':'France','276':'Allemagne','344':'Hong Kong','392':'Japon','410':'Corée du Sud','484':'Mexique','578':'Norvège','591':'Panama','620':'Portugal','724':'Espagne','752':'Suède','756':'Suisse','840':'États-Unis','858':'Uruguay'};
     let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
@@ -169,7 +183,7 @@
       ? `Vous composez ${esc(label(state.country))} avec ${((byCountry[state.country]||[]).map(localeLabel).join(' · ')||'les langues configurées')}.`
       : (countries.length>1
           ? 'Choisissez un périmètre pour ouvrir sa composition. Les langues à gérer sont indiquées sur chaque bouton.'
-          : 'Le périmètre et ses langues à gérer sont indiqués ci-dessous.');
+          : 'Ce périmètre est actif. Vous pouvez modifier les langues disponibles ou ajouter un autre périmètre si le catalogue le permet.');
     root.hidden=false;
     root.style.display='';
     root.innerHTML=`<div class="composer-country-tabs-label"><div class="composer-country-tabs-label-copy"><div class="composer-inline-title"><strong>Composer par périmètre</strong>${infoDot(campaignContextInfoText,'Impact d’une modification de périmètre ou de langue')}</div><span>${activeCopy}</span></div>${state.project?.can_edit===false?'':`<button class="button button-ghost button-small composer-country-edit" type="button" data-edit-campaign-context>Modifier périmètres et langues</button>`}</div><div class="composer-country-tabs-list">${countries.map(code=>{const langs=byCountry[code]||[];return `<button type="button" class="composer-country-tab composer-country-tab-with-locales ${code===state.country?'is-active':''}" data-country-tab="${esc(code)}" aria-pressed="${code===state.country?'true':'false'}"><strong>${esc(label(code))}</strong><span>${langs.length?langs.map(locale=>esc(localeLabel(locale))).join(' · '):'Langue à préciser'}</span></button>`;}).join('')}</div>`;
