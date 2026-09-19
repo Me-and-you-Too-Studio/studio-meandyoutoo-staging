@@ -659,15 +659,21 @@
         entries.push({primary:s,members});
       }
 
-      $('library-list').innerHTML=entries.length?entries.map((entry,index)=>{
-        const linked=entry.members.length>1;
-        const label=linked?`${entry.members.length} situations liées · ${mode==='replace'?'remplacées':'ajoutées'} ensemble`:'Situation disponible';
-        const body=entry.members.map((m,mi)=>`<section class="composer-library-linked-item">${linked?`<div class="composer-library-linked-title">Situation ${mi+1}/${entry.members.length}</div>`:''}<h3>${esc(m.content)}</h3><details><summary>Consulter les réponses et les scores</summary>${(m.answers||[]).map(a=>answerHtml(a,false,'')).join('')}</details></section>`).join('');
-        return `<article class="composer-library-card composer-library-bundle tone-${index%4+1}"><div class="composer-library-number">${String(index+1).padStart(2,'0')}</div><div class="composer-library-content"><div class="composer-library-label">${label}</div>${body}<button class="button button-primary" type="button" data-library-pick="${esc(entry.primary.id)}">${mode==='replace'?(linked?`Remplacer par ces ${entry.members.length} situations`:'Remplacer par cette situation'):(linked?`Ajouter les ${entry.members.length} situations au chapitre`:'Ajouter au chapitre')}</button></div></article>`;
-      }).join(''):'<div class="composer-library-empty"><strong>Aucune autre situation disponible</strong><p>Les situations déjà présentes dans ce chapitre ne sont pas proposées ici.</p></div>';
+      const renderLibraryEntries=(query='')=>{
+        const q=String(query||'').trim().toLowerCase();
+        const filtered=entries.filter(entry=>!q||entry.members.some(m=>[m.content,...(Array.isArray(m.admin_tags)?m.admin_tags:[])].join(' ').toLowerCase().includes(q)));
+        $('library-list').innerHTML=filtered.length?filtered.map((entry,index)=>{
+          const linked=entry.members.length>1;
+          const label=linked?`${entry.members.length} situations liées · ${mode==='replace'?'remplacées':'ajoutées'} ensemble`:'Situation disponible';
+          const body=entry.members.map((m,mi)=>{const tags=Array.isArray(m.admin_tags)?m.admin_tags.filter(Boolean):[];return `<section class="composer-library-linked-item">${linked?`<div class="composer-library-linked-title">Situation ${mi+1}/${entry.members.length}</div>`:''}<h3>${esc(m.content)}</h3>${tags.length?`<div class="composer-library-keywords">${tags.map(tag=>`<span>${esc(tag)}</span>`).join('')}</div>`:''}<details><summary>Consulter les réponses et les scores</summary>${(m.answers||[]).map(a=>answerHtml(a,false,'')).join('')}</details></section>`;}).join('');
+          return `<article class="composer-library-card composer-library-bundle tone-${index%4+1}"><div class="composer-library-number">${String(index+1).padStart(2,'0')}</div><div class="composer-library-content"><div class="composer-library-label">${label}</div>${body}<button class="button button-primary" type="button" data-library-pick="${esc(entry.primary.id)}">${mode==='replace'?(linked?`Remplacer par ces ${entry.members.length} situations`:'Remplacer par cette situation'):(linked?`Ajouter les ${entry.members.length} situations au chapitre`:'Ajouter au chapitre')}</button></div></article>`;
+        }).join(''):'<div class="composer-library-empty"><strong>Aucune situation trouvée</strong><p>Modifiez votre recherche. Vous restez dans la bibliothèque complémentaire autorisée pour cet autodiagnostic.</p></div>';
+        document.querySelectorAll('[data-library-pick]').forEach(b=>b.onclick=()=>mode==='replace'?replaceSituation(replaceId,b.dataset.libraryPick):addSituation(b.dataset.libraryPick));
+      };
+      const librarySearch=$('library-search');if(librarySearch){librarySearch.value='';librarySearch.oninput=()=>renderLibraryEntries(librarySearch.value);}
+      renderLibraryEntries('');
 
       $('library-backdrop').hidden=false;$('library-drawer').classList.add('is-open');$('library-drawer').setAttribute('aria-hidden','false');
-      document.querySelectorAll('[data-library-pick]').forEach(b=>b.onclick=()=>mode==='replace'?replaceSituation(replaceId,b.dataset.libraryPick):addSituation(b.dataset.libraryPick));
     }catch(e){showMessage(e.message);}
   }
   function closeLibrary(){$('library-backdrop').hidden=true;$('library-drawer').classList.remove('is-open');$('library-drawer').setAttribute('aria-hidden','true');}
