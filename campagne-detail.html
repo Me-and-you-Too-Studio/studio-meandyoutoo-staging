@@ -29,7 +29,7 @@
 (function(){
   var root=document.getElementById('campaign-detail-root');
   var params=new URLSearchParams(location.search);
-  var projectId=params.get('projectId');
+  var projectId=params.get('projectId')||params.get('id');
 
   // Lecture seule demandée côté client uniquement pour les campagnes programmées ou publiées.
   var READ_ONLY_STATUSES=new Set(['scheduled','published','active']);
