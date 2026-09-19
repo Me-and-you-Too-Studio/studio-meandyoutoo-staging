@@ -61,11 +61,14 @@
     var raw=String(p.theme_title||p.theme_slug||'').trim();
     var slug=String(p.theme_slug||raw).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-');
     var labels={'sexisme':'Sexisme','management':'Management inclusif','management-inclusif':'Management inclusif','manager-inclusif':'Management inclusif','handicap':'Handicap','lgbt':'LGBT+','lgbt-plus':'LGBT+','origines':'Diversité des origines','diversite-des-origines':'Diversité des origines','religion':'Diversité religieuse','diversite-religieuse':'Diversité religieuse','intergenerationnel':'Intergénérationnel','collaborateur':'Collaborateur inclusif','collaborateur-inclusif':'Collaborateur inclusif'};
-    return labels[slug]||raw||'Thématique indisponible';
+    return labels[slug]||raw||(p.legacy_history?'Base catalogue non reliée':'Thématique indisponible');
   }
   function projectQuery(p){
-    var slug=String(p.theme_slug||'').trim();
-    if(!slug)return null;
+    // Campagnes historiques : elles peuvent ne pas être reliées à une base catalogue.
+    // Dans ce cas on conserve leur slug legacy uniquement pour la navigation,
+    // sans créer ni simuler de rattachement au catalogue.
+    var slug=String(p.theme_slug||(p.legacy_history?p.legacy_slug:'')||'').trim();
+    if(!slug)return '?projectId='+encodeURIComponent(p.id);
     return '?theme='+encodeURIComponent(slug)+'&projectId='+encodeURIComponent(p.id);
   }
   function contentPage(p){
@@ -73,16 +76,19 @@
     return q ? 'composer.html'+q : null;
   }
   function respondentPreviewPage(p){
-    var slug=String(p.theme_slug||'').trim();
-    if(!slug||p.id===undefined||p.id===null)return null;
-    return 'apercu-repondant.html?mode=project&source=saved&projectId='+encodeURIComponent(p.id)+'&theme='+encodeURIComponent(slug);
+    var slug=String(p.theme_slug||(p.legacy_history?p.legacy_slug:'')||'').trim();
+    if(p.id===undefined||p.id===null)return null;
+    return 'apercu-repondant.html?mode=project&source=saved&projectId='+encodeURIComponent(p.id)+(slug?'&theme='+encodeURIComponent(slug):'');
   }
   function renderError(message){
     root.innerHTML='<div class="composer-alert">'+esc(message)+'</div><p><a class="button button-secondary" href="mes-campagnes.html" style="margin-top:12px">Retour à Mes campagnes</a></p>';
   }
   function render(p){
     var q=projectQuery(p);
-    if(!q)return renderError('Le thème réel de cette campagne est absent des données API. Aucun thème de remplacement n’est utilisé.');
+    // Un import historique client peut volontairement être « Base catalogue : Non reliée ».
+    // Cela ne doit jamais empêcher l'ouverture de la campagne : son contenu vit dans project_* .
+    if(!p.legacy_history && !String(p.theme_slug||'').trim())
+      return renderError('Le thème réel de cette campagne est absent des données API. Aucun thème de remplacement n’est utilisé.');
     var content=contentPage(p);
     var respondentPreview=respondentPreviewPage(p);
     var name=p.campaign_name||p.respondent_title||p.title||p.theme_title||'Campagne sans nom';
