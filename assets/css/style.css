@@ -13492,3 +13492,9 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
   .legacy-translation-toolbar select{width:100%;min-width:0}
   .legacy-translation-grid{grid-template-columns:1fr}
 }
+
+.legacy-translation-availability{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-4px 0 12px;color:#60758b;font-size:.76rem}
+.legacy-translation-availability strong{color:#173862;margin-right:2px}
+.legacy-translation-availability span{display:inline-flex;padding:4px 8px;border-radius:999px;background:#eef6f8;border:1px solid #d8e7eb;color:#294d68;font-weight:700}
+.legacy-translation-answer-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.legacy-translation-answer-head span{font-size:.7rem;color:#60758b;font-weight:800}

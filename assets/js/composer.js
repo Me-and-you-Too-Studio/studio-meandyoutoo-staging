@@ -609,8 +609,11 @@
   }
 
   function legacyTranslationAnswer(view,referenceAnswer,index){
-    const byId=(view.answers||[]).find(a=>String(a.id)===String(referenceAnswer?.id));
-    return String((byId||(view.answers||[])[index])?.content||'');
+    const answers=view.answers||[];
+    const byId=answers.find(a=>String(a?.id??'')===String(referenceAnswer?.id??''));
+    const byLegacyId=answers.find(a=>String(a?.legacyId??'')===String(referenceAnswer?.legacyId??''));
+    const byPosition=answers.find(a=>Number(a?.position)===Number(referenceAnswer?.position));
+    return String((byId||byLegacyId||byPosition||answers[index])?.content||'');
   }
 
   function renderLegacyInlineTranslations(panel,ctx,selectedLocale){
@@ -625,24 +628,25 @@
     const target=legacyTranslationView(ctx,targetLocale);
     const referenceAnswers=reference.answers||[];
     panel.innerHTML=`<div class="legacy-translation-toolbar">
-        <div><strong>Comparer les versions linguistiques</strong><small>${esc(localeLabel(referenceLocale))} est utilisé comme référence${referenceLocale==='fr'?' car le français est disponible':''}.</small></div>
-        <label>Comparer avec
+        <div><strong>Comparer les versions linguistiques</strong><small>${esc(localeLabel(referenceLocale))} est la langue de référence${referenceLocale==='fr'?' car le français existe pour cette situation':''}. Toutes les autres traductions disponibles sont proposées dans la liste.</small></div>
+        <label>Langue à comparer
           <select data-legacy-translation-select>${targets.map(loc=>`<option value="${esc(loc)}" ${loc===targetLocale?'selected':''}>${esc(localeLabel(loc))}</option>`).join('')}</select>
         </label>
       </div>
+      <div class="legacy-translation-availability"><strong>Disponibles :</strong> ${targets.map(loc=>`<span>${esc(localeLabel(loc))}</span>`).join('')}</div>
       <div class="legacy-translation-grid">
         <section class="legacy-translation-pane is-reference">
           <h4>${esc(localeLabel(referenceLocale))} <span>Référence</span></h4>
           <div class="legacy-translation-question">${esc(reference.content||'Traduction non disponible')}</div>
           <div class="legacy-translation-answers">
-            ${referenceAnswers.map((a,i)=>`<div><strong>Réponse ${i+1}</strong><p>${esc(a.content||'—')}</p></div>`).join('')}
+            ${referenceAnswers.map((a,i)=>`<div><div class="legacy-translation-answer-head"><strong>Réponse ${i+1}</strong>${a.score!=null?`<span>Score ${esc(Number(a.score).toLocaleString('fr-FR'))}</span>`:''}</div><p>${esc(a.content||'—')}</p></div>`).join('')}
           </div>
         </section>
         <section class="legacy-translation-pane">
           <h4>${esc(localeLabel(targetLocale))}</h4>
           <div class="legacy-translation-question ${target.content?'':'is-missing'}">${esc(target.content||'Traduction non disponible')}</div>
           <div class="legacy-translation-answers">
-            ${referenceAnswers.map((a,i)=>{const content=legacyTranslationAnswer(target,a,i);return `<div><strong>Réponse ${i+1}</strong><p class="${content?'':'is-missing'}">${esc(content||'Traduction non disponible')}</p></div>`;}).join('')}
+            ${referenceAnswers.map((a,i)=>{const content=legacyTranslationAnswer(target,a,i);return `<div><div class="legacy-translation-answer-head"><strong>Réponse ${i+1}</strong>${a.score!=null?`<span>Score ${esc(Number(a.score).toLocaleString('fr-FR'))}</span>`:''}</div><p class="${content?'':'is-missing'}">${esc(content||'Traduction non disponible')}</p></div>`;}).join('')}
           </div>
         </section>
       </div>`;
