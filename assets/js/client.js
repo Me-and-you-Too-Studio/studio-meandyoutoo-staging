@@ -37,6 +37,7 @@
   let organization = null,
     users = new Map(),
     projects = new Map(),
+    catalogThemes = [],
     folders = [],
     activeFolder = "all",
     activeTheme = "all",
@@ -568,6 +569,7 @@
   function card(p) {
     const st = normalizedStatus(p),
       theme = p.theme_title || p.legacy_theme_title || "Thématique",
+      catalogBase = p.theme_id ? (p.theme_title || "Base catalogue reliée") : "Non reliée",
       title = p.campaign_name || p.title || "Sans nom",
       respondent = p.respondent_title || title,
       contact = orgUsers(organization).find((u) => u.access_level === "owner") || orgUsers(organization)[0],
@@ -614,8 +616,8 @@
       '"><h3>' +
       esc(title) +
       '</h3><div class="admin-ad-meta">Base catalogue : <strong>' +
-      esc(theme) +
-      '</strong></div><div class="admin-ad-meta">Titre répondants : <strong>' +
+      esc(catalogBase) +
+      '</strong></div>' + (p.legacy_history && p.legacy_theme_title ? '<div class="admin-ad-meta">Thématique historique : <strong>' + esc(p.legacy_theme_title) + '</strong></div>' : '') + '<div class="admin-ad-meta">Titre répondants : <strong>' +
       esc(respondent) +
       '</strong></div>' +
       campaignLocalesHtml(p) +
@@ -1062,6 +1064,15 @@
       dialog.querySelector("#admin-internal-name").select();
     });
   }
+  function catalogThemeOptions(selectedId) {
+    const selected = String(selectedId || "");
+    return ['<option value="">Non reliée</option>'].concat(
+      catalogThemes
+        .filter((theme) => theme && theme.id)
+        .map((theme) => '<option value="' + esc(theme.id) + '" ' + (String(theme.id) === selected ? 'selected' : '') + '>' + esc(theme.title || theme.slug || ('Thématique #' + theme.id)) + '</option>')
+    ).join("");
+  }
+
   async function openCampaignManagement(p) {
     document.getElementById("admin-campaign-management-dialog")?.remove();
     const dialog = document.createElement("dialog");
@@ -1073,6 +1084,7 @@
       '<h2>' + esc(p.campaign_name || p.title || "Campagne") + '</h2>' +
       '<p>Pour une campagne historique, les dates sont initialisées à partir du pack de passations du client. Vous pouvez les modifier ici si la campagne suit un calendrier différent.</p>' +
       '<div class="admin-form-grid">' +
+      '<label class="field" style="grid-column:1/-1"><span>Base catalogue de référence</span><select id="admin-management-theme">' + catalogThemeOptions(p.theme_id) + '</select><small class="hint">Pour un import historique non relié, vous pouvez choisir ici la base catalogue correspondante. Cela ne remplace ni ne modifie le contenu historique importé.</small></label>' +
       '<label class="field"><span>Date de début</span><input id="admin-management-launch" type="date" value="' + esc(isoDay(p.launch_date || organization?.pack_started_at)) + '"></label>' +
       '<label class="field"><span>Date de fin</span><input id="admin-management-close" type="date" value="' + esc(isoDay(p.close_date || organization?.pack_expires_at)) + '"></label>' +
       '<label class="field"><span>Nom du commanditaire</span><input id="admin-management-commanditaire-name" maxlength="160" value="' + esc(p.commanditaire_name || "") + '" placeholder="Prénom Nom"></label>' +
@@ -1099,6 +1111,7 @@
         await StudioAPI.request("/api/admin/projects/" + p.id + "/management", {
           method: "PATCH",
           body: JSON.stringify({
+            themeId: dialog.querySelector("#admin-management-theme").value || null,
             launchDate: launchDate || null,
             closeDate: closeDate || null,
             commanditaireName: dialog.querySelector("#admin-management-commanditaire-name").value.trim(),
@@ -1114,7 +1127,7 @@
         await StudioModal.alert({
           eyebrow: "Campagne mise à jour",
           title: "Les informations ont été enregistrées",
-          message: "Dates, commanditaire et liens sont maintenant disponibles dans le dossier client.",
+          message: "Base catalogue, dates, commanditaire et liens sont maintenant disponibles dans le dossier client.",
           type: "success",
           confirmLabel: "Fermer",
         });
@@ -1762,7 +1775,11 @@
         );
         return;
       }
-      const folderData = await StudioAPI.request('/api/campaign-folders?organizationId=' + encodeURIComponent(organization.id));
+      const [folderData, catalogData] = await Promise.all([
+        StudioAPI.request('/api/campaign-folders?organizationId=' + encodeURIComponent(organization.id)),
+        StudioAPI.request('/api/admin/catalog/themes')
+      ]);
+      catalogThemes = Array.isArray(catalogData?.themes) ? catalogData.themes : [];
       folders = Array.isArray(folderData.folders) ? folderData.folders : [];
       orgProjects(organization).forEach((project) => { project.folder_id = null; });
       (folderData.assignments || []).forEach((assignment) => {
