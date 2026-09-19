@@ -25,7 +25,7 @@
   const localeLabel=x=>(localeNames[norm(x)]||String(x).toUpperCase())+' ('+String(x).toUpperCase()+')';
   const scopeLabel=x=>scopeNames[norm(x)]||String(x).replaceAll('-',' ').replace(/^./,c=>c.toUpperCase());
   const countryLabel=x=>countryNames[String(x).toUpperCase()]||String(x).toUpperCase();
-  const illustrationSlug=slug=>({mixite:'mixite','collegue-inclusif':'collegue-inclusif'}[norm(slug)]||norm(slug));
+  const illustrationSlug=slug=>({mixite:'mixite','collegue-inclusif':'collaborateur'}[norm(slug)]||norm(slug));
   function mergeTheme(base,live){
     const out={...(base||{}),...(live||{})};
     if(!out.description)out.description=base?.description||fallbackDescriptions[out.slug]||'Une thématique issue du référentiel propriétaire Me&YouToo.';
