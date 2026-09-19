@@ -585,6 +585,12 @@
           id +
           '">⏹ Dépublier</button>',
       );
+    if (currentUser.role === "admin" && p.legacy_history && p.status !== "draft")
+      more.push(
+        '<button type="button" data-project-action="mark-draft" data-project-id="' +
+          id +
+          '">📝 Remettre en brouillon</button>',
+      );
     if (
       !["scheduled", "published", "active"].includes(p.status) &&
       can("edit_campaigns")
@@ -907,6 +913,29 @@
         eyebrow: "Campagne prolongée",
         title: "La nouvelle date est enregistrée",
         message: "La campagne, son contenu et ses liens restent inchangés.",
+        type: "success",
+        confirmLabel: "Fermer",
+      });
+      return load();
+    }
+    if (action === "mark-draft") {
+      var okDraft = await StudioModal.confirm({
+        eyebrow: "Campagne historique importée",
+        title: "Remettre « " + campaignName(p) + " » en brouillon ?",
+        message:
+          "Le contenu importé et les dates historiques seront conservés. La campagne repassera simplement au statut Brouillon pour pouvoir être ajustée avant publication.",
+        cancelLabel: "Annuler",
+        confirmLabel: "Remettre en brouillon",
+      });
+      if (!okDraft) return;
+      await StudioAPI.request("/api/admin/projects/" + id + "/mark-draft", {
+        method: "PATCH",
+        body: "{}",
+      });
+      await StudioModal.alert({
+        eyebrow: "Statut corrigé",
+        title: "La campagne est maintenant en brouillon",
+        message: "Les contenus et les dates historiques ont été conservés.",
         type: "success",
         confirmLabel: "Fermer",
       });

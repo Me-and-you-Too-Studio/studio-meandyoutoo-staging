@@ -96,6 +96,7 @@
     if((p.status==='published'||p.status==='active')&&can('manage_schedule'))lifecycleActions='<a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=extend">📅 Prolonger</a><a class="button button-danger-soft" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=unpublish">⏹ Dépublier</a>';
     if(p.status==='unpublished')lifecycleActions='<a class="button button-primary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=reprogram">🚀 Reprogrammer</a><a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=archive">📦 Archiver</a>';
     if(p.status==='closed'||p.status==='completed'||p.status==='archived')lifecycleActions='<a class="button button-primary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=reprogram">🚀 Reprogrammer avec les mêmes liens</a>';
+    if(currentUser.role==='admin'&&p.legacy_history&&p.status!=='draft')lifecycleActions+=(lifecycleActions?' ':'')+'<a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=mark-draft">📝 Remettre en brouillon</a>';
     var resultsHtml=resultsRestricted
       ? '<span class="button button-locked" aria-disabled="true">🔒 Accès aux résultats non autorisé</span>'
       : results

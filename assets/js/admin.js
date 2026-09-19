@@ -695,7 +695,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const hasExplicitLanguageChoice=migrationBatch.summary?.migrationLanguageSelectionExplicit===true;
       const savedMigrationLocales=(hasExplicitLanguageChoice&&Array.isArray(migrationBatch.summary?.migrationLanguageSelection))
         ? migrationBatch.summary.migrationLanguageSelection.map(x=>String(x||'').toLowerCase())
-        : ['fr'];
+        : (clientMode?availableMigrationLocales:['fr']);
       const selectedMigrationLocales=new Set(savedMigrationLocales);
       selectedMigrationLocales.add('fr');
       const newCatalogMode=Boolean(themeEntity && !themeEntity.target_entity_id && themeEntity.source_payload?.catalogCreateIfMissing===true);
@@ -850,7 +850,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         const selected=['FR',...$$('[data-migration-global-locale]:checked').map(el=>String(el.dataset.migrationGlobalLocale||'').toUpperCase())];
         if(languageState)languageState.innerHTML=`<strong>Sera intégré : ${selected.join(' · ')}</strong><span>La sélection s’applique à tous les contenus disposant de cette traduction historique.</span>`;
       };
-      if(clientMode){$$('[data-migration-global-locale]').forEach(input=>input.disabled=true);}else $$('[data-migration-global-locale]').forEach(input=>input.addEventListener('change',async()=>{
+      $$('[data-migration-global-locale]').forEach(input=>input.addEventListener('change',async()=>{
         refreshGlobalLanguageState();
         const locales=['fr',...$$('[data-migration-global-locale]:checked').map(el=>String(el.dataset.migrationGlobalLocale||'').toLowerCase())];
         input.disabled=true;
