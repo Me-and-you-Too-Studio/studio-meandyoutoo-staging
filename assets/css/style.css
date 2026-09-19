@@ -13427,3 +13427,11 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .admin-global-picker-filters label{display:grid;gap:6px}.admin-global-picker-filters span{font-weight:800;color:#17365b}.admin-global-picker-filters select{width:100%;height:44px;border:1px solid #cbdde3;border-radius:12px;padding:0 12px;background:#fff;font:inherit}
 .admin-global-picker-locales{margin-top:12px;padding-top:11px;border-top:1px solid #e5edef}.admin-global-picker-locales-title{display:flex;align-items:center;gap:7px}.admin-global-picker-locales-title strong{font-size:.86rem;color:#17365b}.admin-global-picker-locale-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}.admin-global-picker-locale-chips label{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid #d8e4e8;border-radius:999px;background:#fff;cursor:pointer;font-size:.78rem;font-weight:800;color:#35516d}.admin-global-picker-locale-chips label:has(input:checked){border-color:#00919a;background:#edfafa;color:#006f77}.admin-global-picker-locales small{display:block;margin-top:7px;color:#728297;line-height:1.35}
 @media(max-width:760px){.admin-global-picker-filters{grid-template-columns:1fr}}
+
+/* Catalogue admin — destination explicite de la réutilisation */
+.admin-global-picker-destination{display:flex;align-items:center;gap:8px;margin:10px 0 6px;padding:10px 12px;border:1px solid #cfe5e7;border-radius:12px;background:#f5fbfb;color:#17365d}
+.admin-global-picker-destination strong{color:#007f87}
+.admin-library-subhead-actions .admin-info-dot{width:18px;height:18px;font-size:.72rem;margin-left:4px;background:#e1f4f4;color:#007f87}
+.admin-library-filter-chip .admin-info-dot{width:17px;height:17px;font-size:.68rem;margin-left:4px;vertical-align:middle}
+.admin-global-picker-filters label>span,.admin-global-picker-search>span{display:flex;align-items:center;gap:6px}
+.admin-global-picker-source .admin-info-dot{width:17px;height:17px;font-size:.68rem;margin-left:4px}
