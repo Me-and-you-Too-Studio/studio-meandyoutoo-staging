@@ -542,6 +542,12 @@
           id +
           '">⏹ Dépublier</button>',
       );
+    if (p.legacy_history === true && st !== "draft")
+      more.push(
+        '<button type="button" data-mark-draft="' +
+          id +
+          '">📝 Remettre en brouillon</button>',
+      );
     if (
       ["scheduled", "published", "active", "unpublished", "archived"].includes(
         st,
@@ -1204,6 +1210,35 @@
               confirmLabel: "Dépublier et notifier",
             });
           if (ok) mutate(p.id, "/unpublish", { method: "PATCH", body: "{}" });
+        }),
+    );
+    $$("[data-mark-draft]").forEach(
+      (b) =>
+        (b.onclick = async () => {
+          const p = projects.get(String(b.dataset.markDraft));
+          if (!p) return;
+          const ok = await StudioModal.confirm({
+            eyebrow: "Campagne historique importée",
+            type: "warning",
+            title:
+              "Remettre « " +
+              (p.campaign_name || p.title || "cette campagne") +
+              " » en brouillon ?",
+            message:
+              "Le contenu, les langues, les dates et les données historiques seront conservés. Seul le statut passera en brouillon.",
+            cancelLabel: "Annuler",
+            confirmLabel: "Remettre en brouillon",
+          });
+          if (!ok) return;
+          try {
+            await StudioAPI.request(
+              "/api/admin/projects/" + p.id + "/mark-draft",
+              { method: "PATCH", body: "{}" },
+            );
+            await load();
+          } catch (e) {
+            showError(e.message);
+          }
         }),
     );
     $$("[data-reprogram]").forEach(
