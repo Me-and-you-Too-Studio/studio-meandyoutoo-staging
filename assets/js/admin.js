@@ -1321,7 +1321,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           const r=await StudioAPI.request('/api/admin/migrations/'+batchId+'/apply-test',{method:'POST',body:'{}'});
           d.close();
           await StudioModal.alert({eyebrow:'TEST STAGING APPLIQUÉ',title:clientMode?'Tu peux maintenant tester la campagne client':'Tu peux maintenant tester le catalogue',message:r.message||(clientMode?'La campagne historique a été créée. Un rollback complet est disponible depuis le lot de migration.':'Les décisions ont été appliquées. Un rollback complet est disponible depuis le lot de migration.'),confirmLabel:'Fermer'});
-          state.migrationsLoaded=false;await loadMigrations();
+          state.migrationsLoaded=false;await loadMigrations();if(clientMode)await load();
         }catch(e){
           showError(e.message);
           updateSaveUi(clientMode?'Échec de l’import de test — aucune campagne client n’a été validée.':'Échec de l’application du test — le catalogue n’a pas été validé.');

@@ -384,8 +384,9 @@
   function isLegalChapter(ch=state.chapters[state.active]){return canonical(ch?.slug||ch?.title).includes('harcelement')||canonical(ch?.slug||ch?.title).includes('agression sexuelle');}
   function bestAnswerLabel(){return isLegalChapter()?'Réponse correcte':'Réponse la plus appropriée';}
   function isStereotypesChapter(ch=state.chapters[state.active]){
-    return ['sexisme','mixite'].includes(String(themeSlug||'').toLowerCase())
-      && canonical(ch?.slug||ch?.title).includes('stereotype');
+    // Règle transversale Me&YouToo : tout chapitre « Stéréotypes… » est un socle méthodologique,
+    // y compris lorsqu'il provient d'un import historique client sans rattachement catalogue.
+    return canonical(ch?.slug||ch?.title).includes('stereotype');
   }
   function isAggressionChapter(ch=state.chapters[state.active]){return canonical(ch?.slug||ch?.title).includes('agression sexuelle');}
   function isHostileChapter(ch=state.chapters[state.active]){return themeSlug==='sexisme'&&canonical(ch?.slug||ch?.title).includes('sexisme hostile');}
@@ -462,7 +463,10 @@
     const linkedLabel=linkedSituationLabel(s,index,ch.situations);
     const originalText=s.original_content||s.content||'';
     const submitted=submittedSituation(s.id);
-    const customized=Boolean(s.has_customization||String(originalText)!==String(s.content||'')||(s.answers||[]).some(a=>{const o=(s.original_answers||[]).find(x=>String(x.id)===String(a.id));return o&&String(o.content)!==String(a.content);}));
+    const legacyClientImport=isLegacyClientCampaign();
+    // Un import historique client est une copie fidèle : ce contenu n'est pas une personnalisation
+    // du catalogue Studio, donc on ne lui applique jamais le tag « Personnalisée ».
+    const customized=!legacyClientImport&&Boolean(s.has_customization||String(originalText)!==String(s.content||'')||(s.answers||[]).some(a=>{const o=(s.original_answers||[]).find(x=>String(x.id)===String(a.id));return o&&String(o.content)!==String(a.content);}));
     const originTag=s.from_library?'<span class="composer-library-choice-tag">✓ Choisie dans la bibliothèque</span>':'';
     const situationText=locked
       ?`<h3>${esc(s.content)}</h3>`
