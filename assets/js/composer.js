@@ -5,7 +5,8 @@
   const requestedChapter = Math.max(0, Number(params.get('chapter')||0));
   const requestedSituation = params.get('situation') || '';
   const requestedCountry = String(params.get('countryCode')||'').trim().toUpperCase();
-  const state = { chapters: [], active: requestedChapter, project: null, country: requestedCountry, library: [], libraryMode: 'add', replaceId: '', translationContexts:new Map(), libraryAvailability:new Map(), collapsedSituations:new Set() };
+  const requestedLocale = String(params.get('locale')||'').trim().toLowerCase().replaceAll('_','-');
+  const state = { chapters: [], active: requestedChapter, project: null, country: requestedCountry, locale: requestedLocale||'fr', library: [], libraryMode: 'add', replaceId: '', translationContexts:new Map(), libraryAvailability:new Map(), collapsedSituations:new Set() };
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const canonical = value => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -129,6 +130,24 @@
     return out;
   }
 
+  async function switchLegacyLocale(locale){
+    const next=String(locale||'').trim().toLowerCase().replaceAll('_','-');
+    if(!next||next===state.locale||!projectId)return;
+    state.locale=next;
+    try{
+      const query=new URLSearchParams();
+      if(state.country)query.set('countryCode',state.country);
+      query.set('locale',state.locale);
+      const data=await api(`/api/projects/${projectId}/composer?${query.toString()}`);
+      state.project=data.project;state.chapters=data.chapters;
+      state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));
+      renderCampaignContext();
+      render();
+      const url=new URL(location.href);url.searchParams.set('locale',state.locale);history.replaceState(null,'',url);
+      showMessage(`Langue affichée : ${localeLabel(state.locale)}.`,'success');
+    }catch(e){showMessage(`Impossible de charger ${localeLabel(state.locale)} : ${e.message}`);}
+  }
+
   function renderCampaignContext(){
     const root=$('composer-campaign-context');if(!root)return;
     const readOnly=Boolean(window.STUDIO_COMPOSER_READ_ONLY||document.body.dataset.campaignReadOnly==='true');
@@ -138,9 +157,11 @@
         .concat(state.project?.selected_locale?[state.project.selected_locale]:[])
         .map(v=>String(v||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
       if(locales.length){
+        if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':locales[0];
         root.hidden=false;
         root.style.display='';
-        root.innerHTML=`<div class="theme-availability-pills"><strong>Langues de la campagne</strong>${locales.map(loc=>`<span>${esc(names[loc]||loc.toUpperCase())} (${esc(loc.toUpperCase())})</span>`).join('')}</div>`;
+        root.innerHTML=`<div class="theme-availability-pills"><strong>Langues de la campagne</strong>${locales.map(loc=>`<button type="button" class="button button-small ${loc===state.locale?'button-primary':'button-ghost'}" data-legacy-locale="${esc(loc)}" aria-pressed="${loc===state.locale?'true':'false'}">${esc(names[loc]||loc.toUpperCase())} (${esc(loc.toUpperCase())})</button>`).join('')}</div>`;
+        root.querySelectorAll('[data-legacy-locale]').forEach(button=>button.addEventListener('click',()=>switchLegacyLocale(button.dataset.legacyLocale)));
         return;
       }
     }
@@ -787,7 +808,7 @@
     else if(!project.can_edit){href=`campagne-detail.html?projectId=${encodeURIComponent(projectId)}`;label='← Retour à la campagne';}
     ['composer-top-back','composer-theme-back'].forEach(id=>{const link=$(id);if(link){link.href=href;link.textContent=label;}});
   }
-  async function load(){try{await ensureProject();const data=await api(`/api/projects/${projectId}/composer${state.country?`?countryCode=${encodeURIComponent(state.country)}`:''}`);state.project=data.project;state.chapters=data.chapters;const countries=campaignCountries(data.project);state.country=requestedCountry&&countries.includes(requestedCountry)?requestedCountry:(countries.length===1?countries[0]:'');state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title;renderCampaignContext(data.project);renderCountryTabs(data.project);renderComposerCountryGate();configureContextBack(data.project);if(data.project.can_edit)await saveStep('composer');if(state.country)render();if(requestedSituation&&state.country){requestAnimationFrame(()=>{const card=document.querySelector(`[data-situation-card="${CSS.escape(String(requestedSituation))}"]`);if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea,button')?.focus({preventScroll:true});}});}if(data.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!data.project.can_edit)showMessage('Configuration verrouillée pendant la relecture Me&YouToo.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
+  async function load(){try{await ensureProject();const query=new URLSearchParams();if(state.country)query.set('countryCode',state.country);if(state.locale)query.set('locale',state.locale);const data=await api(`/api/projects/${projectId}/composer${query.toString()?`?${query.toString()}`:''}`);state.project=data.project;state.chapters=data.chapters;const countries=campaignCountries(data.project);state.country=requestedCountry&&countries.includes(requestedCountry)?requestedCountry:(countries.length===1?countries[0]:'');const locales=[...new Set((Array.isArray(data.project?.locales)?data.project.locales:[]).map(v=>String(v||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':(locales[0]||'fr');if(state.country!==requestedCountry||state.locale!==(requestedLocale||'fr')){const q2=new URLSearchParams();if(state.country)q2.set('countryCode',state.country);if(state.locale)q2.set('locale',state.locale);const refreshed=await api(`/api/projects/${projectId}/composer?${q2.toString()}`);state.project=refreshed.project;state.chapters=refreshed.chapters;}state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title||data.project.legacy_theme_title||'Campagne historique';renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();configureContextBack(state.project);if(state.project.can_edit)await saveStep('composer');if(state.country)render();if(requestedSituation&&state.country){requestAnimationFrame(()=>{const card=document.querySelector(`[data-situation-card="${CSS.escape(String(requestedSituation))}"]`);if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea,button')?.focus({preventScroll:true});}});}if(state.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!state.project.can_edit)showMessage('Campagne historique en lecture seule. Choisissez une langue ci-dessus pour consulter ses traductions.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
 
   $('library-button').onclick=async()=>{
     const status=chapterCountStatus(state.chapters[state.active]);
