@@ -45,6 +45,7 @@
     sortMode = "updated-desc",
     publishOpened = false,
     resourceDocuments = [],
+    resourceLinks = [],
     selectedExistingUser = null,
     existingSearchTimer = null;
   const orgUsers = (o) => (Array.isArray(o?.users) ? o.users : []),
@@ -202,14 +203,16 @@
     });
   }
   async function loadMediaLibrary() {
-    if (!organization?.id) { resourceDocuments = []; return; }
+    if (!organization?.id) { resourceDocuments = []; resourceLinks = []; return; }
     try {
       const data = await StudioAPI.request(
         "/api/admin/organizations/" + encodeURIComponent(organization.id) + "/resource-library",
       );
       resourceDocuments = Array.isArray(data?.documents) ? data.documents : [];
+      resourceLinks = Array.isArray(data?.links) ? data.links : [];
     } catch (error) {
       resourceDocuments = [];
+      resourceLinks = [];
       showMediaMessage(error.message || "Impossible de charger la médiathèque du client.", "danger");
     }
   }
@@ -352,18 +355,27 @@
   function renderMediaLibrary() {
     const root = $("#client-media-list");
     if (!root) return;
-    if (!resourceDocuments.length) {
-      root.innerHTML = '<div class="admin-client-media-empty"><strong>Aucun PDF dans la médiathèque de ce client.</strong><span>Ajoutez le premier document ci-dessus. Il pourra ensuite être utilisé dans ses campagnes.</span></div>';
+    const documentCards = resourceDocuments.map((doc) => {
+      const associations = Array.isArray(doc.associations) ? doc.associations : [];
+      const usage = associations.length ? ' · ' + associations.length + ' campagne' + (associations.length > 1 ? 's' : '') : '';
+      const pendingLegacy = doc.legacy_reference === true && doc.has_content === false;
+      const state = pendingLegacy ? '<small style="color:#9a6700;font-weight:700">⚠ PDF historique à fournir</small>' : '<small>Ajouté le ' + date(doc.created_at) + '</small>';
+      const download = pendingLegacy ? '' : '<button class="button button-secondary button-small" type="button" data-media-download="' + esc(doc.id) + '">Télécharger</button>';
+      const editLabel = pendingLegacy ? 'Ajouter le PDF' : 'Modifier';
+      return '<article class="admin-client-media-card' + (pendingLegacy ? ' is-legacy-pending' : '') + '"><div class="admin-client-media-icon">PDF</div><div class="admin-client-media-copy"><strong>' + esc(doc.title || doc.filename) + '</strong><span>' + esc(doc.filename) + ' · ' + formatBytes(doc.size_bytes) + usage + '</span>' + state + '</div><div class="admin-client-media-actions">' + download + '<button class="button button-secondary button-small" type="button" data-media-edit="' + esc(doc.id) + '">' + editLabel + '</button><button class="button button-primary button-small" type="button" data-media-associate="' + esc(doc.id) + '">Associer à une campagne</button><button class="button button-ghost button-small" type="button" data-media-delete="' + esc(doc.id) + '">Supprimer</button></div></article>';
+    });
+    const linkCards = resourceLinks.map((link) => {
+      const associations = Array.isArray(link.associations) ? link.associations : [];
+      const campaignNames = [...new Set(associations.map((item) => item.campaignName).filter(Boolean))];
+      const usage = campaignNames.length ? campaignNames.join(' · ') : 'Ressource rattachée à une campagne';
+      return '<article class="admin-client-media-card is-link-resource"><div class="admin-client-media-icon">LIEN</div><div class="admin-client-media-copy"><strong>' + esc(link.title) + '</strong><span>' + esc(usage) + '</span><small class="admin-client-media-url">' + esc(link.url) + '</small></div><div class="admin-client-media-actions"><a class="button button-primary button-small" href="' + esc(link.url) + '" target="_blank" rel="noopener noreferrer">Ouvrir le lien</a></div></article>';
+    });
+    if (!documentCards.length && !linkCards.length) {
+      root.innerHTML = '<div class="admin-client-media-empty"><strong>Aucune ressource dans la médiathèque de ce client.</strong><span>Les PDF ajoutés ici et les liens rattachés aux campagnes apparaîtront dans cette médiathèque.</span></div>';
     } else {
-      root.innerHTML = resourceDocuments.map((doc) => {
-        const associations = Array.isArray(doc.associations) ? doc.associations : [];
-        const usage = associations.length ? ' · ' + associations.length + ' campagne' + (associations.length > 1 ? 's' : '') : '';
-        const pendingLegacy = doc.legacy_reference === true && doc.has_content === false;
-        const state = pendingLegacy ? '<small style="color:#9a6700;font-weight:700">⚠ PDF historique à fournir</small>' : '<small>Ajouté le ' + date(doc.created_at) + '</small>';
-        const download = pendingLegacy ? '' : '<button class="button button-secondary button-small" type="button" data-media-download="' + esc(doc.id) + '">Télécharger</button>';
-        const editLabel = pendingLegacy ? 'Ajouter le PDF' : 'Modifier';
-        return '<article class="admin-client-media-card' + (pendingLegacy ? ' is-legacy-pending' : '') + '"><div class="admin-client-media-icon">PDF</div><div class="admin-client-media-copy"><strong>' + esc(doc.title || doc.filename) + '</strong><span>' + esc(doc.filename) + ' · ' + formatBytes(doc.size_bytes) + usage + '</span>' + state + '</div><div class="admin-client-media-actions">' + download + '<button class="button button-secondary button-small" type="button" data-media-edit="' + esc(doc.id) + '">' + editLabel + '</button><button class="button button-primary button-small" type="button" data-media-associate="' + esc(doc.id) + '">Associer à une campagne</button><button class="button button-ghost button-small" type="button" data-media-delete="' + esc(doc.id) + '">Supprimer</button></div></article>';
-      }).join("");
+      const linksTitle = linkCards.length ? '<div class="admin-client-media-group-title"><strong>Liens et ressources web</strong><span>' + linkCards.length + ' ressource' + (linkCards.length > 1 ? 's' : '') + '</span></div>' : '';
+      const docsTitle = documentCards.length ? '<div class="admin-client-media-group-title"><strong>Documents PDF</strong><span>' + documentCards.length + ' document' + (documentCards.length > 1 ? 's' : '') + '</span></div>' : '';
+      root.innerHTML = linksTitle + linkCards.join("") + docsTitle + documentCards.join("");
     }
     root.querySelectorAll("[data-media-download]").forEach((button) => button.onclick = async () => {
       const doc = resourceDocuments.find((item) => String(item.id) === String(button.dataset.mediaDownload));
