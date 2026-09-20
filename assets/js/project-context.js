@@ -41,6 +41,7 @@
         locale:variant&&variant.locale||'',
         countryCodes:variant&&variant.countryCodes||[],
         locales:variant&&variant.locales||[],
+        localesByCountry:variant&&variant.localesByCountry||{},
         choiceSelections:variant&&variant.choiceSelections||{}
       })
     });

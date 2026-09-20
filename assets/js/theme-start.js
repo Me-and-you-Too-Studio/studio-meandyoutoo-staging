@@ -207,10 +207,11 @@
       var defaults={};
       groupKeys.forEach(function(g){var d=(groups[g]||[]).find(function(c){return c.isDefaultChoice;})||(groups[g]||[])[0];if(d)defaults[g]=String(d.id);});
       var scopeFieldLabel=isLegalScope?'Périmètres culturels et légaux':'Périmètres de la campagne';
-      dialog.innerHTML='<form method="dialog" class="studio-modal-shell version-picker-shell"><header class="version-picker-header"><div class="studio-modal-copy"><p class="eyebrow">Configuration du diagnostic</p><h2>Choisissez votre parcours, vos périmètres et vos langues</h2><p class="studio-modal-message">Les périmètres et langues proposés s’adaptent aux chapitres que vous retenez.</p><div class="version-picker-explainer"><strong>À savoir</strong><span><b>Contenu universel</b> : les mêmes situations peuvent être utilisées dans plusieurs pays ; seules les traductions changent.</span><span><b>Contenu adapté au périmètre</b> : certaines situations sont adaptées au contexte culturel ou local choisi.</span><small>À l’étape suivante, le Studio ne vous proposera que les périmètres et langues compatibles avec l’ensemble de votre parcours.</small></div></div></header><div class="version-picker-scroll" data-version-picker-scroll><div data-choice-groups></div><div class="version-picker-section"><h3>'+esc(scopeFieldLabel)+'</h3><p class="version-picker-help" data-country-help>Sélection obligatoire : choisissez au moins un périmètre.</p><div data-country-checks class="version-check-grid"></div></div><div class="version-picker-section"><h3>Langues de la campagne</h3><p class="version-picker-help" data-locale-help>Sélection obligatoire : choisissez d’abord un périmètre, puis au moins une langue compatible.</p><div data-locale-checks class="version-check-grid"></div></div></div><footer class="studio-modal-actions version-picker-actions"><button type="button" class="button button-secondary" data-cancel>Annuler</button><button type="button" class="button button-primary" data-confirm disabled aria-disabled="true">Continuer vers la composition</button></footer></form>';
+      dialog.innerHTML='<form method="dialog" class="studio-modal-shell version-picker-shell"><header class="version-picker-header"><div class="studio-modal-copy"><p class="eyebrow">Configuration du diagnostic</p><h2>Choisissez votre parcours, vos périmètres et vos langues</h2><p class="studio-modal-message">Les périmètres et langues proposés s’adaptent aux chapitres que vous retenez.</p><div class="version-picker-explainer"><strong>À savoir</strong><span><b>Contenu universel</b> : les mêmes situations peuvent être utilisées dans plusieurs pays ; seules les traductions changent.</span><span><b>Contenu adapté au périmètre</b> : certaines situations sont adaptées au contexte culturel ou local choisi.</span><small>À l’étape suivante, le Studio ne vous proposera que les périmètres et langues compatibles avec l’ensemble de votre parcours.</small></div></div></header><div class="version-picker-scroll" data-version-picker-scroll><div data-choice-groups></div><div class="version-picker-section"><h3>'+esc(scopeFieldLabel)+'</h3><p class="version-picker-help" data-country-help>Sélection obligatoire : choisissez au moins un périmètre.</p><div data-country-checks class="version-check-grid"></div></div><div class="version-picker-section"><h3>Langues par périmètre</h3><p class="version-picker-help" data-locale-help>Sélection obligatoire : choisissez d’abord un périmètre, puis ajoutez au moins une langue pour chaque pays.</p><div data-locale-checks class="version-check-grid"></div></div></div><footer class="studio-modal-actions version-picker-actions"><button type="button" class="button button-secondary" data-cancel>Annuler</button><button type="button" class="button button-primary" data-confirm disabled aria-disabled="true">Continuer vers la composition</button></footer></form>';
 
       document.body.appendChild(dialog);
       var groupsRoot=dialog.querySelector('[data-choice-groups]'),countriesRoot=dialog.querySelector('[data-country-checks]'),localesRoot=dialog.querySelector('[data-locale-checks]'),confirmButton=dialog.querySelector('[data-confirm]'),countryHelp=dialog.querySelector('[data-country-help]'),localeHelp=dialog.querySelector('[data-locale-help]');
+      var selectedLocalesByCountry={};
       function capLine(c){var countries=(c.countryCodes||[]).join(', ');var mode=c.worldwide?'Contenu universel':'Contenu adapté au périmètre';var p=c.worldwide?'Utilisable dans plusieurs pays':(countries||'Selon le référentiel');var ls=(c.locales||[]).map(localeFullLabel).join(' · ');return mode+' · Périmètre : '+p+(ls?' · Langues : '+ls:'');}
       groupKeys.forEach(function(g,gi){
         var members=groups[g]||[];
@@ -235,16 +236,15 @@
       }
       function updateConfirmState(){
         var countries=[].slice.call(countriesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
-        var locales=[].slice.call(localesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
+        var uncovered=countries.filter(function(code){return !(selectedLocalesByCountry[code]||[]).length;});
+        var totalLocales=[...new Set(countries.flatMap(function(code){return selectedLocalesByCountry[code]||[];}))];
         if(countryHelp)countryHelp.textContent=countries.length?'Périmètre(s) sélectionné(s).':'Sélection obligatoire : choisissez au moins un périmètre.';
-        var uncovered=countries.filter(function(code){var available=localesForSelectedCountry(code);return !locales.some(function(locale){return available.includes(locale);});});
         if(localeHelp){
           if(!countries.length)localeHelp.textContent='Sélection obligatoire : choisissez d’abord un périmètre, puis au moins une langue compatible.';
-          else if(!locales.length)localeHelp.textContent=countries.length>1?'Choisissez au moins une langue pour chaque périmètre sélectionné.':'Sélection obligatoire : choisissez au moins une langue.';
-          else if(uncovered.length)localeHelp.textContent='Il manque une langue compatible pour : '+uncovered.map(countryLabel).join(' · ')+'.';
-          else localeHelp.textContent=countries.length>1?'Chaque périmètre sélectionné dispose d’au moins une langue active.':'Langue sélectionnée.';
+          else if(uncovered.length)localeHelp.textContent='Ajoutez au moins une langue pour : '+uncovered.map(countryLabel).join(' · ')+'.';
+          else localeHelp.textContent=countries.length>1?'Chaque périmètre possède ses propres langues. Vous pouvez retirer une langue d’un pays sans modifier les autres.':'Langue(s) du périmètre sélectionnée(s).';
         }
-        var ready=countries.length>0&&locales.length>0&&!uncovered.length;
+        var ready=countries.length>0&&totalLocales.length>0&&!uncovered.length;
         confirmButton.disabled=!ready;
         confirmButton.setAttribute('aria-disabled',ready?'false':'true');
       }
@@ -261,17 +261,40 @@
       }
       function renderLocales(){
         var chosenCountries=[].slice.call(countriesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
-        var previous=[].slice.call(localesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
         if(!chosenCountries.length){
           localesRoot.innerHTML='<div class="version-empty">Sélectionnez d’abord au moins un périmètre.</div>';
           updateConfirmState();
           return;
         }
-        var countryLocales={};
-        chosenCountries.forEach(function(code){countryLocales[code]=localesForSelectedCountry(code);});
-        var allowed=[...new Set(chosenCountries.flatMap(function(code){return countryLocales[code]||[];}))].filter(Boolean);
-        localesRoot.innerHTML=allowed.length?allowed.map(function(l){return '<label class="version-check"><input type="checkbox" value="'+esc(l)+'" '+(previous.includes(l)?'checked':'')+'><span>'+esc(localeFullLabel(l))+'</span></label>';}).join(''):'<div class="version-empty">Aucune langue n’est disponible pour les périmètres sélectionnés avec ce parcours.</div>';
-        localesRoot.querySelectorAll('input').forEach(function(i){i.onchange=updateConfirmState;});
+        Object.keys(selectedLocalesByCountry).forEach(function(code){
+          if(!chosenCountries.includes(code))delete selectedLocalesByCountry[code];
+        });
+        chosenCountries.forEach(function(code){
+          var allowed=localesForSelectedCountry(code);
+          selectedLocalesByCountry[code]=(selectedLocalesByCountry[code]||[]).filter(function(locale){return allowed.includes(locale);});
+        });
+        localesRoot.innerHTML=chosenCountries.map(function(code){
+          var allowed=localesForSelectedCountry(code);
+          var chosen=selectedLocalesByCountry[code]||[];
+          return '<div class="version-country-languages" data-country-language-block="'+esc(code)+'">'+
+            '<div class="version-country-languages-head"><strong>'+esc(countryLabel(code))+'</strong><small>Ajoutez uniquement les langues à utiliser pour ce pays.</small></div>'+
+            '<div class="version-check-grid">'+(allowed.length?allowed.map(function(locale){
+              var checked=chosen.includes(locale);
+              return '<label class="version-check version-check-locale '+(checked?'is-selected':'')+'"><input type="checkbox" data-country-locale="'+esc(code)+'" value="'+esc(locale)+'" '+(checked?'checked':'')+'><span><b aria-hidden="true">'+(checked?'✓':'+')+'</b> '+esc(localeFullLabel(locale))+'</span></label>';
+            }).join(''):'<div class="version-empty">Aucune langue disponible pour ce périmètre avec ce parcours.</div>')+'</div></div>';
+        }).join('');
+        localesRoot.querySelectorAll('[data-country-locale]').forEach(function(input){
+          input.onchange=function(){
+            var code=input.dataset.countryLocale;
+            var current=(selectedLocalesByCountry[code]||[]).slice();
+            if(input.checked){if(!current.includes(input.value))current.push(input.value);}
+            else current=current.filter(function(locale){return locale!==input.value;});
+            selectedLocalesByCountry[code]=current;
+            var label=input.closest('.version-check');
+            if(label){label.classList.toggle('is-selected',input.checked);var marker=label.querySelector('span b');if(marker)marker.textContent=input.checked?'✓':'+';}
+            updateConfirmState();
+          };
+        });
         updateConfirmState();
       }
       dialog.querySelectorAll('[data-choice-groups] input[type=radio]').forEach(function(i){i.onchange=renderCountries;});
@@ -279,11 +302,14 @@
       dialog.querySelector('[data-cancel]').onclick=function(){dialog.close();resolve(null);};
       dialog.querySelector('[data-confirm]').onclick=function(){
         var countries=[].slice.call(countriesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
-        var locales=[].slice.call(localesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
-        var uncovered=countries.filter(function(code){var available=localesForSelectedCountry(code);return !locales.some(function(locale){return available.includes(locale);});});
+        var localesByCountry={};
+        countries.forEach(function(code){localesByCountry[code]=(selectedLocalesByCountry[code]||[]).slice();});
+        var uncovered=countries.filter(function(code){return !(localesByCountry[code]||[]).length;});
+        var locales=[...new Set(countries.flatMap(function(code){return localesByCountry[code]||[];}))];
         if(!countries.length||!locales.length||uncovered.length){updateConfirmState();return;}
         var choiceSelections={};groupKeys.forEach(function(g,gi){var r=dialog.querySelector('input[name="choice-'+gi+'"]:checked');if(r)choiceSelections[g]=Number(r.value);});
-        dialog.close();resolve({culturalScope:'country',countryCode:countries[0],locale:locales[0],countryCodes:countries,locales:locales,choiceSelections:choiceSelections});
+        var firstCountry=countries[0],firstLocales=localesByCountry[firstCountry]||[];
+        dialog.close();resolve({culturalScope:'country',countryCode:firstCountry,locale:firstLocales[0]||locales[0],countryCodes:countries,locales:locales,localesByCountry:localesByCountry,choiceSelections:choiceSelections});
       };
       dialog.addEventListener('close',function(){setTimeout(function(){dialog.remove();},0);},{once:true});dialog.showModal();
     });
