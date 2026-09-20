@@ -412,6 +412,9 @@
   function isAggressionChapter(ch=state.chapters[state.active]){return canonical(ch?.slug||ch?.title).includes('agression sexuelle');}
   function isHostileChapter(ch=state.chapters[state.active]){return themeSlug==='sexisme'&&canonical(ch?.slug||ch?.title).includes('sexisme hostile');}
   function chapterSituationRules(ch=state.chapters[state.active]){
+    // Les campagnes historiques clientes sont des copies fidèles du legacy :
+    // les contraintes Studio de minimum/maximum par chapitre ne s'appliquent jamais.
+    if(isLegacyClientCampaign())return {min:null,max:null};
     if(isStereotypesChapter(ch))return {min:null,max:null};
     return {min:isAggressionChapter(ch)||isHostileChapter(ch)?4:5,max:8};
   }
