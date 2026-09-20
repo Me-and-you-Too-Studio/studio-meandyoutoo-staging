@@ -6,7 +6,7 @@
   const requestedSituation = params.get('situation') || '';
   const requestedCountry = String(params.get('countryCode')||'').trim().toUpperCase();
   const requestedLocale = String(params.get('locale')||'').trim().toLowerCase().replaceAll('_','-');
-  const state = { chapters: [], active: requestedChapter, project: null, country: requestedCountry, locale: requestedLocale||'fr', library: [], libraryMode: 'add', replaceId: '', translationContexts:new Map(), libraryAvailability:new Map(), collapsedSituations:new Set() };
+  const state = { chapters: [], active: requestedChapter, project: null, country: requestedCountry, locale: requestedLocale||'fr', composerCountryLocales:{}, library: [], libraryMode: 'add', replaceId: '', translationContexts:new Map(), libraryAvailability:new Map(), collapsedSituations:new Set() };
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const canonical = value => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -117,15 +117,35 @@
   function totalSelected(){ return state.chapters.reduce((sum,ch)=>sum+ch.situations.length,0); }
   async function saveStep(step){ if(projectId) await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:step})}); }
 
+  function normalizeCountryLocaleMap(raw){
+    const normalize=list=>[...new Set((Array.isArray(list)?list:[]).map(locale=>String(locale||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
+    const out={};
+    if(!raw||typeof raw!=='object'||Array.isArray(raw))return out;
+    Object.entries(raw).forEach(([country,list])=>{
+      const code=String(country||'').trim().toUpperCase();
+      const locales=normalize(list);
+      if(code&&locales.length)out[code]=locales;
+    });
+    return out;
+  }
+
+  function rememberComposerContext(data){
+    const map=normalizeCountryLocaleMap(data?.composer_context?.countryLocales);
+    if(Object.keys(map).length)state.composerCountryLocales=map;
+  }
+
   function projectCountryLocales(project=state.project){
-    const raw=project?.country_locales&&typeof project.country_locales==='object'&&!Array.isArray(project.country_locales)?project.country_locales:{};
+    const raw=normalizeCountryLocaleMap(project?.country_locales);
+    const context=normalizeCountryLocaleMap(state.composerCountryLocales);
     const countries=campaignCountries(project);
     const normalize=list=>[...new Set((Array.isArray(list)?list:[]).map(locale=>String(locale||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
     const global=normalize((Array.isArray(project?.locales)?project.locales:[]).concat(project?.selected_locale?[project.selected_locale]:[]));
     const out={};
     countries.forEach(code=>{
-      const explicit=normalize(raw?.[code]);
-      out[code]=explicit.length?explicit:(countries.length===1?global:[]);
+      const key=String(code||'').trim().toUpperCase();
+      const explicit=normalize(raw[key]);
+      const resolved=explicit.length?explicit:normalize(context[key]);
+      out[key]=resolved.length?resolved:(countries.length===1?global:[]);
     });
     return out;
   }
@@ -139,7 +159,7 @@
       if(state.country)query.set('countryCode',state.country);
       query.set('locale',state.locale);
       const data=await api(`/api/projects/${projectId}/composer?${query.toString()}`);
-      state.project=data.project;state.chapters=data.chapters;
+      state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);
       state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));
       renderCampaignContext();
       render();
@@ -185,6 +205,17 @@
     ));
   }
 
+  const countryNamesByNumericCode={
+    '032':'Argentine','040':'Autriche','056':'Belgique','072':'Botswana','076':'Brésil','100':'Bulgarie','120':'Cameroun','124':'Canada','140':'République centrafricaine','152':'Chili','156':'Chine','158':'Taïwan','178':'Congo','191':'Croatie','203':'Tchéquie','208':'Danemark','250':'France','276':'Allemagne','288':'Ghana','300':'Grèce','324':'Guinée','344':'Hong Kong','356':'Inde','380':'Italie','384':"Côte d’Ivoire",'392':'Japon','400':'Jordanie','410':'Corée du Sud','422':'Liban','430':'Liberia','442':'Luxembourg','450':'Madagascar','466':'Mali','480':'Maurice','484':'Mexique','498':'Moldavie','504':'Maroc','528':'Pays-Bas','566':'Nigeria','578':'Norvège','591':'Panama','616':'Pologne','620':'Portugal','624':'Guinée-Bissau','642':'Roumanie','643':'Fédération de Russie','686':'Sénégal','694':'Sierra Leone','703':'Slovaquie','724':'Espagne','752':'Suède','756':'Suisse','788':'Tunisie','818':'Égypte','826':'Royaume-Uni','834':'Tanzanie','840':'États-Unis','854':'Burkina Faso','858':'Uruguay'
+  };
+  function countryLabel(code){
+    const key=String(code||'').trim().toUpperCase();
+    if(countryNamesByNumericCode[key])return countryNamesByNumericCode[key];
+    if(['WW','WORLDWIDE','INT','GLOBAL'].includes(key))return'International';
+    if(key==='ASIA')return'Asie';
+    try{return new Intl.DisplayNames(['fr'],{type:'region'}).of(key)||key;}catch(_){return key;}
+  }
+
   function renderCountryTabs(project=state.project){
     const root=$('composer-country-tabs');if(!root)return;
     const countries=campaignCountries(project);
@@ -193,11 +224,7 @@
     if(isLegacyClientCampaign(project)){
       if(!countries.length){root.hidden=true;root.style.display='none';root.innerHTML='';return;}
       const byCountry=projectCountryLocales(project);
-      const numericCountryNames={
-        '032':'Argentine','040':'Autriche','056':'Belgique','072':'Botswana','076':'Brésil','120':'Cameroun','124':'Canada','152':'Chili','156':'Chine','158':'Taïwan','208':'Danemark','250':'France','276':'Allemagne','344':'Hong Kong','384':"Côte d’Ivoire",'392':'Japon','410':'Corée du Sud','484':'Mexique','578':'Norvège','591':'Panama','620':'Portugal','643':'Fédération de Russie','724':'Espagne','752':'Suède','756':'Suisse','818':'Égypte','840':'États-Unis','854':'Burkina Faso','858':'Uruguay'
-      };
-      let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
-      const label=code=>{const key=String(code||'').toUpperCase();if(numericCountryNames[key])return numericCountryNames[key];if(['WW','WORLDWIDE','INT','GLOBAL'].includes(key))return'International';if(key==='ASIA')return'Asie';try{return regionNames?.of(key)||key;}catch(_){return key;}};
+      const label=countryLabel;
       const help=state.country
         ? `Périmètre historique consulté : ${esc(label(state.country))}.`
         : (countries.length>1?'Choisissez un pays pour afficher le contenu historique correspondant.':'Périmètre historique de la campagne.');
@@ -211,9 +238,7 @@
     // activer les langues disponibles du catalogue.
     if(!countries.length){root.hidden=true;root.style.display='none';root.innerHTML='';return;}
     const byCountry=projectCountryLocales(project);
-    const numericCountryNames={'032':'Argentine','040':'Autriche','076':'Brésil','124':'Canada','152':'Chili','156':'Chine','158':'Taïwan','208':'Danemark','250':'France','276':'Allemagne','344':'Hong Kong','392':'Japon','410':'Corée du Sud','484':'Mexique','578':'Norvège','591':'Panama','620':'Portugal','724':'Espagne','752':'Suède','756':'Suisse','840':'États-Unis','858':'Uruguay'};
-    let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
-    const label=code=>{const key=String(code||'').toUpperCase();if(numericCountryNames[key])return numericCountryNames[key];if(['WW','WORLDWIDE','INT','GLOBAL'].includes(key))return'International';if(key==='ASIA')return'Asie';try{return regionNames?.of(key)||key;}catch(_){return key;}};
+    const label=countryLabel;
     const activeCopy=state.country
       ? `Vous composez ${esc(label(state.country))} avec ${((byCountry[state.country]||[]).map(localeLabel).join(' · ')||'les langues configurées')}.`
       : (countries.length>1
@@ -252,8 +277,12 @@
   async function switchCountry(code){
     const country=String(code||'').trim().toUpperCase();if(!country||country===state.country)return;
     try{
-      const data=await api(`/api/projects/${projectId}/composer?countryCode=${encodeURIComponent(country)}`);
-      state.project=data.project;state.chapters=data.chapters;state.country=data.composer_context?.countryCode||country;
+      const knownBefore=projectCountryLocales(state.project)[country]||[];
+      const requestedLocale=knownBefore.includes(state.locale)?state.locale:(knownBefore.includes('fr')?'fr':(knownBefore[0]||state.locale||'fr'));
+      const data=await api(`/api/projects/${projectId}/composer?countryCode=${encodeURIComponent(country)}&locale=${encodeURIComponent(requestedLocale)}`);
+      state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);state.country=data.composer_context?.countryCode||country;
+      const allowed=projectCountryLocales(state.project)[state.country]||[];
+      if(allowed.length&&!allowed.includes(state.locale))state.locale=allowed.includes('fr')?'fr':allowed[0];
       state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));
       state.translationContexts.clear();
       history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${state.active}&countryCode=${encodeURIComponent(state.country)}`);
@@ -610,7 +639,7 @@
   const localeNames={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',br:'Portugais Brésil','id-id':'Indonésien',id:'Indonésien',ar:'Arabe',ja:'Japonais','ko-kr':'Coréen',zf:'Chinois simplifié',zh:'Chinois traditionnel',bg:'Bulgare',nl:'Néerlandais','nl-be':'Néerlandais Belgique',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',tr:'Turc',cs:'Tchèque',sk:'Slovaque'};
   const localeLabel=loc=>`${localeNames[String(loc).toLowerCase()]||String(loc).toUpperCase()} (${String(loc).toUpperCase()})`;
   async function getTranslationContext(id,refresh=false){if(!refresh&&state.translationContexts.has(String(id)))return state.translationContexts.get(String(id));const ctx=await api(`/api/projects/${projectId}/situations/${id}/translations`);state.translationContexts.set(String(id),ctx);return ctx;}
-  async function openTranslationModal(id){const ctx=await getTranslationContext(id,true),referenceLocale=(ctx.locales||[]).includes('fr')?'fr':(ctx.referenceLocale||ctx.locales?.[0]||'fr'),reference=ctx.reference||{},targets=(ctx.locales||[]).filter(x=>x!==referenceLocale);if(!targets.length)return;const legacyReadOnly=isLegacyClientCampaign()&&state.project?.can_edit===false;const overlay=document.createElement('div');overlay.className='translation-overlay';overlay.innerHTML=`<section class="translation-modal" role="dialog" aria-modal="true"><header class="translation-head"><div><small>${legacyReadOnly?'VERSIONS LINGUISTIQUES DE LA CAMPAGNE HISTORIQUE':'TRADUCTION ET ADAPTATION LOCALE ÉVENTUELLE'}</small><h2>Comparer avec la langue de référence</h2></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="translation-toolbar"><strong>${legacyReadOnly?'Langue à comparer':'Langue / adaptation à vérifier'}</strong><select data-translation-locale>${targets.map(l=>`<option value="${esc(l)}" ${l==='en'?'selected':''}>${esc(localeLabel(l))}</option>`).join('')}</select><span data-translation-status></span></div><div class="translation-grid"><section class="translation-pane reference" data-reference-pane></section><section class="translation-pane" data-target-pane></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-cancel>${legacyReadOnly?'Fermer':'Annuler'}</button>${legacyReadOnly?'':'<button class="button button-primary" type="button" data-save-translation>Enregistrer et fermer</button>'}</footer></section>`;document.body.appendChild(overlay);const close=()=>overlay.remove();overlay.querySelector('.translation-close').onclick=close;overlay.querySelector('[data-cancel]').onclick=close;const select=overlay.querySelector('[data-translation-locale]');const referencePane=overlay.querySelector('[data-reference-pane]'),target=overlay.querySelector('[data-target-pane]');
+  async function openTranslationModal(id){const ctx=await getTranslationContext(id,true),legacyReadOnly=isLegacyClientCampaign()&&state.project?.can_edit===false,countryAllowed=legacyReadOnly&&state.country?(projectCountryLocales(state.project)[state.country]||[]):[],ctxLocales=[...new Set((ctx.locales||[]).map(loc=>String(loc||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))],scopedLocales=countryAllowed.length?ctxLocales.filter(loc=>countryAllowed.includes(loc)):ctxLocales,referenceLocale=scopedLocales.includes('fr')?'fr':((ctx.referenceLocale&&scopedLocales.includes(String(ctx.referenceLocale).toLowerCase().replaceAll('_','-')))?String(ctx.referenceLocale).toLowerCase().replaceAll('_','-'):(scopedLocales[0]||ctx.referenceLocale||'fr')),reference=ctx.reference||{},targets=scopedLocales.filter(x=>x!==referenceLocale);if(!targets.length)return;const overlay=document.createElement('div');overlay.className='translation-overlay';overlay.innerHTML=`<section class="translation-modal" role="dialog" aria-modal="true"><header class="translation-head"><div><small>${legacyReadOnly?'VERSIONS LINGUISTIQUES DE LA CAMPAGNE HISTORIQUE':'TRADUCTION ET ADAPTATION LOCALE ÉVENTUELLE'}</small><h2>Comparer avec la langue de référence</h2></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="translation-toolbar"><strong>${legacyReadOnly?'Langue à comparer':'Langue / adaptation à vérifier'}</strong><select data-translation-locale>${targets.map(l=>`<option value="${esc(l)}" ${l==='en'?'selected':''}>${esc(localeLabel(l))}</option>`).join('')}</select><span data-translation-status></span></div><div class="translation-grid"><section class="translation-pane reference" data-reference-pane></section><section class="translation-pane" data-target-pane></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-cancel>${legacyReadOnly?'Fermer':'Annuler'}</button>${legacyReadOnly?'':'<button class="button button-primary" type="button" data-save-translation>Enregistrer et fermer</button>'}</footer></section>`;document.body.appendChild(overlay);const close=()=>overlay.remove();overlay.querySelector('.translation-close').onclick=close;overlay.querySelector('[data-cancel]').onclick=close;const select=overlay.querySelector('[data-translation-locale]');const referencePane=overlay.querySelector('[data-reference-pane]'),target=overlay.querySelector('[data-target-pane]');
     const statusLabel=status=>status==='missing'?'À compléter':status==='client_version'?'Personnalisée':'Traduction Me&YouToo';
     function draw(){const loc=select.value,t=ctx.translations?.[loc]||{answers:[]};const answerStates=(reference.answers||[]).map(a=>(t.answers||[]).find(x=>String(x.id)===String(a.id))||{status:'missing'});const incomplete=t.status==='missing'||answerStates.some(a=>a.status==='missing');const stale=Boolean(ctx.sourceCustomized);const overall=incomplete?'Traduction incomplète':t.status==='client_version'||answerStates.some(a=>a.status==='client_version')?'Personnalisée':'Traduction Me&YouToo';referencePane.innerHTML=`<h3>${esc(localeLabel(referenceLocale))} · référence</h3><div class="translation-reference-text">${esc(reference.content||'')}</div><h4>Réponses</h4>${(reference.answers||[]).map((a,i)=>`<div class="translation-answer"><strong>Réponse ${i+1}</strong><div class="translation-reference-text">${esc(a.content)}</div></div>`).join('')}`;target.innerHTML=`<h3>${esc(localeLabel(loc))}<span class="translation-status ${incomplete?'is-incomplete':''}">${stale?'À vérifier':overall}</span></h3>${stale&&!legacyReadOnly?`<div class="translation-sync-warning">⚠️ La référence ${esc(localeLabel(referenceLocale))} a été modifiée. Vérifiez cette traduction et son adaptation locale éventuelle.</div>`:''}<div class="translation-local-note">${legacyReadOnly?'Version historique importée en lecture seule.':'Modifier cette version n’actualise pas automatiquement les autres langues.'}</div><div class="translation-field-head"><strong>Situation</strong><span class="translation-status">${statusLabel(t.status||'missing')}</span></div><textarea rows="4" data-target-content placeholder="Traduction / adaptation à compléter" ${legacyReadOnly?'readonly':''}>${esc(t.content||'')}</textarea><h4>Réponses</h4>${(reference.answers||[]).map((a,i)=>{const ta=answerStates[i];return `<div class="translation-answer"><div class="translation-field-head"><strong>Réponse ${i+1}</strong><span class="translation-status">${statusLabel(ta.status||'missing')}</span></div><textarea rows="2" data-target-answer="${esc(a.id)}" placeholder="Traduction / adaptation à compléter" ${legacyReadOnly?'readonly':''}>${esc(ta.content||'')}</textarea></div>`}).join('')}`;}
     select.onchange=draw;draw();const saveButton=overlay.querySelector('[data-save-translation]');if(saveButton)saveButton.onclick=async()=>{const loc=select.value,content=target.querySelector('[data-target-content]').value.trim(),answers=[...target.querySelectorAll('[data-target-answer]')].map(x=>({id:Number(x.dataset.targetAnswer),content:x.value.trim()}));try{await api(`/api/projects/${projectId}/situations/${id}/translations/${encodeURIComponent(loc)}`,{method:'PATCH',body:JSON.stringify({content,answers})});state.translationContexts.delete(String(id));close();showMessage(`${localeLabel(loc)} · traduction et adaptation locale enregistrée.`,'success');}catch(e){showMessage(e.message);}};
@@ -846,7 +875,7 @@
     else if(!project.can_edit){href=`campagne-detail.html?projectId=${encodeURIComponent(projectId)}`;label='← Retour à la campagne';}
     ['composer-top-back','composer-theme-back'].forEach(id=>{const link=$(id);if(link){link.href=href;link.textContent=label;}});
   }
-  async function load(){try{await ensureProject();const query=new URLSearchParams();if(state.country)query.set('countryCode',state.country);if(state.locale)query.set('locale',state.locale);const data=await api(`/api/projects/${projectId}/composer${query.toString()?`?${query.toString()}`:''}`);state.project=data.project;state.chapters=data.chapters;const countries=campaignCountries(data.project);state.country=requestedCountry&&countries.includes(requestedCountry)?requestedCountry:(countries.length===1?countries[0]:'');const locales=[...new Set((Array.isArray(data.project?.locales)?data.project.locales:[]).map(v=>String(v||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];if(isLegacyClientCampaign(data.project)&&locales.includes('fr'))state.locale='fr';else if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':(locales[0]||'fr');if(state.country!==requestedCountry||state.locale!==(requestedLocale||'fr')){const q2=new URLSearchParams();if(state.country)q2.set('countryCode',state.country);if(state.locale)q2.set('locale',state.locale);const refreshed=await api(`/api/projects/${projectId}/composer?${q2.toString()}`);state.project=refreshed.project;state.chapters=refreshed.chapters;}state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title||data.project.legacy_theme_title||'Campagne historique';renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();configureContextBack(state.project);if(state.project.can_edit)await saveStep('composer');if(state.country)render();if(requestedSituation&&state.country){requestAnimationFrame(()=>{const card=document.querySelector(`[data-situation-card="${CSS.escape(String(requestedSituation))}"]`);if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea,button')?.focus({preventScroll:true});}});}if(state.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!state.project.can_edit)showMessage('Campagne historique en lecture seule. Choisissez une langue ci-dessus pour consulter ses traductions.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
+  async function load(){try{await ensureProject();const query=new URLSearchParams();if(state.country)query.set('countryCode',state.country);if(state.locale)query.set('locale',state.locale);const data=await api(`/api/projects/${projectId}/composer${query.toString()?`?${query.toString()}`:''}`);state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);const countries=campaignCountries(data.project);state.country=requestedCountry&&countries.includes(requestedCountry)?requestedCountry:(countries.length===1?countries[0]:'');const locales=[...new Set((Array.isArray(data.project?.locales)?data.project.locales:[]).map(v=>String(v||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];if(isLegacyClientCampaign(data.project)&&locales.includes('fr'))state.locale='fr';else if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':(locales[0]||'fr');if(state.country!==requestedCountry||state.locale!==(requestedLocale||'fr')){const q2=new URLSearchParams();if(state.country)q2.set('countryCode',state.country);if(state.locale)q2.set('locale',state.locale);const refreshed=await api(`/api/projects/${projectId}/composer?${q2.toString()}`);state.project=refreshed.project;state.chapters=refreshed.chapters;rememberComposerContext(refreshed);}state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title||data.project.legacy_theme_title||'Campagne historique';renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();configureContextBack(state.project);if(state.project.can_edit)await saveStep('composer');if(state.country)render();if(requestedSituation&&state.country){requestAnimationFrame(()=>{const card=document.querySelector(`[data-situation-card="${CSS.escape(String(requestedSituation))}"]`);if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea,button')?.focus({preventScroll:true});}});}if(state.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!state.project.can_edit)showMessage('Campagne historique en lecture seule. Choisissez une langue ci-dessus pour consulter ses traductions.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
 
   $('library-button').onclick=async()=>{
     const status=chapterCountStatus(state.chapters[state.active]);
