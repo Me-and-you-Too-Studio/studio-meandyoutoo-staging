@@ -13628,3 +13628,78 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
   flex-basis:100%;
 }
 
+/* Cartes campagne admin : menus compacts Périmètres / Langues */
+.campaign-meta-menu{
+  margin:.55rem 0 .25rem;
+}
+.campaign-meta-menu-title{
+  font-size:.78rem;
+  font-weight:800;
+  color:#607083;
+  text-transform:uppercase;
+  letter-spacing:.035em;
+  margin-bottom:.38rem;
+}
+.campaign-meta-tags{
+  display:flex;
+  gap:.38rem;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.campaign-meta-tag{
+  display:inline-flex;
+  align-items:center;
+  min-height:28px;
+  padding:.3rem .62rem;
+  border:1px solid rgba(0,91,126,.2);
+  border-radius:999px;
+  background:#f3f9fb;
+  color:#17405c;
+  font-size:.78rem;
+  font-weight:750;
+  line-height:1.1;
+}
+.campaign-meta-more{
+  display:inline-flex;
+  align-items:flex-start;
+  position:relative;
+}
+.campaign-meta-more>summary{
+  list-style:none;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:.2rem;
+  min-height:28px;
+  padding:.3rem .62rem;
+  border:1px solid rgba(0,91,126,.22);
+  border-radius:999px;
+  background:#fff;
+  color:#007483;
+  font-size:.78rem;
+  font-weight:850;
+  line-height:1.1;
+  user-select:none;
+}
+.campaign-meta-more>summary::-webkit-details-marker{display:none}
+.campaign-meta-arrow{
+  display:inline-block;
+  transition:transform .18s ease;
+  font-size:.95em;
+}
+.campaign-meta-more[open] .campaign-meta-arrow{
+  transform:rotate(180deg);
+}
+.campaign-meta-more[open]{
+  display:flex;
+  flex-basis:100%;
+  flex-wrap:wrap;
+}
+.campaign-meta-extra{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.38rem;
+  width:100%;
+  margin-top:.4rem;
+}
+

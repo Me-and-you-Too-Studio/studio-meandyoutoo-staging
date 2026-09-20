@@ -82,9 +82,18 @@
   function campaignLocalesHtml(p){
     const locales=campaignLocales(p);
     if(!locales.length)return "";
-    return '<div class="admin-ad-meta">Langues : <strong>' +
-      locales.map(loc=>esc((campaignLocaleNames[loc]||loc.toUpperCase())+' ('+loc.toUpperCase()+')')).join(' · ') +
-      '</strong></div>';
+    const items=locales.map(loc=>({
+      code:loc,
+      label:(campaignLocaleNames[loc]||loc.toUpperCase())+' ('+loc.toUpperCase()+')'
+    }));
+    const visible=items.slice(0,3),extra=items.slice(3);
+    const tag=item=>'<span class="campaign-meta-tag">'+esc(item.label)+'</span>';
+    let html='<div class="campaign-meta-menu"><div class="campaign-meta-menu-title">Langues</div><div class="campaign-meta-tags">'+visible.map(tag).join("");
+    if(extra.length){
+      html+='<details class="campaign-meta-more"><summary>+ '+extra.length+' <span class="campaign-meta-arrow" aria-hidden="true">⌄</span></summary><div class="campaign-meta-extra">'+extra.map(tag).join("")+'</div></details>';
+    }
+    html+='</div></div>';
+    return html;
   }
 
   const campaignCountryNamesByNumericCode={
@@ -119,10 +128,10 @@
     if(onlyFrance)return "";
     const visible=labels.slice(0,3);
     const extra=labels.slice(3);
-    const tag=item=>'<span class="campaign-country-tag">'+esc(item.label)+'</span>';
-    let html='<div class="admin-ad-meta campaign-country-meta"><span>Pays :</span><div class="campaign-country-tags">'+visible.map(tag).join("");
+    const tag=item=>'<span class="campaign-meta-tag">'+esc(item.label)+'</span>';
+    let html='<div class="campaign-meta-menu"><div class="campaign-meta-menu-title">Périmètres</div><div class="campaign-meta-tags">'+visible.map(tag).join("");
     if(extra.length){
-      html+='<details class="campaign-country-more"><summary>+ '+extra.length+' autre'+(extra.length>1?'s':'')+' <span class="campaign-country-arrow" aria-hidden="true">⌄</span></summary><div class="campaign-country-extra">'+extra.map(tag).join("")+'</div></details>';
+      html+='<details class="campaign-meta-more"><summary>+ '+extra.length+' <span class="campaign-meta-arrow" aria-hidden="true">⌄</span></summary><div class="campaign-meta-extra">'+extra.map(tag).join("")+'</div></details>';
     }
     html+='</div></div>';
     return html;
