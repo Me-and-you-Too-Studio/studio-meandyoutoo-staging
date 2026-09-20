@@ -47,7 +47,11 @@
     resourceDocuments = [],
     resourceLinks = [],
     selectedExistingUser = null,
-    existingSearchTimer = null;
+    existingSearchTimer = null,
+    adminComments = [],
+    administrators = [],
+    adminUsers = new Map(),
+    currentUserId = null;
   const orgUsers = (o) => (Array.isArray(o?.users) ? o.users : []),
     orgProjects = (o) => (Array.isArray(o?.projects) ? o.projects : []),
     orgSectors = (o) =>
@@ -81,6 +85,52 @@
     return '<div class="admin-ad-meta">Langues : <strong>' +
       locales.map(loc=>esc((campaignLocaleNames[loc]||loc.toUpperCase())+' ('+loc.toUpperCase()+')')).join(' · ') +
       '</strong></div>';
+  }
+  function adminCommentsFor(entityType,id){
+    return adminComments
+      .filter(c=>c.entity_type===entityType&&String(entityType==='project'?c.project_id:c.organization_id)===String(id))
+      .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  }
+  function adminName(user){
+    if(!user)return 'Administrateur';
+    return [user.first_name,user.last_name].filter(Boolean).join(' ')||user.email||'Administrateur';
+  }
+  function adminCommentPanel(entityType,id){
+    const comments=adminCommentsFor(entityType,id),label=entityType==='project'?'campagne':'client';
+    return `<details class="admin-internal-comments" data-comment-panel="${entityType}:${esc(id)}"><summary><span>💬 Commentaires admin</span><strong>${comments.length}</strong><small>Interne Me&amp;YouToo uniquement</small></summary><div class="admin-internal-comments-body"><div class="admin-comment-list">${comments.slice(0,8).map(c=>{const own=String(c.author_user_id)===String(currentUserId),edited=c.updated_at&&c.created_at&&new Date(c.updated_at).getTime()>new Date(c.created_at).getTime()+1000;return`<article class="admin-comment-item" data-admin-comment-id="${c.id}"><div class="admin-comment-head"><div><strong>${esc(adminName(c.author))}</strong><time>${dateTime(c.created_at)}${edited?' · modifié':''}</time></div>${own?`<div class="admin-comment-actions"><button type="button" data-admin-comment-edit="${c.id}">Modifier</button><button type="button" class="danger" data-admin-comment-delete="${c.id}">Supprimer</button></div>`:''}</div><p data-admin-comment-body>${esc(c.body).replace(/\n/g,'<br>')}</p>${Array.isArray(c.mentions)&&c.mentions.length?`<small class="admin-comment-mentions">Alerte envoyée à ${c.mentions.map(m=>'@'+esc(adminName(m))).join(' · ')}</small>`:''}${own?`<div class="admin-comment-edit" data-admin-comment-edit-form hidden><label>Modifier le commentaire<textarea rows="3" maxlength="4000" data-admin-comment-edit-input>${esc(c.body)}</textarea></label><div class="admin-mention-picker" data-admin-mention-picker hidden></div><div class="admin-comment-edit-footer"><button class="button button-ghost button-small" type="button" data-admin-comment-cancel>Annuler</button><button class="button button-primary button-small" type="button" data-admin-comment-save data-comment-id="${c.id}">Enregistrer</button></div></div>`:''}</article>`;}).join('')||'<p class="admin-comment-empty">Aucun commentaire interne pour cette '+label+'.</p>'}</div><div class="admin-comment-compose"><label>Ajouter un commentaire<textarea rows="3" maxlength="4000" placeholder="Écrivez une note interne. Tapez @ pour alerter un autre administrateur." data-admin-comment-input data-entity-type="${entityType}" data-entity-id="${esc(id)}"></textarea></label><div class="admin-mention-picker" data-admin-mention-picker hidden></div><div class="admin-comment-compose-footer"><small>Tapez <strong>@</strong> puis choisissez un administrateur dans la liste pour lui envoyer une notification.</small><button class="button button-primary button-small" type="button" data-admin-comment-submit>Ajouter</button></div></div></div></details>`;
+  }
+  function bindAdminComments(root=document){
+    const bindMentionPicker=(textarea,initialMentionIds=[])=>{
+      if(textarea.dataset.commentBound==='1')return;
+      textarea.dataset.commentBound='1';
+      textarea._mentionIds=new Set(initialMentionIds.map(Number).filter(Number.isFinite));
+      const host=textarea.closest('.admin-comment-compose,.admin-comment-edit'),picker=host?.querySelector('[data-admin-mention-picker]');
+      const closePicker=()=>{if(picker){picker.hidden=true;picker.innerHTML='';}};
+      const renderPicker=()=>{
+        if(!picker)return;
+        const before=textarea.value.slice(0,textarea.selectionStart??textarea.value.length),match=before.match(/(?:^|\s)@([^@\s]*)$/);
+        if(!match){closePicker();return;}
+        const q=String(match[1]||'').toLowerCase();
+        const admins=administrators.filter(a=>a.active!==false&&String(a.id)!==String(currentUserId)&&(!q||[a.first_name,a.last_name,a.email].join(' ').toLowerCase().includes(q))).slice(0,8);
+        if(!admins.length){closePicker();return;}
+        picker.innerHTML=admins.map(a=>`<button type="button" data-mention-admin="${a.id}"><strong>@${esc(adminName(a))}</strong><small>${esc(a.email||'')}</small></button>`).join('');
+        picker.hidden=false;
+        picker.querySelectorAll('[data-mention-admin]').forEach(btn=>btn.onclick=()=>{
+          const admin=adminUsers.get(String(btn.dataset.mentionAdmin));if(!admin)return;
+          const pos=textarea.selectionStart??textarea.value.length,beforeNow=textarea.value.slice(0,pos),after=textarea.value.slice(pos),m=beforeNow.match(/(?:^|\s)@([^@\s]*)$/);if(!m)return;
+          const atIndex=beforeNow.lastIndexOf('@'),token='@'+(admin.first_name||admin.last_name||String(admin.email||'admin').split('@')[0]);
+          textarea.value=beforeNow.slice(0,atIndex)+token+' '+after;textarea._mentionIds.add(Number(admin.id));textarea.focus();
+          const cursor=beforeNow.slice(0,atIndex).length+token.length+1;textarea.setSelectionRange(cursor,cursor);closePicker();
+        });
+      };
+      textarea.addEventListener('input',renderPicker);textarea.addEventListener('click',renderPicker);textarea.addEventListener('keydown',e=>{if(e.key==='Escape')closePicker();});textarea.addEventListener('blur',()=>setTimeout(closePicker,160));
+    };
+    root.querySelectorAll('[data-admin-comment-input]').forEach(textarea=>bindMentionPicker(textarea));
+    root.querySelectorAll('[data-admin-comment-submit]').forEach(button=>{if(button.dataset.commentBound==='1')return;button.dataset.commentBound='1';button.onclick=async()=>{const compose=button.closest('.admin-comment-compose'),textarea=compose?.querySelector('[data-admin-comment-input]');if(!textarea)return;const body=textarea.value.trim();if(!body){textarea.focus();return;}const entityType=textarea.dataset.entityType,id=textarea.dataset.entityId,payload={entityType,body,mentionedAdminIds:[...(textarea._mentionIds||new Set())]};if(entityType==='project')payload.projectId=Number(id);else payload.organizationId=id;button.disabled=true;button.textContent='Ajout…';try{const data=await StudioAPI.request('/api/admin/comments',{method:'POST',body:JSON.stringify(payload)});if(data.comment)adminComments.unshift(data.comment);render();}catch(error){showError(error.message);}finally{button.disabled=false;button.textContent='Ajouter';}};});
+    root.querySelectorAll('[data-admin-comment-edit]').forEach(button=>{if(button.dataset.commentBound==='1')return;button.dataset.commentBound='1';button.onclick=()=>{const item=button.closest('.admin-comment-item'),form=item?.querySelector('[data-admin-comment-edit-form]'),textarea=form?.querySelector('[data-admin-comment-edit-input]'),comment=adminComments.find(c=>String(c.id)===String(button.dataset.adminCommentEdit));if(!form||!textarea||!comment)return;form.hidden=false;item.querySelector('[data-admin-comment-body]')?.setAttribute('hidden','');button.closest('.admin-comment-actions')?.setAttribute('hidden','');bindMentionPicker(textarea,Array.isArray(comment.mentioned_user_ids)?comment.mentioned_user_ids:[]);textarea.focus();};});
+    root.querySelectorAll('[data-admin-comment-cancel]').forEach(button=>{if(button.dataset.commentBound==='1')return;button.dataset.commentBound='1';button.onclick=()=>{const item=button.closest('.admin-comment-item'),form=button.closest('[data-admin-comment-edit-form]');if(form)form.hidden=true;item?.querySelector('[data-admin-comment-body]')?.removeAttribute('hidden');item?.querySelector('.admin-comment-actions')?.removeAttribute('hidden');};});
+    root.querySelectorAll('[data-admin-comment-save]').forEach(button=>{if(button.dataset.commentBound==='1')return;button.dataset.commentBound='1';button.onclick=async()=>{const item=button.closest('.admin-comment-item'),textarea=item?.querySelector('[data-admin-comment-edit-input]'),commentId=button.dataset.commentId;if(!textarea)return;const body=textarea.value.trim();if(!body){textarea.focus();return;}button.disabled=true;button.textContent='Enregistrement…';try{const data=await StudioAPI.request('/api/admin/comments/'+commentId,{method:'PATCH',body:JSON.stringify({body,mentionedAdminIds:[...(textarea._mentionIds||new Set())]})});if(data.comment){const i=adminComments.findIndex(c=>String(c.id)===String(data.comment.id));if(i>=0)adminComments[i]=data.comment;}render();}catch(error){showError(error.message);}finally{button.disabled=false;button.textContent='Enregistrer';}};});
+    root.querySelectorAll('[data-admin-comment-delete]').forEach(button=>{if(button.dataset.commentBound==='1')return;button.dataset.commentBound='1';button.onclick=async()=>{const commentId=button.dataset.adminCommentDelete,comment=adminComments.find(c=>String(c.id)===String(commentId));if(!comment)return;const ok=await StudioModal.confirm({type:'danger',title:'Supprimer ce commentaire ?',message:'Le commentaire sera supprimé définitivement. Les notifications de mention associées seront également retirées.',cancelLabel:'Conserver',confirmLabel:'Supprimer'});if(!ok)return;button.disabled=true;try{await StudioAPI.request('/api/admin/comments/'+commentId,{method:'DELETE'});adminComments=adminComments.filter(c=>String(c.id)!==String(commentId));render();}catch(error){showError(error.message);}finally{button.disabled=false;}};});
   }
 
   const accessLabels = {
@@ -669,7 +719,7 @@
       date(p.close_date) +
       '</div><div class="admin-ad-actions">' +
       actions(p) +
-      "</div></article>"
+      "</div>" + adminCommentPanel('project', p.id) + "</article>"
     );
   }
   function userRow(u) {
@@ -905,6 +955,7 @@
     $("#client-ads").innerHTML =
       ps.map(card).join("") ||
       '<p class="admin-empty">Aucun autodiagnostic.</p>';
+    bindAdminComments($("#client-ads"));
     renderContacts();
     $("#client-users").innerHTML =
       orgUsers(organization).map(userRow).join("") ||
@@ -1833,11 +1884,17 @@
         );
         return;
       }
-      const [folderData, catalogData] = await Promise.all([
+      const [folderData, catalogData, commentsData, teamData] = await Promise.all([
         StudioAPI.request('/api/campaign-folders?organizationId=' + encodeURIComponent(organization.id)),
-        StudioAPI.request('/api/admin/catalog/themes')
+        StudioAPI.request('/api/admin/catalog/themes'),
+        StudioAPI.request('/api/admin/comments?limit=1000').catch(()=>({comments:[]})),
+        StudioAPI.request('/api/admin/administrators')
       ]);
       catalogThemes = Array.isArray(catalogData?.themes) ? catalogData.themes : [];
+      adminComments = Array.isArray(commentsData?.comments) ? commentsData.comments : [];
+      administrators = Array.isArray(teamData?.administrators) ? teamData.administrators : [];
+      currentUserId = teamData?.currentUserId ?? null;
+      adminUsers = new Map(administrators.map(u=>[String(u.id),u]));
       folders = Array.isArray(folderData.folders) ? folderData.folders : [];
       orgProjects(organization).forEach((project) => { project.folder_id = null; });
       (folderData.assignments || []).forEach((assignment) => {
