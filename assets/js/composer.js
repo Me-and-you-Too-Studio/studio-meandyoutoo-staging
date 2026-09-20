@@ -153,15 +153,16 @@
     const readOnly=Boolean(window.STUDIO_COMPOSER_READ_ONLY||document.body.dataset.campaignReadOnly==='true');
     if(readOnly){
       const names={fr:'Français',nl:'Néerlandais','nl-be':'Néerlandais Belgique',en:'Anglais',de:'Allemand',es:'Espagnol',it:'Italien',pt:'Portugais',br:'Portugais Brésil',bg:'Bulgare',ja:'Japonais','ko-kr':'Coréen',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',tr:'Turc',zf:'Chinois simplifié',zh:'Chinois traditionnel',cs:'Tchèque',sk:'Slovaque',id:'Indonésien',ar:'Arabe'};
-      const locales=[...new Set((Array.isArray(state.project?.locales)?state.project.locales:[])
+      const byCountry=projectCountryLocales(state.project);
+      const countryLocales=state.country&&Array.isArray(byCountry[state.country])?byCountry[state.country]:[];
+      const locales=[...new Set((countryLocales.length?countryLocales:(Array.isArray(state.project?.locales)?state.project.locales:[]))
         .concat(state.project?.selected_locale?[state.project.selected_locale]:[])
         .map(v=>String(v||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
       if(locales.length){
-        if(locales.includes('fr'))state.locale='fr';
-        else if(!locales.includes(state.locale))state.locale=locales[0];
+        if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':locales[0];
         root.hidden=false;
         root.style.display='';
-        root.innerHTML=`<div class="theme-availability-pills"><strong>Langues disponibles</strong>${locales.map(loc=>`<span class="theme-availability-pill is-language">${esc(names[loc]||loc.toUpperCase())} (${esc(loc.toUpperCase())})</span>`).join('')}<small>Utilisez la mappemonde 🌐 sous chaque situation pour comparer les traductions.</small></div>`;
+        root.innerHTML=`<div class="theme-availability-pills"><strong>${state.country?'Langues du périmètre sélectionné':'Langues disponibles'}</strong>${locales.map(loc=>`<span class="theme-availability-pill is-language">${esc(names[loc]||loc.toUpperCase())} (${esc(loc.toUpperCase())})</span>`).join('')}<small>${state.country?'Les langues affichées correspondent au pays sélectionné. ':''}Utilisez la mappemonde 🌐 sous chaque situation pour comparer les traductions.</small></div>`;
         return;
       }
     }
@@ -188,9 +189,22 @@
     const root=$('composer-country-tabs');if(!root)return;
     const countries=campaignCountries(project);
     // Les campagnes historiques importées restent une copie du legacy :
-    // on ne repropose pas au client de modifier leur périmètre/langues.
+    // les périmètres doivent rester visibles et consultables, mais jamais modifiables.
     if(isLegacyClientCampaign(project)){
-      root.hidden=true;root.style.display='none';root.innerHTML='';return;
+      if(!countries.length){root.hidden=true;root.style.display='none';root.innerHTML='';return;}
+      const byCountry=projectCountryLocales(project);
+      const numericCountryNames={
+        '032':'Argentine','040':'Autriche','056':'Belgique','072':'Botswana','076':'Brésil','120':'Cameroun','124':'Canada','152':'Chili','156':'Chine','158':'Taïwan','208':'Danemark','250':'France','276':'Allemagne','344':'Hong Kong','384':"Côte d’Ivoire",'392':'Japon','410':'Corée du Sud','484':'Mexique','578':'Norvège','591':'Panama','620':'Portugal','643':'Fédération de Russie','724':'Espagne','752':'Suède','756':'Suisse','818':'Égypte','840':'États-Unis','854':'Burkina Faso','858':'Uruguay'
+      };
+      let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
+      const label=code=>{const key=String(code||'').toUpperCase();if(numericCountryNames[key])return numericCountryNames[key];if(['WW','WORLDWIDE','INT','GLOBAL'].includes(key))return'International';if(key==='ASIA')return'Asie';try{return regionNames?.of(key)||key;}catch(_){return key;}};
+      const help=state.country
+        ? `Périmètre historique consulté : ${esc(label(state.country))}.`
+        : (countries.length>1?'Choisissez un pays pour afficher le contenu historique correspondant.':'Périmètre historique de la campagne.');
+      root.hidden=false;root.style.display='';
+      root.innerHTML=`<div class="composer-country-tabs-label"><div class="composer-country-tabs-label-copy"><strong>Périmètres historiques</strong><span>${help}</span></div></div><div class="composer-country-tabs-list">${countries.map(code=>{const langs=byCountry[code]||[];return `<button type="button" class="composer-country-tab composer-country-tab-with-locales ${code===state.country?'is-active':''}" data-country-tab="${esc(code)}" aria-pressed="${code===state.country?'true':'false'}"><strong>${esc(label(code))}</strong><span>${langs.length?langs.map(locale=>esc(localeLabel(locale))).join(' · '):'Langues historiques'}</span></button>`;}).join('')}</div>`;
+      root.querySelectorAll('[data-country-tab]').forEach(button=>button.onclick=()=>switchCountry(button.dataset.countryTab));
+      return;
     }
     // Pour une campagne créée depuis le catalogue, le contexte reste modifiable
     // même avec un seul périmètre : le client doit pouvoir ouvrir la modale et
