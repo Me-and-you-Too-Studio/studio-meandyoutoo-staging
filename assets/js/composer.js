@@ -528,12 +528,12 @@
     const canReplaceLocked=false;
     const showMethodologyChip=Boolean(methodologyLocked&&!readOnly);
     const linkedLabel=linkedSituationLabel(s,index,ch.situations);
-    const originalText=s.original_content||s.content||'';
+    const originalText=s.original_content_localized||s.original_content||s.content||'';
     const submitted=submittedSituation(s.id);
     const legacyClientImport=isLegacyClientCampaign();
-    // Un import historique client est une copie fidèle : ce contenu n'est pas une personnalisation
-    // du catalogue Studio, donc on ne lui applique jamais le tag « Personnalisée ».
-    const customized=!legacyClientImport&&Boolean(s.has_customization||String(originalText)!==String(s.content||'')||(s.answers||[]).some(a=>{const o=(s.original_answers||[]).find(x=>String(x.id)===String(a.id));return o&&String(o.content)!==String(a.content);}));
+    // Une traduction du catalogue Me&YouToo n'est jamais une personnalisation.
+    // Le tag « Personnalisée » repose uniquement sur une vraie contextualisation enregistrée.
+    const customized=!legacyClientImport&&Boolean(s.has_customization);
     const originTag=s.from_library?'<span class="composer-library-choice-tag">✓ Choisie dans la bibliothèque</span>':'';
     const situationText=locked
       ?`<h3>${esc(s.content)}</h3>`
@@ -647,7 +647,7 @@
 
   function findSituation(id){return state.chapters.flatMap(ch=>ch.situations).find(s=>String(s.id)===String(id));}
   function refreshLiveDiff(card,s,situationText,answers){
-    const situationOriginal=String(s.original_content||card.querySelector('[data-situation-input]')?.dataset.originalSituation||'');
+    const situationOriginal=String(s.original_content_localized||s.original_content||card.querySelector('[data-situation-input]')?.dataset.originalSituation||'');
     const situationDiff=card.querySelector('[data-live-situation-diff]');
     const situationInput=card.querySelector('[data-situation-input]');
     const situationChanged=situationOriginal!==String(situationText||'');
