@@ -386,16 +386,31 @@
     const campaigns = orgProjects(organization).filter((project) => project.status !== 'archived');
     const dialog = document.createElement('dialog');
     dialog.className = 'admin-dialog admin-media-association-dialog';
-    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Médiathèque client</p><h2>Ajouter une ressource</h2><div class="admin-media-resource-type"><label><input type="radio" name="media-resource-type" value="document" checked> <strong>PDF</strong></label><label><input type="radio" name="media-resource-type" value="link"> <strong>Lien web</strong></label></div><label class="field"><span>Texte affiché aux répondants</span><input id="media-new-title" maxlength="160" required placeholder="Ex. Guide du management inclusif"></label><label class="field" id="media-new-file-field"><span>Fichier PDF</span><input id="media-new-file" type="file" accept="application/pdf,.pdf"></label><label class="field" id="media-new-url-field" hidden><span>URL</span><input id="media-new-url" type="url" maxlength="2000" placeholder="https://..."></label><div class="field"><span>Associer à des campagnes</span><p class="hint">Vous pouvez sélectionner plusieurs campagnes. Pour un PDF, vous pouvez aussi ne rien cocher et simplement l’ajouter à la médiathèque. Un lien doit être associé à au moins une campagne.</p>' + (campaigns.length ? mediaCampaignCheckboxes(campaigns) : '<p class="hint">Aucune campagne disponible.</p>') + '</div><p class="composer-alert" id="media-new-error" data-tone="danger" hidden></p><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" type="button" id="media-new-confirm">Ajouter la ressource</button></div></form>';
+    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" type="button" data-media-close aria-label="Fermer">×</button><p class="eyebrow">Médiathèque client</p><h2>Ajouter une ressource</h2><div class="admin-media-resource-type"><label><input type="radio" name="media-resource-type" value="document" checked> <strong>PDF</strong></label><label><input type="radio" name="media-resource-type" value="link"> <strong>Lien web</strong></label></div><label class="field"><span>Texte affiché aux répondants</span><input id="media-new-title" maxlength="160" required placeholder="Ex. Guide du management inclusif"></label><label class="field" id="media-new-file-field"><span>Fichier PDF</span><input id="media-new-file" type="file" accept="application/pdf,.pdf"></label><label class="field" id="media-new-url-field" hidden><span>URL</span><input id="media-new-url" type="url" maxlength="2000" placeholder="https://..."></label><div class="field"><span>Associer à des campagnes</span><p class="hint" id="media-new-association-hint">Vous pouvez sélectionner plusieurs campagnes. Pour un PDF, vous pouvez aussi ne rien cocher et simplement l’ajouter à la médiathèque.</p>' + (campaigns.length ? mediaCampaignCheckboxes(campaigns) : '<p class="hint">Aucune campagne disponible.</p>') + '</div><p class="composer-alert" id="media-new-error" data-tone="danger" hidden></p><div class="top-actions"><button class="button button-ghost" type="button" data-media-close>Annuler</button><button class="button button-primary" type="button" id="media-new-confirm">Ajouter la ressource</button></div></form>';
     document.body.appendChild(dialog);
     dialog.addEventListener('close', () => dialog.remove(), { once: true });
     const typeInputs = [...dialog.querySelectorAll('input[name="media-resource-type"]')];
     const toggleType = () => {
       const type = typeInputs.find((input) => input.checked)?.value || 'document';
-      dialog.querySelector('#media-new-file-field').hidden = type !== 'document';
-      dialog.querySelector('#media-new-url-field').hidden = type !== 'link';
+      const fileField = dialog.querySelector('#media-new-file-field');
+      const urlField = dialog.querySelector('#media-new-url-field');
+      const hint = dialog.querySelector('#media-new-association-hint');
+      const isDocument = type === 'document';
+      fileField.hidden = !isDocument;
+      fileField.style.display = isDocument ? '' : 'none';
+      urlField.hidden = isDocument;
+      urlField.style.display = isDocument ? 'none' : '';
+      dialog.querySelector('#media-new-file').disabled = !isDocument;
+      dialog.querySelector('#media-new-url').disabled = isDocument;
+      if (hint) hint.textContent = isDocument
+        ? 'Vous pouvez sélectionner plusieurs campagnes. Vous pouvez aussi ne rien cocher et simplement ajouter le PDF à la médiathèque.'
+        : 'Sélectionnez une ou plusieurs campagnes auxquelles associer ce lien.';
     };
     typeInputs.forEach((input) => input.addEventListener('change', toggleType));
+    dialog.querySelectorAll('[data-media-close]').forEach((button) => {
+      button.addEventListener('click', () => dialog.close('cancel'));
+    });
+    toggleType();
     dialog.querySelector('#media-new-confirm').onclick = async () => {
       const type = typeInputs.find((input) => input.checked)?.value || 'document';
       const title = dialog.querySelector('#media-new-title').value.trim();
