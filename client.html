@@ -75,14 +75,16 @@
           <div class="admin-section-title admin-client-media-title">
             <div>
               <h2>Médiathèque du client</h2>
-              <p>Retrouvez ici les ressources rattachées aux campagnes du client : liens web et PDF. Vous pouvez aussi ajouter des PDF propres à cette entreprise.</p>
+              <p>Retrouvez ici les ressources rattachées aux campagnes du client : liens web et PDF. Vous pouvez ajouter des PDF ou des liens web propres à cette entreprise et les associer à une ou plusieurs campagnes.</p>
             </div>
             <span class="admin-media-client-badge">Réservé à Me&amp;YouToo</span>
           </div>
           <div class="admin-client-media-upload">
-            <label class="field"><span>Nom du document <small>(facultatif)</small></span><input id="client-media-title" maxlength="160" placeholder="Ex. Harcèlement au travail — guide Infomil"></label>
-            <label class="field admin-client-media-file"><span>Fichier PDF</span><input id="client-media-file" type="file" accept="application/pdf,.pdf"></label>
-            <button class="button button-primary" type="button" id="client-media-upload">+ Ajouter le PDF</button>
+            <div>
+              <strong>Ajouter une ressource après résultats</strong>
+              <p class="hint">Ajoutez un <strong>PDF</strong> ou un <strong>lien web</strong>, puis associez-le à une ou plusieurs campagnes du client.</p>
+            </div>
+            <button class="button button-primary" type="button" id="client-media-add-resource">+ Ajouter une ressource</button>
           </div>
           <div id="client-media-alert" class="composer-alert" hidden></div>
           <div id="client-media-list" class="admin-client-media-list"><p class="admin-empty">Chargement de la médiathèque…</p></div>

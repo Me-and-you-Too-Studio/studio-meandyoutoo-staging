@@ -291,36 +291,152 @@
     if (surveyId) return title + " — Survey #" + surveyId + (slug ? " · " + slug : "");
     return title;
   }
+  function mediaCampaignCheckboxes(campaigns, selectedIds = new Set(), disabledIds = new Set()) {
+    return '<div class="admin-media-campaign-picker">' + campaigns.map((project) => {
+      const id = String(project.id);
+      const checked = selectedIds.has(id) || disabledIds.has(id);
+      const disabled = disabledIds.has(id);
+      return '<label class="admin-media-campaign-choice' + (disabled ? ' is-already-linked' : '') + '"><input type="checkbox" value="' + esc(id) + '" data-media-campaign ' + (checked ? 'checked ' : '') + (disabled ? 'disabled ' : '') + '><span><strong>' + esc(campaignMediaLabel(project)) + '</strong>' + (disabled ? '<small>Déjà associé</small>' : '') + '</span></label>';
+    }).join('') + '</div>';
+  }
+  async function appendLinkToProject(projectId, title, url) {
+    const data = await StudioAPI.request('/api/admin/projects/' + encodeURIComponent(projectId) + '/result-resources');
+    const resources = Array.isArray(data?.resources) ? data.resources : [];
+    const duplicate = resources.some((item) => String(item?.type || '').toLowerCase() === 'link' && String(item?.url || '').trim() === url && String(item?.title || '').trim() === title);
+    if (duplicate) return false;
+    if (resources.length >= 10) throw new Error('Une des campagnes sélectionnées contient déjà 10 ressources de fin.');
+    resources.push({ title, type: 'link', url });
+    await StudioAPI.request('/api/admin/projects/' + encodeURIComponent(projectId) + '/result-resources', {
+      method: 'PATCH',
+      body: JSON.stringify({ resultButtons: resources }),
+    });
+    return true;
+  }
   function openMediaAssociation(documentItem) {
-    const campaigns = orgProjects(organization).filter((project) => project.status !== "archived");
+    const campaigns = orgProjects(organization).filter((project) => project.status !== 'archived');
     if (!campaigns.length) {
-      showMediaMessage("Aucune campagne disponible pour ce client.", "warning");
+      showMediaMessage('Aucune campagne disponible pour ce client.', 'warning');
       return;
     }
-    const dialog = document.createElement("dialog");
-    dialog.className = "admin-dialog admin-media-association-dialog";
-    const defaultTitle = String(documentItem.title || documentItem.filename || "").replace(/\.pdf$/i, "");
-    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Médiathèque client</p><h2>Associer ce PDF à une campagne</h2><p><strong>' + esc(documentItem.title || documentItem.filename) + '</strong></p><label class="field"><span>Campagne</span><select id="media-association-project">' + campaigns.map((project) => '<option value="' + esc(project.id) + '">' + esc(campaignMediaLabel(project)) + '</option>').join("") + '</select></label><label class="field"><span>Texte affiché aux répondants</span><input id="media-association-title" maxlength="160" required value="' + esc(defaultTitle) + '"></label><p class="hint">Ce texte apparaîtra dans « Approfondissez vos connaissances » à la fin de l’autodiagnostic.</p><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" type="button" id="media-association-confirm">Associer à la campagne</button></div></form>';
+    const existingIds = new Set((Array.isArray(documentItem.associations) ? documentItem.associations : []).map((a) => String(a.projectId)));
+    const availableCount = campaigns.filter((p) => !existingIds.has(String(p.id))).length;
+    const dialog = document.createElement('dialog');
+    dialog.className = 'admin-dialog admin-media-association-dialog';
+    const defaultTitle = String(documentItem.title || documentItem.filename || '').replace(/\.pdf$/i, '');
+    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Médiathèque client</p><h2>Associer ce PDF à plusieurs campagnes</h2><p><strong>' + esc(documentItem.title || documentItem.filename) + '</strong></p><div class="field"><span>Campagnes</span><p class="hint">Cochez une ou plusieurs campagnes. Les campagnes déjà associées sont indiquées et ne seront pas dupliquées.</p>' + mediaCampaignCheckboxes(campaigns, new Set(), existingIds) + '</div><label class="field"><span>Texte affiché aux répondants</span><input id="media-association-title" maxlength="160" required value="' + esc(defaultTitle) + '"></label><p class="hint">Ce texte apparaîtra dans « Approfondissez vos connaissances » à la fin de chaque autodiagnostic sélectionné.</p><p class="composer-alert" id="media-association-error" data-tone="danger" hidden></p><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" type="button" id="media-association-confirm"' + (availableCount ? '' : ' disabled') + '>Associer aux campagnes</button></div></form>';
     document.body.appendChild(dialog);
-    dialog.addEventListener("close", () => dialog.remove(), { once: true });
-    dialog.querySelector("#media-association-confirm").onclick = async () => {
-      const projectId = dialog.querySelector("#media-association-project").value;
-      const title = dialog.querySelector("#media-association-title").value.trim();
-      if (!projectId || !title) return;
-      const button = dialog.querySelector("#media-association-confirm");
+    dialog.addEventListener('close', () => dialog.remove(), { once: true });
+    dialog.querySelector('#media-association-confirm').onclick = async () => {
+      const selectedIds = [...dialog.querySelectorAll('[data-media-campaign]:checked:not(:disabled)')].map((input) => input.value);
+      const title = dialog.querySelector('#media-association-title').value.trim();
+      const error = dialog.querySelector('#media-association-error');
+      if (!selectedIds.length) { error.textContent = 'Sélectionnez au moins une nouvelle campagne.'; error.hidden = false; return; }
+      if (!title) { error.textContent = 'Renseignez le texte affiché aux répondants.'; error.hidden = false; return; }
+      const button = dialog.querySelector('#media-association-confirm');
       button.disabled = true;
+      button.textContent = 'Association…';
       try {
-        await StudioAPI.request("/api/admin/projects/" + encodeURIComponent(projectId) + "/result-resources/document", {
-          method: "POST",
-          body: JSON.stringify({ title, documentId: documentItem.id }),
-        });
+        for (const projectId of selectedIds) {
+          await StudioAPI.request('/api/admin/projects/' + encodeURIComponent(projectId) + '/result-resources/document', {
+            method: 'POST',
+            body: JSON.stringify({ title, documentId: documentItem.id }),
+          });
+        }
         dialog.close();
         await loadMediaLibrary();
         renderMediaLibrary();
-        showMediaMessage("PDF associé à la campagne. Il apparaîtra dans les ressources proposées après les résultats.");
-      } catch (error) {
+        showMediaMessage('PDF associé à ' + selectedIds.length + ' campagne' + (selectedIds.length > 1 ? 's' : '') + '.');
+      } catch (err) {
         button.disabled = false;
-        showMediaMessage(error.message || "Association impossible.", "danger");
+        button.textContent = 'Associer aux campagnes';
+        error.textContent = err.message || 'Association impossible.';
+        error.hidden = false;
+      }
+    };
+    dialog.showModal();
+  }
+  function openLinkAssociation(linkItem) {
+    const campaigns = orgProjects(organization).filter((project) => project.status !== 'archived');
+    if (!campaigns.length) return showMediaMessage('Aucune campagne disponible pour ce client.', 'warning');
+    const existingIds = new Set((Array.isArray(linkItem.associations) ? linkItem.associations : []).map((a) => String(a.projectId)));
+    const dialog = document.createElement('dialog');
+    dialog.className = 'admin-dialog admin-media-association-dialog';
+    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Médiathèque client</p><h2>Associer ce lien à plusieurs campagnes</h2><p><strong>' + esc(linkItem.title) + '</strong><br><small>' + esc(linkItem.url) + '</small></p><div class="field"><span>Campagnes</span>' + mediaCampaignCheckboxes(campaigns, new Set(), existingIds) + '</div><p class="composer-alert" id="media-link-association-error" data-tone="danger" hidden></p><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" type="button" id="media-link-association-confirm">Associer aux campagnes</button></div></form>';
+    document.body.appendChild(dialog);
+    dialog.addEventListener('close', () => dialog.remove(), { once: true });
+    dialog.querySelector('#media-link-association-confirm').onclick = async () => {
+      const selectedIds = [...dialog.querySelectorAll('[data-media-campaign]:checked:not(:disabled)')].map((input) => input.value);
+      const error = dialog.querySelector('#media-link-association-error');
+      if (!selectedIds.length) { error.textContent = 'Sélectionnez au moins une nouvelle campagne.'; error.hidden = false; return; }
+      const button = dialog.querySelector('#media-link-association-confirm');
+      button.disabled = true; button.textContent = 'Association…';
+      try {
+        for (const projectId of selectedIds) await appendLinkToProject(projectId, linkItem.title, linkItem.url);
+        dialog.close();
+        await loadMediaLibrary(); renderMediaLibrary();
+        showMediaMessage('Lien associé à ' + selectedIds.length + ' campagne' + (selectedIds.length > 1 ? 's' : '') + '.');
+      } catch (err) {
+        button.disabled = false; button.textContent = 'Associer aux campagnes';
+        error.textContent = err.message || 'Association impossible.'; error.hidden = false;
+      }
+    };
+    dialog.showModal();
+  }
+  function openAddMediaResource() {
+    const campaigns = orgProjects(organization).filter((project) => project.status !== 'archived');
+    const dialog = document.createElement('dialog');
+    dialog.className = 'admin-dialog admin-media-association-dialog';
+    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Médiathèque client</p><h2>Ajouter une ressource</h2><div class="admin-media-resource-type"><label><input type="radio" name="media-resource-type" value="document" checked> <strong>PDF</strong></label><label><input type="radio" name="media-resource-type" value="link"> <strong>Lien web</strong></label></div><label class="field"><span>Texte affiché aux répondants</span><input id="media-new-title" maxlength="160" required placeholder="Ex. Guide du management inclusif"></label><label class="field" id="media-new-file-field"><span>Fichier PDF</span><input id="media-new-file" type="file" accept="application/pdf,.pdf"></label><label class="field" id="media-new-url-field" hidden><span>URL</span><input id="media-new-url" type="url" maxlength="2000" placeholder="https://..."></label><div class="field"><span>Associer à des campagnes</span><p class="hint">Vous pouvez sélectionner plusieurs campagnes. Pour un PDF, vous pouvez aussi ne rien cocher et simplement l’ajouter à la médiathèque. Un lien doit être associé à au moins une campagne.</p>' + (campaigns.length ? mediaCampaignCheckboxes(campaigns) : '<p class="hint">Aucune campagne disponible.</p>') + '</div><p class="composer-alert" id="media-new-error" data-tone="danger" hidden></p><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" type="button" id="media-new-confirm">Ajouter la ressource</button></div></form>';
+    document.body.appendChild(dialog);
+    dialog.addEventListener('close', () => dialog.remove(), { once: true });
+    const typeInputs = [...dialog.querySelectorAll('input[name="media-resource-type"]')];
+    const toggleType = () => {
+      const type = typeInputs.find((input) => input.checked)?.value || 'document';
+      dialog.querySelector('#media-new-file-field').hidden = type !== 'document';
+      dialog.querySelector('#media-new-url-field').hidden = type !== 'link';
+    };
+    typeInputs.forEach((input) => input.addEventListener('change', toggleType));
+    dialog.querySelector('#media-new-confirm').onclick = async () => {
+      const type = typeInputs.find((input) => input.checked)?.value || 'document';
+      const title = dialog.querySelector('#media-new-title').value.trim();
+      const selectedIds = [...dialog.querySelectorAll('[data-media-campaign]:checked')].map((input) => input.value);
+      const error = dialog.querySelector('#media-new-error');
+      error.hidden = true;
+      if (!title) { error.textContent = 'Renseignez le texte affiché aux répondants.'; error.hidden = false; return; }
+      const button = dialog.querySelector('#media-new-confirm');
+      button.disabled = true; button.textContent = 'Ajout…';
+      try {
+        if (type === 'document') {
+          const file = dialog.querySelector('#media-new-file')?.files?.[0];
+          if (!file) throw new Error('Choisissez un fichier PDF.');
+          if (!/\.pdf$/i.test(file.name) || (file.type && file.type !== 'application/pdf')) throw new Error('Le fichier doit être un PDF.');
+          if (file.size > 6 * 1024 * 1024) throw new Error('Le PDF ne doit pas dépasser 6 Mo.');
+          const contentBase64 = await fileToBase64(file);
+          const created = await StudioAPI.request('/api/admin/organizations/' + encodeURIComponent(organization.id) + '/resource-library', {
+            method: 'POST',
+            body: JSON.stringify({ title, filename: file.name, mimeType: 'application/pdf', contentBase64 }),
+          });
+          const documentId = created?.document?.id;
+          if (!documentId) throw new Error('Le PDF a été ajouté mais son identifiant est introuvable.');
+          for (const projectId of selectedIds) {
+            await StudioAPI.request('/api/admin/projects/' + encodeURIComponent(projectId) + '/result-resources/document', {
+              method: 'POST',
+              body: JSON.stringify({ title, documentId }),
+            });
+          }
+          showMediaMessage(selectedIds.length ? 'PDF ajouté et associé à ' + selectedIds.length + ' campagne' + (selectedIds.length > 1 ? 's' : '') + '.' : 'PDF ajouté à la médiathèque du client.');
+        } else {
+          const url = dialog.querySelector('#media-new-url').value.trim();
+          if (!/^https?:\/\//i.test(url)) throw new Error('Saisissez une URL complète commençant par http:// ou https://.');
+          if (!selectedIds.length) throw new Error('Sélectionnez au moins une campagne pour ajouter un lien.');
+          for (const projectId of selectedIds) await appendLinkToProject(projectId, title, url);
+          showMediaMessage('Lien ajouté à ' + selectedIds.length + ' campagne' + (selectedIds.length > 1 ? 's' : '') + '.');
+        }
+        dialog.close();
+        await loadMediaLibrary(); renderMediaLibrary();
+      } catch (err) {
+        button.disabled = false; button.textContent = 'Ajouter la ressource';
+        error.textContent = err.message || 'Ajout impossible.'; error.hidden = false;
       }
     };
     dialog.showModal();
@@ -419,13 +535,13 @@
       const state = pendingLegacy ? '<small style="color:#9a6700;font-weight:700">⚠ PDF historique à fournir</small>' : '<small>Ajouté le ' + date(doc.created_at) + '</small>';
       const download = pendingLegacy ? '' : '<button class="button button-secondary button-small" type="button" data-media-download="' + esc(doc.id) + '">Télécharger</button>';
       const editLabel = pendingLegacy ? 'Ajouter le PDF' : 'Modifier';
-      return '<article class="admin-client-media-card' + (pendingLegacy ? ' is-legacy-pending' : '') + '"><div class="admin-client-media-icon">PDF</div><div class="admin-client-media-copy"><strong>' + esc(doc.title || doc.filename) + '</strong><span>' + esc(doc.filename) + ' · ' + formatBytes(doc.size_bytes) + usage + '</span>' + state + '</div><div class="admin-client-media-actions">' + download + '<button class="button button-secondary button-small" type="button" data-media-edit="' + esc(doc.id) + '">' + editLabel + '</button><button class="button button-primary button-small" type="button" data-media-associate="' + esc(doc.id) + '">Associer à une campagne</button><button class="button button-ghost button-small" type="button" data-media-delete="' + esc(doc.id) + '">Supprimer</button></div></article>';
+      return '<article class="admin-client-media-card' + (pendingLegacy ? ' is-legacy-pending' : '') + '"><div class="admin-client-media-icon">PDF</div><div class="admin-client-media-copy"><strong>' + esc(doc.title || doc.filename) + '</strong><span>' + esc(doc.filename) + ' · ' + formatBytes(doc.size_bytes) + usage + '</span>' + state + '</div><div class="admin-client-media-actions">' + download + '<button class="button button-secondary button-small" type="button" data-media-edit="' + esc(doc.id) + '">' + editLabel + '</button><button class="button button-primary button-small" type="button" data-media-associate="' + esc(doc.id) + '">Associer à des campagnes</button><button class="button button-ghost button-small" type="button" data-media-delete="' + esc(doc.id) + '">Supprimer</button></div></article>';
     });
     const linkCards = resourceLinks.map((link) => {
       const associations = Array.isArray(link.associations) ? link.associations : [];
       const campaignNames = [...new Set(associations.map((item) => item.campaignName).filter(Boolean))];
       const usage = campaignNames.length ? campaignNames.join(' · ') : 'Ressource rattachée à une campagne';
-      return '<article class="admin-client-media-card is-link-resource"><div class="admin-client-media-icon">LIEN</div><div class="admin-client-media-copy"><strong>' + esc(link.title) + '</strong><span>' + esc(usage) + '</span><small class="admin-client-media-url">' + esc(link.url) + '</small></div><div class="admin-client-media-actions"><a class="button button-primary button-small" href="' + esc(link.url) + '" target="_blank" rel="noopener noreferrer">Ouvrir le lien</a></div></article>';
+      return '<article class="admin-client-media-card is-link-resource"><div class="admin-client-media-icon">LIEN</div><div class="admin-client-media-copy"><strong>' + esc(link.title) + '</strong><span>' + esc(usage) + '</span><small class="admin-client-media-url">' + esc(link.url) + '</small></div><div class="admin-client-media-actions"><a class="button button-secondary button-small" href="' + esc(link.url) + '" target="_blank" rel="noopener noreferrer">Ouvrir le lien</a><button class="button button-primary button-small" type="button" data-media-link-associate="' + esc(link.id) + '">Associer à des campagnes</button></div></article>';
     });
     if (!documentCards.length && !linkCards.length) {
       root.innerHTML = '<div class="admin-client-media-empty"><strong>Aucune ressource dans la médiathèque de ce client.</strong><span>Les PDF ajoutés ici et les liens rattachés aux campagnes apparaîtront dans cette médiathèque.</span></div>';
@@ -447,6 +563,10 @@
       const doc = resourceDocuments.find((item) => String(item.id) === String(button.dataset.mediaAssociate));
       if (doc) openMediaAssociation(doc);
     });
+    root.querySelectorAll("[data-media-link-associate]").forEach((button) => button.onclick = () => {
+      const link = resourceLinks.find((item) => String(item.id) === String(button.dataset.mediaLinkAssociate));
+      if (link) openLinkAssociation(link);
+    });
     root.querySelectorAll("[data-media-delete]").forEach((button) => button.onclick = async () => {
       const doc = resourceDocuments.find((item) => String(item.id) === String(button.dataset.mediaDelete));
       if (!doc || !window.confirm('Supprimer « ' + (doc.title || doc.filename) + ' » de la médiathèque de ce client ?')) return;
@@ -459,29 +579,10 @@
     });
   }
   function bindMediaUpload() {
-    const upload = $("#client-media-upload");
-    if (!upload) return;
-    upload.onclick = async () => {
-      const file = $("#client-media-file")?.files?.[0];
-      const title = $("#client-media-title")?.value.trim() || "";
-      if (!file) { showMediaMessage("Choisissez un fichier PDF.", "danger"); return; }
-      if (!/\.pdf$/i.test(file.name) || file.type && file.type !== "application/pdf") { showMediaMessage("Le fichier doit être un PDF.", "danger"); return; }
-      if (file.size > 6 * 1024 * 1024) { showMediaMessage("Le PDF ne doit pas dépasser 6 Mo.", "danger"); return; }
-      upload.disabled = true;
-      try {
-        const contentBase64 = await fileToBase64(file);
-        await StudioAPI.request("/api/admin/organizations/" + encodeURIComponent(organization.id) + "/resource-library", {
-          method: "POST",
-          body: JSON.stringify({ title, filename: file.name, mimeType: "application/pdf", contentBase64 }),
-        });
-        $("#client-media-file").value = "";
-        $("#client-media-title").value = "";
-        await loadMediaLibrary();
-        renderMediaLibrary();
-        showMediaMessage("PDF ajouté à la médiathèque du client.");
-      } catch (error) { showMediaMessage(error.message || "Ajout impossible.", "danger"); }
-      finally { upload.disabled = false; }
-    };
+    const button = $("#client-media-add-resource");
+    if (!button || button.dataset.mediaBound === "1") return;
+    button.dataset.mediaBound = "1";
+    button.onclick = openAddMediaResource;
   }
   function normalizedStatus(p) {
     return p.status === "configuration_submitted"
