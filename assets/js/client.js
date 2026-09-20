@@ -115,6 +115,22 @@
     if(key==="ASIA")return "Asie";
     try{return new Intl.DisplayNames(["fr"],{type:"region"}).of(key)||key;}catch(_){return key;}
   }
+  function legacyCountryOptions(selected){
+    const current=String(selected||"").trim().toUpperCase();
+    return Object.entries(campaignCountryNamesByNumericCode)
+      .sort((a,b)=>a[1].localeCompare(b[1],"fr"))
+      .map(([code,label])=>'<option value="'+esc(code)+'" '+(code===current?'selected':'')+'>'+esc(label)+'</option>')
+      .join("");
+  }
+  function legacyLocaleChoicesHtml(p,currentCountry){
+    const map=p?.country_locales&&typeof p.country_locales==="object"?p.country_locales:{};
+    const current=[...new Set((Array.isArray(map[currentCountry])?map[currentCountry]:campaignLocales(p)).map(v=>String(v||"").toLowerCase()).filter(Boolean))];
+    const available=[...new Set([...campaignLocales(p),...Object.values(map).flatMap(v=>Array.isArray(v)?v:[])].map(v=>String(v||"").toLowerCase()).filter(Boolean))];
+    return available.map(loc=>{
+      const label=(campaignLocaleNames[loc]||loc.toUpperCase())+" ("+loc.toUpperCase()+")";
+      return '<label class="legacy-locale-choice"><input type="checkbox" data-legacy-locale value="'+esc(loc)+'" '+(current.includes(loc)?'checked':'')+'> <span>'+esc(label)+'</span></label>';
+    }).join("");
+  }
   function campaignCountries(p){
     return [...new Set((Array.isArray(p?.countries)?p.countries:[])
       .concat(p?.selected_country_code?[p.selected_country_code]:[])
@@ -1330,6 +1346,11 @@
       '<p class="eyebrow">Administration de la campagne</p>' +
       '<h2>' + esc(p.campaign_name || p.title || "Campagne") + '</h2>' +
       '<p>Pour une campagne historique, les dates sont initialisées à partir du pack de passations du client. Vous pouvez les modifier ici si la campagne suit un calendrier différent.</p>' +
+      (p.legacy_history===true && campaignCountries(p).length===1
+        ? '<section class="legacy-scope-management"><div class="legacy-scope-head"><div><strong>Périmètre historique</strong><p>Corrigez ici un périmètre importé erroné sans modifier le contenu historique de la campagne.</p></div><span class="info-dot" title="Cette correction modifie uniquement le rattachement pays/langues du projet. Les situations, réponses, scores, profils et traductions restent inchangés.">i</span></div><div class="admin-form-grid"><label class="field"><span>Pays</span><select id="admin-management-legacy-country">'+legacyCountryOptions(campaignCountries(p)[0])+'</select></label><div class="field" style="grid-column:1/-1"><span>Langues du périmètre</span><div id="admin-management-legacy-locales" class="legacy-locale-choices">'+legacyLocaleChoicesHtml(p,campaignCountries(p)[0])+'</div><small class="hint">Sélectionnez uniquement les langues réellement diffusées pour ce pays. Cette correction ne supprime aucune traduction du contenu historique.</small></div></div></section>'
+        : (p.legacy_history===true && campaignCountries(p).length>1
+          ? '<div class="info-box"><strong>Périmètres historiques multi-pays</strong><br>Cette campagne contient plusieurs pays. La correction manuelle pays par pays reste volontairement désactivée ici pour éviter de réaffecter des situations au mauvais périmètre.</div>'
+          : '')) +
       '<div class="admin-form-grid">' +
       '<label class="field" style="grid-column:1/-1"><span>Base catalogue de référence</span><select id="admin-management-theme">' + catalogThemeOptions(p.theme_id) + '</select><small class="hint">Pour un import historique non relié, vous pouvez choisir ici la base catalogue correspondante. Cela ne remplace ni ne modifie le contenu historique importé.</small></label>' +
       '<label class="field"><span>Date de début</span><input id="admin-management-launch" type="date" value="' + esc(isoDay(p.launch_date || organization?.pack_started_at)) + '"></label>' +
@@ -1342,6 +1363,17 @@
       '</div>' +
       '<div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" id="admin-management-save" type="button">Enregistrer</button></div></form>';
     document.body.append(dialog);
+    const legacyCountrySelect=dialog.querySelector("#admin-management-legacy-country");
+    if(legacyCountrySelect){
+      legacyCountrySelect.onchange=()=>{
+        const country=legacyCountrySelect.value;
+        const map=p?.country_locales&&typeof p.country_locales==="object"?p.country_locales:{};
+        const preferred=new Set((Array.isArray(map[country])?map[country]:campaignLocales(p)).map(v=>String(v||"").toLowerCase()));
+        dialog.querySelectorAll("[data-legacy-locale]").forEach(input=>{
+          input.checked=preferred.has(String(input.value||"").toLowerCase());
+        });
+      };
+    }
     dialog.querySelector("#admin-management-save").onclick = async () => {
       const launchDate = dialog.querySelector("#admin-management-launch").value,
         closeDate = dialog.querySelector("#admin-management-close").value;
@@ -1359,6 +1391,8 @@
           method: "PATCH",
           body: JSON.stringify({
             themeId: dialog.querySelector("#admin-management-theme").value || null,
+            legacyCountryCode: legacyCountrySelect ? legacyCountrySelect.value : undefined,
+            legacyLocales: legacyCountrySelect ? [...dialog.querySelectorAll("[data-legacy-locale]:checked")].map(input=>input.value) : undefined,
             launchDate: launchDate || null,
             closeDate: closeDate || null,
             commanditaireName: dialog.querySelector("#admin-management-commanditaire-name").value.trim(),
@@ -1374,7 +1408,7 @@
         await StudioModal.alert({
           eyebrow: "Campagne mise à jour",
           title: "Les informations ont été enregistrées",
-          message: "Base catalogue, dates, commanditaire et liens sont maintenant disponibles dans le dossier client.",
+          message: "Les informations de campagne ont été enregistrées. Pour une campagne historique mono-pays, la correction éventuelle du périmètre a également été appliquée sans modifier son contenu.",
           type: "success",
           confirmLabel: "Fermer",
         });
