@@ -86,6 +86,47 @@
       locales.map(loc=>esc((campaignLocaleNames[loc]||loc.toUpperCase())+' ('+loc.toUpperCase()+')')).join(' · ') +
       '</strong></div>';
   }
+
+  const campaignCountryNamesByNumericCode={
+    '032':'Argentine','040':'Autriche','056':'Belgique','072':'Botswana','076':'Brésil','100':'Bulgarie',
+    '120':'Cameroun','124':'Canada','140':'République centrafricaine','152':'Chili','156':'Chine','158':'Taïwan',
+    '178':'Congo','191':'Croatie','203':'Tchéquie','208':'Danemark','250':'France','276':'Allemagne','288':'Ghana',
+    '300':'Grèce','324':'Guinée','344':'Hong Kong','356':'Inde','380':'Italie','384':"Côte d’Ivoire",'392':'Japon',
+    '400':'Jordanie','410':'Corée du Sud','422':'Liban','430':'Liberia','442':'Luxembourg','450':'Madagascar',
+    '466':'Mali','480':'Maurice','484':'Mexique','498':'Moldavie','504':'Maroc','528':'Pays-Bas','566':'Nigeria',
+    '578':'Norvège','591':'Panama','616':'Pologne','620':'Portugal','624':'Guinée-Bissau','642':'Roumanie',
+    '643':'Fédération de Russie','686':'Sénégal','694':'Sierra Leone','703':'Slovaquie','724':'Espagne','752':'Suède',
+    '756':'Suisse','788':'Tunisie','818':'Égypte','826':'Royaume-Uni','834':'Tanzanie','840':'États-Unis',
+    '854':'Burkina Faso','858':'Uruguay'
+  };
+  function campaignCountryLabel(code){
+    const key=String(code||"").trim().toUpperCase();
+    if(campaignCountryNamesByNumericCode[key])return campaignCountryNamesByNumericCode[key];
+    if(["WW","WORLDWIDE","INT","GLOBAL"].includes(key))return "International";
+    if(key==="ASIA")return "Asie";
+    try{return new Intl.DisplayNames(["fr"],{type:"region"}).of(key)||key;}catch(_){return key;}
+  }
+  function campaignCountries(p){
+    return [...new Set((Array.isArray(p?.countries)?p.countries:[])
+      .concat(p?.selected_country_code?[p.selected_country_code]:[])
+      .map(v=>String(v||"").trim().toUpperCase()).filter(Boolean))];
+  }
+  function campaignCountriesHtml(p){
+    const countries=campaignCountries(p);
+    if(!countries.length)return "";
+    const labels=countries.map(code=>({code,label:campaignCountryLabel(code)}));
+    const onlyFrance=labels.length===1&&["FR","250"].includes(labels[0].code);
+    if(onlyFrance)return "";
+    const visible=labels.slice(0,3);
+    const extra=labels.slice(3);
+    const tag=item=>'<span class="campaign-country-tag">'+esc(item.label)+'</span>';
+    let html='<div class="admin-ad-meta campaign-country-meta"><span>Pays :</span><div class="campaign-country-tags">'+visible.map(tag).join("");
+    if(extra.length){
+      html+='<details class="campaign-country-more"><summary>+ '+extra.length+' autre'+(extra.length>1?'s':'')+' <span class="campaign-country-arrow" aria-hidden="true">⌄</span></summary><div class="campaign-country-extra">'+extra.map(tag).join("")+'</div></details>';
+    }
+    html+='</div></div>';
+    return html;
+  }
   function adminCommentsFor(entityType,id){
     return adminComments
       .filter(c=>c.entity_type===entityType&&String(entityType==='project'?c.project_id:c.organization_id)===String(id))
@@ -815,6 +856,7 @@
       '</strong></div>' + (p.legacy_history && p.legacy_theme_title ? '<div class="admin-ad-meta">Thématique historique : <strong>' + esc(p.legacy_theme_title) + '</strong></div>' : '') + '<div class="admin-ad-meta">Titre répondants : <strong>' +
       esc(respondent) +
       '</strong></div>' +
+      campaignCountriesHtml(p) +
       campaignLocalesHtml(p) +
       (p.legacy_history && p.legacy_slug ? '<div class="admin-ad-meta">Slug historique : <strong>' + esc(p.legacy_slug) + '</strong></div>' : '') +
       '<div class="admin-ad-tags"><span class="admin-ad-theme">' +
