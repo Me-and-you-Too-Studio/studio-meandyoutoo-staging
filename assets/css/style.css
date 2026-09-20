@@ -13498,3 +13498,33 @@ mark.migration-diff-new{background:#e1f5f3;box-shadow:inset 0 -1px 0 #4da7a2}
 .legacy-translation-availability span{display:inline-flex;padding:4px 8px;border-radius:999px;background:#eef6f8;border:1px solid #d8e7eb;color:#294d68;font-weight:700}
 .legacy-translation-answer-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .legacy-translation-answer-head span{font-size:.7rem;color:#60758b;font-weight:800}
+
+/* Notes internes admin : clients et campagnes */
+.admin-internal-comments{grid-column:1/-1;margin-top:14px;border:1px solid #e5e7eb;border-radius:14px;background:#fbfcfe;overflow:visible}
+.admin-internal-comments>summary{display:flex;align-items:center;gap:9px;cursor:pointer;padding:12px 14px;font-weight:700;list-style:none}
+.admin-internal-comments>summary::-webkit-details-marker{display:none}
+.admin-internal-comments>summary strong{min-width:24px;height:24px;padding:0 7px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:#eef2ff;font-size:12px}
+.admin-internal-comments>summary small{margin-left:auto;color:#6b7280;font-weight:500}
+.admin-internal-comments[open]>summary{border-bottom:1px solid #e5e7eb}
+.admin-internal-comments-body{padding:14px;display:grid;gap:14px}
+.admin-comment-list{display:grid;gap:9px}
+.admin-comment-item{padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
+.admin-comment-item>div{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.admin-comment-item strong{font-size:13px}
+.admin-comment-item time{font-size:11px;color:#6b7280}
+.admin-comment-item p{margin:7px 0 0;white-space:normal;overflow-wrap:anywhere;font-size:13px;line-height:1.45}
+.admin-comment-mentions{display:block;margin-top:7px;color:#4f46e5;font-weight:600}
+.admin-comment-empty{margin:0;color:#6b7280;font-size:13px}
+.admin-comment-compose{position:relative;display:grid;gap:8px}
+.admin-comment-compose label{display:grid;gap:6px;font-size:12px;font-weight:700}
+.admin-comment-compose textarea{width:100%;min-height:82px;resize:vertical;border:1px solid #d1d5db;border-radius:10px;padding:10px 11px;background:#fff;font:inherit;line-height:1.4}
+.admin-comment-compose textarea:focus{outline:2px solid rgba(79,70,229,.18);border-color:#818cf8}
+.admin-comment-compose-footer{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.admin-comment-compose-footer small{color:#6b7280;line-height:1.35}
+.admin-mention-picker{position:absolute;left:0;right:0;bottom:50px;z-index:20;max-height:230px;overflow:auto;border:1px solid #d1d5db;border-radius:12px;background:#fff;box-shadow:0 14px 35px rgba(15,23,42,.14);padding:6px}
+.admin-mention-picker button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border:0;background:transparent;border-radius:8px;padding:9px 10px;text-align:left;cursor:pointer}
+.admin-mention-picker button:hover{background:#f3f4f6}
+.admin-mention-picker button strong{font-size:13px}
+.admin-mention-picker button small{color:#6b7280;font-size:11px}
+.admin-campaign-card .admin-internal-comments{margin-top:4px}
+@media (max-width:760px){.admin-internal-comments>summary{flex-wrap:wrap}.admin-internal-comments>summary small{width:100%;margin-left:33px}.admin-comment-compose-footer{align-items:flex-start;flex-direction:column}.admin-comment-compose-footer .button{width:100%}}
