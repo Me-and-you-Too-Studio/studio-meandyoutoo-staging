@@ -234,6 +234,13 @@
     link.remove();
     setTimeout(() => URL.revokeObjectURL(href), 1000);
   }
+  function campaignMediaLabel(project) {
+    const title = project?.campaign_name || project?.title || project?.theme_title || ("Campagne " + project?.id);
+    const surveyId = project?.legacy_survey_id;
+    const slug = String(project?.legacy_slug || "").trim();
+    if (surveyId) return title + " — Survey #" + surveyId + (slug ? " · " + slug : "");
+    return title;
+  }
   function openMediaAssociation(documentItem) {
     const campaigns = orgProjects(organization).filter((project) => project.status !== "archived");
     if (!campaigns.length) {
@@ -243,7 +250,7 @@
     const dialog = document.createElement("dialog");
     dialog.className = "admin-dialog admin-media-association-dialog";
     const defaultTitle = String(documentItem.title || documentItem.filename || "").replace(/\.pdf$/i, "");
-    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Médiathèque client</p><h2>Associer ce PDF à une campagne</h2><p><strong>' + esc(documentItem.title || documentItem.filename) + '</strong></p><label class="field"><span>Campagne</span><select id="media-association-project">' + campaigns.map((project) => '<option value="' + esc(project.id) + '">' + esc(project.campaign_name || project.title || project.theme_title || ("Campagne " + project.id)) + '</option>').join("") + '</select></label><label class="field"><span>Texte affiché aux répondants</span><input id="media-association-title" maxlength="160" required value="' + esc(defaultTitle) + '"></label><p class="hint">Ce texte apparaîtra dans « Approfondissez vos connaissances » à la fin de l’autodiagnostic.</p><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" type="button" id="media-association-confirm">Associer à la campagne</button></div></form>';
+    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Médiathèque client</p><h2>Associer ce PDF à une campagne</h2><p><strong>' + esc(documentItem.title || documentItem.filename) + '</strong></p><label class="field"><span>Campagne</span><select id="media-association-project">' + campaigns.map((project) => '<option value="' + esc(project.id) + '">' + esc(campaignMediaLabel(project)) + '</option>').join("") + '</select></label><label class="field"><span>Texte affiché aux répondants</span><input id="media-association-title" maxlength="160" required value="' + esc(defaultTitle) + '"></label><p class="hint">Ce texte apparaîtra dans « Approfondissez vos connaissances » à la fin de l’autodiagnostic.</p><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" type="button" id="media-association-confirm">Associer à la campagne</button></div></form>';
     document.body.appendChild(dialog);
     dialog.addEventListener("close", () => dialog.remove(), { once: true });
     dialog.querySelector("#media-association-confirm").onclick = async () => {
@@ -302,7 +309,7 @@
     dialog.className = "admin-dialog admin-media-association-dialog";
     const associations = Array.isArray(documentItem.associations) ? documentItem.associations : [];
     const associationFields = associations.length
-      ? '<div class="admin-media-edit-associations"><h3>Texte affiché dans les campagnes</h3><p class="hint">Vous pouvez corriger ici le texte visible par les répondants pour chaque campagne utilisant ce PDF.</p>' + associations.map((association) => '<label class="field"><span>' + esc(association.campaignName || ("Campagne " + association.projectId)) + '</span><input maxlength="160" required data-media-edit-project="' + esc(association.projectId) + '" data-media-edit-resource-index="' + esc(association.resourceIndex) + '" value="' + esc(association.title || "") + '"></label>').join("") + '</div>'
+      ? '<div class="admin-media-edit-associations"><h3>Texte affiché dans les campagnes</h3><p class="hint">Vous pouvez corriger ici le texte visible par les répondants pour chaque campagne utilisant ce PDF.</p>' + associations.map((association) => { const legacySuffix = association.legacySurveyId ? ' — Survey #' + association.legacySurveyId + (association.legacySlug ? ' · ' + association.legacySlug : '') : ''; return '<label class="field"><span>' + esc((association.campaignName || ("Campagne " + association.projectId)) + legacySuffix) + '</span><input maxlength="160" required data-media-edit-project="' + esc(association.projectId) + '" data-media-edit-resource-index="' + esc(association.resourceIndex) + '" value="' + esc(association.title || "") + '"></label>'; }).join("") + '</div>'
       : '<p class="hint">Ce PDF n’est associé à aucune campagne pour le moment.</p>';
     dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Médiathèque client</p><h2>Modifier le document</h2><label class="field"><span>Nom du document</span><input id="media-edit-title" maxlength="160" value="' + esc(documentItem.title || "") + '" placeholder="Nom interne du document"></label><div class="field"><span>Fichier actuel</span><strong>' + esc(documentItem.filename || "document.pdf") + '</strong></div><label class="field"><span>Remplacer le PDF <small>(facultatif)</small></span><input id="media-edit-file" type="file" accept="application/pdf,.pdf"><small>Laissez vide pour conserver le fichier actuel.</small></label>' + associationFields + '<p class="composer-alert" id="media-edit-error" data-tone="danger" hidden></p><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" type="button" id="media-edit-confirm">Enregistrer les modifications</button></div></form>';
     document.body.appendChild(dialog);
