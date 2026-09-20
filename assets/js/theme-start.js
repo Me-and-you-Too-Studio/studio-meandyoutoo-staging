@@ -228,8 +228,8 @@
         var selected=selectedCaps(),allowed=null;
         selected.forEach(function(c){
           var ls=[];
-          if(c.worldwide||!(c.countryCodes||[]).length)ls=(c.locales||[]).slice();
-          else if(c.localesByCountry&&Array.isArray(c.localesByCountry[code]))ls=c.localesByCountry[code].slice();
+          if(c.localesByCountry&&Array.isArray(c.localesByCountry[code])&&c.localesByCountry[code].length)ls=c.localesByCountry[code].slice();
+          else if(c.worldwide||!(c.countryCodes||[]).length)ls=(c.locales||[]).slice();
           allowed=allowed===null?ls:allowed.filter(function(l){return ls.includes(l);});
         });
         return [...new Set((allowed||[]).filter(Boolean))];

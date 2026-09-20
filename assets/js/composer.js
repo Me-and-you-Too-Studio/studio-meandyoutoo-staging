@@ -303,7 +303,10 @@
     const countryName=code=>{try{return regionNames?.of(code)||code;}catch(_){return code;}};
     const normalizeLocales=list=>[...new Set((Array.isArray(list)?list:[]).map(x=>String(x||'').toLowerCase().replaceAll('_','-')).filter(Boolean))];
     const intersect=(sets)=>{if(!sets.length)return [];let out=[...sets[0]];for(const list of sets.slice(1))out=out.filter(x=>list.includes(x));return [...new Set(out)];};
-    const localesForCapCountry=(cap,code)=>normalizeLocales(cap?.worldwide?cap.locales:cap?.localesByCountry?.[code]);
+    const localesForCapCountry=(cap,code)=>{
+      const scoped=normalizeLocales(cap?.localesByCountry?.[code]);
+      return scoped.length?scoped:normalizeLocales(cap?.worldwide?cap.locales:[]);
+    };
     const countryOptions=variants.filter(v=>v.countryCode).map(v=>{
       const code=String(v.countryCode).toUpperCase();
       const perChapter=selectedCaps.map(cap=>localesForCapCountry(cap,code));
@@ -516,6 +519,33 @@
     return `tone-${(index%4)+1}`;
   }
 
+  function libraryAvailabilityKey(ch=state.chapters[state.active]){
+    return `${String(ch?.catalog_chapter_id||ch?.id||'')}:${String(state.country||'')}`;
+  }
+  function chapterHasLibrary(ch=state.chapters[state.active]){
+    return state.libraryAvailability.get(libraryAvailabilityKey(ch))===true;
+  }
+  async function ensureLibraryAvailability(ch=state.chapters[state.active]){
+    if(!ch||state.project?.can_edit===false||isStereotypesChapter(ch))return false;
+    const key=libraryAvailabilityKey(ch);
+    if(state.libraryAvailability.has(key))return state.libraryAvailability.get(key)===true;
+    // Valeur provisoire : tant que le contrôle n'est pas terminé, aucun bouton
+    // de bibliothèque n'est affiché. Cela évite un clic vers une bibliothèque vide.
+    state.libraryAvailability.set(key,false);
+    try{
+      const data=await api(`/api/catalog/themes/${themeSlug}/library?chapterId=${encodeURIComponent(ch.catalog_chapter_id||ch.id)}&projectId=${encodeURIComponent(projectId)}&countryCode=${encodeURIComponent(state.country||'')}`);
+      const has=Array.isArray(data?.situations)&&data.situations.length>0;
+      state.libraryAvailability.set(key,has);
+      if(ch===state.chapters[state.active])render();
+      return has;
+    }catch(error){
+      console.warn('Bibliothèque complémentaire indisponible',error);
+      state.libraryAvailability.set(key,false);
+      if(ch===state.chapters[state.active])render();
+      return false;
+    }
+  }
+
   function situationHtml(s,index){
     const ch=state.chapters[state.active];
     const stereotypes=isStereotypesChapter(ch);
@@ -535,13 +565,14 @@
     // Le tag « Personnalisée » repose uniquement sur une vraie contextualisation enregistrée.
     const customized=!legacyClientImport&&Boolean(s.has_customization);
     const originTag=s.from_library?'<span class="composer-library-choice-tag">✓ Choisie dans la bibliothèque</span>':'';
+    const hasLibrary=chapterHasLibrary(ch);
     const situationText=locked
       ?`<h3>${esc(s.content)}</h3>`
       :`<div class="composer-inline-field">
           <div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Texte de la mise en situation</label><span class="composer-context-tag">Contextualisation uniquement</span></div>
           <textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation ${String(originalText)!==String(s.content||'')?'is-customized':''}" data-situation-input="${esc(s.id)}" data-original-situation="${esc(originalText)}" rows="3">${esc(s.content)}</textarea>
           <div data-live-situation-diff>${reviewDiff(originalText,submitted?.content,s.content,'la situation Me&YouToo')}</div>
-          <small class="composer-field-guidance">Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel. Si le sens ne convient pas, utilisez « Remplacer » et choisissez une autre situation dans la bibliothèque.</small>
+          <small class="composer-field-guidance">${hasLibrary?'Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel. Si le sens ne convient pas, utilisez « Remplacer » et choisissez une autre situation dans la bibliothèque.':'Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel sans changer le sens de la situation.'}</small>
         </div>`;
     const answerRows=(s.answers||[]).map(a=>{const original=(s.original_answers||[]).find(o=>String(o.id)===String(a.id)),sent=(submitted?.answers||[]).find(o=>String(o.id)===String(a.id));return answerHtml(a,!locked,original?.content||a.content,sent?.content??null);}).join('');
     const tone=situationTone(s,index,ch);
@@ -560,7 +591,7 @@
       <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${customized?'Enregistré':'Enregistrement automatique'}</span></span></div>
       <div class="composer-actions">
         ${customized?`<button class="button button-ghost" type="button" data-reset="${esc(s.id)}">↶ ${state.project?.review_mode?'Annuler ma correction':'Annuler mes modifications'}</button>`:''}
-        <button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer</button>
+        ${hasLibrary?`<button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer</button>`:''}
         <button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button>
       </div>`:canReplaceLocked?`<div class="composer-inline-help composer-context-help composer-socle-help"><strong>Situation socle Stéréotypes</strong><span>Le texte et les réponses ne se modifient pas directement. Vous pouvez toutefois remplacer cette situation par une autre situation validée de la bibliothèque Me&YouToo.</span></div><div class="composer-actions"><button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer via la bibliothèque</button></div>`:''}
       </div>
@@ -841,11 +872,15 @@
     renderChapterChoice(ch);
 
     const libraryButton=$('library-button');
-    libraryButton.hidden=Boolean(stereotypes||state.project?.can_edit===false);
+    const hasLibrary=chapterHasLibrary(ch);
+    libraryButton.hidden=Boolean(stereotypes||state.project?.can_edit===false||!hasLibrary);
     if(!libraryButton.hidden){
       libraryButton.classList.toggle('is-disabled',status.atMax);
       libraryButton.setAttribute('aria-disabled',String(status.atMax));
       libraryButton.title=status.atMax?`Maximum de ${status.rules.max} situations atteint`:'';
+    }
+    if(!stereotypes&&state.project?.can_edit!==false&&!state.libraryAvailability.has(libraryAvailabilityKey(ch))){
+      ensureLibraryAvailability(ch);
     }
 
     $('legal-scoring-note').hidden=!isLegalChapter(ch);
