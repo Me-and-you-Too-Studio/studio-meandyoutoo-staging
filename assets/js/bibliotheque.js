@@ -44,10 +44,14 @@
     {slug:'sexisme',title:'Compréhension du sexisme',description:fallbackDescriptions.sexisme,situation_count:27,chapter_count:4,library_situation_count:16,country_codes:['FR'],available_locales:['fr','en','es']},
     {slug:'lgbt',title:'LGBT+',description:fallbackDescriptions.lgbt,situation_count:24,chapter_count:4,library_situation_count:0,country_codes:['FR'],available_locales:['fr','en']},
     {slug:'intergenerationnel',title:'Intergénérationnel',description:fallbackDescriptions.intergenerationnel,situation_count:29,chapter_count:5,library_situation_count:0,country_codes:['FR'],available_locales:['fr','en']},
-    {slug:'management',title:'Management inclusif',description:fallbackDescriptions.management,situation_count:62,chapter_count:6,library_situation_count:0,country_codes:['FR'],available_locales:['fr']},
     {slug:'collegue-inclusif',title:'Êtes-vous un·e collègue inclusif·ve ?',description:fallbackDescriptions['collegue-inclusif'],situation_count:208,chapter_count:4,library_situation_count:0,cultural_scopes:['worldwide'],available_locales:['fr','en']},
     {slug:'mixite',title:'Alliés de la mixité',description:fallbackDescriptions.mixite,situation_count:34,chapter_count:5,library_situation_count:0,cultural_scopes:['europe'],available_locales:['fr','en','es','it']}
   ];
+
+  // Le thème générique `management` est volontairement masqué dans le catalogue client :
+  // le référentiel réellement importé expose déjà les diagnostics management utiles,
+  // et cette entrée générique faisait doublon avec le même contenu.
+  const hiddenClientCatalogSlugs=new Set(['management']);
 
   const localeNames={
     fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',br:'Portugais (Brésil)',
@@ -244,12 +248,13 @@
   async function load(){
     try{
       const data=await StudioAPI.request('/api/catalog/themes');
-      const live=new Map((data.themes||[]).map(t=>[norm(t.slug),t]));
-      themes=plannedThemes.map(base=>mergeTheme(base,live.get(norm(base.slug))));
-      for(const t of data.themes||[])if(!themes.some(x=>norm(x.slug)===norm(t.slug)))themes.push(mergeTheme({slug:norm(t.slug)},t));
+      const visibleLive=(data.themes||[]).filter(t=>!hiddenClientCatalogSlugs.has(norm(t.slug)));
+      const live=new Map(visibleLive.map(t=>[norm(t.slug),t]));
+      themes=plannedThemes.filter(base=>!hiddenClientCatalogSlugs.has(norm(base.slug))).map(base=>mergeTheme(base,live.get(norm(base.slug))));
+      for(const t of visibleLive)if(!themes.some(x=>norm(x.slug)===norm(t.slug)))themes.push(mergeTheme({slug:norm(t.slug)},t));
       themes=await Promise.all(themes.map(enrichThemeCapabilities));
     }catch(_){
-      themes=plannedThemes.slice();
+      themes=plannedThemes.filter(base=>!hiddenClientCatalogSlugs.has(norm(base.slug)));
     }
     assignIllustrations(themes);
     updateThemeCount();

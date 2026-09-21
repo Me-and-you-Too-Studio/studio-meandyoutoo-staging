@@ -177,7 +177,7 @@
         note.id='theme-personalization-note';
         note.className='section-desc';
         note.style.cssText='padding:0 18px 18px';
-        note.innerHTML='<strong>Un catalogue personnalisable.</strong> Vous pourrez adapter cette sélection dans Composer grâce à la bibliothèque de contenus Me&amp;YouToo.';
+        note.innerHTML='<strong>Un catalogue personnalisable.</strong> Lors de la création de votre autodiagnostic, vous pourrez conserver, remplacer ou adapter les situations proposées à partir de la bibliothèque de contenus Me&amp;YouToo.';
         catalogCard.appendChild(note);
       }
       renderThemeVideos(chapters);
