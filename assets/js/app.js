@@ -14,11 +14,11 @@
   var INTERFACE_MODE = IS_ADMIN && sessionStorage.getItem('studio_interface_mode') !== 'client' ? 'admin' : 'client';
   var ADMIN_PAGES = ['admin.html','client.html','notifications.html','kit-communication.html','validation.html','campagne-detail.html','composer.html','personnalisation.html','parametrage.html'];
   var REQUESTED_NOTIFICATION_AUDIENCE = new URLSearchParams(location.search).get('audience');
-  if (IS_ADMIN && CURRENT === 'notifications.html' && REQUESTED_NOTIFICATION_AUDIENCE === 'client') {
+  if (IS_ADMIN && ['notifications.html','calendrier.html'].includes(CURRENT) && REQUESTED_NOTIFICATION_AUDIENCE === 'client') {
     INTERFACE_MODE = 'client';
     sessionStorage.setItem('studio_interface_mode', 'client');
   }
-  if (IS_ADMIN && ADMIN_PAGES.includes(CURRENT) && !(CURRENT === 'notifications.html' && REQUESTED_NOTIFICATION_AUDIENCE === 'client')) {
+  if (IS_ADMIN && (ADMIN_PAGES.includes(CURRENT) || CURRENT === 'calendrier.html') && !(['notifications.html','calendrier.html'].includes(CURRENT) && REQUESTED_NOTIFICATION_AUDIENCE === 'client')) {
     INTERFACE_MODE = 'admin';
     sessionStorage.setItem('studio_interface_mode', 'admin');
   }
@@ -145,6 +145,7 @@
   var NAV_MAIN = [
     { href: 'accueil.html', label: 'Accueil', icon: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/>' },
     { href: 'mes-campagnes.html', label: 'Mes campagnes', icon: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/>' },
+    { href: 'calendrier.html?audience=client', label: 'Calendrier', icon: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>' },
     { href: 'notifications.html?audience=client', label: 'Notifications', notificationBadge: true, icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>' },
     { href: 'bibliotheque.html', label: 'Catalogue', icon: '<path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M8 8v8M16 8v8"/>' },
     { href: 'ressources.html', label: 'Ressources', icon: '<path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/>' }
@@ -152,6 +153,7 @@
 
   var NAV_ADMIN = [
     { href: 'admin.html', label: 'Cockpit clients', icon: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h4M7 16h7"/>' },
+    { href: 'calendrier.html', label: 'Calendrier', icon: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>' },
     { href: 'admin.html?tab=campaigns&status=configuration_submitted', label: 'À publier', icon: '<path d="M4 12h12"/><path d="m12 6 6 6-6 6"/>' },
     { href: 'admin.html?tab=clients&filter=pack', label: 'Demandes de passations', icon: '<path d="M3 7h18v12H3z"/><path d="M6 7V5h12v2"/>' },
     { href: 'admin.html?tab=accounts', label: 'Comptes & accès', icon: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 3-7 6-7"/><path d="M16 11v6M13 14h6"/>' },

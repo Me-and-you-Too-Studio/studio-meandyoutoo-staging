@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calendrier — Studio Me&YouToo</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="assets/img/brand/favicon.png" />
+  <link rel="stylesheet" href="assets/css/style.css?v=20260921-calendar-tasks-1" />
+</head>
+<body>
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+  <header class="mobile-header">
+    <img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo Studio" />
+    <button class="icon-button" aria-label="Ouvrir le menu" aria-expanded="false" data-menu-toggle>
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+    </button>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navigation principale" id="sidebar-root"></aside>
+    <main class="main calendar-page" id="contenu">
+      <div class="topbar calendar-topbar">
+        <div>
+          <p class="eyebrow" id="calendar-eyebrow">Pilotage</p>
+          <h1 class="page-title">Calendrier</h1>
+          <p class="lead" id="calendar-lead">Visualisez vos campagnes et organisez les prochaines actions.</p>
+        </div>
+        <div class="top-actions">
+          <button class="button button-primary" type="button" id="new-calendar-task">+ Nouvelle tâche</button>
+        </div>
+      </div>
+
+      <nav class="calendar-tabs" aria-label="Calendrier et tâches">
+        <button type="button" class="is-active" data-calendar-tab="calendar">Calendrier</button>
+        <button type="button" data-calendar-tab="tasks">Tâches <span id="task-open-count" class="calendar-tab-count">0</span></button>
+      </nav>
+
+      <div id="calendar-alert" class="composer-alert" hidden></div>
+
+      <section class="calendar-panel is-active" data-calendar-panel="calendar">
+        <div class="calendar-commandbar">
+          <div class="calendar-period-controls">
+            <button class="button button-ghost button-small" id="calendar-prev" type="button" aria-label="Période précédente">←</button>
+            <button class="button button-ghost button-small" id="calendar-today" type="button">Aujourd’hui</button>
+            <button class="button button-ghost button-small" id="calendar-next" type="button" aria-label="Période suivante">→</button>
+            <h2 id="calendar-period-title">—</h2>
+          </div>
+          <div class="calendar-view-switch" role="group" aria-label="Vue du calendrier">
+            <button type="button" class="is-active" data-calendar-view="month">Mois</button>
+            <button type="button" data-calendar-view="year">Année</button>
+          </div>
+        </div>
+
+        <div class="calendar-filterbar">
+          <select id="calendar-org-filter" hidden><option value="">Tous les clients</option></select>
+          <select id="calendar-status-filter">
+            <option value="">Tous les statuts</option>
+            <option value="draft">Brouillons</option>
+            <option value="configuration_submitted">À relire</option>
+            <option value="published">Publiées</option>
+            <option value="active">En cours</option>
+            <option value="completed">Terminées</option>
+          </select>
+          <label class="calendar-toggle"><input id="calendar-show-tasks" type="checkbox" checked /> <span>Afficher les tâches</span></label>
+          <input id="calendar-search" type="search" placeholder="Rechercher campagne, client, thématique…" />
+        </div>
+
+        <div class="calendar-data-quality" id="calendar-data-quality" hidden>
+          <span aria-hidden="true">⚠️</span>
+          <div><strong id="calendar-missing-count">0 campagne sans dates</strong><small>Ces campagnes ne peuvent pas être positionnées fiablement dans le calendrier. Leurs dates peuvent être complétées progressivement.</small></div>
+        </div>
+
+        <div id="calendar-loading" class="calendar-loading" hidden><span class="admin-loading-spinner" aria-hidden="true"></span><strong>Chargement du calendrier…</strong></div>
+        <div id="calendar-month" class="studio-month-calendar"></div>
+        <div id="calendar-year" class="studio-year-calendar" hidden></div>
+      </section>
+
+      <section class="calendar-panel" data-calendar-panel="tasks">
+        <div class="calendar-task-head">
+          <div><h2>Mes tâches</h2><p id="tasks-intro">Notez les actions à réaliser et retrouvez leurs échéances dans le calendrier.</p></div>
+          <div class="calendar-task-filters">
+            <button type="button" class="is-active" data-task-filter="todo">À faire</button>
+            <button type="button" data-task-filter="overdue">En retard</button>
+            <button type="button" data-task-filter="done">Terminées</button>
+            <button type="button" data-task-filter="all">Toutes</button>
+          </div>
+        </div>
+        <div id="calendar-task-list" class="studio-task-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="task-dialog" class="admin-dialog calendar-task-dialog">
+    <form method="dialog" id="task-form">
+      <button class="admin-dialog-close" type="button" data-task-close aria-label="Fermer">×</button>
+      <p class="eyebrow">Organisation</p>
+      <h2 id="task-dialog-title">Nouvelle tâche</h2>
+      <p class="admin-dialog-intro">Ajoutez une action à votre calendrier. Elle reste indépendante des dates de diffusion d’une campagne.</p>
+      <label class="field"><span>Tâche *</span><input id="task-title" maxlength="180" required placeholder="Ex. Préparer le mail de lancement" /></label>
+      <div class="calendar-task-form-grid">
+        <label class="field"><span>Échéance</span><input id="task-due-date" type="date" /></label>
+        <label class="field"><span>Priorité</span><select id="task-priority"><option value="normal">Normale</option><option value="high">Haute</option><option value="low">Basse</option></select></label>
+      </div>
+      <label class="field" id="task-org-field" hidden><span>Client</span><select id="task-org"><option value="">Tâche interne générale</option></select></label>
+      <label class="field"><span>Campagne liée (facultatif)</span><select id="task-project"><option value="">Aucune campagne</option></select></label>
+      <label class="field" id="task-visibility-field"><span>Visibilité</span><select id="task-visibility"><option value="team">Partagée avec mon équipe</option><option value="personal">Personnelle</option></select></label>
+      <label class="field"><span>Notes</span><textarea id="task-notes" rows="4" placeholder="Contexte, éléments à préparer…"></textarea></label>
+      <div class="top-actions calendar-task-dialog-actions">
+        <button class="button button-ghost" type="button" data-task-close>Annuler</button>
+        <button class="button button-primary" type="submit">Créer la tâche</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="assets/js/api.js?v=20260823-roles-1"></script>
+  <script src="assets/js/app.js?v=20260921-calendar-tasks-1"></script>
+  <script src="assets/js/calendrier.js?v=20260921-calendar-tasks-1"></script>
+</body>
+</html>
