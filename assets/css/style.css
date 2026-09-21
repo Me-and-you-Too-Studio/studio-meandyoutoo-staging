@@ -13736,3 +13736,24 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 
 /* 2026-09-21 — filtre multi-sélection par nombre de langues */
 .admin-multicheck-filter{position:relative;min-width:205px;border:1px solid #cbdce8;border-radius:12px;background:#fff;color:#173f64}.admin-multicheck-filter>summary{list-style:none;cursor:pointer;min-height:44px;padding:10px 38px 10px 14px;display:flex;align-items:center;position:relative}.admin-multicheck-filter>summary::-webkit-details-marker{display:none}.admin-multicheck-filter>summary:after{content:'⌄';position:absolute;right:14px;top:50%;transform:translateY(-54%);font-size:1.05rem;color:#31556e}.admin-multicheck-filter[open]>summary:after{content:'⌃'}.admin-multicheck-panel{position:absolute;z-index:60;top:calc(100% + 6px);left:0;min-width:260px;max-height:340px;overflow:auto;padding:10px;background:#fff;border:1px solid #cbdce8;border-radius:12px;box-shadow:0 14px 35px rgba(24,63,100,.16)}.admin-multicheck-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 4px 8px;border-bottom:1px solid #e5edf3}.admin-multicheck-head button{border:0;background:transparent;color:#0b7784;font-weight:700;cursor:pointer;font-size:.76rem}.admin-multicheck-options{display:grid;padding-top:6px}.admin-multicheck-options label{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:9px;padding:8px 6px;border-radius:8px;cursor:pointer}.admin-multicheck-options label:hover{background:#f4f9fc}.admin-multicheck-options input{width:16px;height:16px;margin:0;accent-color:#0b8c95}.admin-multicheck-options span{font-weight:650}.admin-multicheck-options small{color:#75899a}.admin-multicheck-empty{padding:10px 6px;color:#75899a;font-size:.82rem}@media(max-width:900px){.admin-multicheck-filter{width:100%}.admin-multicheck-panel{position:static;min-width:0;max-height:none;box-shadow:none;border:0;border-top:1px solid #e5edf3;border-radius:0 0 12px 12px}}
+
+
+/* Patch 2026-09-21 — filtre nombre de langues : présentation améliorée */
+.admin-multicheck-filter{min-width:230px}
+.admin-multicheck-filter>summary{font-weight:600}
+.admin-multicheck-panel{min-width:340px;padding:12px 12px 10px}
+.admin-multicheck-head{padding:2px 2px 10px}
+.admin-multicheck-head strong{font-size:1.02rem;color:#173f64}
+.admin-multicheck-head button{font-size:.82rem}
+.admin-multicheck-options{display:flex;flex-direction:column;gap:8px;padding-top:10px}
+.admin-multicheck-option-card{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 14px;border:1px solid #d9e6ef;border-radius:14px;background:#fff;cursor:pointer;transition:border-color .18s ease,box-shadow .18s ease,background .18s ease}
+.admin-multicheck-option-card:hover{background:#f7fbfd;border-color:#bfd7e6}
+.admin-multicheck-option-card.is-selected{background:#edf8fa;border-color:#7bc2c8;box-shadow:0 0 0 2px rgba(11,140,149,.08)}
+.admin-multicheck-option-card input{width:16px;height:16px;margin:0;accent-color:#0b8c95}
+.admin-multicheck-option-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
+.admin-multicheck-option-copy strong{font-size:.98rem;line-height:1.2;color:#173f64;font-weight:700}
+.admin-multicheck-option-copy small{font-size:.82rem;line-height:1.2;color:#6d8295}
+.admin-multicheck-option-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:28px;padding:0 10px;border-radius:999px;background:#eef4f8;color:#31556e;font-size:.82rem;font-weight:700;white-space:nowrap}
+.admin-multicheck-option-card.is-selected .admin-multicheck-option-badge{background:#d8eff1;color:#0b6d75}
+.admin-multicheck-empty{padding:14px 8px;color:#75899a;font-size:.86rem}
+@media(max-width:900px){.admin-multicheck-panel{min-width:0;padding:10px 0 0}.admin-multicheck-option-card{padding:11px 10px}}
