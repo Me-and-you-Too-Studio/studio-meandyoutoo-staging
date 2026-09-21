@@ -79,11 +79,41 @@
   const description=t=>t.description||fallbackDescriptions[norm(t.slug)]||'Une thématique issue du référentiel propriétaire Me&YouToo.';
   const themeTags=t=>uniq((Array.isArray(t.admin_tags)?t.admin_tags:[]).map(x=>String(x||'').trim()));
 
-  const illustrationFile=slug=>{
-    const key=norm(slug);
-    const special={'collegue-inclusif':'theme-collaborateur.png',mixite:'composer.png',handicap:'resources.png','harcelement-moral':'theme-religion.png'};
-    return special[key]||`theme-${key}.png`;
+  // Illustrations du catalogue : une image différente par thématique.
+  // Si le catalogue contient plus de thèmes que d'illustrations disponibles,
+  // on préfère laisser la vignette neutre plutôt que de répéter une image.
+  const illustrationPool=[
+    'theme-sexisme.png','theme-lgbt.png','theme-intergenerationnel.png','theme-management.png',
+    'theme-mixite.png','theme-handicap.png','theme-collaborateur.png','theme-origines.png',
+    'theme-religion.png','theme-origines-alt.png','theme-sexisme-alt.png','campaign-management.png',
+    'composer.png','dashboard.png','bibliotheque.png','resources.png','ressources.png','resultats.png','results.png'
+  ];
+
+  const illustrationCandidates=t=>{
+    const hay=norm([t?.slug,t?.title,t?.base_title,t?.description].filter(Boolean).join(' '));
+    if(hay.includes('sexis'))return ['theme-sexisme.png','theme-sexisme-alt.png'];
+    if(hay.includes('lgbt'))return ['theme-lgbt.png'];
+    if(hay.includes('intergeneration')||hay.includes('generation'))return ['theme-intergenerationnel.png'];
+    if(hay.includes('handicap'))return ['theme-handicap.png'];
+    if(hay.includes('relig')||hay.includes('laicit'))return ['theme-religion.png'];
+    if(hay.includes('origine'))return ['theme-origines.png','theme-origines-alt.png'];
+    if(hay.includes('mixit')||hay.includes('allie'))return ['theme-mixite.png','composer.png'];
+    if(hay.includes('discrimin'))return ['theme-origines-alt.png','theme-sexisme-alt.png','results.png'];
+    if(hay.includes('harcel'))return ['results.png','resultats.png'];
+    if(hay.includes('manager')||hay.includes('management'))return ['theme-management.png','campaign-management.png','dashboard.png'];
+    if(hay.includes('collegue')||hay.includes('inclus'))return ['theme-collaborateur.png','bibliotheque.png','resources.png'];
+    return [];
   };
+
+  function assignIllustrations(list){
+    const used=new Set();
+    for(const theme of list){
+      const preferred=illustrationCandidates(theme);
+      const chosen=[...preferred,...illustrationPool].find(file=>!used.has(file));
+      theme._illustration=chosen||null;
+      if(chosen)used.add(chosen);
+    }
+  }
 
   function mergeTheme(base,live){
     const out={...(base||{}),...(live||{})};
@@ -165,7 +195,7 @@
     const diagnosticLine=fullTitle&&fullTitle!==short?`<p class="topic-diagnostic-title"><span>Diagnostic</span><strong>${esc(fullTitle)}</strong></p>`:'';
     return `<details class="card topic-card topic-card-accordion" data-theme="${esc(norm(t.slug))}">
       <summary class="topic-summary">
-        <div class="topic-thumb"><img src="assets/img/illustrations/${esc(illustrationFile(t.slug))}" alt="" onerror="this.closest('.topic-thumb').classList.add('is-empty');this.remove()"></div>
+        <div class="topic-thumb">${t._illustration?`<img src="assets/img/${esc(t._illustration)}" alt="" onerror="this.closest('.topic-thumb').classList.add('is-empty');this.remove()">`:''}</div>
         <div class="topic-summary-copy">
           <div class="topic-summary-heading"><h3>${esc(short)}</h3><span class="topic-chevron" aria-hidden="true">⌄</span></div>
           <p>${esc(description(t))}</p>
@@ -221,6 +251,7 @@
     }catch(_){
       themes=plannedThemes.slice();
     }
+    assignIllustrations(themes);
     updateThemeCount();
     fillFilters();
     render();
