@@ -100,14 +100,15 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     function adminCampaignLifecycle(p){
       const raw=normalizedStatus(p),now=new Date(),start=adminCampaignDate(p.launch_date),end=adminCampaignDate(p.close_date,true);
       if(raw==='archived')return'archived';
+      // Le statut de pilotage est d'abord déterminé par les dates réelles de diffusion de la survey.
+      // Cela permet notamment de classer correctement les campagnes legacy importées avec un ancien statut technique.
+      if(end&&end<now)return'finished';
+      if(['completed','closed'].includes(p.status))return'finished';
       if(raw==='draft')return'draft';
       if(adminCampaignReviewStatus(raw))return'review';
-      // La fin d'une campagne est déterminée par les dates de diffusion de la survey, jamais par les dates du pack.
-      if(end&&end<now)return'finished';
       if(raw==='unpublished')return'unpublished';
       if(start&&start>now&&['scheduled','published','active'].includes(raw))return'scheduled';
       if(['published','active','scheduled'].includes(raw)&&(!start||start<=now)&&(!end||end>=now))return'ongoing';
-      if(['completed','closed'].includes(p.status))return'finished';
       return raw;
     }
     function adminCampaignOngoingStatus(p){return adminCampaignLifecycle(typeof p==='object'?p:{status:p})==='ongoing';}
@@ -121,8 +122,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     function populateAdminCampaignFilters(rows){
       const status=$('#campaign-status'),theme=$('#campaign-theme'),period=$('#campaign-period'),scope=$('#campaign-scope'),locale=$('#campaign-locale'),client=$('#campaign-client');
       const preserve=(el,html)=>{if(!el)return;const current=el.value;el.innerHTML=html;if([...el.options].some(o=>o.value===current))el.value=current;};
-      const statuses=[...new Set(rows.map(p=>p.status).filter(Boolean))].sort((a,b)=>(labels[a]||a).localeCompare(labels[b]||b,'fr',{sensitivity:'base'}));
-      preserve(status,'<option value="">Tous les statuts</option>'+statuses.map(v=>`<option value="${esc(v)}">${esc(labels[v]||v)}</option>`).join(''));
+      const lifecycleLabels={draft:'Brouillon',review:'À traiter',scheduled:'Programmée',ongoing:'En cours',finished:'Terminée',unpublished:'Dépubliée',archived:'Archivée'};
+      const statuses=[...new Set(rows.map(adminCampaignLifecycle).filter(v=>lifecycleLabels[v]))].sort((a,b)=>lifecycleLabels[a].localeCompare(lifecycleLabels[b],'fr',{sensitivity:'base'}));
+      preserve(status,'<option value="">Tous les statuts</option>'+statuses.map(v=>`<option value="${esc(v)}">${esc(lifecycleLabels[v])}</option>`).join(''));
       const themes=[...new Set(rows.map(p=>String(p.theme_title||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
       preserve(theme,'<option value="">Toutes les thématiques</option>'+themes.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join(''));
       const scopes=[...new Set(rows.flatMap(projectCountries))].sort((a,b)=>projectCountryLabel(a).localeCompare(projectCountryLabel(b),'fr',{sensitivity:'base'}));
@@ -150,8 +152,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const allRows=adminCampaignRows();populateAdminCampaignFilters(allRows);renderAdminCampaignKpis(allRows);renderAdminCampaignQuickFilters(allRows);
       const q=String($('#campaign-search')?.value||'').toLowerCase().trim(),status=$('#campaign-status')?.value||'',theme=$('#campaign-theme')?.value||'',period=$('#campaign-period')?.value||'all',scope=$('#campaign-scope')?.value||'',locale=$('#campaign-locale')?.value||'',client=$('#campaign-client')?.value||'',sort=$('#campaign-sort')?.value||'updated_desc';
       const rows=allRows.filter(p=>{
-        const countries=projectCountries(p),locales=projectLocales(p),haystack=[p.campaign_name,p.title,p.theme_title,p.organizationName,labels[p.status]||p.status,...countries.map(projectCountryLabel),...locales.map(localeLabel)].join(' ').toLowerCase();
-        const lifecycle=adminCampaignLifecycle(p),statusMatch=!status||(status==='completed'?lifecycle==='finished':status==='published'?lifecycle==='ongoing':status==='scheduled'?lifecycle==='scheduled':status==='unpublished'?lifecycle==='unpublished':status==='draft'?lifecycle==='draft':adminCampaignReviewStatus(status)?lifecycle==='review':p.status===status);
+        const countries=projectCountries(p),locales=projectLocales(p),lifecycle=adminCampaignLifecycle(p),haystack=[p.campaign_name,p.title,p.theme_title,p.organizationName,adminCampaignQuickLabel(lifecycle),labels[p.status]||p.status,...countries.map(projectCountryLabel),...locales.map(localeLabel)].join(' ').toLowerCase();
+        const statusMatch=!status||lifecycle===status;
         return adminCampaignQuickMatch(p,state.campaignQuickFilter)&&statusMatch&&(!theme||p.theme_title===theme)&&adminCampaignPeriodMatch(p,period)&&(!scope||countries.includes(scope))&&(!locale||locales.includes(locale))&&(!client||String(p.organizationId)===String(client))&&(!q||haystack.includes(q));
       });
       rows.sort((a,b)=>{if(sort==='updated_asc')return new Date(a.updated_at||0)-new Date(b.updated_at||0);if(sort==='launch_desc')return new Date(b.launch_date||0)-new Date(a.launch_date||0);if(sort==='launch_asc')return new Date(a.launch_date||8640000000000000)-new Date(b.launch_date||8640000000000000);if(sort==='close_asc')return new Date(a.close_date||8640000000000000)-new Date(b.close_date||8640000000000000);if(sort==='name')return String(a.campaign_name||a.title||'').localeCompare(String(b.campaign_name||b.title||''),'fr',{sensitivity:'base'});if(sort==='client')return String(a.organizationName||'').localeCompare(String(b.organizationName||''),'fr',{sensitivity:'base'});return new Date(b.updated_at||0)-new Date(a.updated_at||0);});

@@ -33,7 +33,8 @@
   const params = new URLSearchParams(location.search),
     requestedOrg = params.get("organizationId"),
     requestedProject = params.get("projectId"),
-    requestedPublish = params.get("publish") === "1";
+    requestedPublish = params.get("publish") === "1",
+    requestedManage = params.get("manage") === "1";
   let organization = null,
     users = new Map(),
     projects = new Map(),
@@ -44,6 +45,7 @@
     filter = "all",
     sortMode = "updated-desc",
     publishOpened = false,
+    manageOpened = false,
     resourceDocuments = [],
     resourceLinks = [],
     selectedExistingUser = null,
@@ -812,7 +814,7 @@
           '">📝 Remettre en brouillon</button>',
       );
     if (
-      ["scheduled", "published", "active", "unpublished", "archived"].includes(
+      ["draft", "scheduled", "published", "active", "unpublished", "archived"].includes(
         st,
       )
     )
@@ -2114,6 +2116,13 @@
       users = new Map(orgUsers(organization).map((u) => [String(u.id), u]));
       await loadMediaLibrary();
       render();
+      if (requestedManage && requestedProject && !manageOpened) {
+        const managedProject = projects.get(String(requestedProject));
+        if (managedProject) {
+          manageOpened = true;
+          openCampaignManagement(managedProject);
+        }
+      }
       if (
         requestedPublish &&
         requestedProject &&
