@@ -13773,7 +13773,8 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .admin-multicheck-options .admin-multicheck-simple span{font-weight:700;white-space:nowrap;color:#173f64}
 .admin-multicheck-options .admin-multicheck-simple small{white-space:nowrap;color:#6f8495;font-size:.78rem}
 
-/* Cockpit DEI — page de pré-lancement 2027 */
+
+/* Cockpit DEI */
 .dei-cockpit-page{padding-bottom:64px;background:linear-gradient(180deg,#f8fbfd 0,#fff 34%)}
 .dei-cockpit-hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(440px,.95fr);gap:48px;align-items:center;padding:54px 0 64px}
 .dei-cockpit-hero-copy h1{margin:4px 0 10px;font-size:clamp(2.8rem,5vw,5rem);line-height:.98;letter-spacing:-.055em;color:#173f64}

@@ -217,6 +217,9 @@
       view_results: "Voir le lien des résultats et les statistiques",
       order_passations: "Commander des passations",
       track_orders: "Suivre les commandes de passations",
+      view_calendar: "Voir le calendrier des campagnes",
+      manage_tasks: "Créer et gérer les tâches",
+      view_dei_cockpit: "Accéder au Cockpit DEI",
     },
     permissionPresets = {
       owner: {
@@ -230,6 +233,9 @@
         view_results: true,
         order_passations: true,
         track_orders: true,
+        view_calendar: true,
+        manage_tasks: true,
+        view_dei_cockpit: true,
       },
       manager: {
         manage_users: false,
@@ -242,6 +248,9 @@
         view_results: true,
         order_passations: false,
         track_orders: true,
+        view_calendar: true,
+        manage_tasks: true,
+        view_dei_cockpit: true,
       },
       contributor: {
         manage_users: false,
@@ -254,6 +263,9 @@
         view_results: false,
         order_passations: false,
         track_orders: false,
+        view_calendar: true,
+        manage_tasks: true,
+        view_dei_cockpit: true,
       },
       viewer: {
         manage_users: false,
@@ -266,30 +278,26 @@
         view_results: false,
         order_passations: false,
         track_orders: false,
+        view_calendar: true,
+        manage_tasks: false,
+        view_dei_cockpit: true,
       },
     };
   function renderPermissionFields(values = {}) {
-    const root = $("#user-permissions");
+    const root = $("#user-permissions"), owner = $("#user-access-level")?.value === "owner";
     root.innerHTML = Object.entries(permissionLabels)
-      .map(
-        ([key, label]) =>
-          '<label><input type="checkbox" data-user-permission="' +
-          key +
-          '" ' +
-          (values[key] ? "checked" : "") +
-          "> <span>" +
-          esc(label) +
-          "</span></label>",
-      )
+      .map(([key, label]) => '<label><input type="checkbox" data-user-permission="' + key + '" ' + (owner || values[key] ? "checked" : "") + ' ' + (owner ? "disabled" : "") + '> <span>' + esc(label) + '</span></label>')
       .join("");
   }
   function selectedPermissions() {
-    return Object.fromEntries(
+    const result = Object.fromEntries(
       $$("[data-user-permission]").map((input) => [
         input.dataset.userPermission,
         input.checked,
       ]),
     );
+    if (result.manage_tasks) result.view_calendar = true;
+    return result;
   }
   function showError(message) {
     const box = $("#client-alert");

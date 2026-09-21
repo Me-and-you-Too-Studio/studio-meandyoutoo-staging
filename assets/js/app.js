@@ -146,8 +146,8 @@
   var NAV_MAIN = [
     { href: 'accueil.html', label: 'Accueil', icon: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/>' },
     { href: 'mes-campagnes.html', label: 'Mes campagnes', icon: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/>' },
-    { href: 'calendrier.html?audience=client', label: 'Calendrier', icon: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>' },
-    { href: 'cockpit-dei.html?audience=client', label: 'Cockpit DEI', icon: '<path d="M4 19v-6M10 19V9M16 19V5M22 19H2"/><path d="m4 9 5-3 5 2 6-5"/>' },
+    { href: 'calendrier.html?audience=client', label: 'Calendrier', permission:'view_calendar', icon: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>' },
+    { href: 'cockpit-dei.html?audience=client', label: 'Cockpit DEI', permission:'view_dei_cockpit', icon: '<path d="M4 19v-6M10 19V9M16 19V5M22 19H2"/><path d="m4 9 5-3 5 2 6-5"/>' },
     { href: 'notifications.html?audience=client', label: 'Notifications', notificationBadge: true, icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>' },
     { href: 'bibliotheque.html', label: 'Catalogue', icon: '<path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M8 8v8M16 8v8"/>' },
     { href: 'ressources.html', label: 'Ressources', icon: '<path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/>' }
@@ -209,7 +209,9 @@
     var required={
       'packs.html':'order_passations',
       'commande.html':'order_passations',
-      'kit-communication.html':'manage_kit'
+      'kit-communication.html':'manage_kit',
+      'calendrier.html':'view_calendar',
+      'cockpit-dei.html':'view_dei_cockpit'
     }[CURRENT];
     if(!required||CURRENT_USER&&CURRENT_USER.permissions&&CURRENT_USER.permissions[required])return;
     var main=document.querySelector('main.main');

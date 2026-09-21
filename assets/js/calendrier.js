@@ -3,6 +3,7 @@
   const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
   const user=StudioAPI.user()||{};
   const isAdmin=user.role==='admin'&&StudioAPI.interfaceMode()!=='client';
+  const canManageTasks=isAdmin||Boolean(user.permissions&&user.permissions.manage_tasks);
   const state={view:'month',cursor:new Date(),campaigns:[],tasks:[],organizations:[],missingDates:0,taskFilter:'todo'};
   const statusLabels={draft:'Brouillon',configuration_submitted:'À relire',review_pending:'À relire',in_review:'En relecture',client_validation_required:'Validation client',ready_to_publish:'Prête à publier',scheduled:'Programmée',published:'Publiée',active:'En cours',completed:'Terminée',unpublished:'Dépubliée'};
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -69,9 +70,18 @@
     if(state.taskFilter==='done')rows=rows.filter(t=>t.status==='done');
     if(state.taskFilter==='overdue')rows=rows.filter(t=>t.status!=='done'&&t.due_date&&String(t.due_date).slice(0,10)<now);
     if(!rows.length){root.innerHTML='<div class="calendar-empty"><strong>Aucune tâche ici</strong><span>Créez une tâche pour préparer une campagne ou noter une action à réaliser.</span></div>';return;}
-    root.innerHTML=rows.map(t=>{const overdue=t.status!=='done'&&t.due_date&&String(t.due_date).slice(0,10)<now;return `<article class="studio-task-row ${t.status==='done'?'is-done':''} ${overdue?'is-overdue':''}" data-task-id="${t.id}"><button class="studio-task-check" type="button" data-toggle-task="${t.id}" aria-label="${t.status==='done'?'Rouvrir':'Terminer'} la tâche">${t.status==='done'?'✓':''}</button><div class="studio-task-copy"><div><strong>${esc(t.title)}</strong>${t.priority==='high'?'<span class="studio-task-priority">Priorité haute</span>':''}</div><p>${t.notes?esc(t.notes):''}</p><div class="studio-task-meta">${t.due_date?`<span class="${overdue?'is-danger':''}">📅 ${dayLabel(parseDate(t.due_date))}</span>`:'<span>Sans échéance</span>'}${t.project_id?`<span>🧩 ${esc(t.campaign_name||t.project_title||'Campagne')}</span>`:''}${isAdmin&&t.organization_name?`<span>🏢 ${esc(t.organization_name)}</span>`:''}${!isAdmin?`<span>${t.visibility==='personal'?'🔒 Personnelle':'👥 Équipe'}</span>`:''}${taskOwner(t)?`<span>👤 ${esc(taskOwner(t))}</span>`:''}</div></div><button class="button button-ghost button-small" type="button" data-delete-task="${t.id}">Supprimer</button></article>`;}).join('');
-    root.querySelectorAll('[data-toggle-task]').forEach(b=>b.onclick=async()=>{const t=state.tasks.find(x=>String(x.id)===String(b.dataset.toggleTask));if(!t)return;try{await StudioAPI.request('/api/tasks/'+t.id,{method:'PATCH',body:JSON.stringify({status:t.status==='done'?'todo':'done'})});await load();switchTab('tasks');}catch(e){setAlert(e.message);}});
-    root.querySelectorAll('[data-delete-task]').forEach(b=>b.onclick=async()=>{const ok=await StudioModal.confirm({type:'danger',title:'Supprimer cette tâche ?',message:'Cette action est définitive.',confirmLabel:'Supprimer'});if(!ok)return;try{await StudioAPI.request('/api/tasks/'+b.dataset.deleteTask,{method:'DELETE'});await load();switchTab('tasks');}catch(e){setAlert(e.message);}});
+    root.innerHTML=rows.map(t=>{
+      const overdue=t.status!=='done'&&t.due_date&&String(t.due_date).slice(0,10)<now;
+      const check=canManageTasks
+        ? `<button class="studio-task-check" type="button" data-toggle-task="${t.id}" aria-label="${t.status==='done'?'Rouvrir':'Terminer'} la tâche">${t.status==='done'?'✓':''}</button>`
+        : `<span class="studio-task-check is-readonly">${t.status==='done'?'✓':''}</span>`;
+      const remove=canManageTasks?`<button class="button button-ghost button-small" type="button" data-delete-task="${t.id}">Supprimer</button>`:'';
+      return `<article class="studio-task-row ${t.status==='done'?'is-done':''} ${overdue?'is-overdue':''}" data-task-id="${t.id}">${check}<div class="studio-task-copy"><div><strong>${esc(t.title)}</strong>${t.priority==='high'?'<span class="studio-task-priority">Priorité haute</span>':''}</div><p>${t.notes?esc(t.notes):''}</p><div class="studio-task-meta">${t.due_date?`<span class="${overdue?'is-danger':''}">📅 ${dayLabel(parseDate(t.due_date))}</span>`:'<span>Sans échéance</span>'}${t.project_id?`<span>🧩 ${esc(t.campaign_name||t.project_title||'Campagne')}</span>`:''}${isAdmin&&t.organization_name?`<span>🏢 ${esc(t.organization_name)}</span>`:''}${!isAdmin?`<span>${t.visibility==='personal'?'🔒 Personnelle':'👥 Équipe'}</span>`:''}${taskOwner(t)?`<span>👤 ${esc(taskOwner(t))}</span>`:''}</div></div>${remove}</article>`;
+    }).join('');
+    if(canManageTasks){
+      root.querySelectorAll('[data-toggle-task]').forEach(b=>b.onclick=async()=>{const t=state.tasks.find(x=>String(x.id)===String(b.dataset.toggleTask));if(!t)return;try{await StudioAPI.request('/api/tasks/'+t.id,{method:'PATCH',body:JSON.stringify({status:t.status==='done'?'todo':'done'})});await load();switchTab('tasks');}catch(e){setAlert(e.message);}});
+      root.querySelectorAll('[data-delete-task]').forEach(b=>b.onclick=async()=>{const ok=await StudioModal.confirm({type:'danger',title:'Supprimer cette tâche ?',message:'Cette action est définitive.',confirmLabel:'Supprimer'});if(!ok)return;try{await StudioAPI.request('/api/tasks/'+b.dataset.deleteTask,{method:'DELETE'});await load();switchTab('tasks');}catch(e){setAlert(e.message);}});
+    }
     if(focusId){const row=root.querySelector(`[data-task-id="${focusId}"]`);row?.scrollIntoView({behavior:'smooth',block:'center'});row?.classList.add('is-focused');}
   }
   function render(){updateHeading();renderDataQuality();renderTaskCount();if(state.view==='month')renderMonth();else renderYear();renderTasks();}
@@ -86,7 +96,7 @@
   function openTaskDialog(){const d=$('#task-dialog');$('#task-form').reset();$('#task-priority').value='normal';$('#task-visibility').value='team';if(isAdmin)$('#task-org').value=$('#calendar-org-filter').value||'';populateTaskProjects();d.showModal();$('#task-title').focus();}
   function closeTaskDialog(){const d=$('#task-dialog');if(d.open)d.close();}
 
-  $('#new-calendar-task').onclick=openTaskDialog;$$('[data-task-close]').forEach(b=>b.onclick=closeTaskDialog);
+  if(canManageTasks)$('#new-calendar-task').onclick=openTaskDialog;else $('#new-calendar-task').hidden=true;$$('[data-task-close]').forEach(b=>b.onclick=closeTaskDialog);
   $('#task-dialog').addEventListener('cancel',e=>{e.preventDefault();closeTaskDialog();});
   $('#task-org')?.addEventListener('change',populateTaskProjects);
   $('#task-form').addEventListener('submit',async e=>{e.preventDefault();const payload={title:$('#task-title').value,dueDate:$('#task-due-date').value||null,priority:$('#task-priority').value,projectId:$('#task-project').value||null,notes:$('#task-notes').value};if(isAdmin)payload.organizationId=$('#task-org').value||null;else payload.visibility=$('#task-visibility').value;try{await StudioAPI.request('/api/tasks',{method:'POST',body:JSON.stringify(payload)});closeTaskDialog();await load();switchTab('tasks');}catch(err){setAlert(err.message);}});
