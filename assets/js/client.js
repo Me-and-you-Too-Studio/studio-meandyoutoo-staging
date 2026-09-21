@@ -883,6 +883,7 @@
       '</strong></div>' +
       campaignCountriesHtml(p) +
       campaignLocalesHtml(p) +
+      (p.legacy_history && p.legacy_survey_id ? '<div class="admin-ad-meta">Survey historique : <strong>#' + esc(p.legacy_survey_id) + '</strong></div>' : '') +
       (p.legacy_history && p.legacy_slug ? '<div class="admin-ad-meta">Slug historique : <strong>' + esc(p.legacy_slug) + '</strong></div>' : '') +
       '<div class="admin-ad-tags"><span class="admin-ad-theme">' +
       esc(theme) +
