@@ -15,6 +15,24 @@
   const taskOwner=t=>[t.assignee_first_name,t.assignee_last_name].filter(Boolean).join(' ')||[t.creator_first_name,t.creator_last_name].filter(Boolean).join(' ')||'';
   const today=new Date();
 
+  const deiEvents=[
+    {month:1,day:25,title:'Journée nationale contre le sexisme',category:'equality',short:'Sexisme'},
+    {month:3,day:8,title:'Journée internationale des droits des femmes',category:'equality',short:'Droits des femmes'},
+    {month:3,day:21,title:'Journée internationale pour l’élimination de la discrimination raciale',category:'discrimination',short:'Discriminations raciales'},
+    {month:3,day:31,title:'Journée internationale de la visibilité transgenre',category:'lgbt',short:'Visibilité trans'},
+    {month:5,day:17,title:'Journée internationale contre l’homophobie, la transphobie et la biphobie',category:'lgbt',short:'Lutte contre les LGBTphobies'},
+    {month:11,day:25,title:'Journée internationale pour l’élimination de la violence à l’égard des femmes',category:'equality',short:'Violences faites aux femmes'},
+    {month:12,day:3,title:'Journée internationale des personnes handicapées',category:'disability',short:'Handicap'},
+    {month:12,day:10,title:'Journée des droits de l’Homme',category:'human-rights',short:'Droits humains'}
+  ];
+  const deiCategoryLabels={equality:'Égalité femmes-hommes',discrimination:'Diversité & discriminations',lgbt:'LGBT+',disability:'Handicap','human-rights':'Droits humains'};
+  function filteredDeiEvents(){
+    const filter=$('#calendar-dei-filter')?.value||'all';
+    if(filter==='none')return[];
+    return deiEvents.filter(e=>filter==='all'||e.category===filter);
+  }
+  function deiEventsOnDate(d){return filteredDeiEvents().filter(e=>e.month===d.getMonth()+1&&e.day===d.getDate());}
+
   function range(){
     const y=state.cursor.getFullYear(),m=state.cursor.getMonth();
     if(state.view==='year')return{start:`${y}-01-01`,end:`${y}-12-31`};
@@ -54,9 +72,11 @@
       const dayCampaigns=[];
       campaigns.forEach(p=>{const s=parseDate(p.launch_date),e=parseDate(p.close_date);if(sameDay(s,d)||sameDay(e,d))dayCampaigns.push(p);});
       const dayTasks=tasks.filter(t=>t.due_date&&String(t.due_date).slice(0,10)===key&&t.status!=='done');
-      const events=[...dayCampaigns.map(p=>({type:'campaign',data:p})),...dayTasks.map(t=>({type:'task',data:t}))];
-      html+=`<article class="studio-calendar-day ${outside?'is-outside':''} ${isToday?'is-today':''}" data-date="${key}"><header><span>${d.getDate()}</span>${isToday?'<b>Aujourd’hui</b>':''}</header><div class="studio-calendar-day-events">`;
-      events.slice(0,4).forEach(evt=>{if(evt.type==='campaign'){const p=evt.data,startDate=parseDate(p.launch_date),endDate=parseDate(p.close_date),isStart=sameDay(startDate,d),isEnd=sameDay(endDate,d);let phase=isStart&&isEnd?'Début · Fin':isStart?'Début':'Fin';const cls=isStart&&isEnd?'is-single':isEnd?'is-end':'';html+=`<a class="studio-calendar-event is-campaign ${cls}" href="campagne-detail.html?id=${encodeURIComponent(p.id)}" title="${esc(campaignName(p))}"><span></span><div><strong>${esc(campaignName(p))}</strong><small>${esc(phase)}${isAdmin&&p.organization_name?' · '+esc(p.organization_name):''}</small></div></a>`;}else{const t=evt.data;html+=`<button class="studio-calendar-event is-task ${t.priority==='high'?'is-high':''}" type="button" data-open-task="${t.id}"><span></span><div><strong>${esc(t.title)}</strong><small>Tâche${isAdmin&&t.organization_name?' · '+esc(t.organization_name):''}</small></div></button>`;}});
+      const dayDei=deiEventsOnDate(d);
+      const events=[...dayDei.map(e=>({type:'dei',data:e})),...dayCampaigns.map(p=>({type:'campaign',data:p})),...dayTasks.map(t=>({type:'task',data:t}))];
+      const deiDayClass=dayDei.length?` has-dei-event has-dei-${dayDei[0].category}`:'';
+      html+=`<article class="studio-calendar-day ${outside?'is-outside':''} ${isToday?'is-today':''}${deiDayClass}" data-date="${key}"><header><span>${d.getDate()}</span>${isToday?'<b>Aujourd’hui</b>':''}</header><div class="studio-calendar-day-events">`;
+      events.slice(0,4).forEach(evt=>{if(evt.type==='dei'){const e=evt.data;html+=`<div class="studio-calendar-event is-dei is-dei-${esc(e.category)}" title="${esc(e.title)}"><span></span><div><strong>${esc(e.short||e.title)}</strong><small>${esc(deiCategoryLabels[e.category]||'Événement DEI')}</small></div></div>`;}else if(evt.type==='campaign'){const p=evt.data,startDate=parseDate(p.launch_date),endDate=parseDate(p.close_date),isStart=sameDay(startDate,d),isEnd=sameDay(endDate,d);let phase=isStart&&isEnd?'Début · Fin':isStart?'Début':'Fin';const cls=isStart&&isEnd?'is-single':isEnd?'is-end':'';html+=`<a class="studio-calendar-event is-campaign ${cls}" href="campagne-detail.html?id=${encodeURIComponent(p.id)}" title="${esc(campaignName(p))}"><span></span><div><strong>${esc(campaignName(p))}</strong><small>${esc(phase)}${isAdmin&&p.organization_name?' · '+esc(p.organization_name):''}</small></div></a>`;}else{const t=evt.data;html+=`<button class="studio-calendar-event is-task ${t.priority==='high'?'is-high':''}" type="button" data-open-task="${t.id}"><span></span><div><strong>${esc(t.title)}</strong><small>Tâche${isAdmin&&t.organization_name?' · '+esc(t.organization_name):''}</small></div></button>`;}});
       if(events.length>4)html+=`<div class="studio-calendar-more">+${events.length-4} autre${events.length-4>1?'s':''}</div>`;
       html+='</div></article>';
     }
@@ -66,7 +86,8 @@
   function renderYear(){
     const summary=$('#calendar-month-summary');if(summary)summary.innerHTML='';
     const root=$('#calendar-year'),year=state.cursor.getFullYear(),campaigns=filteredCampaigns(),tasks=filteredTasksForCalendar();
-    root.innerHTML=Array.from({length:12},(_,m)=>{const start=new Date(year,m,1),end=new Date(year,m+1,0);const active=campaigns.filter(p=>{const s=parseDate(p.launch_date),e=parseDate(p.close_date);if(!s&&!e)return false;const a=s||e,b=e||s;return a<=end&&b>=start;});const starts=campaigns.filter(p=>{const s=parseDate(p.launch_date);return s&&s.getFullYear()===year&&s.getMonth()===m;}).length;const ends=campaigns.filter(p=>{const e=parseDate(p.close_date);return e&&e.getFullYear()===year&&e.getMonth()===m;}).length;const taskCount=tasks.filter(t=>{const d=parseDate(t.due_date);return d&&d.getFullYear()===year&&d.getMonth()===m&&t.status!=='done';}).length;return `<button class="studio-year-month" type="button" data-month="${m}"><strong>${start.toLocaleDateString('fr-FR',{month:'long'})}</strong><span class="studio-year-active">${active.length} campagne${active.length>1?'s':''} active${active.length>1?'s':''}</span><div><small><b>${starts}</b> démarrage${starts>1?'s':''}</small><small><b>${ends}</b> fin${ends>1?'s':''}</small><small><b>${taskCount}</b> tâche${taskCount>1?'s':''}</small></div></button>`;}).join('');
+    const visibleDei=filteredDeiEvents();
+    root.innerHTML=Array.from({length:12},(_,m)=>{const start=new Date(year,m,1),end=new Date(year,m+1,0);const active=campaigns.filter(p=>{const s=parseDate(p.launch_date),e=parseDate(p.close_date);if(!s&&!e)return false;const a=s||e,b=e||s;return a<=end&&b>=start;});const starts=campaigns.filter(p=>{const s=parseDate(p.launch_date);return s&&s.getFullYear()===year&&s.getMonth()===m;}).length;const ends=campaigns.filter(p=>{const e=parseDate(p.close_date);return e&&e.getFullYear()===year&&e.getMonth()===m;}).length;const taskCount=tasks.filter(t=>{const d=parseDate(t.due_date);return d&&d.getFullYear()===year&&d.getMonth()===m&&t.status!=='done';}).length;const deiCount=visibleDei.filter(e=>e.month===m+1).length;return `<button class="studio-year-month ${deiCount?'has-dei-events':''}" type="button" data-month="${m}"><strong>${start.toLocaleDateString('fr-FR',{month:'long'})}</strong><span class="studio-year-active">${active.length} campagne${active.length>1?'s':''} active${active.length>1?'s':''}</span><div><small><b>${starts}</b> démarrage${starts>1?'s':''}</small><small><b>${ends}</b> fin${ends>1?'s':''}</small><small><b>${taskCount}</b> tâche${taskCount>1?'s':''}</small>${deiCount?`<small class="studio-year-dei"><b>${deiCount}</b> événement${deiCount>1?'s':''} DEI</small>`:''}</div></button>`;}).join('');
     root.querySelectorAll('[data-month]').forEach(b=>b.onclick=()=>{state.cursor=new Date(year,Number(b.dataset.month),1);setView('month');load();});
   }
   function renderDataQuality(){const box=$('#calendar-data-quality');box.hidden=!state.missingDates;$('#calendar-missing-count').textContent=`${state.missingDates} campagne${state.missingDates>1?'s':''} sans dates`;}
@@ -124,7 +145,7 @@
   $('#calendar-prev').onclick=()=>{state.cursor=state.view==='year'?new Date(state.cursor.getFullYear()-1,0,1):new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);load();};
   $('#calendar-next').onclick=()=>{state.cursor=state.view==='year'?new Date(state.cursor.getFullYear()+1,0,1):new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);load();};
   $('#calendar-today').onclick=()=>{state.cursor=new Date();load();};
-  $('#calendar-status-filter').onchange=render;$('#calendar-search').oninput=render;$('#calendar-show-tasks').onchange=render;
+  $('#calendar-status-filter').onchange=render;$('#calendar-dei-filter').onchange=render;$('#calendar-search').oninput=render;$('#calendar-show-tasks').onchange=render;
   $('#calendar-org-filter').onchange=()=>load();
   $$('[data-task-filter]').forEach(b=>b.onclick=()=>{state.taskFilter=b.dataset.taskFilter;$$('[data-task-filter]').forEach(x=>x.classList.toggle('is-active',x===b));renderTasks();});
 
