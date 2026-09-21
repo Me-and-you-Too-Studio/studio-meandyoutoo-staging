@@ -44,7 +44,7 @@
     {slug:'sexisme',title:'Compréhension du sexisme',description:fallbackDescriptions.sexisme,situation_count:27,chapter_count:4,library_situation_count:16,country_codes:['FR'],available_locales:['fr','en','es']},
     {slug:'lgbt',title:'LGBT+',description:fallbackDescriptions.lgbt,situation_count:24,chapter_count:4,library_situation_count:0,country_codes:['FR'],available_locales:['fr','en']},
     {slug:'intergenerationnel',title:'Intergénérationnel',description:fallbackDescriptions.intergenerationnel,situation_count:29,chapter_count:5,library_situation_count:0,country_codes:['FR'],available_locales:['fr','en']},
-    {slug:'collegue-inclusif',title:'Êtes-vous un·e collègue inclusif·ve ?',description:fallbackDescriptions['collegue-inclusif'],situation_count:208,chapter_count:4,library_situation_count:0,cultural_scopes:['worldwide'],available_locales:['fr','en']},
+    {slug:'collegue-inclusif',title:'Êtes-vous un·e collègue inclusif·ve ?',description:fallbackDescriptions['collegue-inclusif'],situation_count:null,chapter_count:4,library_situation_count:null,cultural_scopes:['worldwide'],available_locales:['fr','en']},
     {slug:'mixite',title:'Alliés de la mixité',description:fallbackDescriptions.mixite,situation_count:34,chapter_count:5,library_situation_count:0,cultural_scopes:['europe'],available_locales:['fr','en','es','it']}
   ];
 
@@ -155,14 +155,50 @@
       ].map(x=>String(x||'').toUpperCase()));
       const extraScopes=[];
       if((data.variants||[]).some(v=>norm(v.culturalScope)==='worldwide')||(data.chapterCapabilities||[]).some(c=>c.worldwide))extraScopes.push('worldwide');
+
+      // Le nombre affiché dans le catalogue doit représenter UN diagnostic exploitable,
+      // pas la somme des variantes pays/langues ni des chapitres alternatifs.
+      // On calcule donc les contenus sur un périmètre de référence et uniquement
+      // sur le choix de chapitre par défaut de chaque groupe.
+      const allLocales=uniq([...locales(theme),...extraLocales]);
+      const allCountries=uniq([...countries(theme),...extraCountries]);
+      const referenceCountry=allCountries.includes('FR')?'FR':(allCountries[0]||'FR');
+      const referenceLocale=allLocales.includes('fr')?'fr':(allLocales[0]||'fr');
+      let displayCatalogCount=null;
+      let displayLibraryCount=null;
+      try{
+        const qs='?countryCode='+encodeURIComponent(referenceCountry)+'&locale='+encodeURIComponent(referenceLocale);
+        const [template,library]=await Promise.all([
+          StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(theme.slug)+'/template'+qs),
+          StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(theme.slug)+'/library?countryCode='+encodeURIComponent(referenceCountry))
+        ]);
+        const defaultChapters=(Array.isArray(template?.chapters)?template.chapters:[])
+          .filter(ch=>!ch.choice_group||Boolean(ch.is_default_choice));
+        const defaultChapterIds=new Set(defaultChapters.map(ch=>String(ch.id)));
+        const catalogIds=new Set();
+        defaultChapters.forEach(ch=>(Array.isArray(ch.situations)?ch.situations:[]).forEach(si=>catalogIds.add(String(si.id))));
+        const libraryIds=new Set();
+        (Array.isArray(library?.situations)?library.situations:[])
+          .filter(si=>defaultChapterIds.has(String(si.chapter_id)))
+          .forEach(si=>libraryIds.add(String(si.id)));
+        displayCatalogCount=catalogIds.size;
+        displayLibraryCount=libraryIds.size;
+      }catch(_countError){
+        // Ne jamais retomber sur un total agrégé potentiellement trompeur.
+      }
+
       return {
         ...theme,
-        available_locales:uniq([...locales(theme),...extraLocales]),
-        country_codes:uniq([...countries(theme),...extraCountries]),
-        cultural_scopes:uniq([...scopes(theme),...extraScopes])
+        available_locales:allLocales,
+        country_codes:allCountries,
+        cultural_scopes:uniq([...scopes(theme),...extraScopes]),
+        _display_catalog_count:displayCatalogCount,
+        _display_library_count:displayLibraryCount,
+        _display_reference_country:referenceCountry,
+        _display_reference_locale:referenceLocale
       };
     }catch(_){
-      return theme;
+      return {...theme,_display_catalog_count:null,_display_library_count:null};
     }
   }
 
@@ -190,8 +226,12 @@
 
   function themeMarkup(t){
     const loc=locales(t),sc=scopes(t),co=countries(t),tags=themeTags(t);
-    const cat=Number(t.catalog_situation_count??t.situation_count??0);
-    const lib=Number(t.library_situation_count||0);
+    const rawCat=t._display_catalog_count;
+    const rawLib=t._display_library_count;
+    const cat=Number.isFinite(Number(rawCat))&&rawCat!==null?Number(rawCat):null;
+    const lib=Number.isFinite(Number(rawLib))&&rawLib!==null?Number(rawLib):null;
+    const catLabel=cat===null?'Selon périmètre':String(cat);
+    const libLabel=lib===null?'Selon périmètre':String(lib);
     const fullTitle=String(t.title||'').trim();
     const short=displayTitle(t);
     const perimeterItems=[...sc.map(x=>({type:'scope',value:x})),...co.map(x=>({type:'country',value:x}))];
@@ -205,7 +245,7 @@
           <p>${esc(description(t))}</p>
           <div class="topic-summary-meta">
             <span>${Number(t.chapter_count||0)} chapitres</span>
-            <span>${cat} situations</span>
+            <span>${cat===null?'Contenu adapté au périmètre':cat+' situations'}</span>
             ${loc.length?`<span>${loc.length} langue${loc.length>1?'s':''}</span>`:''}
           </div>
         </div>
@@ -218,8 +258,8 @@
           <div class="topic-detail-block"><strong>Langues disponibles</strong><div class="topic-chip-list">${chips(loc,localeLabel,6)}</div></div>
         </div>
         <div class="topic-content-split">
-          <div class="topic-content-count is-catalog"><span>Catalogue</span><strong>${cat}</strong><small>situations de référence</small></div>
-          <div class="topic-content-count is-library"><span>Bibliothèque</span><strong>${lib}</strong><small>situations complémentaires</small></div>
+          <div class="topic-content-count is-catalog"><span>Catalogue</span><strong>${esc(catLabel)}</strong><small>${cat===null?'volume adapté au périmètre':'situations de référence'}</small></div>
+          <div class="topic-content-count is-library"><span>Bibliothèque</span><strong>${esc(libLabel)}</strong><small>${lib===null?'volume adapté au périmètre':'situations complémentaires'}</small></div>
         </div>
         <div class="topic-expanded-actions"><a class="button button-secondary" href="${href(t)}">Découvrir la thématique</a></div>
       </div>
