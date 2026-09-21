@@ -14195,3 +14195,12 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .studio-year-month>div{grid-template-columns:repeat(4,1fr)}
 @media(max-width:1100px){.calendar-filterbar{grid-template-columns:1fr 1fr}.studio-year-month>div{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){.calendar-filterbar{grid-template-columns:1fr}.studio-year-month>div{grid-template-columns:repeat(2,1fr)}}
+
+/* Calendrier DEI v3 : vue annuelle par défaut + mois thématiques */
+.studio-year-month.has-dei-month{position:relative;overflow:hidden}
+.studio-year-highlights{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+.studio-year-highlight{display:inline-flex;align-items:center;min-height:25px;padding:4px 9px;border-radius:999px;font-size:.68rem;font-weight:800;line-height:1.2}
+.studio-year-highlight.is-diversity{background:#e8f7f4;color:#08766f;border:1px solid #bfe8e1}
+.studio-year-highlight.is-lgbt{background:#f2eafb;color:#7650a7;border:1px solid #ddc9f2}
+.studio-year-month.has-dei-month .studio-year-active{margin-top:8px}
+@media(max-width:760px){.studio-year-highlights{margin-top:7px}.studio-year-highlight{font-size:.65rem}}
