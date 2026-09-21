@@ -1079,7 +1079,9 @@
   }
 
   function isFinishedStatus(status) {
-    return ["closed", "completed"].includes(status);
+    // Une campagne dépubliée reste une campagne terminée dans le pilotage client.
+    // Le filtre "Terminées" est donc cumulatif avec le statut technique "Dépubliée".
+    return ["closed", "completed", "unpublished"].includes(status);
   }
 
   function projectStartDate(p) {
