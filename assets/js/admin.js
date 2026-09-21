@@ -890,17 +890,28 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         if(languageState)languageState.innerHTML=`<strong>Sera intégré : ${selected.join(' · ')}</strong><span>La sélection s’applique à tous les contenus disposant de cette traduction historique.</span>`;
       };
       $$('[data-migration-global-locale]').forEach(input=>input.addEventListener('change',async()=>{
+        const intendedChecked=input.checked;
+        const locale=String(input.dataset.migrationGlobalLocale||'').toLowerCase();
         refreshGlobalLanguageState();
         const locales=['fr',...$$('[data-migration-global-locale]:checked').map(el=>String(el.dataset.migrationGlobalLocale||'').toLowerCase())];
         input.disabled=true;
         try{
           const response=await StudioAPI.request(`/api/admin/migrations/${migrationBatch.id}/languages`,{method:'PATCH',body:JSON.stringify({locales})});
           if(response?.batch) migrationBatch=response.batch;
+          // Garder l'état local du front aligné sur la sélection réellement enregistrée.
+          selectedMigrationLocales.clear();
+          locales.forEach(loc=>selectedMigrationLocales.add(loc));
+          input.checked=intendedChecked;
+          input.closest('label')?.classList.toggle('is-selected',intendedChecked);
+          refreshGlobalLanguageState();
         }catch(error){
-          input.checked=!input.checked;
+          input.checked=!intendedChecked;
+          input.closest('label')?.classList.toggle('is-selected',!intendedChecked);
           refreshGlobalLanguageState();
           showError(error?.message||'Impossible d’enregistrer le choix de langue.');
-        }finally{input.disabled=false;}
+        }finally{
+          input.disabled=false;
+        }
       }));
       refreshGlobalLanguageState();
 
