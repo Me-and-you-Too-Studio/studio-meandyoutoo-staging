@@ -14228,81 +14228,110 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .studio-calendar-event.is-dei strong{display:block;line-height:1.25}
 .studio-calendar-event.is-dei small{display:block;margin-top:3px;color:#6f2440!important;font-weight:700;opacity:.9}
 
-/* Calendrier DEI v6 : repères lisibles, couleurs par catégorie, navigation de filtre */
-.studio-month-calendar[hidden],.studio-year-calendar[hidden],.calendar-dei-month-strip[hidden]{display:none!important}
 
-/* Un événement daté colore seulement sa case, pas tout le mois. */
-.studio-calendar-day.has-dei-event::before{opacity:.7!important}
-.studio-calendar-day.has-dei-equality::before{background:#fff1f4!important}
-.studio-calendar-day.has-dei-diversity::before{background:#eef9f5!important}
-.studio-calendar-day.has-dei-discrimination::before{background:#f4efff!important}
-.studio-calendar-day.has-dei-lgbt::before{background:#fff8e6!important}
-.studio-calendar-day.has-dei-disability::before{background:#eaf8f7!important}
-.studio-calendar-day.has-dei-human-rights::before{background:#eef4ff!important}
-
-/* Les cartes dans une case restent compactes mais utilisent la vraie couleur de la catégorie. */
-.studio-calendar-event.is-dei{box-shadow:none!important;text-decoration:none!important;align-items:center!important}
-.studio-calendar-event.is-dei-equality{background:#ffe4eb!important;border-color:#f2b4c4!important;color:#793047!important}
-.studio-calendar-event.is-dei-equality>span{background:#d84f78!important}
-.studio-calendar-event.is-dei-diversity{background:#e2f4ed!important;border-color:#b3ddd0!important;color:#246857!important}
-.studio-calendar-event.is-dei-diversity>span{background:#2e9b7b!important}
-.studio-calendar-event.is-dei-discrimination{background:#efe7ff!important;border-color:#d2c0f3!important;color:#50377e!important}
-.studio-calendar-event.is-dei-discrimination>span{background:#7650b3!important}
-.studio-calendar-event.is-dei-lgbt{background:#fff1c9!important;border-color:#efd27c!important;color:#735612!important}
-.studio-calendar-event.is-dei-lgbt>span{background:#d69f16!important}
-.studio-calendar-event.is-dei-disability{background:#dff4f1!important;border-color:#a8d9d4!important;color:#1e655f!important}
-.studio-calendar-event.is-dei-disability>span{background:#168a80!important}
-.studio-calendar-event.is-dei-human-rights{background:#e6efff!important;border-color:#bdcfed!important;color:#365986!important}
-.studio-calendar-event.is-dei-human-rights>span{background:#5277aa!important}
-.studio-calendar-event.is-dei:hover{filter:brightness(.985);transform:translateY(-1px)}
-.studio-calendar-event.is-dei strong,.studio-calendar-event.is-dei small{color:inherit!important}
-
-/* Bandeau DEI du mois : priorité à une lecture horizontale sur une ligne lorsqu'il y a la place. */
-.calendar-dei-month-strip{display:grid;gap:8px;margin:0 0 12px}
-.calendar-dei-wide-event{display:grid;grid-template-columns:auto minmax(220px,1fr) auto auto;align-items:center;gap:10px;width:100%;min-height:46px;padding:9px 12px;border:1px solid #d6e3ec;border-radius:12px;background:#fff;color:#173f64;text-decoration:none;box-sizing:border-box;transition:transform .15s ease,box-shadow .15s ease}
-.calendar-dei-wide-event:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(18,63,97,.08)}
-.calendar-dei-wide-date{display:inline-flex;align-items:center;min-height:26px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.72);font-size:.7rem;font-weight:800;white-space:nowrap}
-.calendar-dei-wide-event strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.84rem}
-.calendar-dei-wide-rec{font-size:.73rem;font-weight:700;white-space:nowrap;opacity:.88}
-.calendar-dei-wide-link{font-size:.73rem;font-weight:800;white-space:nowrap}
-.calendar-dei-wide-event.is-equality{background:#fff1f4;border-color:#f2b4c4;color:#793047}
-.calendar-dei-wide-event.is-diversity{background:#eef9f5;border-color:#b3ddd0;color:#246857}
-.calendar-dei-wide-event.is-discrimination{background:#f4efff;border-color:#d2c0f3;color:#50377e}
-.calendar-dei-wide-event.is-lgbt{background:#fff8e6;border-color:#efd27c;color:#735612}
-.calendar-dei-wide-event.is-disability{background:#eaf8f7;border-color:#a8d9d4;color:#1e655f}
-.calendar-dei-wide-event.is-human-rights{background:#eef4ff;border-color:#bdcfed;color:#365986}
-
-/* Vue annuelle : pas d'aplat rose généralisé. */
-.studio-year-month.has-dei-events{background:#fff!important;border-color:#d5e3eb!important;box-shadow:inset 0 4px 0 #9cced1!important}
-.studio-year-highlight{background:#f3f7f9!important;border-color:#d7e4ea!important;color:#36556a!important}
-.studio-year-highlight.is-diversity{background:#e8f7f4!important;color:#08766f!important;border-color:#bfe8e1!important}
-.studio-year-highlight.is-lgbt{background:#fff1c9!important;color:#735612!important;border-color:#efd27c!important}
-.studio-year-highlight.is-disability{background:#dff4f1!important;color:#1e655f!important;border-color:#a8d9d4!important}
-.studio-year-highlight.is-human-rights{background:#e6efff!important;color:#365986!important;border-color:#bdcfed!important}
-.studio-year-highlight.is-equality{background:#ffe4eb!important;color:#793047!important;border-color:#f2b4c4!important}
-.studio-year-highlight.is-discrimination{background:#efe7ff!important;color:#50377e!important;border-color:#d2c0f3!important}
-
-@media(max-width:1050px){
-  .calendar-dei-wide-event{grid-template-columns:auto minmax(180px,1fr) auto}
-  .calendar-dei-wide-rec{grid-column:2/4;white-space:normal}
+/* Calendrier DEI — correctif UX v8 : événements annuels lisibles et non ratatinés */
+.studio-year-month.has-dei-events{
+  background:#fff !important;
+  border-color:#cfe0ea !important;
+  box-shadow:inset 0 4px 0 #f0b6c8 !important;
 }
-@media(max-width:700px){
-  .calendar-dei-wide-event{grid-template-columns:1fr;gap:5px}
-  .calendar-dei-wide-event strong,.calendar-dei-wide-rec,.calendar-dei-wide-link{white-space:normal}
-  .calendar-dei-wide-rec{grid-column:auto}
-  .calendar-dei-wide-date{justify-self:start}
+.studio-year-month.has-dei-month{
+  overflow:visible !important;
 }
-
-
-/* Calendrier DEI v7 : liste annuelle complète + popover applicatif */
-.studio-year-highlights{display:grid!important;gap:6px!important;margin:10px 0 8px!important;width:100%!important}
-.studio-year-highlight{display:grid!important;grid-template-columns:auto minmax(0,1fr)!important;align-items:start!important;gap:7px!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;padding:7px 9px!important;border-radius:9px!important;text-align:left!important;text-decoration:none!important;white-space:normal!important;line-height:1.2!important}
-.studio-year-highlight>span{font-size:.64rem!important;font-weight:800!important;white-space:nowrap!important;opacity:.82!important}
-.studio-year-highlight>strong{min-width:0!important;font-size:.68rem!important;font-weight:800!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
-.studio-year-month{align-content:start!important}
-.studio-year-month .studio-year-active{margin-top:8px!important}
-.studio-calendar-event.is-dei strong,.studio-calendar-event.is-dei small{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;max-width:100%!important}
-.calendar-dei-popover{position:fixed;z-index:100000;width:min(420px,calc(100vw - 24px));padding:15px 16px;border:1px solid #d6e3ec;border-radius:14px;background:#fff;box-shadow:0 18px 50px rgba(18,63,97,.22);color:#173f64;box-sizing:border-box}
-.calendar-dei-popover[hidden]{display:none!important}.calendar-dei-popover strong{display:block;margin:5px 0 6px;font-size:.96rem;line-height:1.3}.calendar-dei-popover-date{display:inline-flex;padding:4px 7px;border-radius:999px;background:#f2f6f8;font-size:.67rem;font-weight:800}.calendar-dei-popover-category,.calendar-dei-popover-rec{display:block;margin-top:4px;font-size:.75rem;line-height:1.35;color:#60778a}.calendar-dei-popover a{display:inline-flex;margin-top:10px;font-size:.76rem;font-weight:800;color:#0b7784;text-decoration:none}.calendar-dei-popover a:hover{text-decoration:underline}
-.calendar-dei-popover.is-equality{border-top:4px solid #d84f78}.calendar-dei-popover.is-diversity{border-top:4px solid #2e9b7b}.calendar-dei-popover.is-discrimination{border-top:4px solid #7650b3}.calendar-dei-popover.is-lgbt{border-top:4px solid #d69f16}.calendar-dei-popover.is-disability{border-top:4px solid #168a80}.calendar-dei-popover.is-human-rights{border-top:4px solid #5277aa}
-@media(max-width:700px){.studio-year-highlight{grid-template-columns:1fr!important}.studio-year-highlight>span{white-space:normal!important}.calendar-dei-popover{left:12px!important;right:12px!important;width:auto!important}}
+.studio-year-highlights{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:stretch !important;
+  gap:8px !important;
+  margin:12px 0 14px !important;
+}
+.studio-year-highlight,
+.studio-year-highlight.is-diversity,
+.studio-year-highlight.is-lgbt,
+.studio-year-highlight.is-disability,
+.studio-year-highlight.is-equality,
+.studio-year-highlight.is-discrimination,
+.studio-year-highlight.is-human-rights{
+  display:grid !important;
+  grid-template-columns:auto minmax(0,1fr) !important;
+  align-items:stretch !important;
+  width:100% !important;
+  min-height:58px !important;
+  padding:0 !important;
+  border-radius:14px !important;
+  border:1px solid #e3d6de !important;
+  background:#fff6f9 !important;
+  color:#6f2440 !important;
+  overflow:hidden !important;
+}
+.studio-year-highlight.is-diversity{background:#eef9f7 !important;border-color:#c6e8e1 !important;color:#15655d !important}
+.studio-year-highlight.is-lgbt{background:#fbf3df !important;border-color:#ecd58a !important;color:#8a6516 !important}
+.studio-year-highlight.is-disability{background:#eef5ff !important;border-color:#cadbf8 !important;color:#345f97 !important}
+.studio-year-highlight.is-discrimination{background:#f2ebff !important;border-color:#d9c8fb !important;color:#674a99 !important}
+.studio-year-highlight.is-human-rights{background:#fff4e8 !important;border-color:#f2cf9f !important;color:#9a5e18 !important}
+.studio-year-highlight-date{
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  min-width:82px;
+  padding:10px 10px 8px;
+  border-right:1px solid rgba(0,0,0,.07);
+  font-size:.75rem;
+  font-weight:800;
+  line-height:1.2;
+  text-transform:none;
+  white-space:nowrap;
+}
+.studio-year-highlight-copy{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-width:0;
+  padding:10px 12px;
+  text-align:left;
+}
+.studio-year-highlight-copy strong{
+  display:block;
+  color:inherit;
+  font-size:.8rem;
+  line-height:1.25;
+  font-weight:800;
+  overflow-wrap:anywhere;
+}
+.studio-year-highlight-copy small{
+  display:block;
+  margin-top:3px;
+  color:inherit;
+  opacity:.9;
+  font-size:.7rem;
+  line-height:1.3;
+}
+.studio-year-month>div{
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  gap:10px !important;
+}
+.studio-year-month>div small{
+  min-width:0;
+}
+@media(max-width:1100px){
+  .studio-year-highlight-date{min-width:76px;font-size:.72rem}
+  .studio-year-highlight-copy strong{font-size:.78rem}
+}
+@media(max-width:760px){
+  .studio-year-highlight,
+  .studio-year-highlight.is-diversity,
+  .studio-year-highlight.is-lgbt,
+  .studio-year-highlight.is-disability,
+  .studio-year-highlight.is-equality,
+  .studio-year-highlight.is-discrimination,
+  .studio-year-highlight.is-human-rights{
+    grid-template-columns:1fr !important;
+  }
+  .studio-year-highlight-date{
+    min-width:0;
+    padding:8px 12px 0;
+    border-right:0;
+    justify-content:flex-start;
+  }
+  .studio-year-highlight-copy{padding-top:4px}
+}
