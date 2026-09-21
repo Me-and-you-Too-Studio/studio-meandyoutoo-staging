@@ -12,7 +12,7 @@
     <link rel="icon" href="assets/img/brand/favicon.png" />
     <link
       rel="stylesheet"
-      href="assets/css/style.css?v=20260917-import-client-standard-lifecycle-2"
+      href="assets/css/style.css?v=20260921-campaign-pilotage-1"
     />
   </head>
   <body>
@@ -55,108 +55,102 @@
           </div>
         </div>
 
-        <section
-          class="alert-strip campaign-watch-strip"
-          aria-label="Points d'attention"
-        >
-          <button
-            class="alert-card tone-warning campaign-watch-card"
-            type="button"
-            data-quick-filter="startingSoon"
-          >
-            <span class="alert-icon" aria-hidden="true">🚀</span>
-            <div>
-              <strong id="starting-soon-count">0 campagne commence bientôt</strong>
-              <span id="starting-soon-text">Aucun lancement prévu dans les 14 prochains jours.</span>
-            </div>
+        <section class="campaign-pilot-kpis" aria-label="Synthèse des campagnes">
+          <button class="campaign-pilot-kpi tone-all is-active" type="button" data-kpi-filter="all">
+            <span class="campaign-pilot-kpi-icon" aria-hidden="true">✨</span>
+            <strong id="kpi-total-count">0</strong>
+            <small>Campagnes</small>
           </button>
-          <button
-            class="alert-card tone-danger campaign-watch-card"
-            type="button"
-            data-quick-filter="endingSoon"
-          >
-            <span class="alert-icon" aria-hidden="true">⏰</span>
-            <div>
-              <strong id="ending-soon-count"
-                >0 campagne se termine bientôt</strong
-              >
-              <span id="ending-soon-text"
-                >Aucune campagne ne nécessite de relance immédiate.</span
-              >
-            </div>
+          <button class="campaign-pilot-kpi tone-draft" type="button" data-kpi-filter="draft">
+            <span class="campaign-pilot-kpi-icon" aria-hidden="true">✏️</span>
+            <strong id="kpi-draft-count">0</strong>
+            <small>Brouillons</small>
           </button>
-          <button
-            class="alert-card tone-info campaign-watch-card"
-            type="button"
-            data-quick-filter="review"
-          >
-            <span class="alert-icon" aria-hidden="true">📤</span>
-            <div>
-              <strong id="submitted-count">0 configuration transmise</strong>
-              <span
-                >En attente de préparation ou de publication par
-                Me&YouToo.</span
-              >
-            </div>
+          <button class="campaign-pilot-kpi tone-review" type="button" data-kpi-filter="review">
+            <span class="campaign-pilot-kpi-icon" aria-hidden="true">📤</span>
+            <strong id="kpi-review-count">0</strong>
+            <small>En validation</small>
           </button>
-          <button
-            class="alert-card tone-success campaign-watch-card"
-            type="button"
-            data-quick-filter="results"
-          >
-            <span class="alert-icon" aria-hidden="true">📊</span>
-            <div>
-              <strong id="results-count">0 résultat disponible</strong>
-              <span>Accédez aux résultats dès que le lien est disponible, y compris pendant la campagne.</span>
-            </div>
+          <button class="campaign-pilot-kpi tone-active" type="button" data-kpi-filter="ongoing">
+            <span class="campaign-pilot-kpi-icon" aria-hidden="true">🚀</span>
+            <strong id="kpi-active-count">0</strong>
+            <small>En cours</small>
+          </button>
+          <button class="campaign-pilot-kpi tone-finished" type="button" data-kpi-filter="finished">
+            <span class="campaign-pilot-kpi-icon" aria-hidden="true">🏁</span>
+            <strong id="kpi-finished-count">0</strong>
+            <small>Terminées</small>
           </button>
         </section>
 
         <section class="campaign-browser" aria-labelledby="campaign-list-title">
           <div id="campaign-folder-bar" class="campaign-folder-bar"></div>
-          <div class="campaign-toolbar">
-            <div
-              class="campaign-filter-tabs"
-              id="campaign-filters"
-              role="group"
-              aria-label="Filtrer les campagnes"
-            ></div>
-            <label class="campaign-search">
-              <span aria-hidden="true">🔎</span>
-              <input
-                type="search"
-                id="campaignSearch"
-                placeholder="Rechercher une campagne ou une thématique…"
-                aria-label="Rechercher une campagne"
-              />
-            </label>
-            <label class="campaign-sort">
-              <span>Trier par</span>
-              <select id="campaignSort" aria-label="Trier les campagnes">
-                <option value="updated-desc">Dernière modification</option>
-                <option value="name-asc">Nom A–Z</option>
-                <option value="launch-asc">Lancement le plus proche</option>
-                <option value="close-asc">Clôture la plus proche</option>
-              </select>
-            </label>
-            <label class="campaign-sort campaign-theme-sort">
-              <span>Thématique</span>
-              <select id="campaignTheme" aria-label="Filtrer par thématique">
-                <option value="all">Toutes les thématiques</option>
-              </select>
-            </label>
-            <label class="campaign-sort campaign-context-filter">
-              <span>Périmètre</span>
-              <select id="campaignCountry" aria-label="Filtrer par périmètre">
-                <option value="all">Tous les périmètres</option>
-              </select>
-            </label>
-            <label class="campaign-sort campaign-context-filter">
-              <span>Langue</span>
-              <select id="campaignLocale" aria-label="Filtrer par langue">
-                <option value="all">Toutes les langues</option>
-              </select>
-            </label>
+          <div class="campaign-filter-panel">
+            <div class="campaign-filter-fields">
+              <label class="campaign-search">
+                <span aria-hidden="true">🔎</span>
+                <input
+                  type="search"
+                  id="campaignSearch"
+                  placeholder="Rechercher une campagne…"
+                  aria-label="Rechercher une campagne"
+                />
+              </label>
+              <label class="campaign-sort campaign-theme-sort">
+                <span>Thématique</span>
+                <select id="campaignTheme" aria-label="Filtrer par thématique">
+                  <option value="all">Toutes les thématiques</option>
+                </select>
+              </label>
+              <label class="campaign-sort campaign-period-filter">
+                <span>Période</span>
+                <select id="campaignPeriod" aria-label="Filtrer par période">
+                  <option value="all">Toutes les périodes</option>
+                </select>
+              </label>
+              <label class="campaign-sort campaign-context-filter">
+                <span>Périmètre</span>
+                <select id="campaignCountry" aria-label="Filtrer par périmètre">
+                  <option value="all">Tous les périmètres</option>
+                </select>
+              </label>
+              <label class="campaign-sort campaign-context-filter">
+                <span>Langue</span>
+                <select id="campaignLocale" aria-label="Filtrer par langue">
+                  <option value="all">Toutes les langues</option>
+                </select>
+              </label>
+              <label class="campaign-sort campaign-sort-control">
+                <span>Trier par</span>
+                <select id="campaignSort" aria-label="Trier les campagnes">
+                  <option value="updated-desc">Plus récentes</option>
+                  <option value="updated-asc">Plus anciennes</option>
+                  <option value="name-asc">Nom A–Z</option>
+                  <option value="launch-asc">Date de lancement</option>
+                  <option value="close-asc">Date de fin</option>
+                </select>
+              </label>
+            </div>
+            <div class="campaign-filter-group">
+              <div class="campaign-filter-group-head">
+                <strong>Statuts</strong>
+                <span class="campaign-info-wrap">
+                  <button class="campaign-info-dot" type="button" aria-label="À quoi correspondent les statuts ?">i</button>
+                  <span class="campaign-info-popover" role="tooltip"><strong>Statut de campagne</strong>Il indique l’étape actuelle : brouillon, validation, programmation, diffusion ou fin de campagne.</span>
+                </span>
+              </div>
+              <div class="campaign-filter-tabs" id="campaign-status-filters" role="group" aria-label="Filtrer par statut"></div>
+            </div>
+            <div class="campaign-filter-group campaign-signal-group">
+              <div class="campaign-filter-group-head">
+                <strong>Signaux</strong>
+                <span class="campaign-info-wrap">
+                  <button class="campaign-info-dot" type="button" aria-label="À quoi correspondent les signaux ?">i</button>
+                  <span class="campaign-info-popover" role="tooltip"><strong>Signal de pilotage</strong>Un signal attire votre attention sur une échéance ou une information disponible. Il ne modifie pas le statut de la campagne.</span>
+                </span>
+              </div>
+              <div class="campaign-filter-tabs" id="campaign-signal-filters" role="group" aria-label="Filtrer par signal"></div>
+            </div>
           </div>
 
           <div class="section-head campaign-list-head">
@@ -193,6 +187,6 @@
     <script src="assets/js/api.js?v=20260713-2"></script>
     <script src="assets/js/app.js?v=20260905-notifications-client-1"></script>
     <script src="assets/js/project-context.js?v=20260713-5"></script>
-    <script src="assets/js/mes-campagnes.js?v=20260919-legacy-draft-1"></script>
+    <script src="assets/js/mes-campagnes.js?v=20260921-campaign-pilotage-1"></script>
   </body>
 </html>

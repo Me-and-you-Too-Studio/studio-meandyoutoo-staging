@@ -1,13 +1,15 @@
 (function () {
   var cardRoot = document.getElementById("campaigns-card-root");
-  var filtersRoot = document.getElementById("campaign-filters");
+  var statusFiltersRoot = document.getElementById("campaign-status-filters");
+  var signalFiltersRoot = document.getElementById("campaign-signal-filters");
   var search = document.getElementById("campaignSearch");
   var sort = document.getElementById("campaignSort");
   var themeFilter = document.getElementById("campaignTheme");
   var countryFilter = document.getElementById("campaignCountry");
+  var periodFilter = document.getElementById("campaignPeriod");
   var localeFilter = document.getElementById("campaignLocale");
   var noResults = document.getElementById("noResults");
-  if (!cardRoot || !filtersRoot) return;
+  if (!cardRoot || !statusFiltersRoot || !signalFiltersRoot) return;
 
   var projects = [];
   var folders = [];
@@ -15,6 +17,7 @@
   var activeTheme = "all";
   var activeCountry = "all";
   var activeLocale = "all";
+  var activePeriod = "all";
   var activeFilter = "all";
   var currentUser = (window.StudioAPI.user && window.StudioAPI.user()) || {};
   function can(permission) {
@@ -68,7 +71,7 @@
         ready_to_publish: "Prête à publier",
         published: "Publiée",
         scheduled: "Programmée",
-        active: "Publiée",
+        active: "En cours",
         unpublished: "Dépubliée",
         closed: "Terminée",
         completed: "Terminée",
@@ -737,6 +740,9 @@
       parts.push(
         '<span class="campaign-context-tag extended">Prolongée</span>',
       );
+    if (isStartingSoon(p)) parts.push('<span class="campaign-signal-tag signal-starting">🚀 Début proche</span>');
+    if (isEndingSoon(p)) parts.push('<span class="campaign-signal-tag signal-ending">⏰ Fin proche</span>');
+    if (hasResults(p)) parts.push('<span class="campaign-signal-tag signal-results">📊 Résultats disponibles</span>');
     return parts.join("");
   }
 
@@ -1064,66 +1070,103 @@
     });
   }
 
-  function renderAlerts() {
-    var submitted = projects.filter(function (p) {
-      return [
-        "configuration_submitted",
-        "review_pending",
-        "in_review",
-        "client_validation_required",
-        "ready_to_publish",
-      ].includes(p.status);
-    });
-    var results = can("view_results")
-      ? projects.filter(function (p) {
-          return Boolean(String(p.communication_results_url || "").trim());
-        })
-      : [];
-    var now = new Date();
-    var soonLimit = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-    var startingSoon = projects.filter(function (p) {
-      if (p.status !== "scheduled" || !p.launch_date) return false;
-      var d = new Date(p.launch_date);
-      return !Number.isNaN(d.getTime()) && d >= now && d <= soonLimit;
-    });
-    var endingSoon = projects.filter(function (p) {
-      if (!["scheduled", "published", "active"].includes(p.status)) return false;
-      if (!p.close_date) return false;
-      var d = new Date(p.close_date);
-      return !Number.isNaN(d.getTime()) && d >= now && d <= soonLimit;
-    });
+  function isReviewStatus(status) {
+    return ["configuration_submitted", "review_pending", "in_review", "client_validation_required", "ready_to_publish"].includes(status);
+  }
 
-    document.getElementById("submitted-count").textContent =
-      submitted.length +
-      " configuration" +
-      (submitted.length > 1 ? "s" : "") +
-      " transmise" +
-      (submitted.length > 1 ? "s" : "");
-    document.getElementById("starting-soon-count").textContent =
-      startingSoon.length +
-      " campagne" +
-      (startingSoon.length > 1 ? "s" : "") +
-      " commence" +
-      (startingSoon.length > 1 ? "nt" : "") +
-      " bientôt";
-    document.getElementById("starting-soon-text").textContent = startingSoon.length
-      ? "Cliquez pour afficher les campagnes et préparer leur plan de communication."
-      : "Aucun lancement prévu dans les 14 prochains jours.";
-    document.getElementById("results-count").textContent =
-      results.length +
-      " campagne" +
-      (results.length > 1 ? "s" : "") +
-      " avec résultats";
-    document.getElementById("ending-soon-count").textContent =
-      endingSoon.length +
-      " campagne" +
-      (endingSoon.length > 1 ? "s" : "") +
-      " se termine" +
-      (endingSoon.length > 1 ? "nt" : "") +
-      " bientôt";
-    document.getElementById("ending-soon-text").textContent = endingSoon.length
-      ? "Cliquez pour afficher les campagnes concernées et préparer une dernière relance."
-      : "Aucune clôture prévue dans les 14 prochains jours.";
+  function isOngoingStatus(status) {
+    return ["published", "active"].includes(status);
+  }
+
+  function isFinishedStatus(status) {
+    return ["closed", "completed"].includes(status);
+  }
+
+  function projectStartDate(p) {
+    return p && (p.launch_date || p.created_at) ? new Date(p.launch_date || p.created_at) : null;
+  }
+
+  function projectEndDate(p) {
+    return p && p.close_date ? new Date(p.close_date) : null;
+  }
+
+  function isStartingSoon(p) {
+    if (p.status !== "scheduled" || !p.launch_date) return false;
+    var now = new Date(), limit = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), d = new Date(p.launch_date);
+    return !Number.isNaN(d.getTime()) && d >= now && d <= limit;
+  }
+
+  function isEndingSoon(p) {
+    if (!["scheduled", "published", "active"].includes(p.status) || !p.close_date) return false;
+    var now = new Date(), limit = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), d = new Date(p.close_date);
+    return !Number.isNaN(d.getTime()) && d >= now && d <= limit;
+  }
+
+  function hasResults(p) {
+    return can("view_results") && Boolean(String(p.communication_results_url || "").trim());
+  }
+
+  function matchesPeriod(p) {
+    if (activePeriod === "all") return true;
+    var now = new Date();
+    if (activePeriod === "current") {
+      if (!p.launch_date) return false;
+      var start = new Date(p.launch_date), end = projectEndDate(p);
+      if (Number.isNaN(start.getTime())) return false;
+      return start <= now && (!end || Number.isNaN(end.getTime()) || end >= now) && isOngoingStatus(p.status);
+    }
+    if (activePeriod === "upcoming") {
+      if (!p.launch_date) return false;
+      var upcoming = new Date(p.launch_date);
+      return Boolean(!Number.isNaN(upcoming.getTime()) && upcoming > now);
+    }
+    if (activePeriod.indexOf("year:") === 0) {
+      var year = Number(activePeriod.split(":")[1]);
+      if (!year) return true;
+      var startDate = projectStartDate(p), endDate = projectEndDate(p);
+      var yearStart = new Date(year, 0, 1), yearEnd = new Date(year, 11, 31, 23, 59, 59, 999);
+      if (!startDate || Number.isNaN(startDate.getTime())) return false;
+      return startDate <= yearEnd && (!endDate || Number.isNaN(endDate.getTime()) || endDate >= yearStart);
+    }
+    return true;
+  }
+
+  function renderPeriodFilter() {
+    if (!periodFilter) return;
+    var years = Array.from(new Set(projects.reduce(function (all, p) {
+      [p.launch_date, p.close_date, p.created_at].forEach(function (value) {
+        if (!value) return;
+        var d = new Date(value);
+        if (!Number.isNaN(d.getTime())) all.push(d.getFullYear());
+      });
+      return all;
+    }, []))).sort(function (a, b) { return b - a; });
+    var valid = ["all", "current", "upcoming"].concat(years.map(function (year) { return "year:" + year; }));
+    if (!valid.includes(activePeriod)) activePeriod = "all";
+    periodFilter.innerHTML = '<option value="all">Toutes les périodes</option><option value="current">En cours aujourd’hui</option><option value="upcoming">À venir</option>' + years.map(function (year) {
+      return '<option value="year:' + year + '" ' + (activePeriod === "year:" + year ? "selected" : "") + '>' + year + '</option>';
+    }).join("");
+    periodFilter.value = activePeriod;
+    periodFilter.onchange = function (event) { activePeriod = event.target.value; renderCards(); };
+  }
+
+  function renderKpis() {
+    var values = {
+      "kpi-total-count": projects.length,
+      "kpi-draft-count": projects.filter(function (p) { return p.status === "draft"; }).length,
+      "kpi-review-count": projects.filter(function (p) { return isReviewStatus(p.status); }).length,
+      "kpi-active-count": projects.filter(function (p) { return isOngoingStatus(p.status); }).length,
+      "kpi-finished-count": projects.filter(function (p) { return isFinishedStatus(p.status); }).length
+    };
+    Object.keys(values).forEach(function (id) { var el = document.getElementById(id); if (el) el.textContent = values[id]; });
+    document.querySelectorAll("[data-kpi-filter]").forEach(function (button) {
+      button.classList.toggle("is-active", button.getAttribute("data-kpi-filter") === activeFilter);
+    });
+  }
+
+  function renderAlerts() {
+    // Les alertes sont désormais présentées comme des signaux de pilotage dans les filtres.
+    renderKpis();
   }
 
   function statusKey(p) {
@@ -1132,11 +1175,13 @@
 
   function filterLabel(key) {
     if (key === "all") return "Toutes";
-    if (key === "results") return "Résultats";
+    if (key === "results") return "Résultats disponibles";
     if (key === "startingSoon") return "Début proche";
     if (key === "endingSoon") return "Fin proche";
     if (key === "validation") return "À valider";
-    if (key === "review") return "En relecture";
+    if (key === "review") return "En validation";
+    if (key === "ongoing") return "En cours";
+    if (key === "finished") return "Terminées";
     return statusLabel(key);
   }
 
@@ -1147,7 +1192,9 @@
         startingSoon: "🚀",
         endingSoon: "🔴",
         validation: "✅",
-        review: "🔎",
+        review: "📤",
+        ongoing: "🚀",
+        finished: "🏁",
         results: "📊",
         draft: "✏️",
         scheduled: "🗓️",
@@ -1160,124 +1207,52 @@
 
   function countForFilter(key) {
     if (key === "all") return projects.length;
-    if (key === "results")
-      return can("view_results")
-        ? projects.filter(function (p) {
-            return Boolean(String(p.communication_results_url || "").trim());
-          }).length
-        : 0;
-    if (key === "validation")
-      return projects.filter(function (p) {
-        return p.status === "client_validation_required";
-      }).length;
-    if (key === "review")
-      return projects.filter(function (p) {
-        return [
-          "configuration_submitted",
-          "review_pending",
-          "in_review",
-          "ready_to_publish",
-        ].includes(p.status);
-      }).length;
-    if (key === "startingSoon") {
-      var nowStart = new Date(),
-        startLimit = new Date(nowStart.getTime() + 14 * 24 * 60 * 60 * 1000);
-      return projects.filter(function (p) {
-        var d = new Date(p.launch_date);
-        return p.status === "scheduled" && p.launch_date && !Number.isNaN(d.getTime()) && d >= nowStart && d <= startLimit;
-      }).length;
-    }
-    if (key === "endingSoon") {
-      var now = new Date(),
-        limit = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-      return projects.filter(function (p) {
-        var d = new Date(p.close_date);
-        return (
-          ["scheduled", "published", "active"].includes(p.status) &&
-          p.close_date &&
-          !Number.isNaN(d.getTime()) &&
-          d >= now &&
-          d <= limit
-        );
-      }).length;
-    }
+    if (key === "results") return projects.filter(hasResults).length;
+    if (key === "validation") return projects.filter(function (p) { return p.status === "client_validation_required"; }).length;
+    if (key === "review") return projects.filter(function (p) { return isReviewStatus(p.status); }).length;
+    if (key === "ongoing") return projects.filter(function (p) { return isOngoingStatus(p.status); }).length;
+    if (key === "finished") return projects.filter(function (p) { return isFinishedStatus(p.status); }).length;
+    if (key === "startingSoon") return projects.filter(isStartingSoon).length;
+    if (key === "endingSoon") return projects.filter(isEndingSoon).length;
     return projects.filter(function (p) {
       return statusKey(p) === key;
     }).length;
   }
 
   function buildFilters() {
-    var order = [
-      "all",
-      "startingSoon",
-      "endingSoon",
-      "validation",
-      "review",
-      "results",
-      "draft",
-      "scheduled",
-      "published",
-      "unpublished",
-      "archived",
-    ];
-    filtersRoot.innerHTML = order
-      .filter(function (key) {
+    var statusOrder = ["all", "draft", "review", "validation", "scheduled", "ongoing", "finished", "unpublished", "archived"];
+    var signalOrder = ["startingSoon", "endingSoon", "results"];
+    function renderGroup(root, order) {
+      root.innerHTML = order.filter(function (key) {
         return key === "all" || countForFilter(key) > 0;
-      })
-      .map(function (key) {
-        return (
-          '<button class="campaign-filter-tab' +
-          (activeFilter === key ? " active" : "") +
-          '" type="button" data-filter="' +
-          esc(key) +
-          '">' +
-          '<span class="campaign-filter-icon" aria-hidden="true">' +
-          filterIcon(key) +
-          "</span>" +
-          esc(filterLabel(key)) +
-          ' <span class="campaign-filter-count">' +
-          countForFilter(key) +
-          "</span></button>"
-        );
-      })
-      .join("");
-    filtersRoot.querySelectorAll("[data-filter]").forEach(function (button) {
-      button.addEventListener("click", function () {
-        activeFilter = button.getAttribute("data-filter");
-        buildFilters();
-        renderCards();
+      }).map(function (key) {
+        return '<button class="campaign-filter-tab' + (activeFilter === key ? " active" : "") + '" type="button" data-filter="' + esc(key) + '">' +
+          '<span class="campaign-filter-icon" aria-hidden="true">' + filterIcon(key) + '</span>' + esc(filterLabel(key)) +
+          ' <span class="campaign-filter-count">' + countForFilter(key) + '</span></button>';
+      }).join("");
+      root.querySelectorAll("[data-filter]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          activeFilter = button.getAttribute("data-filter");
+          buildFilters();
+          renderKpis();
+          renderCards();
+        });
       });
-    });
+    }
+    renderGroup(statusFiltersRoot, statusOrder);
+    renderGroup(signalFiltersRoot, signalOrder);
   }
 
   function matchesFilter(p) {
     if (activeFilter === "all") return true;
-    if (activeFilter === "results")
-      return can("view_results") && Boolean(String(p.communication_results_url || "").trim());
+    if (activeFilter === "results") return hasResults(p);
     if (activeFilter === "validation")
       return p.status === "client_validation_required";
-    if (activeFilter === "review")
-      return [
-        "configuration_submitted",
-        "review_pending",
-        "in_review",
-        "ready_to_publish",
-      ].includes(p.status);
-    if (activeFilter === "startingSoon") {
-      if (p.status !== "scheduled" || !p.launch_date) return false;
-      var nowStart = new Date(),
-        startLimit = new Date(nowStart.getTime() + 14 * 24 * 60 * 60 * 1000),
-        startDate = new Date(p.launch_date);
-      return !Number.isNaN(startDate.getTime()) && startDate >= nowStart && startDate <= startLimit;
-    }
-    if (activeFilter === "endingSoon") {
-      if (!["scheduled", "published", "active"].includes(p.status) || !p.close_date)
-        return false;
-      var now = new Date(),
-        limit = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
-        d = new Date(p.close_date);
-      return !Number.isNaN(d.getTime()) && d >= now && d <= limit;
-    }
+    if (activeFilter === "review") return isReviewStatus(p.status);
+    if (activeFilter === "ongoing") return isOngoingStatus(p.status);
+    if (activeFilter === "finished") return isFinishedStatus(p.status);
+    if (activeFilter === "startingSoon") return isStartingSoon(p);
+    if (activeFilter === "endingSoon") return isEndingSoon(p);
     return statusKey(p) === activeFilter;
   }
 
@@ -1297,13 +1272,14 @@
       var inTheme = activeTheme === "all" || themeLabel(p) === activeTheme;
       var inCountry = activeCountry === "all" || countries.includes(activeCountry);
       var inLocale = activeLocale === "all" || locales.includes(activeLocale);
-      return inFolder && inTheme && inCountry && inLocale && matchesFilter(p) && (!term || haystack.indexOf(term) !== -1);
+      return inFolder && inTheme && inCountry && inLocale && matchesPeriod(p) && matchesFilter(p) && (!term || haystack.indexOf(term) !== -1);
     });
     var mode = (sort && sort.value) || "updated-desc";
     filtered.sort(function (a, b) {
       if (mode === "name-asc") return campaignName(a).localeCompare(campaignName(b), "fr", { sensitivity: "base" });
       if (mode === "launch-asc") return String(a.launch_date || "9999-12-31").localeCompare(String(b.launch_date || "9999-12-31"));
       if (mode === "close-asc") return String(a.close_date || "9999-12-31").localeCompare(String(b.close_date || "9999-12-31"));
+      if (mode === "updated-asc") return new Date(a.updated_at || a.created_at || 0) - new Date(b.updated_at || b.created_at || 0);
       return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
     });
     cardRoot.innerHTML = filtered.map(cardHtml).join("");
@@ -1316,6 +1292,7 @@
       button.addEventListener("click", function () {
         activeFilter = button.getAttribute("data-quick-filter");
         buildFilters();
+        renderKpis();
         renderCards();
         document
           .querySelector(".campaign-browser")
@@ -1373,7 +1350,9 @@
       renderAlerts();
       renderFolderBar();
       renderContextFilters();
+      renderPeriodFilter();
       buildFilters();
+      renderKpis();
       renderCards();
       if (!initialActionHandled && initialAction && initialProjectId) {
         initialActionHandled = true;
@@ -1396,5 +1375,14 @@
   if (search) search.addEventListener("input", renderCards);
   if (sort) sort.addEventListener("change", renderCards);
   bindQuickFilters();
+  document.querySelectorAll("[data-kpi-filter]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      activeFilter = button.getAttribute("data-kpi-filter");
+      buildFilters();
+      renderKpis();
+      renderCards();
+      document.querySelector(".campaign-browser")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
   load();
 })();
