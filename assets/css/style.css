@@ -13797,3 +13797,20 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .dei-final-cta{display:flex;align-items:center;justify-content:space-between;gap:32px;margin-top:18px;padding:34px 38px;border-radius:22px;background:#173f64;color:#fff}.dei-final-cta .eyebrow{color:#9fd6da}.dei-final-cta h2{margin:5px 0 8px;font-size:2rem;line-height:1.12}.dei-final-cta p:last-child{margin:0;color:#c6d5df}.dei-final-cta .button-primary{flex:0 0 auto;background:#fff;color:#173f64;border-color:#fff}.dei-final-cta .button-primary:hover{background:#f2f7f9}
 @media(max-width:1180px){.dei-cockpit-hero{grid-template-columns:1fr}.dei-cockpit-hero-panel{max-width:760px}.dei-feature-grid{grid-template-columns:repeat(2,1fr)}.dei-actions-section{grid-template-columns:1fr}.dei-section-heading-left{max-width:760px}.dei-action-types{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:760px){.dei-cockpit-hero{padding-top:32px;gap:30px}.dei-cockpit-hero-copy h1{font-size:3rem}.dei-preview-kpis{grid-template-columns:1fr}.dei-preview-timeline{grid-template-columns:repeat(3,1fr)}.dei-feature-grid,.dei-action-types,.dei-roadmap,.dei-gamification-section{grid-template-columns:1fr}.dei-gamification-section{padding:30px 20px}.dei-final-cta{align-items:flex-start;flex-direction:column;padding:28px 22px}.dei-final-cta .button{width:100%}.dei-hero-actions .button{width:100%}.dei-cockpit-section{padding:52px 0}}
+
+
+/* Patch calendrier lisible + Cockpit DEI */
+.calendar-loading[hidden]{display:none!important}
+.dei-final-cta h2{color:#fff!important}
+.calendar-month-summary{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.calendar-month-summary:empty{display:none}
+.calendar-month-chip{display:flex;align-items:center;gap:9px;min-width:0;max-width:100%;padding:8px 11px;border:1px solid #d8e6ee;border-radius:11px;background:#fff;color:#173f64;text-decoration:none}
+.calendar-month-chip>i{width:8px;height:8px;border-radius:50%;background:#0b8c95;flex:0 0 auto}
+.calendar-month-chip>span{display:flex;flex-direction:column;min-width:0}
+.calendar-month-chip strong{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.78rem}
+.calendar-month-chip small{color:#718596;font-size:.68rem}
+.calendar-month-chip:hover{border-color:#9ac8cf;background:#f8fcfd}
+.calendar-month-summary-more{display:inline-flex;align-items:center;padding:8px 11px;border-radius:11px;background:#eef5f8;color:#526f84;font-size:.75rem;font-weight:700}
+.studio-calendar-event.is-campaign.is-end{background:#f3f5fb}.studio-calendar-event.is-campaign.is-end>span{background:#5b6ea6}
+.studio-calendar-event.is-campaign.is-single{background:#eef8f6}.studio-calendar-event.is-campaign.is-single>span{background:#19836f}
+@media(max-width:760px){.calendar-month-chip{width:100%}.calendar-month-chip strong{max-width:none}}
