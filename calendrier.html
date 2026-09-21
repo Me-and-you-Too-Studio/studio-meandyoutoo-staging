@@ -53,14 +53,17 @@
 
         <div class="calendar-filterbar">
           <select id="calendar-org-filter" hidden><option value="">Tous les clients</option></select>
-          <select id="calendar-status-filter">
-            <option value="">Tous les statuts</option>
-            <option value="draft">Brouillons</option>
-            <option value="configuration_submitted">À relire</option>
-            <option value="published">Publiées</option>
-            <option value="active">En cours</option>
-            <option value="completed">Terminées</option>
-          </select>
+          <label class="calendar-filter-control">
+            <span class="calendar-filter-label">Statut <span class="admin-info-dot" tabindex="0" data-info="Publiée : la campagne est validée et disponible mais sa période de diffusion n’est pas forcément commencée. En cours : la date du jour se situe entre la date de début et la date de fin. Terminée : la période de diffusion est achevée. Une campagne publiée sans dates reste Publiée.">i</span></span>
+            <select id="calendar-status-filter">
+              <option value="">Tous les statuts</option>
+              <option value="draft">Brouillons</option>
+              <option value="configuration_submitted">À relire</option>
+              <option value="published">Publiées</option>
+              <option value="active">En cours</option>
+              <option value="completed">Terminées</option>
+            </select>
+          </label>
           <label class="calendar-toggle"><input id="calendar-show-tasks" type="checkbox" checked /> <span>Afficher les tâches</span></label>
           <input id="calendar-search" type="search" placeholder="Rechercher campagne, client, thématique…" />
         </div>
@@ -99,12 +102,12 @@
       <p class="admin-dialog-intro">Ajoutez une action à votre calendrier. Elle reste indépendante des dates de diffusion d’une campagne.</p>
       <label class="field"><span>Tâche *</span><input id="task-title" maxlength="180" required placeholder="Ex. Préparer le mail de lancement" /></label>
       <div class="calendar-task-form-grid">
-        <label class="field"><span>Échéance</span><input id="task-due-date" type="date" /></label>
-        <label class="field"><span>Priorité</span><select id="task-priority"><option value="normal">Normale</option><option value="high">Haute</option><option value="low">Basse</option></select></label>
+        <label class="field"><span>Échéance <span class="admin-info-dot" tabindex="0" data-info="La tâche apparaîtra à cette date dans votre calendrier. Vous pouvez aussi créer une tâche sans échéance et la dater plus tard.">i</span></span><input id="task-due-date" type="date" /></label>
+        <label class="field"><span>Priorité <span class="admin-info-dot" tabindex="0" data-info="La priorité vous aide à organiser vos tâches. Une priorité haute est davantage mise en évidence dans la liste et le calendrier ; elle ne modifie pas automatiquement la campagne.">i</span></span><select id="task-priority"><option value="normal">Normale</option><option value="high">Haute</option><option value="low">Basse</option></select></label>
       </div>
-      <label class="field" id="task-org-field" hidden><span>Client</span><select id="task-org"><option value="">Tâche interne générale</option></select></label>
-      <label class="field"><span>Campagne liée (facultatif)</span><select id="task-project"><option value="">Aucune campagne</option></select></label>
-      <label class="field" id="task-visibility-field"><span>Visibilité</span><select id="task-visibility"><option value="team">Partagée avec mon équipe</option><option value="personal">Personnelle</option></select></label>
+      <label class="field" id="task-org-field" hidden><span>Client <span class="admin-info-dot" tabindex="0" data-info="Réservé à l’administration Me&YouToo. Choisissez un client pour rattacher votre tâche interne à son suivi. « Tâche interne générale » crée une tâche Me&YouToo sans client associé. Cette tâche n’est jamais visible par le client.">i</span></span><select id="task-org"><option value="">Tâche interne générale</option></select></label>
+      <label class="field"><span>Campagne liée (facultatif) <span class="admin-info-dot" tabindex="0" data-info="Associez la tâche à un autodiagnostic si elle concerne une campagne précise. Laisser « Aucune campagne » crée une tâche générale, indépendante des dates de diffusion d’un autodiagnostic.">i</span></span><select id="task-project"><option value="">Aucune campagne</option></select></label>
+      <label class="field" id="task-visibility-field"><span>Visibilité <span class="admin-info-dot" tabindex="0" data-info="Partagée avec mon équipe : tous les utilisateurs de votre entreprise peuvent voir la tâche. Personnelle : seuls vous-même et, le cas échéant, la personne à qui la tâche est assignée peuvent la voir.">i</span></span><select id="task-visibility"><option value="team">Partagée avec mon équipe</option><option value="personal">Personnelle</option></select></label>
       <label class="field"><span>Notes</span><textarea id="task-notes" rows="4" placeholder="Contexte, éléments à préparer…"></textarea></label>
       <div class="top-actions calendar-task-dialog-actions">
         <button class="button button-ghost" type="button" data-task-close>Annuler</button>
@@ -115,6 +118,6 @@
 
   <script src="assets/js/api.js?v=20260823-roles-1"></script>
   <script src="assets/js/app.js?v=20260921-calendar-clean-2"></script>
-  <script src="assets/js/calendrier.js?v=20260921-calendar-clean-2"></script>
+  <script src="assets/js/calendrier.js?v=20260921-info-task-3"></script>
 </body>
 </html>

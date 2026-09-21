@@ -92,7 +92,19 @@
     if(focusId){const row=root.querySelector(`[data-task-id="${focusId}"]`);row?.scrollIntoView({behavior:'smooth',block:'center'});row?.classList.add('is-focused');}
   }
   function render(){updateHeading();renderDataQuality();renderTaskCount();if(state.view==='month')renderMonth();else renderYear();renderTasks();}
-  async function loadOrganizations(){if(!isAdmin)return;try{const data=await StudioAPI.request('/api/admin/organizations');state.organizations=data.organizations||[];const select=$('#calendar-org-filter'),taskOrg=$('#task-org');select.hidden=false;const opts=state.organizations.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'fr')).map(o=>`<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');select.innerHTML='<option value="">Tous les clients</option>'+opts;taskOrg.innerHTML='<option value="">Tâche interne générale</option>'+opts;$('#task-org-field').hidden=false;$('#task-visibility-field').hidden=true;}catch(e){setAlert(e.message);}}
+  async function loadOrganizations(){
+    const taskOrgField=$('#task-org-field'),taskVisibilityField=$('#task-visibility-field');
+    if(!isAdmin){
+      if(taskOrgField){taskOrgField.hidden=true;taskOrgField.style.display='none';}
+      if(taskVisibilityField){taskVisibilityField.hidden=false;taskVisibilityField.style.display='';}
+      return;
+    }
+    try{
+      const data=await StudioAPI.request('/api/admin/organizations');state.organizations=data.organizations||[];const select=$('#calendar-org-filter'),taskOrg=$('#task-org');select.hidden=false;const opts=state.organizations.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'fr')).map(o=>`<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');select.innerHTML='<option value="">Tous les clients</option>'+opts;taskOrg.innerHTML='<option value="">Tâche interne générale</option>'+opts;
+      if(taskOrgField){taskOrgField.hidden=false;taskOrgField.style.display='';}
+      if(taskVisibilityField){taskVisibilityField.hidden=true;taskVisibilityField.style.display='none';}
+    }catch(e){setAlert(e.message);}
+  }
   async function load(){
     setAlert('');const loading=$('#calendar-loading');loading.hidden=false;const monthRoot=$('#calendar-month'),yearRoot=$('#calendar-year'),summary=$('#calendar-month-summary');if(monthRoot)monthRoot.style.visibility='hidden';if(yearRoot)yearRoot.style.visibility='hidden';if(summary)summary.style.visibility='hidden';const r=range(),org=$('#calendar-org-filter')?.value||'';try{const suffix=`?start=${r.start}&end=${r.end}${isAdmin&&org?'&organizationId='+encodeURIComponent(org):''}`;const [cal,tasks]=await Promise.all([StudioAPI.request('/api/calendar'+suffix),StudioAPI.request('/api/tasks'+suffix)]);state.campaigns=cal.campaigns||[];state.tasks=tasks.tasks||[];state.missingDates=Number(cal.missingDates||0);populateTaskProjects();render();}catch(e){setAlert(e.message);}finally{loading.hidden=true;if(monthRoot)monthRoot.style.visibility='';if(yearRoot)yearRoot.style.visibility='';if(summary)summary.style.visibility='';}
   }

@@ -13814,3 +13814,16 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .studio-calendar-event.is-campaign.is-end{background:#f3f5fb}.studio-calendar-event.is-campaign.is-end>span{background:#5b6ea6}
 .studio-calendar-event.is-campaign.is-single{background:#eef8f6}.studio-calendar-event.is-campaign.is-single>span{background:#19836f}
 @media(max-width:760px){.calendar-month-chip{width:100%}.calendar-month-chip strong{max-width:none}}
+
+/* Calendrier — points info et séparation stricte admin/client des tâches */
+#task-org-field[hidden],#task-visibility-field[hidden],#calendar-org-filter[hidden]{display:none!important}
+.calendar-filter-control{display:flex;flex-direction:column;gap:5px;min-width:0}
+.calendar-filter-control .calendar-filter-label{display:flex;align-items:center;gap:6px;padding-left:2px;color:#526f84;font-size:.76rem;font-weight:800}
+.calendar-filter-control select{width:100%}
+.calendar-task-dialog .field>span{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.calendar-task-dialog .admin-info-dot,.calendar-filter-control .admin-info-dot{width:18px;height:18px;font-size:.68rem}
+.calendar-task-dialog .admin-info-dot[data-info]::after{left:0;transform:translate(0,6px);width:min(330px,72vw)}
+.calendar-task-dialog .admin-info-dot[data-info]::before{left:9px;transform:translate(-50%,6px)}
+.calendar-task-dialog .admin-info-dot[data-info]:hover::after,.calendar-task-dialog .admin-info-dot[data-info]:focus-visible::after{transform:translate(0,0)}
+.calendar-task-dialog .admin-info-dot[data-info]:hover::before,.calendar-task-dialog .admin-info-dot[data-info]:focus-visible::before{transform:translate(-50%,0)}
+@media(max-width:760px){.calendar-filter-control{width:100%}}
