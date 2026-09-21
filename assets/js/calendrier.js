@@ -75,6 +75,74 @@
     });
   }
 
+  let deiPopoverHideTimer=null;
+  function deiEventDateDetail(e,date){
+    const year=date.getFullYear();
+    if(e.allMonth)return `Tout le mois de ${date.toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}`;
+    const range=eventRangeForYear(e,year);
+    if(range){
+      const start=new Date(year,(e.month||1)-1,range[0]);
+      const end=new Date(year,(e.month||1)-1,range[1]);
+      return `${fullDateLabel(start)} → ${fullDateLabel(end)}`;
+    }
+    return fullDateLabel(date);
+  }
+  function ensureDeiPopover(){
+    let pop=$('#calendar-dei-popover');
+    if(pop)return pop;
+    pop=document.createElement('div');
+    pop.id='calendar-dei-popover';
+    pop.className='calendar-dei-popover';
+    pop.setAttribute('role','dialog');
+    pop.setAttribute('aria-modal','false');
+    pop.hidden=true;
+    document.body.appendChild(pop);
+    pop.addEventListener('mouseenter',()=>{if(deiPopoverHideTimer)clearTimeout(deiPopoverHideTimer);});
+    pop.addEventListener('mouseleave',scheduleHideDeiPopover);
+    return pop;
+  }
+  function showDeiPopover(trigger){
+    if(deiPopoverHideTimer)clearTimeout(deiPopoverHideTimer);
+    const index=Number(trigger.dataset.deiEvent),e=deiEvents[index];
+    if(!e)return;
+    const date=parseDate(trigger.dataset.deiDate)||state.cursor;
+    const pop=ensureDeiPopover();
+    const category=deiCategoryLabels[e.category]||'Événement DEI';
+    pop.innerHTML=`<div class="calendar-dei-popover-head"><span class="calendar-dei-popover-date">${esc(deiEventDateDetail(e,date))}</span><button type="button" class="calendar-dei-popover-close" aria-label="Fermer">×</button></div><strong class="calendar-dei-popover-title">${esc(e.title)}</strong><span class="calendar-dei-popover-category">${esc(category)}</span>${e.recommendation?`<div class="calendar-dei-popover-reco"><span>Autodiagnostic recommandé</span><strong>${esc(e.recommendation)}</strong></div>`:''}<a class="button button-primary calendar-dei-popover-cta" href="bibliotheque.html">Voir le catalogue →</a>`;
+    pop.hidden=false;
+    pop.className=`calendar-dei-popover is-${esc(e.category)} is-visible`;
+    pop.querySelector('.calendar-dei-popover-close').onclick=hideDeiPopover;
+    const rect=trigger.getBoundingClientRect();
+    const margin=12;
+    pop.style.left='0px';pop.style.top='0px';
+    const pw=pop.offsetWidth,ph=pop.offsetHeight;
+    let left=rect.left+(rect.width/2)-(pw/2);
+    left=Math.max(margin,Math.min(left,window.innerWidth-pw-margin));
+    let top=rect.bottom+10;
+    if(top+ph>window.innerHeight-margin)top=Math.max(margin,rect.top-ph-10);
+    pop.style.left=`${Math.round(left)}px`;
+    pop.style.top=`${Math.round(top)}px`;
+  }
+  function hideDeiPopover(){
+    const pop=$('#calendar-dei-popover');
+    if(!pop)return;
+    pop.hidden=true;
+    pop.classList.remove('is-visible');
+  }
+  function scheduleHideDeiPopover(){
+    if(deiPopoverHideTimer)clearTimeout(deiPopoverHideTimer);
+    deiPopoverHideTimer=setTimeout(hideDeiPopover,140);
+  }
+  function bindDeiPopovers(root){
+    root.querySelectorAll('[data-dei-event]').forEach(trigger=>{
+      trigger.addEventListener('mouseenter',()=>showDeiPopover(trigger));
+      trigger.addEventListener('mouseleave',scheduleHideDeiPopover);
+      trigger.addEventListener('focus',()=>showDeiPopover(trigger));
+      trigger.addEventListener('blur',scheduleHideDeiPopover);
+      trigger.addEventListener('click',e=>{e.preventDefault();showDeiPopover(trigger);});
+    });
+  }
+
   function range(){
     const y=state.cursor.getFullYear(),m=state.cursor.getMonth();
     if(state.view==='year')return{start:`${y}-01-01`,end:`${y}-12-31`};
@@ -119,11 +187,12 @@
       const events=[...dayDei.map(e=>({type:'dei',data:e})),...dayCampaigns.map(p=>({type:'campaign',data:p})),...dayTasks.map(t=>({type:'task',data:t}))];
       const deiDayClass=dayDeiCover.length?` has-dei-event has-dei-${dayDeiCover[dayDeiCover.length-1].category}`:'';
       html+=`<article class="studio-calendar-day ${outside?'is-outside':''} ${isToday?'is-today':''}${deiDayClass}" data-date="${key}"><header><span>${d.getDate()}</span>${isToday?'<b>Aujourd’hui</b>':''}</header><div class="studio-calendar-day-events">`;
-      events.slice(0,4).forEach(evt=>{if(evt.type==='dei'){const e=evt.data;html+=`<a class="studio-calendar-event is-dei is-dei-${esc(e.category)}" href="bibliotheque.html" title="${esc(e.title)} — Voir le catalogue"><span></span><div><strong>${esc(e.title)}</strong>${e.recommendation?`<small>AD recommandé : ${esc(e.recommendation)} · Voir le catalogue →</small>`:`<small>Voir le catalogue →</small>`}</div></a>`;}else if(evt.type==='campaign'){const p=evt.data,startDate=parseDate(p.launch_date),endDate=parseDate(p.close_date),isStart=sameDay(startDate,d),isEnd=sameDay(endDate,d);let phase=isStart&&isEnd?'Début · Fin':isStart?'Début':'Fin';const cls=isStart&&isEnd?'is-single':isEnd?'is-end':'';html+=`<a class="studio-calendar-event is-campaign ${cls}" href="campagne-detail.html?id=${encodeURIComponent(p.id)}" title="${esc(campaignName(p))}"><span></span><div><strong>${esc(campaignName(p))}</strong><small>${esc(phase)}${isAdmin&&p.organization_name?' · '+esc(p.organization_name):''}</small></div></a>`;}else{const t=evt.data;html+=`<button class="studio-calendar-event is-task ${t.priority==='high'?'is-high':''}" type="button" data-open-task="${t.id}"><span></span><div><strong>${esc(t.title)}</strong><small>Tâche${isAdmin&&t.organization_name?' · '+esc(t.organization_name):''}</small></div></button>`;}});
+      events.slice(0,4).forEach(evt=>{if(evt.type==='dei'){const e=evt.data;const eventIndex=deiEvents.indexOf(e);html+=`<button class="studio-calendar-event is-dei is-dei-${esc(e.category)}" type="button" data-dei-event="${eventIndex}" data-dei-date="${key}" aria-haspopup="dialog" aria-label="Voir le détail : ${esc(e.title)}"><span></span><div><strong>${esc(e.short||e.title)}</strong>${e.recommendation?`<small>AD recommandé : ${esc(e.recommendation)}</small>`:''}</div></button>`;}else if(evt.type==='campaign'){const p=evt.data,startDate=parseDate(p.launch_date),endDate=parseDate(p.close_date),isStart=sameDay(startDate,d),isEnd=sameDay(endDate,d);let phase=isStart&&isEnd?'Début · Fin':isStart?'Début':'Fin';const cls=isStart&&isEnd?'is-single':isEnd?'is-end':'';html+=`<a class="studio-calendar-event is-campaign ${cls}" href="campagne-detail.html?id=${encodeURIComponent(p.id)}" title="${esc(campaignName(p))}"><span></span><div><strong>${esc(campaignName(p))}</strong><small>${esc(phase)}${isAdmin&&p.organization_name?' · '+esc(p.organization_name):''}</small></div></a>`;}else{const t=evt.data;html+=`<button class="studio-calendar-event is-task ${t.priority==='high'?'is-high':''}" type="button" data-open-task="${t.id}"><span></span><div><strong>${esc(t.title)}</strong><small>Tâche${isAdmin&&t.organization_name?' · '+esc(t.organization_name):''}</small></div></button>`;}});
       if(events.length>4)html+=`<div class="studio-calendar-more">+${events.length-4} autre${events.length-4>1?'s':''}</div>`;
       html+='</div></article>';
     }
     root.innerHTML=html+'</div>';
+    bindDeiPopovers(root);
     root.querySelectorAll('[data-open-task]').forEach(b=>b.onclick=()=>switchToTasks(Number(b.dataset.openTask)));
   }
   function renderYear(){
@@ -196,6 +265,10 @@
 
   if(isAdmin){$('#calendar-eyebrow').textContent='Administration Me&YouToo';$('#calendar-lead').textContent='Visualisez les campagnes de tous les clients, leurs échéances et vos tâches internes.';$('#tasks-intro').textContent='Vos tâches internes Me&YouToo restent invisibles des clients.';}
   else{$('#calendar-eyebrow').textContent='Pilotage DEI';$('#calendar-lead').textContent='Visualisez vos périodes de diffusion et organisez les actions de votre équipe.';}
+
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')hideDeiPopover();});
+  window.addEventListener('resize',hideDeiPopover);
+  window.addEventListener('scroll',hideDeiPopover,true);
 
   Promise.resolve(loadOrganizations()).then(load);
 })();
