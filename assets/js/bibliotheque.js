@@ -7,8 +7,6 @@
   const plannedThemes=[
     {slug:'sexisme',title:'Compréhension du sexisme',description:fallbackDescriptions.sexisme,situation_count:27,chapter_count:4,library_situation_count:16,country_codes:['FR'],available_locales:['fr','en','es']},
     {slug:'lgbt',title:'LGBT+',description:fallbackDescriptions.lgbt,situation_count:24,chapter_count:4,library_situation_count:0,country_codes:['FR'],available_locales:['fr','en']},
-    {slug:'origines',title:'Diversité des origines',description:fallbackDescriptions.origines,situation_count:52,chapter_count:6,library_situation_count:0,country_codes:['FR'],available_locales:['fr']},
-    {slug:'religion',title:'Diversité religieuse et convictions',description:fallbackDescriptions.religion,situation_count:34,chapter_count:4,library_situation_count:0,country_codes:['FR'],available_locales:['fr']},
     {slug:'intergenerationnel',title:'Intergénérationnel',description:fallbackDescriptions.intergenerationnel,situation_count:29,chapter_count:5,library_situation_count:0,country_codes:['FR'],available_locales:['fr','en']},
     {slug:'management',title:'Management inclusif',description:fallbackDescriptions.management,situation_count:62,chapter_count:6,library_situation_count:0,country_codes:['FR'],available_locales:['fr']},
     {slug:'collegue-inclusif',title:'Êtes-vous un·e collègue inclusif·ve ?',description:fallbackDescriptions['collegue-inclusif'],situation_count:208,chapter_count:4,library_situation_count:0,cultural_scopes:['worldwide'],available_locales:['fr','en']},
