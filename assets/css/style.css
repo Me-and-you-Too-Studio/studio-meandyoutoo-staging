@@ -14204,3 +14204,20 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .studio-year-highlight.is-lgbt{background:#f2eafb;color:#7650a7;border:1px solid #ddc9f2}
 .studio-year-month.has-dei-month .studio-year-active{margin-top:8px}
 @media(max-width:760px){.studio-year-highlights{margin-top:7px}.studio-year-highlight{font-size:.65rem}}
+
+
+/* Calendrier DEI v4 : repères DEI rose + SEEPH bien visible */
+.studio-calendar-day.has-dei-event::before{background:#ffe3ed!important;opacity:.78!important}
+.studio-calendar-event.is-dei{background:#ffd9e6!important;border-color:#ef9eb7!important;color:#742a45!important}
+.studio-calendar-event.is-dei>span{background:#d93f72!important}
+.studio-calendar-event.is-dei small{color:#742a45!important;opacity:.86}
+.studio-year-month.has-dei-events{background:#fff0f5!important;border-color:#efb4c8!important;box-shadow:inset 0 4px 0 #dc4d7d!important}
+.studio-year-dei{color:#9b3158!important}
+.studio-year-highlight,.studio-year-highlight.is-diversity,.studio-year-highlight.is-lgbt,.studio-year-highlight.is-disability{background:#ffd9e6!important;color:#742a45!important;border:1px solid #ef9eb7!important}
+
+
+/* Calendrier DEI v4.1 : événements DEI très visibles + semaine SEEPH complète */
+.studio-calendar-day.has-dei-event::before{background:#ffd6e5!important;opacity:.92!important}
+.studio-calendar-event.is-dei{background:#ffc9dc!important;border:1px solid #e978a0!important;box-shadow:0 1px 0 rgba(173,45,91,.08)!important}
+.studio-year-month.has-dei-events{background:#ffe8f0!important;border-color:#e997b4!important;box-shadow:inset 0 5px 0 #d94378!important}
+.studio-year-highlight,.studio-year-highlight.is-diversity,.studio-year-highlight.is-lgbt,.studio-year-highlight.is-disability{background:#ffc9dc!important;border-color:#e978a0!important;color:#6f2440!important}

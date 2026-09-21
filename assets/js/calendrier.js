@@ -24,6 +24,7 @@
     {month:5,allMonth:true,title:'Mois européen de la diversité',category:'diversity',short:'Mois européen de la diversité'},
     {month:5,day:17,title:'Journée internationale contre l’homophobie, la transphobie et la biphobie',category:'lgbt',short:'Lutte contre les LGBTphobies'},
     {month:6,allMonth:true,title:'Mois des fiertés',category:'lgbt',short:'Mois des fiertés'},
+    {month:11,dynamicRange:'seeph',yearHighlight:true,title:'SEEPH — Semaine européenne pour l’emploi des personnes handicapées',category:'disability',short:'SEEPH'},
     {month:11,day:25,title:'Journée internationale pour l’élimination de la violence à l’égard des femmes',category:'equality',short:'Violences faites aux femmes'},
     {month:12,day:3,title:'Journée internationale des personnes handicapées',category:'disability',short:'Handicap'},
     {month:12,day:10,title:'Journée des droits de l’Homme',category:'human-rights',short:'Droits humains'}
@@ -34,8 +35,37 @@
     if(filter==='none')return[];
     return deiEvents.filter(e=>filter==='all'||e.category===filter);
   }
-  function deiEventsCoveringDate(d){return filteredDeiEvents().filter(e=>e.month===d.getMonth()+1&&(e.allMonth||e.day===d.getDate()));}
-  function deiEventsOnDate(d){return deiEventsCoveringDate(d).filter(e=>!e.allMonth||d.getDate()===1);}
+  function seephRangeForYear(year){
+    // SEEPH : 3e lundi de novembre -> dimanche suivant.
+    const first=new Date(year,10,1);
+    const firstMonday=1+((8-first.getDay())%7);
+    const start=firstMonday+14;
+    return [start,start+6];
+  }
+  function eventRangeForYear(e,year){
+    if(e.dynamicRange==='seeph')return seephRangeForYear(year);
+    return e.rangeByYear?.[year]||null;
+  }
+  function deiEventAppliesToYear(e,year){return !e.rangeByYear||Boolean(e.rangeByYear[year]);}
+  function deiEventsCoveringDate(d){
+    const year=d.getFullYear(),day=d.getDate();
+    return filteredDeiEvents().filter(e=>{
+      if(e.month!==d.getMonth()+1||!deiEventAppliesToYear(e,year))return false;
+      if(e.allMonth)return true;
+      if(e.day)return e.day===day;
+      const range=eventRangeForYear(e,year);
+      return Boolean(range&&day>=range[0]&&day<=range[1]);
+    });
+  }
+  function deiEventsOnDate(d){
+    const day=d.getDate();
+    return deiEventsCoveringDate(d).filter(e=>{
+      if(e.allMonth)return day===1;
+      if(e.day)return true;
+      // Une semaine DEI doit rester visible chaque jour, pas seulement le lundi.
+      return Boolean(eventRangeForYear(e,d.getFullYear()));
+    });
+  }
 
   function range(){
     const y=state.cursor.getFullYear(),m=state.cursor.getMonth();
@@ -92,7 +122,7 @@
     const summary=$('#calendar-month-summary');if(summary)summary.innerHTML='';
     const root=$('#calendar-year'),year=state.cursor.getFullYear(),campaigns=filteredCampaigns(),tasks=filteredTasksForCalendar();
     const visibleDei=filteredDeiEvents();
-    root.innerHTML=Array.from({length:12},(_,m)=>{const start=new Date(year,m,1),end=new Date(year,m+1,0);const active=campaigns.filter(p=>{const s=parseDate(p.launch_date),e=parseDate(p.close_date);if(!s&&!e)return false;const a=s||e,b=e||s;return a<=end&&b>=start;});const starts=campaigns.filter(p=>{const s=parseDate(p.launch_date);return s&&s.getFullYear()===year&&s.getMonth()===m;}).length;const ends=campaigns.filter(p=>{const e=parseDate(p.close_date);return e&&e.getFullYear()===year&&e.getMonth()===m;}).length;const taskCount=tasks.filter(t=>{const d=parseDate(t.due_date);return d&&d.getFullYear()===year&&d.getMonth()===m&&t.status!=='done';}).length;const monthDei=visibleDei.filter(e=>e.month===m+1);const deiCount=monthDei.length;const monthHighlights=monthDei.filter(e=>e.allMonth);const highlightHtml=monthHighlights.length?`<div class="studio-year-highlights">${monthHighlights.map(e=>`<span class="studio-year-highlight is-${esc(e.category)}">${esc(e.short||e.title)}</span>`).join('')}</div>`:'';return `<button class="studio-year-month ${deiCount?'has-dei-events':''} ${monthHighlights.length?'has-dei-month':''}" type="button" data-month="${m}"><strong>${start.toLocaleDateString('fr-FR',{month:'long'})}</strong>${highlightHtml}<span class="studio-year-active">${active.length} campagne${active.length>1?'s':''} active${active.length>1?'s':''}</span><div><small><b>${starts}</b> démarrage${starts>1?'s':''}</small><small><b>${ends}</b> fin${ends>1?'s':''}</small><small><b>${taskCount}</b> tâche${taskCount>1?'s':''}</small>${deiCount?`<small class="studio-year-dei"><b>${deiCount}</b> événement${deiCount>1?'s':''} DEI</small>`:''}</div></button>`;}).join('');
+    root.innerHTML=Array.from({length:12},(_,m)=>{const start=new Date(year,m,1),end=new Date(year,m+1,0);const active=campaigns.filter(p=>{const s=parseDate(p.launch_date),e=parseDate(p.close_date);if(!s&&!e)return false;const a=s||e,b=e||s;return a<=end&&b>=start;});const starts=campaigns.filter(p=>{const s=parseDate(p.launch_date);return s&&s.getFullYear()===year&&s.getMonth()===m;}).length;const ends=campaigns.filter(p=>{const e=parseDate(p.close_date);return e&&e.getFullYear()===year&&e.getMonth()===m;}).length;const taskCount=tasks.filter(t=>{const d=parseDate(t.due_date);return d&&d.getFullYear()===year&&d.getMonth()===m&&t.status!=='done';}).length;const monthDei=visibleDei.filter(e=>e.month===m+1&&deiEventAppliesToYear(e,year));const deiCount=monthDei.length;const activeDeiFilter=$('#calendar-dei-filter')?.value||'all';const monthHighlights=monthDei.filter(e=>e.allMonth||e.yearHighlight||(activeDeiFilter!=='all'&&activeDeiFilter!=='none'));const highlightHtml=monthHighlights.length?`<div class="studio-year-highlights">${monthHighlights.map(e=>{const range=eventRangeForYear(e,year);const label=range?`${e.short||e.title} · ${range[0]}–${range[1]} nov.`:(e.day?`${e.day} ${new Date(year,m,1).toLocaleDateString('fr-FR',{month:'short'})} · ${e.short||e.title}`:(e.short||e.title));return `<span class="studio-year-highlight is-${esc(e.category)}">${esc(label)}</span>`;}).join('')}</div>`:'';return `<button class="studio-year-month ${deiCount?'has-dei-events':''} ${monthHighlights.length?'has-dei-month':''}" type="button" data-month="${m}"><strong>${start.toLocaleDateString('fr-FR',{month:'long'})}</strong>${highlightHtml}<span class="studio-year-active">${active.length} campagne${active.length>1?'s':''} active${active.length>1?'s':''}</span><div><small><b>${starts}</b> démarrage${starts>1?'s':''}</small><small><b>${ends}</b> fin${ends>1?'s':''}</small><small><b>${taskCount}</b> tâche${taskCount>1?'s':''}</small>${deiCount?`<small class="studio-year-dei"><b>${deiCount}</b> événement${deiCount>1?'s':''} DEI</small>`:''}</div></button>`;}).join('');
     root.querySelectorAll('[data-month]').forEach(b=>b.onclick=()=>{state.cursor=new Date(year,Number(b.dataset.month),1);setView('month');load();});
   }
   function renderDataQuality(){const box=$('#calendar-data-quality');box.hidden=!state.missingDates;$('#calendar-missing-count').textContent=`${state.missingDates} campagne${state.missingDates>1?'s':''} sans dates`;}
