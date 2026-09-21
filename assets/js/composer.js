@@ -11,6 +11,8 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const canonical = value => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
   const api = (path, options={}) => window.StudioAPI.request(path, options);
+  const currentUser = window.StudioAPI?.user?.() || {};
+  const isAdmin = currentUser.role === 'admin';
   const campaignContextInfoText=`Ajouter un périmètre ou une langue conserve ce que vous avez déjà composé sur les autres périmètres. Retirer un périmètre supprime uniquement le contenu rattaché à ce pays dans la campagne.`;
 
   function infoDot(message,label='Informations importantes',floating=false){
@@ -219,9 +221,9 @@
   function renderCountryTabs(project=state.project){
     const root=$('composer-country-tabs');if(!root)return;
     const countries=campaignCountries(project);
-    // Les campagnes historiques importées restent une copie du legacy :
-    // les périmètres doivent rester visibles et consultables, mais jamais modifiables.
-    if(isLegacyClientCampaign(project)){
+    // Côté client, une campagne historique publiée reste consultable uniquement.
+    // Côté admin Me&YouToo, le même contenu reste corrigeable comme toute campagne Studio.
+    if(isLegacyClientCampaign(project)&&!isAdmin){
       if(!countries.length){root.hidden=true;root.style.display='none';root.innerHTML='';return;}
       const byCountry=projectCountryLocales(project);
       const label=countryLabel;
@@ -526,7 +528,7 @@
     return state.libraryAvailability.get(libraryAvailabilityKey(ch))===true;
   }
   async function ensureLibraryAvailability(ch=state.chapters[state.active]){
-    if(!ch||state.project?.can_edit===false||isStereotypesChapter(ch))return false;
+    if(!ch||state.project?.can_edit===false||(isStereotypesChapter(ch)&&!isAdmin))return false;
     const key=libraryAvailabilityKey(ch);
     if(state.libraryAvailability.has(key))return state.libraryAvailability.get(key)===true;
     // Valeur provisoire : tant que le contrôle n'est pas terminé, aucun bouton
@@ -551,7 +553,7 @@
     const stereotypes=isStereotypesChapter(ch);
     // Règle méthodologique Me&YouToo : le chapitre Stéréotypes est un socle
     // non modifiable dans Sexisme et dans Alliés de la mixité.
-    const methodologyLocked=Boolean(stereotypes);
+    const methodologyLocked=Boolean(stereotypes&&!isAdmin);
     const adminCorrection=Boolean(state.project?.review_mode&&state.project?.can_edit===true);
     const readOnly=Boolean(!adminCorrection&&state.project?.can_edit===false);
     const locked=Boolean(methodologyLocked||readOnly);
@@ -859,7 +861,7 @@
     const stereotypes=isStereotypesChapter(ch),status=chapterCountStatus(ch);
     $('chapter-kicker').textContent=`Chapitre ${state.active+1} · Questions`;
     $('chapter-title').textContent=ch.title;
-    const effectiveChapterLocked=Boolean(stereotypes);
+    const effectiveChapterLocked=Boolean(stereotypes&&!isAdmin);
     const campaignReadOnly=Boolean(state.project?.can_edit===false&&!state.project?.review_mode);
     $('chapter-desc').textContent=effectiveChapterLocked
       ?'Les situations de ce chapitre constituent un socle méthodologique Me&YouToo : leur texte, leurs réponses et leur sélection ne sont pas modifiables.'
@@ -873,13 +875,13 @@
 
     const libraryButton=$('library-button');
     const hasLibrary=chapterHasLibrary(ch);
-    libraryButton.hidden=Boolean(stereotypes||state.project?.can_edit===false||!hasLibrary);
+    libraryButton.hidden=Boolean((stereotypes&&!isAdmin)||state.project?.can_edit===false||!hasLibrary);
     if(!libraryButton.hidden){
       libraryButton.classList.toggle('is-disabled',status.atMax);
       libraryButton.setAttribute('aria-disabled',String(status.atMax));
       libraryButton.title=status.atMax?`Maximum de ${status.rules.max} situations atteint`:'';
     }
-    if(!stereotypes&&state.project?.can_edit!==false&&!state.libraryAvailability.has(libraryAvailabilityKey(ch))){
+    if((!stereotypes||isAdmin)&&state.project?.can_edit!==false&&!state.libraryAvailability.has(libraryAvailabilityKey(ch))){
       ensureLibraryAvailability(ch);
     }
 
