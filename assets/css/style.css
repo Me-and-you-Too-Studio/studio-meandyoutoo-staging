@@ -14102,3 +14102,65 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
   .admin-campaign-card{grid-template-columns:1fr}
   .admin-campaign-card-main,.admin-campaign-access,.admin-campaign-card>.admin-internal-comments{grid-column:1}
 }
+
+/* Catalogue client — cartes compactes dépliables */
+.topics-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+  align-items:start;
+}
+.topic-card-accordion{
+  overflow:hidden;
+  min-height:0;
+  border:1px solid var(--line);
+  border-radius:20px;
+  background:#fff;
+  box-shadow:0 8px 26px rgba(13,76,114,.055);
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+.topic-card-accordion:hover{transform:translateY(-1px);border-color:#b8d6dc;box-shadow:0 12px 30px rgba(13,76,114,.08)}
+.topic-card-accordion[open]{border-color:#9bcbd1;box-shadow:0 14px 34px rgba(13,76,114,.1)}
+.topic-card-accordion>summary{list-style:none}
+.topic-card-accordion>summary::-webkit-details-marker{display:none}
+.topic-summary{display:grid;grid-template-columns:122px 1fr;gap:16px;align-items:center;min-height:132px;padding:14px;cursor:pointer}
+.topic-thumb{display:grid;place-items:center;width:122px;height:104px;border-radius:15px;background:linear-gradient(145deg,var(--green-blue-soft),#fff);overflow:hidden}
+.topic-card-accordion:nth-child(3n + 2) .topic-thumb{background:linear-gradient(145deg,var(--sunny-yellow-soft),#fff)}
+.topic-card-accordion:nth-child(3n) .topic-thumb{background:linear-gradient(145deg,var(--royal-blue-soft),#fff)}
+.topic-thumb img{width:100%;height:100%;padding:10px;object-fit:contain;box-sizing:border-box}
+.topic-thumb.is-empty:after{content:'D&I';font-weight:900;color:var(--royal-blue);opacity:.35}
+.topic-summary-copy{min-width:0}
+.topic-summary-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.topic-summary h3{margin:0;color:var(--ink);font-size:1.02rem;line-height:1.25}
+.topic-summary p{display:-webkit-box;overflow:hidden;margin:7px 0 10px;color:var(--muted);font-size:.86rem;line-height:1.42;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.topic-chevron{display:grid;place-items:center;flex:0 0 auto;width:27px;height:27px;border-radius:50%;background:var(--surface-soft);color:var(--royal-blue);font-size:1.05rem;font-weight:900;transition:transform .18s ease}
+.topic-card-accordion[open] .topic-chevron{transform:rotate(180deg)}
+.topic-summary-meta{display:flex;flex-wrap:wrap;gap:6px}
+.topic-summary-meta span{padding:4px 8px;border-radius:999px;background:#f3f7f9;color:#567080;font-size:.7rem;font-weight:700}
+.topic-expanded{padding:0 16px 16px;border-top:1px solid #edf2f4}
+.topic-diagnostic-title{display:grid;gap:3px;margin:14px 0 10px;padding:10px 12px;border-radius:12px;background:#f7fafb;color:var(--muted);font-size:.78rem}
+.topic-diagnostic-title span{text-transform:uppercase;letter-spacing:.04em;font-size:.66rem;font-weight:800}
+.topic-diagnostic-title strong{color:var(--ink);font-size:.86rem;line-height:1.35}
+.topic-expanded-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.topic-detail-block{display:grid;gap:7px;min-width:0}
+.topic-detail-block>strong{color:var(--royal-blue);font-size:.74rem;text-transform:uppercase;letter-spacing:.035em}
+.topic-chip-list{display:flex;flex-wrap:wrap;gap:6px}
+.topic-chip{display:inline-flex;align-items:center;min-height:27px;padding:5px 8px;border:1px solid #cfe0e7;border-radius:999px;background:#f9fcfd;color:#244b66;font-size:.71rem;font-weight:700;line-height:1.1}
+.topic-chip-more{background:#eef6f8;color:#0d4c72}
+.topic-chip.is-muted{font-weight:500;color:var(--muted)}
+.topic-card-accordion .topic-business-tags{margin:12px 0 4px}
+.topic-card-accordion .topic-content-split{margin-top:12px}
+.topic-expanded-actions{display:flex;justify-content:flex-end;margin-top:12px}
+.topic-expanded-actions .button{min-width:190px;text-align:center}
+.library-no-result{grid-column:1/-1;padding:24px}
+.library-no-result h3{margin:0 0 6px;color:var(--royal-blue)}
+.library-no-result p{margin:0;color:var(--muted)}
+
+@media(max-width:980px){
+  .topics-grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .topic-summary{grid-template-columns:86px 1fr;gap:12px;min-height:112px;padding:12px}
+  .topic-thumb{width:86px;height:86px}
+  .topic-expanded-grid{grid-template-columns:1fr}
+  .topic-expanded-actions .button{width:100%;min-width:0}
+}
