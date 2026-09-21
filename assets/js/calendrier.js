@@ -17,17 +17,17 @@
   const today=new Date();
 
   const deiEvents=[
-    {month:1,day:25,title:'Journée nationale contre le sexisme',category:'equality',short:'Sexisme'},
-    {month:3,day:8,title:'Journée internationale des droits des femmes',category:'equality',short:'Droits des femmes'},
-    {month:3,day:21,title:'Journée internationale pour l’élimination de la discrimination raciale',category:'discrimination',short:'Discriminations raciales'},
-    {month:3,day:31,title:'Journée internationale de la visibilité transgenre',category:'lgbt',short:'Visibilité trans'},
-    {month:5,allMonth:true,title:'Mois européen de la diversité',category:'diversity',short:'Mois européen de la diversité'},
-    {month:5,day:17,title:'Journée internationale contre l’homophobie, la transphobie et la biphobie',category:'lgbt',short:'Lutte contre les LGBTphobies'},
-    {month:6,allMonth:true,title:'Mois des fiertés',category:'lgbt',short:'Mois des fiertés'},
-    {month:11,dynamicRange:'seeph',yearHighlight:true,title:'SEEPH — Semaine européenne pour l’emploi des personnes handicapées',category:'disability',short:'SEEPH'},
-    {month:11,day:25,title:'Journée internationale pour l’élimination de la violence à l’égard des femmes',category:'equality',short:'Violences faites aux femmes'},
-    {month:12,day:3,title:'Journée internationale des personnes handicapées',category:'disability',short:'Handicap'},
-    {month:12,day:10,title:'Journée des droits de l’Homme',category:'human-rights',short:'Droits humains'}
+    {month:1,day:25,title:'Journée nationale contre le sexisme',category:'equality',short:'Sexisme',recommendation:'Compréhension du sexisme'},
+    {month:3,day:8,title:'Journée internationale des droits des femmes',category:'equality',short:'Droits des femmes',recommendation:'Allié·e de la mixité'},
+    {month:3,day:21,title:'Journée internationale pour l’élimination de la discrimination raciale',category:'discrimination',short:'Discriminations raciales',recommendation:'Diversité des origines'},
+    {month:3,day:31,title:'Journée internationale de la visibilité transgenre',category:'lgbt',short:'Visibilité trans',recommendation:'LGBT+'},
+    {month:5,allMonth:true,title:'Mois européen de la diversité',category:'diversity',short:'Mois européen de la diversité',recommendation:'Collègue inclusif'},
+    {month:5,day:17,title:'Journée internationale contre l’homophobie, la transphobie et la biphobie',category:'lgbt',short:'Lutte contre les LGBTphobies',recommendation:'LGBT+'},
+    {month:6,allMonth:true,title:'Mois des fiertés',category:'lgbt',short:'Mois des fiertés',recommendation:'LGBT+'},
+    {month:11,dynamicRange:'seeph',yearHighlight:true,title:'SEEPH — Semaine européenne pour l’emploi des personnes handicapées',category:'disability',short:'SEEPH',recommendation:'Handicap'},
+    {month:11,day:25,title:'Journée internationale pour l’élimination de la violence à l’égard des femmes',category:'equality',short:'Violences faites aux femmes',recommendation:'Compréhension du sexisme'},
+    {month:12,day:3,title:'Journée internationale des personnes handicapées',category:'disability',short:'Handicap',recommendation:'Handicap'},
+    {month:12,day:10,title:'Journée des droits humains',category:'human-rights',short:'Droits humains',recommendation:'Collègue inclusif'}
   ];
   const deiCategoryLabels={equality:'Égalité femmes-hommes',diversity:'Diversité & inclusion',discrimination:'Diversité & discriminations',lgbt:'LGBT+',disability:'Handicap','human-rights':'Droits humains'};
   function filteredDeiEvents(){
@@ -111,7 +111,7 @@
       const events=[...dayDei.map(e=>({type:'dei',data:e})),...dayCampaigns.map(p=>({type:'campaign',data:p})),...dayTasks.map(t=>({type:'task',data:t}))];
       const deiDayClass=dayDeiCover.length?` has-dei-event has-dei-${dayDeiCover[dayDeiCover.length-1].category}`:'';
       html+=`<article class="studio-calendar-day ${outside?'is-outside':''} ${isToday?'is-today':''}${deiDayClass}" data-date="${key}"><header><span>${d.getDate()}</span>${isToday?'<b>Aujourd’hui</b>':''}</header><div class="studio-calendar-day-events">`;
-      events.slice(0,4).forEach(evt=>{if(evt.type==='dei'){const e=evt.data;html+=`<div class="studio-calendar-event is-dei is-dei-${esc(e.category)}" title="${esc(e.title)}"><span></span><div><strong>${esc(e.short||e.title)}</strong><small>${esc(deiCategoryLabels[e.category]||'Événement DEI')}</small></div></div>`;}else if(evt.type==='campaign'){const p=evt.data,startDate=parseDate(p.launch_date),endDate=parseDate(p.close_date),isStart=sameDay(startDate,d),isEnd=sameDay(endDate,d);let phase=isStart&&isEnd?'Début · Fin':isStart?'Début':'Fin';const cls=isStart&&isEnd?'is-single':isEnd?'is-end':'';html+=`<a class="studio-calendar-event is-campaign ${cls}" href="campagne-detail.html?id=${encodeURIComponent(p.id)}" title="${esc(campaignName(p))}"><span></span><div><strong>${esc(campaignName(p))}</strong><small>${esc(phase)}${isAdmin&&p.organization_name?' · '+esc(p.organization_name):''}</small></div></a>`;}else{const t=evt.data;html+=`<button class="studio-calendar-event is-task ${t.priority==='high'?'is-high':''}" type="button" data-open-task="${t.id}"><span></span><div><strong>${esc(t.title)}</strong><small>Tâche${isAdmin&&t.organization_name?' · '+esc(t.organization_name):''}</small></div></button>`;}});
+      events.slice(0,4).forEach(evt=>{if(evt.type==='dei'){const e=evt.data;html+=`<a class="studio-calendar-event is-dei is-dei-${esc(e.category)}" href="bibliotheque.html" title="${esc(e.title)} — Voir le catalogue"><span></span><div><strong>${esc(e.title)}</strong>${e.recommendation?`<small>AD recommandé : ${esc(e.recommendation)} · Voir le catalogue →</small>`:`<small>Voir le catalogue →</small>`}</div></a>`;}else if(evt.type==='campaign'){const p=evt.data,startDate=parseDate(p.launch_date),endDate=parseDate(p.close_date),isStart=sameDay(startDate,d),isEnd=sameDay(endDate,d);let phase=isStart&&isEnd?'Début · Fin':isStart?'Début':'Fin';const cls=isStart&&isEnd?'is-single':isEnd?'is-end':'';html+=`<a class="studio-calendar-event is-campaign ${cls}" href="campagne-detail.html?id=${encodeURIComponent(p.id)}" title="${esc(campaignName(p))}"><span></span><div><strong>${esc(campaignName(p))}</strong><small>${esc(phase)}${isAdmin&&p.organization_name?' · '+esc(p.organization_name):''}</small></div></a>`;}else{const t=evt.data;html+=`<button class="studio-calendar-event is-task ${t.priority==='high'?'is-high':''}" type="button" data-open-task="${t.id}"><span></span><div><strong>${esc(t.title)}</strong><small>Tâche${isAdmin&&t.organization_name?' · '+esc(t.organization_name):''}</small></div></button>`;}});
       if(events.length>4)html+=`<div class="studio-calendar-more">+${events.length-4} autre${events.length-4>1?'s':''}</div>`;
       html+='</div></article>';
     }

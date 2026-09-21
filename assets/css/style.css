@@ -14221,3 +14221,9 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .studio-calendar-event.is-dei{background:#ffc9dc!important;border:1px solid #e978a0!important;box-shadow:0 1px 0 rgba(173,45,91,.08)!important}
 .studio-year-month.has-dei-events{background:#ffe8f0!important;border-color:#e997b4!important;box-shadow:inset 0 5px 0 #d94378!important}
 .studio-year-highlight,.studio-year-highlight.is-diversity,.studio-year-highlight.is-lgbt,.studio-year-highlight.is-disability{background:#ffc9dc!important;border-color:#e978a0!important;color:#6f2440!important}
+
+/* Événements DEI : nom explicite + recommandation vers le catalogue */
+.studio-calendar-event.is-dei{background:#ffc9dc!important;border:1px solid #e978a0!important;color:#6f2440!important;text-decoration:none!important;align-items:flex-start!important}
+.studio-calendar-event.is-dei:hover{background:#ffb9d1!important;border-color:#dc5f8c!important;box-shadow:0 3px 10px rgba(173,45,91,.14)!important;transform:translateY(-1px)}
+.studio-calendar-event.is-dei strong{display:block;line-height:1.25}
+.studio-calendar-event.is-dei small{display:block;margin-top:3px;color:#6f2440!important;font-weight:700;opacity:.9}
