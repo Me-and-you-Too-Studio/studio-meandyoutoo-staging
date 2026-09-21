@@ -696,7 +696,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       });
 
       const chapters=entities.filter(x=>x.entity_type==='chapter');
-      const migrationBatch=data.batch||{},clientMode=migrationBatch.scope==='client';
+      let migrationBatch=data.batch||{};const clientMode=migrationBatch.scope==='client';
       const reviewIntro=$('#migration-review-intro'),protectionTitle=$('#migration-review-protection-title'),protectionText=$('#migration-review-protection-text');
       if(clientMode){
         if(reviewIntro)reviewIntro.textContent='Étape 2 : contrôle uniquement le contenu historique qui sera copié tel quel dans le patrimoine du client. Aucune comparaison avec le catalogue Studio.';
@@ -898,7 +898,6 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         try{
           const response=await StudioAPI.request(`/api/admin/migrations/${migrationBatch.id}/languages`,{method:'PATCH',body:JSON.stringify({locales})});
           if(response?.batch) migrationBatch=response.batch;
-          // Garder l'état local du front aligné sur la sélection réellement enregistrée.
           selectedMigrationLocales.clear();
           locales.forEach(loc=>selectedMigrationLocales.add(loc));
           input.checked=intendedChecked;
