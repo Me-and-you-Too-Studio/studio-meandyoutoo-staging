@@ -14170,6 +14170,7 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .studio-calendar-day.has-dei-event{position:relative;overflow:hidden}
 .studio-calendar-day.has-dei-event::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.42}
 .studio-calendar-day.has-dei-equality::before{background:#fff0f3}
+.studio-calendar-day.has-dei-diversity::before{background:#edf8f4}
 .studio-calendar-day.has-dei-discrimination::before{background:#f2ecff}
 .studio-calendar-day.has-dei-lgbt::before{background:#fff7df}
 .studio-calendar-day.has-dei-disability::before{background:#eaf8f7}
@@ -14178,6 +14179,8 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .studio-calendar-event.is-dei{cursor:default;border:1px solid transparent;font-weight:700}
 .studio-calendar-event.is-dei-equality{background:#ffe1e8;border-color:#f3b7c6;color:#793047}
 .studio-calendar-event.is-dei-equality>span{background:#d84f78}
+.studio-calendar-event.is-dei-diversity{background:#e1f3ec;border-color:#b6ded0;color:#246857}
+.studio-calendar-event.is-dei-diversity>span{background:#2e9b7b}
 .studio-calendar-event.is-dei-discrimination{background:#eee5ff;border-color:#d5c2f6;color:#50377e}
 .studio-calendar-event.is-dei-discrimination>span{background:#7650b3}
 .studio-calendar-event.is-dei-lgbt{background:#fff0c7;border-color:#f0d37f;color:#735612}
