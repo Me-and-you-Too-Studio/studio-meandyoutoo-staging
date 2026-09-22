@@ -153,6 +153,21 @@
   function show(message){const alert=$('param-alert');alert.hidden=false;alert.textContent=message;alert.scrollIntoView({behavior:'smooth',block:'center'});}
   function optionState(value){const n=Number(value)||0;if(!n)return{cls:'empty',hint:'Effectif à renseigner'};if(n<8)return{cls:'danger',hint:'🚨 Groupe trop petit : moins de 8'};if(n<10)return{cls:'warning',hint:'⚠️ Groupe fragile : entre 8 et 9'};return{cls:'success',hint:'✓ Groupe exploitable'};}
   function updateOptionVisual(input){const unit=input.closest('.socio-option-unit'),state=optionState(input.value),field=unit?.querySelector('.socio-count-field'),hint=unit?.querySelector('.socio-option-hint');if(field)field.className='socio-count-field '+state.cls;if(hint){hint.className='socio-option-hint '+state.cls;hint.textContent=state.hint;}updateVigilance();}
+
+  const socioOpenRoots=new Set();
+  const socioOpenBranches=new Set();
+  let socioOpenInitialized=false;
+  function criterionStats(criterion){
+    let nested=0,maxDepth=1;
+    const walk=(c,depth)=>{maxDepth=Math.max(maxDepth,depth);(c?.opts||[]).forEach(o=>(o.subcriteria||[]).forEach(child=>{nested++;walk(child,depth+1);}));};
+    walk(criterion,1);
+    return{responses:(criterion?.opts||[]).length,nested,maxDepth};
+  }
+  function initSocioOpenState(){
+    if(socioOpenInitialized)return;
+    socioOpenInitialized=true;
+    socio.forEach((criterion,i)=>{const stats=criterionStats(criterion);if(!stats.nested)socioOpenRoots.add(String(i));});
+  }
   function getCriterionByPath(path){
     const parts=String(path).split('.').map(Number);let criterion=socio[parts[0]];
     for(let i=1;i<parts.length;i+=2){criterion=criterion?.opts?.[parts[i]]?.subcriteria?.[parts[i+1]];}
@@ -162,17 +177,35 @@
   function criterionParentInfo(path){const parts=String(path).split('.').map(Number);if(parts.length<3)return null;const childIndex=parts.pop(),optionIndex=parts.pop(),parentPath=parts.join('.');return{parentPath,optionIndex,childIndex};}
   const answerRow=(option,optionPath,removable,locked=false)=>{const state=optionState(option.n),ro=isReadOnly();return`<div class="socio-option-unit ${locked?'locked-option':''}"><div class="socio-option"><div class="socio-answer-field ${locked?'locked-field':''}"><span>${locked?'Réponse figée':'Réponse'}</span><input data-tree-label="${optionPath}" value="${esc(option.label)}" aria-label="Réponse possible" ${ro||locked?'readonly tabindex="-1"':''}></div><div class="socio-count-field ${state.cls}"><span>Effectif estimé</span><input data-tree-n="${optionPath}" type="number" min="0" placeholder="Ex. 25" value="${Number(option.n)||''}" aria-label="Effectif estimé" ${ro||locked?'readonly tabindex="-1"':''}></div>${ro||locked?'<span class="socio-option-spacer" aria-hidden="true"></span>':`<button type="button" class="socio-option-remove" data-tree-option-remove="${optionPath}" ${removable?'':'disabled'}>×</button>`}</div><div class="socio-option-hint ${state.cls}">${state.hint}</div></div>`;};
   function renderNestedCriterion(criterion,path,level,conditionLabel){
-    const ro=isReadOnly(),options=(criterion.opts||[]).map((option,j)=>{
+    const ro=isReadOnly(),stats=criterionStats(criterion),isOpen=socioOpenBranches.has(path);
+    const options=(criterion.opts||[]).map((option,j)=>{
       const optionPath=`${path}|${j}`;
       const children=(option.subcriteria||[]).map((child,k)=>renderNestedCriterion(child,`${path}.${j}.${k}`,level+1,option.label)).join('');
       return `<div class="socio-option-block">${answerRow(option,optionPath,criterion.opts.length>2)}${children}${ro?'':`<button class="socio-add-sub" type="button" data-tree-child-add="${optionPath}">+ Ajouter une sous-question pour cette réponse</button>`}</div>`;
     }).join('');
-    return `<div class="socio-subcriterion" style="--socio-depth:${Math.min(level,8)}"><div class="socio-sub-head"><span class="socio-level-badge">Niveau ${level} · si « ${esc(conditionLabel||'cette réponse')} »</span>${ro?'':`<button type="button" class="socio-sub-remove" data-tree-criterion-remove="${path}">Retirer</button>`}</div><div class="field"><label>Question complémentaire</label><input data-tree-q="${path}" value="${esc(criterion.q)}" ${ro?'readonly tabindex="-1"':''}></div><div class="socio-sub-options">${options}</div>${ro?'':`<button class="button button-ghost" type="button" data-tree-option-add="${path}">+ Ajouter une sous-réponse</button>`}</div>`;
+    const nestedLabel=stats.nested?` · ${stats.nested} sous-branche${stats.nested>1?'s':''}`:'';
+    const depthLabel=stats.maxDepth>1?` · jusqu’au niveau ${level+stats.maxDepth-1}`:'';
+    return `<div class="socio-subcriterion ${isOpen?'is-open':'is-collapsed'}" style="--socio-depth:${Math.min(level,8)}">
+      <div class="socio-sub-summary">
+        <button type="button" class="socio-sub-toggle" data-socio-branch-toggle="${path}" aria-expanded="${isOpen}">
+          <span class="socio-sub-summary-main"><span class="socio-level-badge">Niveau ${level} · si « ${esc(conditionLabel||'cette réponse')} »</span><strong>${esc(criterion.q||'Question complémentaire')}</strong><small>${stats.responses} réponse${stats.responses>1?'s':''}${nestedLabel}${depthLabel}</small></span>
+          <span class="socio-chevron" aria-hidden="true">⌄</span>
+        </button>
+        ${ro?'':`<button type="button" class="socio-sub-remove" data-tree-criterion-remove="${path}">Retirer</button>`}
+      </div>
+      <div class="socio-sub-body" ${isOpen?'':'hidden'}>
+        <div class="field"><label>Question complémentaire</label><input data-tree-q="${path}" value="${esc(criterion.q)}" ${ro?'readonly tabindex="-1"':''}></div>
+        <div class="socio-sub-options">${options}</div>
+        ${ro?'':`<button class="button button-ghost" type="button" data-tree-option-add="${path}">+ Ajouter une sous-réponse</button>`}
+      </div>
+    </div>`;
   }
   function renderSocio(){
+    initSocioOpenState();
     const ro=isReadOnly();
-    $('socio-list').innerHTML=socio.map((criterion,i)=>{
-      const path=String(i),isGender=theme==='sexisme'&&criterion.kind==='gender',isAge=theme==='sexisme'&&criterion.kind==='age',locked=isGender||isAge||ro;
+    const toolbar=`<div class="socio-tree-toolbar"><div><strong>Données socio-démographiques</strong><span>Repliez les critères et ouvrez uniquement la branche que vous souhaitez modifier.</span></div><div class="socio-tree-toolbar-actions"><button type="button" class="button button-ghost button-small" data-socio-collapse-all>Tout replier</button><button type="button" class="button button-secondary button-small" data-socio-expand-all>Tout déplier</button></div></div>`;
+    $('socio-list').innerHTML=toolbar+socio.map((criterion,i)=>{
+      const path=String(i),isGender=theme==='sexisme'&&criterion.kind==='gender',isAge=theme==='sexisme'&&criterion.kind==='age',locked=isGender||isAge||ro,isOpen=socioOpenRoots.has(path),stats=criterionStats(criterion);
       const optionsHtml=criterion.opts.map((option,j)=>{
         const optionPath=`${path}|${j}`;
         if(locked){
@@ -186,10 +219,28 @@
       }).join('');
       const lockText=ro?'Campagne en lecture seule.':isGender?'Obligatoire · réponses standardisées. Homme et Femme sont obligatoires ; Non binaire et Autre peuvent être supprimés.':isAge?'Tranches d’âge figées pour garantir des benchmarks comparables d’une organisation à l’autre.':'';
       const headerAction=ro?'<span class="socio-required-badge">🔒 Lecture seule</span>':isGender?`<span class="socio-required-badge">Obligatoire</span>`:`<button class="button button-danger-soft" type="button" data-socio-remove="${i}" ${socio.length<=1?'disabled':''}>Supprimer le critère</button>`;
-      return `<article class="socio-card ${locked?'socio-card-locked':''} ${isGender?'socio-card-gender':''} ${isAge?'socio-card-age':''}" ${ro?'style="background:var(--royal-blue-tint)"':''}><div class="socio-card-head"><span class="socio-number"><small>Critère</small>${i+1}</span><div class="field socio-question"><label>Question posée aux répondants ${locked?'<span class="socio-lock-badge">🔒 Figé</span>':''}</label><input data-tree-q="${path}" value="${esc(criterion.q)}" ${locked?'readonly tabindex="-1"':''}>${locked?`<span class="socio-lock-help">${lockText}</span>`:''}</div>${headerAction}</div><div class="socio-options">${optionsHtml}</div>${locked?'':`<button class="button button-ghost" type="button" data-tree-option-add="${path}">+ Ajouter une réponse</button>`}</article>`;
+      const branchBadge=stats.nested?`<span class="socio-tree-badge">${stats.nested} sous-question${stats.nested>1?'s':''} · profondeur ${stats.maxDepth}</span>`:'';
+      return `<article class="socio-card socio-card-foldable ${isOpen?'is-open':'is-collapsed'} ${locked?'socio-card-locked':''} ${isGender?'socio-card-gender':''} ${isAge?'socio-card-age':''}" ${ro?'style="background:var(--royal-blue-tint)"':''}>
+        <div class="socio-card-fold-head">
+          <button type="button" class="socio-root-toggle" data-socio-root-toggle="${path}" aria-expanded="${isOpen}">
+            <span class="socio-number"><small>Critère</small>${i+1}</span>
+            <span class="socio-root-summary"><strong>${esc(criterion.q||`Critère ${i+1}`)}</strong><small>${stats.responses} réponse${stats.responses>1?'s':''}${stats.nested?` · ${stats.nested} branche${stats.nested>1?'s':''} conditionnelle${stats.nested>1?'s':''}`:''}</small></span>
+            ${branchBadge}<span class="socio-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div class="socio-card-fold-actions">${headerAction}</div>
+        </div>
+        <div class="socio-card-fold-body" ${isOpen?'':'hidden'}>
+          <div class="socio-card-head"><span class="socio-number socio-number-spacer" aria-hidden="true"></span><div class="field socio-question"><label>Question posée aux répondants ${locked?'<span class="socio-lock-badge">🔒 Figé</span>':''}</label><input data-tree-q="${path}" value="${esc(criterion.q)}" ${locked?'readonly tabindex="-1"':''}>${locked?`<span class="socio-lock-help">${lockText}</span>`:''}</div><span></span></div>
+          <div class="socio-options">${optionsHtml}</div>${locked?'':`<button class="button button-ghost" type="button" data-tree-option-add="${path}">+ Ajouter une réponse</button>`}
+        </div>
+      </article>`;
     }).join('');bindSocio();updateVigilance();
   }
   function bindSocio(){
+    document.querySelectorAll('[data-socio-root-toggle]').forEach(el=>el.onclick=()=>{const path=el.dataset.socioRootToggle;socioOpenRoots.has(path)?socioOpenRoots.delete(path):socioOpenRoots.add(path);renderSocio();});
+    document.querySelectorAll('[data-socio-branch-toggle]').forEach(el=>el.onclick=()=>{const path=el.dataset.socioBranchToggle;socioOpenBranches.has(path)?socioOpenBranches.delete(path):socioOpenBranches.add(path);renderSocio();});
+    document.querySelector('[data-socio-collapse-all]')?.addEventListener('click',()=>{socioOpenRoots.clear();socioOpenBranches.clear();renderSocio();});
+    document.querySelector('[data-socio-expand-all]')?.addEventListener('click',()=>{socioOpenRoots.clear();socioOpenBranches.clear();socio.forEach((c,i)=>{const root=String(i);socioOpenRoots.add(root);const visit=(criterion,path)=>{(criterion.opts||[]).forEach((o,j)=>(o.subcriteria||[]).forEach((child,k)=>{const childPath=`${path}.${j}.${k}`;socioOpenBranches.add(childPath);visit(child,childPath);}));};visit(c,root);});renderSocio();});
     if(isReadOnly())return;
     document.querySelectorAll('[data-tree-q]').forEach(el=>el.oninput=()=>{const criterion=getCriterionByPath(el.dataset.treeQ);if(criterion)criterion.q=el.value;});
     document.querySelectorAll('[data-tree-label]').forEach(el=>el.oninput=()=>{const option=getOptionByPath(el.dataset.treeLabel);if(option)option.label=el.value;});
