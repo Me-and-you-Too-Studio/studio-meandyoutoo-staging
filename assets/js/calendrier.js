@@ -28,6 +28,25 @@
     return '';
   }
   const campaignName=p=>p.campaign_name||p.title||p.theme_title||'Autodiagnostic';
+  function calendarStatusKind(p){
+    const start=parseDate(p.launch_date),end=parseDate(p.close_date);
+    if(!start||!end)return 'attention';
+    if(['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'].includes(p.status))return 'review';
+    if(p.status==='draft'||p.status==='unpublished')return 'draft';
+    if(p.status==='completed')return 'completed';
+    if(['active','published','scheduled'].includes(p.status))return 'active';
+    return 'neutral';
+  }
+  function campaignStatusLabel(p){
+    if(!parseDate(p.launch_date)||!parseDate(p.close_date))return 'Dates à compléter';
+    return statusLabels[p.status]||p.status||'Brouillon';
+  }
+  function monthIntersectsCampaign(p,year,month){
+    const first=new Date(year,month,1),last=new Date(year,month+1,0),s=parseDate(p.launch_date),e=parseDate(p.close_date);
+    if(!s&&!e)return false;
+    const a=s||e,b=e||s;
+    return a<=last&&b>=first;
+  }
   const taskOwner=t=>[t.assignee_first_name,t.assignee_last_name].filter(Boolean).join(' ')||[t.creator_first_name,t.creator_last_name].filter(Boolean).join(' ')||'';
   const today=new Date();
 
@@ -202,6 +221,24 @@
     bindDeiPopovers(root);
     root.querySelectorAll('[data-open-task]').forEach(b=>b.onclick=()=>switchToTasks(Number(b.dataset.openTask)));
   }
+  function renderClientSummary(){
+    const box=$('#calendar-client-summary');
+    if(!box)return;
+    const orgId=$('#calendar-org-filter')?.value||'';
+    if(!orgId){box.hidden=true;box.innerHTML='';return;}
+    const org=state.organizations.find(o=>String(o.id)===String(orgId));
+    const rows=state.campaigns.filter(p=>String(p.organization_id)===String(orgId));
+    const counts={draft:0,active:0,completed:0,review:0,attention:0};
+    rows.forEach(p=>{const k=calendarStatusKind(p);if(k in counts)counts[k]++;});
+    const bits=[];
+    if(counts.draft)bits.push(`${counts.draft} brouillon${counts.draft>1?'s':''}`);
+    if(counts.active)bits.push(`${counts.active} en cours / publiée${counts.active>1?'s':''}`);
+    if(counts.review)bits.push(`${counts.review} à valider`);
+    if(counts.completed)bits.push(`${counts.completed} terminée${counts.completed>1?'s':''}`);
+    if(counts.attention)bits.push(`${counts.attention} à dater`);
+    box.innerHTML=`<div class="calendar-client-summary-main"><span class="calendar-client-avatar">${esc((org?.name||'C').slice(0,2).toUpperCase())}</span><div><strong>${esc(org?.name||'Client')}</strong><small>${rows.length} campagne${rows.length>1?'s':''}${bits.length?' · '+esc(bits.join(' · ')):''}</small></div></div><span class="calendar-client-summary-note">Dates et statuts affichés directement dans les mois</span>`;
+    box.hidden=false;
+  }
   function renderYear(){
     const summary=$('#calendar-month-summary');if(summary)summary.innerHTML='';
     const root=$('#calendar-year'),year=state.cursor.getFullYear(),campaigns=filteredCampaigns(),tasks=filteredTasksForCalendar();
@@ -211,7 +248,7 @@
     root.classList.toggle('has-selected-client',showCampaignDates);
     root.innerHTML=Array.from({length:12},(_,m)=>{
       const start=new Date(year,m,1),end=new Date(year,m+1,0);
-      const active=campaigns.filter(p=>{const s=parseDate(p.launch_date),e=parseDate(p.close_date);if(!s&&!e)return false;const a=s||e,b=e||s;return a<=end&&b>=start;});
+      const active=campaigns.filter(p=>monthIntersectsCampaign(p,year,m));
       const starts=campaigns.filter(p=>{const s=parseDate(p.launch_date);return s&&s.getFullYear()===year&&s.getMonth()===m;}).length;
       const ends=campaigns.filter(p=>{const e=parseDate(p.close_date);return e&&e.getFullYear()===year&&e.getMonth()===m;}).length;
       const taskCount=tasks.filter(t=>{const d=parseDate(t.due_date);return d&&d.getFullYear()===year&&d.getMonth()===m&&t.status!=='done';}).length;
@@ -219,14 +256,20 @@
       const deiCount=monthDei.length;
       const activeDeiFilter=$('#calendar-dei-filter')?.value||'all';
       const monthHighlights=monthDei.filter(e=>e.allMonth||e.yearHighlight||(activeDeiFilter!=='all'&&activeDeiFilter!=='none'));
-      const highlightHtml=monthHighlights.length?`<div class="studio-year-highlights">${monthHighlights.map(e=>{const dateLabel=deiYearRangeLabel(e,year);return `<div class="studio-year-highlight is-${esc(e.category)}"><span class="studio-year-highlight-date">${esc(dateLabel)}</span><span class="studio-year-highlight-copy"><strong>${esc(e.title)}</strong>${e.recommendation?`<small>AD recommandé : ${esc(e.recommendation)}</small>`:''}</span></div>`;}).join('')}</div>`:'';
+      const highlightHtml=monthHighlights.length?`<div class="studio-year-highlights">${monthHighlights.slice(0,2).map(e=>{const dateLabel=deiYearRangeLabel(e,year);return `<div class="studio-year-highlight is-${esc(e.category)}"><span class="studio-year-highlight-icon">✦</span><span class="studio-year-highlight-copy"><strong>${esc(e.title)}</strong><small>${esc(dateLabel)}${e.recommendation?` · AD recommandé : ${esc(e.recommendation)}`:''}</small></span></div>`;}).join('')}</div>`:'';
       const campaignRows=showCampaignDates?active.slice().sort((a,b)=>String(a.launch_date||a.close_date||'').localeCompare(String(b.launch_date||b.close_date||''))):[];
-      const campaignsHtml=campaignRows.length?`<div class="studio-year-client-campaigns">${campaignRows.slice(0,4).map(p=>`<div class="studio-year-client-campaign"><div class="studio-year-client-campaign-head"><strong>${esc(campaignName(p))}</strong><span class="studio-year-campaign-status is-${esc(p.status||'draft')}">${esc(statusLabels[p.status]||p.status||'Brouillon')}</span></div><small>${esc(campaignDatesLabel(p))}</small></div>`).join('')}${campaignRows.length>4?`<div class="studio-year-client-campaign-more">+${campaignRows.length-4} autre${campaignRows.length-4>1?'s':''} campagne${campaignRows.length-4>1?'s':''}</div>`:''}</div>`:'';
-      return `<button class="studio-year-month ${deiCount?'has-dei-events':''} ${monthHighlights.length?'has-dei-month':''} ${showCampaignDates?'has-client-dates':''}" type="button" data-month="${m}"><strong>${start.toLocaleDateString('fr-FR',{month:'long'})}</strong>${highlightHtml}${campaignsHtml}<span class="studio-year-active">${active.length} campagne${active.length>1?'s':''} active${active.length>1?'s':''}</span><div><small><b>${starts}</b> démarrage${starts>1?'s':''}</small><small><b>${ends}</b> fin${ends>1?'s':''}</small><small><b>${taskCount}</b> tâche${taskCount>1?'s':''}</small>${deiCount?`<small class="studio-year-dei"><b>${deiCount}</b> événement${deiCount>1?'s':''} DEI</small>`:''}</div></button>`;
+      const campaignsHtml=campaignRows.length?`<div class="studio-year-client-campaigns">${campaignRows.slice(0,3).map(p=>{const kind=calendarStatusKind(p);return `<div class="studio-year-client-campaign is-${kind}"><div class="studio-year-client-campaign-head"><strong>${esc(campaignName(p))}</strong><span class="studio-year-campaign-status is-${kind}">${esc(campaignStatusLabel(p))}</span></div><small>${esc(campaignDatesLabel(p))}</small></div>`;}).join('')}${campaignRows.length>3?`<div class="studio-year-client-campaign-more">+${campaignRows.length-3} autre${campaignRows.length-3>1?'s':''}</div>`:''}</div>`:'';
+      const total=active.length+taskCount+deiCount;
+      const empty=!total;
+      return `<button class="studio-year-month ${deiCount?'has-dei-events':''} ${monthHighlights.length?'has-dei-month':''} ${showCampaignDates?'has-client-dates':''} ${empty?'is-empty':''}" type="button" data-month="${m}"><div class="studio-year-month-head"><strong>${start.toLocaleDateString('fr-FR',{month:'long'})}</strong><span>${total} élément${total>1?'s':''}</span></div>${highlightHtml}${campaignsHtml}${empty?'<div class="studio-year-empty"><span>▢</span><small>Aucune campagne<br>ce mois-ci</small></div>':''}<div class="studio-year-footer"><span><b>${active.length}</b> campagne${active.length>1?'s':''}</span><span><b>${taskCount}</b> tâche${taskCount>1?'s':''}</span>${deiCount?`<span class="is-dei"><b>${deiCount}</b> événement${deiCount>1?'s':''} DEI</span>`:''}</div></button>`;
     }).join('');
     root.querySelectorAll('[data-month]').forEach(b=>b.onclick=()=>{state.cursor=new Date(year,Number(b.dataset.month),1);setView('month');load();});
   }
-  function renderDataQuality(){const box=$('#calendar-data-quality');box.hidden=!state.missingDates;$('#calendar-missing-count').textContent=`${state.missingDates} campagne${state.missingDates>1?'s':''} sans dates`;}
+  function renderDataQuality(){
+    const box=$('#calendar-data-quality');
+    box.hidden=!state.missingDates;
+    $('#calendar-missing-count').textContent=`${state.missingDates} campagne${state.missingDates>1?'s':''} sans dates`;
+  }
   function renderTaskCount(){const n=state.tasks.filter(t=>t.status!=='done').length;$('#task-open-count').textContent=n;}
   function renderTasks(focusId){
     const root=$('#calendar-task-list'),now=iso(today);let rows=state.tasks.slice();
@@ -248,7 +291,7 @@
     }
     if(focusId){const row=root.querySelector(`[data-task-id="${focusId}"]`);row?.scrollIntoView({behavior:'smooth',block:'center'});row?.classList.add('is-focused');}
   }
-  function render(){updateHeading();renderDataQuality();renderTaskCount();if(state.view==='month')renderMonth();else renderYear();renderTasks();}
+  function render(){updateHeading();renderClientSummary();renderDataQuality();renderTaskCount();if(state.view==='month')renderMonth();else renderYear();renderTasks();}
   async function loadOrganizations(){
     const taskOrgField=$('#task-org-field'),taskVisibilityField=$('#task-visibility-field');
     if(!isAdmin){

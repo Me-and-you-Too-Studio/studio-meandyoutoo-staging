@@ -6,7 +6,7 @@
   <title>Calendrier — Studio Me&YouToo</title>
   <meta name="robots" content="noindex,nofollow" />
   <link rel="icon" href="assets/img/brand/favicon.png" />
-  <link rel="stylesheet" href="assets/css/style.css?v=20260921-calendar-dei-9" />
+  <link rel="stylesheet" href="assets/css/style.css?v=20260922-calendar-premium-1" />
 </head>
 <body>
   <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -51,8 +51,11 @@
           </div>
         </div>
 
-        <div class="calendar-filterbar">
-          <select id="calendar-org-filter" hidden><option value="">Tous les clients</option></select>
+        <div class="calendar-filterbar calendar-filterbar-premium">
+          <label class="calendar-filter-control calendar-client-filter">
+            <span class="calendar-filter-label">Client</span>
+            <select id="calendar-org-filter" hidden><option value="">Tous les clients</option></select>
+          </label>
           <label class="calendar-filter-control">
             <span class="calendar-filter-label">Statut <span class="admin-info-dot" tabindex="0" data-info="Publiée : la campagne est validée et disponible mais sa période de diffusion n’est pas forcément commencée. En cours : la date du jour se situe entre la date de début et la date de fin. Terminée : la période de diffusion est achevée. Une campagne publiée sans dates reste Publiée.">i</span></span>
             <select id="calendar-status-filter">
@@ -81,9 +84,20 @@
           <input id="calendar-search" type="search" placeholder="Rechercher campagne, client, thématique…" />
         </div>
 
+        <div class="calendar-client-summary" id="calendar-client-summary" hidden></div>
+
+        <div class="calendar-nudge-legend" id="calendar-nudge-legend" aria-label="Légende du calendrier">
+          <span class="calendar-nudge-title">Repères</span>
+          <span class="calendar-nudge-chip is-draft"><i></i>Brouillon</span>
+          <span class="calendar-nudge-chip is-attention"><i></i>À dater</span>
+          <span class="calendar-nudge-chip is-active"><i></i>En cours</span>
+          <span class="calendar-nudge-chip is-review"><i></i>À valider</span>
+          <span class="calendar-nudge-chip is-dei"><i></i>Événement DEI</span>
+        </div>
+
         <div class="calendar-data-quality" id="calendar-data-quality" hidden>
-          <span aria-hidden="true">⚠️</span>
-          <div><strong id="calendar-missing-count">0 campagne sans dates</strong><small>Seules les campagnes hors brouillon sont signalées ici. Complétez leurs dates lorsqu’elles sont connues.</small></div>
+          <span class="calendar-quality-icon" aria-hidden="true">!</span>
+          <div><strong id="calendar-missing-count">0 campagne sans dates</strong><small>Les campagnes, y compris les brouillons, restent visibles dans le pilotage. Complétez leurs dates dès qu’elles sont connues.</small></div>
         </div>
 
         <div id="calendar-loading" class="calendar-loading" hidden><span class="admin-loading-spinner" aria-hidden="true"></span><strong>Chargement du calendrier…</strong></div>
@@ -131,6 +145,6 @@
 
   <script src="assets/js/api.js?v=20260823-roles-1"></script>
   <script src="assets/js/app.js?v=20260921-calendar-clean-2"></script>
-  <script src="assets/js/calendrier.js?v=20260921-dei-events-9"></script>
+  <script src="assets/js/calendrier.js?v=20260922-calendar-premium-1"></script>
 </body>
 </html>
