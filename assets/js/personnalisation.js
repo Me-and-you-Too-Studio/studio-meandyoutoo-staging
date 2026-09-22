@@ -1,5 +1,5 @@
 (()=>{
-  const p=new URLSearchParams(location.search),theme=p.get('theme')||'',projectId=p.get('projectId')||'',requestedProfile=p.get('profile')||'';let active=Math.max(0,Number(p.get('chapter')||0)),chapters=[],project=null;const translationContexts=new Map();
+  const p=new URLSearchParams(location.search),theme=p.get('theme')||'',projectId=p.get('projectId')||'',requestedProfile=p.get('profile')||'';let active=Math.max(0,Number(p.get('chapter')||0)),chapters=[],project=null,mediaLibrary=[];const translationContexts=new Map();
   const api=(url,opt={})=>window.StudioAPI.request(url,opt),$=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const isReadOnly=()=>Boolean(project&&project.can_edit===false);
   const isLegacyClientCampaign=()=>Boolean(project&&(project.source_type==='legacy_client'||project.legacy_history===true||project.legacy_source==='meayt-legacy'));
@@ -65,6 +65,28 @@
     select.onchange=draw;draw();const save=overlay.querySelector('[data-save]');if(save)save.onclick=async()=>{const loc=select.value,payload={title:target.querySelector('[data-profile-target-title]').value.trim(),summary:target.querySelector('[data-profile-target-summary]').value.trim(),content:target.querySelector('[data-profile-target-content]').value.trim()};try{await api(`/api/projects/${projectId}/profiles/${id}/translations/${encodeURIComponent(loc)}`,{method:'PATCH',body:JSON.stringify(payload)});translationContexts.delete(String(id));close();const a=$('profiles-alert');a.hidden=false;a.dataset.tone='success';a.textContent=`${localeLabel(loc)} · traduction et adaptation locale enregistrée.`;}catch(e){await window.StudioModal.alert({title:'Traduction non enregistrée',message:e.message,type:'error'});}};
   }
 
+  function projectMediaBlock(ch){
+    if(!project?.can_manage_project_media)return '';
+    const media=Array.isArray(ch?.media)?ch.media:[];
+    const profileMedia=media.filter(m=>m.placement==='profile_result');
+    const inherited=profileMedia.filter(m=>m.media_source==='catalog');
+    const direct=profileMedia.filter(m=>m.media_source==='project');
+    const currentIds=new Set(profileMedia.map(m=>String(m.video_id||'')));
+    const options=mediaLibrary.filter(v=>v.active!==false&&!currentIds.has(String(v.id))).map(v=>`<option value="${esc(v.id)}">${esc(v.title)}${v.locale?' · '+esc(String(v.locale).toUpperCase()):''}${v.cultural_scope?' · '+esc(v.cultural_scope):''}</option>`).join('');
+    const item=m=>`<div class="profile-media-association ${m.media_source==='catalog'?'is-inherited':'is-direct'}"><div><strong>${esc(m.title||'Vidéo')}</strong><span>${m.locale?esc(String(m.locale).toUpperCase())+' · ':''}${m.profile_position===null?'Les 3 profils':`Profil ${Number(m.profile_position)+1}`}</span><small>${m.media_source==='catalog'?'Héritée du catalogue : toute modification se gère depuis la Médiathèque.':'Association spécifique à cette campagne legacy.'}</small></div>${m.media_source==='project'?`<button class="button button-danger-soft button-small" type="button" data-remove-project-video="${m.id}">Retirer</button>`:'<span class="profile-media-badge">Héritée</span>'}</div>`;
+    return `<section class="profile-media-panel"><div class="profile-media-panel-head"><div><span class="profile-media-kicker">VIDÉOS DE RESTITUTION</span><h3>Vidéos affichées dans les profils</h3><p>Les vidéos du catalogue sont héritées automatiquement. Pour un ancien autodiagnostic particulier, vous pouvez ajouter ici une vidéo spécifique sans modifier son contenu historique.</p></div>${infoDot('La Médiathèque est la source centrale. Une vidéo associée au catalogue est automatiquement visible dans toutes les campagnes reliées au même chapitre. Utilisez une association spécifique uniquement pour une exception legacy.')}</div><div class="profile-media-list">${profileMedia.length?profileMedia.map(item).join(''):'<p class="profile-media-empty">Aucune vidéo de restitution sur ce chapitre.</p>'}</div><div class="profile-media-add"><label><span>Ajouter une vidéo spécifique</span><select data-project-media-video><option value="">Choisir dans la Médiathèque…</option>${options}</select></label><label><span>Langue <small>(facultatif)</small></span><input data-project-media-locale maxlength="12" placeholder="ex. fr"></label><label><span>Afficher sur</span><select data-project-media-profile><option value="">Les 3 profils</option><option value="0">Profil 1</option><option value="1">Profil 2</option><option value="2">Profil 3</option></select></label><button class="button button-primary" type="button" data-add-project-media ${options?'':'disabled'}>Associer la vidéo</button></div>${inherited.length?'<p class="profile-media-note">ⓘ Les vidéos marquées « Héritée » viennent du catalogue : ne les recopiez pas dans la campagne.</p>':''}</section>`;
+  }
+
+  async function addProjectMedia(ch){
+    const videoId=document.querySelector('[data-project-media-video]')?.value;if(!videoId)return;
+    const button=document.querySelector('[data-add-project-media]');if(button){button.disabled=true;button.textContent='Association…';}
+    try{await api(`/api/admin/projects/${projectId}/chapters/${ch.id}/media`,{method:'POST',body:JSON.stringify({videoId:Number(videoId),placement:'profile_result',profilePosition:document.querySelector('[data-project-media-profile]')?.value===''?null:Number(document.querySelector('[data-project-media-profile]')?.value),locale:document.querySelector('[data-project-media-locale]')?.value.trim()||null})});await reloadComposerMedia();}
+    catch(e){if(button){button.disabled=false;button.textContent='Associer la vidéo';}await window.StudioModal.alert({title:'Vidéo non associée',message:e.message,type:'error'});}
+  }
+  async function reloadComposerMedia(){
+    const d=await api(`/api/projects/${projectId}/composer`);project=d.project;chapters=d.chapters||[];active=Math.min(active,Math.max(0,chapters.length-1));render();
+  }
+
   function renderNav(){
     $('profiles-catalog-summary').textContent=`${chapters.length} chapitres · Questions et profils réunis dans un même parcours`;
     $('profiles-chapter-nav').innerHTML=chapters.map((ch,i)=>{
@@ -83,7 +105,7 @@
     if(objectiveCopy)objectiveCopy.textContent=multiLocale?'Adaptez le titre, le résumé et le contenu détaillé des trois profils, puis vérifiez leurs autres versions linguistiques.':multiCountry?'Adaptez le titre, le résumé et le contenu détaillé des trois profils utilisés dans les différents périmètres.':'Adaptez le titre, le résumé et le contenu détaillé des trois profils de chaque chapitre.';
     $('profile-chapter-desc').textContent=isReadOnly()?'Profils enregistrés pour cette campagne · consultation en lecture seule.':multiLocale?'Personnalisez les trois profils de ce chapitre puis vérifiez leurs versions linguistiques.':multiCountry?'Les trois profils de ce chapitre sont utilisés pour tous les périmètres de la campagne.':'Personnalisez les trois profils restitués aux répondants pour ce chapitre.';
     renderProfilesContext();
-    $('profiles-root').innerHTML=`<div class="profile-excel-grid">${profiles.map((pr,pi)=>card(ch,pr,pi)).join('')}</div>`;
+    $('profiles-root').innerHTML=`<div class="profile-excel-grid">${profiles.map((pr,pi)=>card(ch,pr,pi)).join('')}</div>${projectMediaBlock(ch)}`;
     $('profile-sticky-label').textContent=`Chapitre ${active+1}/${chapters.length} · ${ch.title}`;
     const stickyPreviewReady=!project?.review_mode&&!isReadOnly()&&active===chapters.length-1&&firstInvalidIndex()===-1;
     document.body.classList.toggle('rp-sticky-preview-enabled',stickyPreviewReady);
@@ -117,6 +139,7 @@
       const d=await api(`/api/projects/${projectId}/composer`);project=d.project;chapters=d.chapters||[];
     }
     active=Math.min(active,Math.max(0,chapters.length-1));if(chapters.some(ch=>(ch.profiles||[]).length!==3))throw new Error('Le référentiel doit contenir exactement 3 profils par partie.');
+    if(project?.can_manage_project_media){try{const media=await api('/api/admin/media-library');mediaLibrary=media.videos||[];}catch(_){mediaLibrary=[];}}
     const blocking=firstInvalidIndex(active);if(!isReadOnly()&&blocking!==-1){await incompleteModal(blocking,'Complétez les situations avant de personnaliser les profils');if(location.pathname.includes('personnalisation.html'))location.replace('composer.html'+q(blocking));return;}
     $('theme-name').textContent=project?.theme_title||'Autodiagnostic';$('profiles-catalog-title').textContent=project?.theme_title||'Autodiagnostic';
     if(project?.review_mode){const alert=$('profiles-alert');alert.hidden=false;alert.dataset.tone='success';alert.innerHTML='<strong>✎ Correction Me&YouToo active.</strong> Vous pouvez modifier les profils. Les changements sont enregistrés dans la version Me&YouToo et la version transmise par le client reste conservée.';}
@@ -124,6 +147,9 @@
     render();
   }catch(e){$('profiles-alert').hidden=false;$('profiles-alert').textContent=e.message;}}
   function bind(){
+    const currentChapter=chapters[active];
+    document.querySelector('[data-add-project-media]')?.addEventListener('click',()=>addProjectMedia(currentChapter));
+    document.querySelectorAll('[data-remove-project-video]').forEach(button=>button.onclick=async()=>{button.disabled=true;try{await api(`/api/admin/projects/${projectId}/media/${button.dataset.removeProjectVideo}`,{method:'DELETE'});await reloadComposerMedia();}catch(e){button.disabled=false;await window.StudioModal.alert({title:'Vidéo non retirée',message:e.message,type:'error'});}});
     if(!isReadOnly()){
       document.querySelectorAll('[data-profile-title],[data-profile-summary],[data-profile-content]').forEach(el=>{
         const id=el.dataset.profileTitle||el.dataset.profileSummary||el.dataset.profileContent,key=el.dataset.profileTitle?'title':el.dataset.profileSummary?'summary':'content';

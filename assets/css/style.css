@@ -14757,3 +14757,32 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .admin-media-delete-actions .studio-modal-danger{background:#b93b31!important;border-color:#b93b31!important;color:#fff!important}
 .admin-media-delete-actions .studio-modal-danger:hover{background:#9f3028!important;border-color:#9f3028!important}
 @media(max-width:680px){.admin-media-delete-shell{padding:20px}.admin-media-delete-shell li{grid-template-columns:1fr}.admin-media-delete-shell li small{grid-column:auto}.admin-media-delete-actions{flex-direction:column-reverse}.admin-media-delete-actions .button{width:100%}}
+
+/* 2026-09-22 — gestion centralisée des utilisations vidéo */
+.admin-media-library-card-actions{flex-wrap:wrap}
+.admin-media-usage-dialog{width:min(980px,calc(100vw - 28px));max-height:min(92vh,980px);padding:0;border:0;border-radius:22px;background:transparent;overflow:visible}
+.admin-media-usage-dialog::backdrop{background:rgba(11,34,54,.44);backdrop-filter:blur(3px)}
+.admin-media-usage-shell{position:relative;max-height:92vh;overflow:auto;padding:28px;border:1px solid #dbe7ee;border-radius:22px;background:#fff;box-shadow:0 28px 76px rgba(17,54,83,.25)}
+.admin-media-usage-shell h2{margin:4px 44px 8px 0;color:#123f61;font-size:1.55rem;line-height:1.2}
+.admin-media-usage-shell section{margin:16px 0;padding:17px;border:1px solid #dce8ef;border-radius:16px;background:#fbfdfe}
+.admin-media-usage-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.admin-media-usage-section-head h3{margin:0 0 3px;color:#153f64;font-size:.96rem}
+.admin-media-usage-section-head p{margin:0;color:#708596;font-size:.76rem;line-height:1.4}
+.admin-media-usage-count{display:inline-flex;min-width:34px;height:34px;align-items:center;justify-content:center;border-radius:999px;background:#e8f7f7;color:#08777f;font-weight:900;font-size:.78rem}
+.admin-media-usage-info{display:flex;flex-direction:column;gap:4px;margin:14px 0 18px;padding:13px 14px;border:1px solid #bfe0e4;border-radius:14px;background:#effafb;color:#2c6771;font-size:.8rem;line-height:1.45}
+.admin-media-usage-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 12px;margin-top:8px;border:1px solid #e1ebf0;border-radius:12px;background:#fff}
+.admin-media-usage-row>div{display:grid;gap:2px;min-width:0}.admin-media-usage-row strong{color:#173f63;font-size:.82rem}.admin-media-usage-row span,.admin-media-usage-row small{color:#708596;font-size:.72rem}.admin-media-usage-row.is-inherited{background:#f6fbfb;border-color:#d3e9e9}
+.admin-media-usage-badge{flex:0 0 auto;display:inline-flex;padding:6px 9px;border-radius:999px;background:#e3f5f3!important;color:#087a75!important;font-size:.68rem!important;font-weight:900}
+.admin-media-usage-empty{margin:0;padding:12px;border:1px dashed #cfdee6;border-radius:11px;color:#718697;font-size:.76rem;background:#fff}
+.admin-media-usage-scroll{max-height:320px;overflow:auto;padding-right:3px}
+.admin-media-usage-add{display:grid;grid-template-columns:minmax(260px,1.6fr) minmax(170px,.8fr) minmax(150px,.7fr) minmax(120px,.55fr) auto;gap:10px;align-items:end;margin-top:14px;padding-top:14px;border-top:1px solid #e3edf2}
+.admin-media-usage-add label{display:grid;gap:5px}.admin-media-usage-add label>span{color:#315870;font-size:.72rem;font-weight:800}.admin-media-usage-add select,.admin-media-usage-add input{min-height:42px;border:1px solid #cfdfe7;border-radius:10px;background:#fff;padding:0 10px;color:#153f64;font:inherit;font-size:.8rem}.admin-media-usage-add .button{min-height:42px;white-space:nowrap}
+@media(max-width:900px){.admin-media-usage-add{grid-template-columns:1fr 1fr}.admin-media-usage-add .button{grid-column:1/-1}.admin-media-usage-shell{padding:20px}}
+@media(max-width:620px){.admin-media-usage-add{grid-template-columns:1fr}.admin-media-usage-row{align-items:flex-start;flex-direction:column}.admin-media-usage-row .button{width:100%}}
+
+/* 2026-09-22 — vidéos de restitution dans les campagnes legacy */
+.profile-media-panel{margin-top:22px;padding:20px;border:1px solid #cfe1e9;border-radius:18px;background:linear-gradient(135deg,#fbfdff,#f6fbfc)}
+.profile-media-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.profile-media-kicker{display:block;margin-bottom:4px;color:#078089;font-size:.66rem;font-weight:900;letter-spacing:.06em}.profile-media-panel h3{margin:0 0 5px;color:#153f64;font-size:1rem}.profile-media-panel-head p{margin:0;max-width:780px;color:#6d8394;font-size:.78rem;line-height:1.45}
+.profile-media-list{display:grid;gap:8px;margin-top:15px}.profile-media-association{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:11px 12px;border:1px solid #dfeaf0;border-radius:12px;background:#fff}.profile-media-association>div{display:grid;gap:2px}.profile-media-association strong{color:#173f63;font-size:.82rem}.profile-media-association span,.profile-media-association small{color:#728797;font-size:.71rem}.profile-media-association.is-inherited{border-color:#cfe8e4;background:#f6fbfa}.profile-media-badge{display:inline-flex!important;padding:5px 9px;border-radius:999px;background:#e2f4f1;color:#087a74!important;font-size:.66rem!important;font-weight:900}
+.profile-media-empty{margin:0;padding:11px 12px;border:1px dashed #cfdee6;border-radius:11px;background:#fff;color:#718697;font-size:.75rem}.profile-media-add{display:grid;grid-template-columns:minmax(260px,1.5fr) minmax(120px,.5fr) minmax(150px,.7fr) auto;gap:10px;align-items:end;margin-top:14px;padding-top:14px;border-top:1px solid #e1ebf0}.profile-media-add label{display:grid;gap:5px}.profile-media-add label>span{font-size:.71rem;font-weight:800;color:#315870}.profile-media-add select,.profile-media-add input{min-height:42px;border:1px solid #cfdfe7;border-radius:10px;background:#fff;padding:0 10px;color:#153f64;font:inherit;font-size:.8rem}.profile-media-add .button{min-height:42px;white-space:nowrap}.profile-media-note{margin:10px 0 0;color:#5f7d8e;font-size:.72rem}
+@media(max-width:900px){.profile-media-add{grid-template-columns:1fr 1fr}.profile-media-add .button{grid-column:1/-1}}@media(max-width:620px){.profile-media-add{grid-template-columns:1fr}.profile-media-association{align-items:flex-start;flex-direction:column}.profile-media-association .button{width:100%}}
