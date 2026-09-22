@@ -311,93 +311,104 @@
   }
 
   async function openCampaignContextModal(){
-    const currentCountries=[...new Set((Array.isArray(state.project?.countries)?state.project.countries:[]).concat(state.project?.selected_country_code?[state.project.selected_country_code]:[]).map(x=>String(x||'').toUpperCase()).filter(Boolean))];
+    const normalizeCode=value=>String(value||'').trim().toUpperCase();
+    const normalizeLocales=list=>[...new Set((Array.isArray(list)?list:[]).map(x=>String(x||'').toLowerCase().replaceAll('_','-')).filter(Boolean))];
+    const currentCountries=[...new Set((Array.isArray(state.project?.countries)?state.project.countries:[]).concat(state.project?.selected_country_code?[state.project.selected_country_code]:[]).map(normalizeCode).filter(Boolean))];
     const currentLocales=[...new Set((Array.isArray(state.project?.locales)?state.project.locales:[]).concat(state.project?.selected_locale?[state.project.selected_locale]:[]).map(x=>String(x||'').toLowerCase().replaceAll('_','-')).filter(Boolean))];
     const storedByCountry=state.project?.country_locales&&typeof state.project.country_locales==='object'&&!Array.isArray(state.project.country_locales)?state.project.country_locales:{};
-    const data=await api(`/api/catalog/themes/${encodeURIComponent(themeSlug)}/variants`);
+    const countryName=code=>countryLabel(code);
+    const countryKey=code=>countryName(code).toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+
+    // La modale doit rester disponible aussi pour une campagne historique dont le thème
+    // n'existe plus exactement dans le catalogue actuel. Le catalogue enrichit les choix,
+    // mais le contexte déjà stocké dans la campagne reste toujours la source de secours.
+    let data={variants:[],chapterCapabilities:[]};
+    try{data=await api(`/api/catalog/themes/${encodeURIComponent(themeSlug)}/variants`);}catch(_){/* fallback campagne */}
     const variants=Array.isArray(data?.variants)?data.variants:[];
     const caps=Array.isArray(data?.chapterCapabilities)?data.chapterCapabilities:[];
     const selectedChapterIds=new Set((state.chapters||[]).map(ch=>String(ch.catalog_chapter_id||'')).filter(Boolean));
     const selectedCaps=caps.filter(cap=>selectedChapterIds.has(String(cap.id)));
-    const countryName=code=>countryLabel(code);
-    const normalizeLocales=list=>[...new Set((Array.isArray(list)?list:[]).map(x=>String(x||'').toLowerCase().replaceAll('_','-')).filter(Boolean))];
-    const intersect=(sets)=>{if(!sets.length)return [];let out=[...sets[0]];for(const list of sets.slice(1))out=out.filter(x=>list.includes(x));return [...new Set(out)];};
+    const intersect=sets=>{if(!sets.length)return [];let out=[...sets[0]];for(const list of sets.slice(1))out=out.filter(x=>list.includes(x));return [...new Set(out)];};
     const localesForCapCountry=(cap,code)=>{
       const scoped=normalizeLocales(cap?.localesByCountry?.[code]);
       return scoped.length?scoped:normalizeLocales(cap?.worldwide?cap.locales:[]);
     };
+
     const rawCountryOptions=variants.filter(v=>v.countryCode).map(v=>{
-      const code=String(v.countryCode).toUpperCase();
+      const code=normalizeCode(v.countryCode);
       const perChapter=selectedCaps.map(cap=>localesForCapCountry(cap,code));
       const locales=selectedCaps.length?intersect(perChapter):normalizeLocales(v.locales);
       return {code,locales,supported:!selectedCaps.length||perChapter.every(list=>list.length>0)};
     }).filter(v=>v.supported&&v.locales.length);
+
+    // Réinjecte systématiquement les périmètres déjà présents dans la campagne.
+    // Cela évite de perdre le bouton/modal sur les imports historiques.
+    currentCountries.forEach(code=>{
+      const stored=normalizeLocales(storedByCountry?.[code]);
+      const fallback=stored.length?stored:currentLocales;
+      rawCountryOptions.push({code,locales:fallback,supported:true,isCurrent:true});
+    });
+
     const countryOptionGroups=new Map();
     rawCountryOptions.forEach(item=>{
-      const label=countryName(item.code),key=label.toLocaleLowerCase('fr');
-      const current=countryOptionGroups.get(key)||{code:item.code,label,locales:[]};
+      const label=countryName(item.code),key=countryKey(item.code);
+      const current=countryOptionGroups.get(key)||{code:item.code,label,locales:[],aliases:[]};
       current.locales=[...new Set(current.locales.concat(item.locales))];
+      current.aliases=[...new Set(current.aliases.concat(item.code))];
+      // Pour les doublons UK / 826 par exemple, on privilégie le code ISO numérique.
       if(/^\d{3}$/.test(item.code))current.code=item.code;
       countryOptionGroups.set(key,current);
     });
-    const countryOptions=[...countryOptionGroups.values()].sort((a,b)=>a.label.localeCompare(b.label,'fr',{sensitivity:'base'}));
+    const countryOptions=[...countryOptionGroups.values()].filter(v=>v.locales.length).sort((a,b)=>a.label.localeCompare(b.label,'fr',{sensitivity:'base'}));
+    const currentKeys=new Set(currentCountries.map(countryKey));
 
+    const optionForCountry=code=>countryOptions.find(v=>v.code===code||v.aliases?.includes(code)||countryKey(v.code)===countryKey(code));
+    const storedLocalesForOption=option=>{
+      const aliases=[option.code,...(option.aliases||[])];
+      return [...new Set(aliases.flatMap(code=>normalizeLocales(storedByCountry?.[code])))];
+    };
     const selectionByCountry=new Map();
-    currentCountries.forEach(code=>{
-      const available=countryOptions.find(v=>v.code===code)?.locales||[];
-      const stored=normalizeLocales(storedByCountry?.[code]);
+    countryOptions.forEach(option=>{
+      if(!currentKeys.has(countryKey(option.code)))return;
+      const available=option.locales;
+      const stored=storedLocalesForOption(option);
       const fallback=currentLocales.filter(locale=>available.includes(locale));
-      selectionByCountry.set(code,new Set((stored.length?stored:fallback).filter(locale=>available.includes(locale))));
+      selectionByCountry.set(option.code,new Set((stored.length?stored:fallback).filter(locale=>available.includes(locale))));
     });
 
+    if(!countryOptions.length){
+      showMessage('Aucun périmètre exploitable n’a été trouvé pour cette campagne.');
+      return;
+    }
+
     const overlay=document.createElement('div');overlay.className='translation-overlay';
-    overlay.innerHTML=`<section class="translation-modal campaign-context-modal" role="dialog" aria-modal="true"><header class="translation-head campaign-context-modal-head"><div class="campaign-context-modal-heading"><small>CONTEXTE DE CAMPAGNE</small><div class="composer-inline-title campaign-context-modal-title"><h2>Périmètres et langues</h2>${infoDot(campaignContextInfoText,'Impact d’une modification de périmètre ou de langue',true)}</div><p>Ajoutez ou retirez des périmètres, puis choisissez les langues activées pour chacun.</p></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="campaign-context-scroll"><section><h3>Périmètres</h3><p class="hint">Choisissez les pays ou périmètres à inclure dans la campagne.</p><div class="version-check-grid">${countryOptions.map(v=>`<label class="version-check"><input type="checkbox" data-context-country value="${esc(v.code)}" ${currentCountries.includes(v.code)?'checked':''}> ${esc(v.label||countryName(v.code))}</label>`).join('')}</div></section><section><h3>Langues disponibles</h3><p class="hint">Les langues proposées dépendent des périmètres cochés. Activez-les ensuite, pays par pays, dans le bloc ci-dessous.</p><div class="campaign-context-available-locales" data-context-locales></div><div class="campaign-context-selection-summary" data-context-selection-summary></div><div class="version-empty" data-context-error hidden></div></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-context-cancel>Annuler</button><button class="button button-primary" type="button" data-context-save>Mettre à jour la campagne</button></footer></section>`;
+    overlay.innerHTML=`<section class="translation-modal campaign-context-modal" role="dialog" aria-modal="true"><header class="translation-head campaign-context-modal-head"><div class="campaign-context-modal-heading"><small>CONTEXTE DE CAMPAGNE</small><div class="composer-inline-title campaign-context-modal-title"><h2>Modifier les périmètres et les langues</h2>${infoDot(campaignContextInfoText,'Impact d’une modification de périmètre ou de langue',true)}</div><p>1. Sélectionnez les pays. 2. Pour chaque pays retenu, ajoutez ou retirez uniquement les langues réellement disponibles pour ce périmètre.</p></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="campaign-context-scroll"><section><h3>1 · Périmètres</h3><p class="hint">Les pays sont classés par ordre alphabétique.</p><div class="version-check-grid">${countryOptions.map(v=>`<label class="version-check"><input type="checkbox" data-context-country value="${esc(v.code)}" ${currentKeys.has(countryKey(v.code))?'checked':''}> ${esc(v.label||countryName(v.code))}</label>`).join('')}</div></section><section><h3>2 · Langues par périmètre</h3><p class="hint">Une langue n’est proposée que si elle est disponible pour le pays concerné. Cliquez sur + pour l’ajouter ou sur ✓ pour la retirer.</p><div class="campaign-context-selection-summary" data-context-selection-summary></div><div class="version-empty" data-context-error hidden></div></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-context-cancel>Annuler</button><button class="button button-primary" type="button" data-context-save>Mettre à jour la campagne</button></footer></section>`;
     document.body.appendChild(overlay);
     const destroyFloatingInfo=setupFloatingInfoTooltip(overlay);
 
-    const close=()=>{destroyFloatingInfo();overlay.remove();}, localeRoot=overlay.querySelector('[data-context-locales]'), selectionSummary=overlay.querySelector('[data-context-selection-summary]'), error=overlay.querySelector('[data-context-error]'), save=overlay.querySelector('[data-context-save]');
+    const close=()=>{destroyFloatingInfo();overlay.remove();},selectionSummary=overlay.querySelector('[data-context-selection-summary]'),error=overlay.querySelector('[data-context-error]'),save=overlay.querySelector('[data-context-save]');
     overlay.querySelector('.translation-close').onclick=close;overlay.querySelector('[data-context-cancel]').onclick=close;
     const selectedCountries=()=>[...new Set([...overlay.querySelectorAll('[data-context-country]:checked')].map(x=>x.value))];
-    const localesForCountry=code=>countryOptions.find(v=>v.code===code)?.locales||[];
-    const selectedLocales=()=>[...new Set(selectedCountries().flatMap(code=>[...(selectionByCountry.get(code)||new Set())]))];
-
-    function redrawLocales(){
-      const countries=selectedCountries();
-      countries.forEach(code=>{if(!selectionByCountry.has(code))selectionByCountry.set(code,new Set());});
-      if(!countries.length){
-        localeRoot.innerHTML='<p class="hint">Choisissez au moins un périmètre pour afficher les langues disponibles.</p>';
-        renderSelectionSummary();
-        validate();
-        return;
-      }
-      const available=[...new Set(countries.flatMap(localesForCountry))].sort();
-      localeRoot.innerHTML=available.length
-        ? `<div class="theme-availability-pills">${available.map(locale=>{
-            const compatible=countries.filter(code=>localesForCountry(code).includes(locale));
-            return `<span class="theme-availability-pill is-language" title="Disponible pour : ${compatible.map(countryName).map(esc).join(' · ')}">${esc(localeLabel(locale))}</span>`;
-          }).join('')}</div>`
-        : '<p class="hint">Aucune langue disponible pour ces périmètres.</p>';
-      renderSelectionSummary();
-      validate();
-    }
+    const localesForCountry=code=>optionForCountry(code)?.locales||[];
 
     function renderSelectionSummary(){
       const countries=selectedCountries();
       if(!selectionSummary)return;
-      if(!countries.length){selectionSummary.innerHTML='';return;}
+      if(!countries.length){selectionSummary.innerHTML='<div class="campaign-context-empty-selection"><strong>Sélectionnez au moins un pays</strong><span>Les langues disponibles apparaîtront ici automatiquement.</span></div>';return;}
       const rows=countries.map(code=>{
         const available=localesForCountry(code);
+        if(!selectionByCountry.has(code))selectionByCountry.set(code,new Set());
         const selected=[...(selectionByCountry.get(code)||new Set())].filter(locale=>available.includes(locale));
         const remaining=available.filter(locale=>!selected.includes(locale));
         const selectedHtml=selected.length
           ? `<div class="campaign-context-country-selected">${selected.map(locale=>`<button type="button" class="campaign-context-summary-lang is-selected" data-summary-country="${esc(code)}" data-summary-locale="${esc(locale)}" aria-label="Retirer ${esc(localeLabel(locale))} pour ${esc(countryName(code))}"><span>✓</span>${esc(localeLabel(locale))}</button>`).join('')}</div>`
-          : `<div class="campaign-context-country-missing"><strong>Choisissez au moins une langue</strong><small>Les langues disponibles pour ${esc(countryName(code))} sont proposées juste dessous.</small></div>`;
+          : `<div class="campaign-context-country-missing"><strong>Aucune langue active</strong><small>Ajoutez au moins une langue pour ${esc(countryName(code))}.</small></div>`;
         const availableHtml=remaining.length
-          ? `<div class="campaign-context-country-available"><small>${selected.length?'Autres langues disponibles':'Disponibles'} :</small>${remaining.map(locale=>`<button type="button" class="campaign-context-summary-lang" data-summary-country="${esc(code)}" data-summary-locale="${esc(locale)}"><span>+</span>${esc(localeLabel(locale))}</button>`).join('')}</div>`
-          : '';
-        return `<div class="campaign-context-selection-row"><strong>${esc(countryName(code))}</strong><div class="campaign-context-country-languages">${selectedHtml}${availableHtml}</div></div>`;
+          ? `<div class="campaign-context-country-available"><small>${selected.length?'Ajouter une langue':'Langues disponibles'} :</small>${remaining.map(locale=>`<button type="button" class="campaign-context-summary-lang" data-summary-country="${esc(code)}" data-summary-locale="${esc(locale)}"><span>+</span>${esc(localeLabel(locale))}</button>`).join('')}</div>`
+          : `<small class="campaign-context-all-selected">Toutes les langues disponibles pour ce périmètre sont actives.</small>`;
+        return `<div class="campaign-context-selection-row"><div class="campaign-context-selection-country"><strong>${esc(countryName(code))}</strong><span>${available.length} langue${available.length>1?'s':''} disponible${available.length>1?'s':''}</span></div><div class="campaign-context-country-languages">${selectedHtml}${availableHtml}</div></div>`;
       }).join('');
-      selectionSummary.innerHTML=`<div class="campaign-context-selection-title">Choix des langues par périmètre</div><p class="campaign-context-selection-help">Chaque périmètre possède sa propre sélection. Retirer l’anglais en Corée du Sud ne le retire pas des États-Unis.</p>${rows}`;
+      selectionSummary.innerHTML=`<div class="campaign-context-selection-title">Langues activées par périmètre</div>${rows}`;
       selectionSummary.querySelectorAll('[data-summary-locale]').forEach(button=>button.onclick=()=>{
         const code=button.dataset.summaryCountry,locale=button.dataset.summaryLocale;
         const set=selectionByCountry.get(code)||new Set();
@@ -411,16 +422,13 @@
     function validate(){
       const countries=selectedCountries();
       const missing=countries.filter(code=>!(selectionByCountry.get(code)?.size));
-      const currentByCountry={};
-      currentCountries.forEach(code=>{
-        const available=localesForCountry(code);
-        const stored=normalizeLocales(storedByCountry?.[code]);
-        currentByCountry[code]=(stored.length?stored:currentLocales.filter(locale=>available.includes(locale))).sort();
-      });
-      const sameCountries=countries.length===currentCountries.length&&countries.every(code=>currentCountries.includes(code));
+      const sameCountries=countries.length===countryOptions.filter(o=>currentKeys.has(countryKey(o.code))).length&&countries.every(code=>currentKeys.has(countryKey(code)));
       const sameSelections=sameCountries&&countries.every(code=>{
+        const option=optionForCountry(code);
+        const available=option?.locales||[];
+        const stored=storedLocalesForOption(option||{code,aliases:[]});
+        const before=(stored.length?stored:currentLocales.filter(locale=>available.includes(locale))).filter(locale=>available.includes(locale)).sort();
         const now=[...(selectionByCountry.get(code)||new Set())].sort();
-        const before=currentByCountry[code]||[];
         return now.length===before.length&&now.every((locale,index)=>locale===before[index]);
       });
       error.hidden=true;error.textContent='';
@@ -431,9 +439,11 @@
 
     overlay.querySelectorAll('[data-context-country]').forEach(input=>input.onchange=()=>{
       if(input.checked&&!selectionByCountry.has(input.value))selectionByCountry.set(input.value,new Set());
-      redrawLocales();
+      renderSelectionSummary();
+      validate();
     });
-    redrawLocales();
+    renderSelectionSummary();
+    validate();
 
     save.onclick=async()=>{
       const selectedCountriesNow=selectedCountries();
@@ -445,23 +455,17 @@
         const result=await api(`/api/projects/${projectId}/context`,{method:'PATCH',body:JSON.stringify({countries:selectedCountriesNow,locales:selectedLocalesNow,localesByCountry})});
         state.project=result.project;state.translationContexts.clear();state.libraryAvailability.clear();close();
         const refreshedCountries=campaignCountries(state.project);
-        // Après une modification du contexte, une campagne multi-pays repart sans pays actif :
-        // le client choisit explicitement le périmètre qu'il veut composer.
         state.country=refreshedCountries.length===1?refreshedCountries[0]:'';
         if(state.country){
           const refreshed=await api(`/api/projects/${projectId}/composer?countryCode=${encodeURIComponent(state.country)}`);
           state.project=refreshed.project;state.chapters=refreshed.chapters;state.country=refreshed.composer_context?.countryCode||state.country;
           render();
         }else{
-          // Évite qu'un ancien Composer reste visible avec les situations du pays précédent.
           state.chapters=[];
           history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`);
         }
-        renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();
-        clearMessage();
-      }catch(e){
-        save.disabled=false;save.textContent='Mettre à jour la campagne';error.hidden=false;error.textContent=e.message;
-      }
+        renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();clearMessage();
+      }catch(e){save.disabled=false;save.textContent='Mettre à jour la campagne';error.hidden=false;error.textContent=e.message;}
     };
   }
 
