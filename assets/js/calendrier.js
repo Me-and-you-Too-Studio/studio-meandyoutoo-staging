@@ -222,7 +222,7 @@
       const monthHighlights=monthDei.filter(e=>e.allMonth||e.yearHighlight||(activeDeiFilter!=='all'&&activeDeiFilter!=='none'));
       const highlightHtml=monthHighlights.length?`<div class="studio-year-highlights">${monthHighlights.map(e=>{const dateLabel=deiYearRangeLabel(e,year);return `<div class="studio-year-highlight is-${esc(e.category)}"><span class="studio-year-highlight-date">${esc(dateLabel)}</span><span class="studio-year-highlight-copy"><strong>${esc(e.title)}</strong>${e.recommendation?`<small>AD recommandé : ${esc(e.recommendation)}</small>`:''}</span></div>`;}).join('')}</div>`:'';
       const campaignRows=showCampaignDates?active.slice().sort((a,b)=>String(a.launch_date||a.close_date||'').localeCompare(String(b.launch_date||b.close_date||''))):[];
-      const campaignsHtml=campaignRows.length?`<div class="studio-year-client-campaigns">${campaignRows.slice(0,4).map(p=>`<div class="studio-year-client-campaign"><div class="studio-year-client-campaign-head"><strong>${esc(campaignName(p))}</strong><span class="studio-year-campaign-status is-${esc(p.status||'draft')}">${esc(statusLabels[p.status]||p.status||'Brouillon')}</span></div><small>${esc(campaignDatesLabel(p))}</small></div>`).join('')}${campaignRows.length>4?`<div class="studio-year-client-campaign-more">+${campaignRows.length-4} autre${campaignRows.length-4>1?'s':''} campagne${campaignRows.length-4>1?'s':''}</div>`:''}</div>`:'';
+      const campaignsHtml=campaignRows.length?`<div class="studio-year-client-campaigns">${campaignRows.slice(0,4).map(p=>`<div class="studio-year-client-campaign"><div class="studio-year-client-campaign-head"><strong title="${esc(campaignName(p))}">${esc(campaignName(p))}</strong><span class="studio-year-campaign-status is-${esc(p.status||'draft')}">${esc(statusLabels[p.status]||p.status||'Brouillon')}</span></div><div class="studio-year-client-campaign-dates">${esc(campaignDatesLabel(p))}</div></div>`).join('')}${campaignRows.length>4?`<div class="studio-year-client-campaign-more">+${campaignRows.length-4} autre${campaignRows.length-4>1?'s':''} campagne${campaignRows.length-4>1?'s':''}</div>`:''}</div>`:'';
       return `<button class="studio-year-month ${deiCount?'has-dei-events':''} ${monthHighlights.length?'has-dei-month':''} ${showCampaignDates?'has-client-dates':''}" type="button" data-month="${m}"><strong>${start.toLocaleDateString('fr-FR',{month:'long'})}</strong>${highlightHtml}${campaignsHtml}<span class="studio-year-active">${active.length} campagne${active.length>1?'s':''} active${active.length>1?'s':''}</span><div><small><b>${starts}</b> démarrage${starts>1?'s':''}</small><small><b>${ends}</b> fin${ends>1?'s':''}</small><small><b>${taskCount}</b> tâche${taskCount>1?'s':''}</small>${deiCount?`<small class="studio-year-dei"><b>${deiCount}</b> événement${deiCount>1?'s':''} DEI</small>`:''}</div></button>`;
     }).join('');
     root.querySelectorAll('[data-month]').forEach(b=>b.onclick=()=>{state.cursor=new Date(year,Number(b.dataset.month),1);setView('month');load();});
@@ -233,10 +233,15 @@
     const org=state.organizations.find(o=>String(o.id)===String(id));
     if(!org){root.hidden=true;root.innerHTML='';return;}
     const rows=state.campaigns||[],drafts=rows.filter(p=>String(p.status||'')==='draft').length,ongoing=rows.filter(p=>String(p.status||'')==='active').length,completed=rows.filter(p=>String(p.status||'')==='completed').length;
+    const datedRows=rows.filter(p=>parseDate(p.launch_date)||parseDate(p.close_date));
+    const starts=datedRows.map(p=>parseDate(p.launch_date)).filter(Boolean).sort((a,b)=>a-b);
+    const ends=datedRows.map(p=>parseDate(p.close_date)).filter(Boolean).sort((a,b)=>a-b);
+    const firstStart=starts[0]||null,lastEnd=ends[ends.length-1]||null;
     const initial=String(org.name||'C').slice(0,1).toUpperCase();
     const logoSrc=organizationLogoSrc(org);
     const logo=logoSrc?`<span class="calendar-client-logo has-logo"><img src="${esc(logoSrc)}" alt="Logo ${esc(org.name||'client')}"></span>`:`<span class="calendar-client-logo"><span>${esc(initial)}</span></span>`;
-    root.innerHTML=`${logo}<div><strong>${esc(org.name||'Client')}</strong><span>${rows.length} campagne${rows.length>1?'s':''} · ${drafts} brouillon${drafts>1?'s':''} · ${ongoing} en cours · ${completed} terminée${completed>1?'s':''}</span></div>`;
+    const dateSummary=`<div class="calendar-client-period"><span><b>Début</b>${firstStart?esc(fullDateLabel(firstStart)):'À renseigner'}</span><span><b>Fin</b>${lastEnd?esc(fullDateLabel(lastEnd)):'À renseigner'}</span></div>`;
+    root.innerHTML=`${logo}<div class="calendar-client-identity-copy"><strong>${esc(org.name||'Client')}</strong><span>${rows.length} campagne${rows.length>1?'s':''} · ${drafts} brouillon${drafts>1?'s':''} · ${ongoing} en cours · ${completed} terminée${completed>1?'s':''}</span>${dateSummary}</div>`;
     root.hidden=false;
   }
   function renderDataQuality(){const box=$('#calendar-data-quality');box.hidden=!state.missingDates;$('#calendar-missing-count').textContent=`${state.missingDates} campagne${state.missingDates>1?'s':''} sans dates`;}
