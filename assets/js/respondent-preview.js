@@ -23,8 +23,17 @@ async function api(u){
 function num(v,fallback=0){v=Number(v);return Number.isFinite(v)?v:fallback}
 function randomIndex(max){if(max<=1)return 0;try{let a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%max}catch(_){return Math.floor(Math.random()*max)}}
 function shuffle(list){const out=[...(list||[])];for(let i=out.length-1;i>0;i--){const j=randomIndex(i+1);[out[i],out[j]]=[out[j],out[i]]}return out}
-function normalizeOptions(s){return (s.opts||s.options||[]).map((o,i)=>typeof o==='object'?{...o,label:o.label||o.text||o.value||`Réponse ${i+1}`}:{label:String(o)})}
-function normalizeSocio(list){return (Array.isArray(list)?list:[]).filter(Boolean).map((s,i)=>({key:String(s.kind||s.key||s.source_id||i),label:s.q||s.question||s.label||s.name||s.title||`Question ${i+1}`,options:normalizeOptions(s)})).filter(s=>s.options.length)}
+function rawSubcriteria(option){return Array.isArray(option?.subcriteria)?option.subcriteria:(option?.subcriterion?[option.subcriterion]:[])}
+function normalizeSocioCriterion(s,i,path){
+  const options=(s?.opts||s?.options||[]).map((o,j)=>{
+    const base=typeof o==='object'?{...o,label:o.label||o.text||o.value||`Réponse ${j+1}`}:{label:String(o)};
+    base.subcriteria=rawSubcriteria(o).map((child,k)=>normalizeSocioCriterion(child,k,`${path}.${j}.${k}`)).filter(Boolean);
+    return base;
+  });
+  if(!options.length)return null;
+  return {key:String(s?.kind||s?.key||s?.source_id||path||i),label:s?.q||s?.question||s?.label||s?.name||s?.title||`Question ${i+1}`,options};
+}
+function normalizeSocio(list){return (Array.isArray(list)?list:[]).filter(Boolean).map((s,i)=>normalizeSocioCriterion(s,i,String(i))).filter(Boolean)}
 function fallbackSocio(){return [{key:'gender',label:'Vous êtes :',options:[{label:'Une femme'},{label:'Un homme'},{label:'Non-binaire'},{label:'Autre'}]}]}
 function normalizeProfile(p){return {...p,title:p.title||p.titre||'Profil',summary:clean(p.summary||p.resume||p.phrase||''),content:clean(p.content||p.description||p.desc||''),scoring_min:num(p.scoring_min??p.min,0),scoring_max:num(p.scoring_max??p.max,0),top_score:num(p.top_score,0)}}
 function normalizeAnswer(a,i){return typeof a==='object'?{...a,label:a.text||a.content||a.label||`Réponse ${i+1}`,score:num(a.score,0),display_order:num(a.position??a.display_order??i,i)}:{label:String(a),score:0,display_order:i}}
@@ -191,11 +200,25 @@ function intro(){
   const start=$('#start');if(start)start.onclick=()=>{if(!contextReady)return;step=0;render()}
 }
 
+function visibleSocioCriteria(){
+  const rows=[];
+  const visit=(criterion,path,level)=>{
+    rows.push({criterion,path,level});
+    const selected=socioChoices[path];
+    if(selected===undefined)return;
+    const option=criterion.options[selected];
+    (option?.subcriteria||[]).forEach((child,k)=>visit(child,`${path}.${selected}.${k}`,level+1));
+  };
+  d.socio.forEach((criterion,i)=>visit(criterion,String(i),1));
+  return rows;
+}
+function clearSocioDescendants(path){Object.keys(socioChoices).forEach(key=>{if(key.startsWith(path+'.'))delete socioChoices[key];});}
 function socio(){
   if(!d.socio.length){step=1;render();return}
-  root.innerHTML=head('Informations répondant')+`<section class="rp-card"><div class="rp-kicker">Données d’analyse</div><h1>Mieux comprendre les résultats collectifs</h1><p class="rp-help">Choisissez une réponse pour chaque critère. Dans cet aperçu, ces données sont fictives et ne sont pas enregistrées.</p><div class="rp-socio-list">${d.socio.map((s,i)=>`<fieldset class="rp-socio"><legend>${esc(s.label)} <span aria-hidden="true">*</span></legend><div class="rp-socio-options">${s.options.map((o,j)=>`<button type="button" class="rp-choice ${socioChoices[i]===j?'selected':''}" data-socio="${i}" data-option="${j}">${esc(o.label)}</button>`).join('')}</div></fieldset>`).join('')}</div><div class="rp-actions"><button id="next" class="button button-primary" ${d.socio.every((_,i)=>socioChoices[i]!==undefined)?'':'disabled'}>Continuer</button></div></section>`;
-  root.querySelectorAll('[data-socio]').forEach(b=>b.onclick=()=>{socioChoices[Number(b.dataset.socio)]=Number(b.dataset.option);socio()});
-  $('#next').onclick=()=>{if(!d.socio.every((_,i)=>socioChoices[i]!==undefined))return;step=1;render()}
+  const visible=visibleSocioCriteria(),complete=visible.every(({path})=>socioChoices[path]!==undefined);
+  root.innerHTML=head('Informations répondant')+`<section class="rp-card"><div class="rp-kicker">Données d’analyse</div><h1>Mieux comprendre les résultats collectifs</h1><p class="rp-help">Choisissez une réponse pour chaque critère. Les questions complémentaires apparaissent selon vos réponses. Dans cet aperçu, ces données sont fictives et ne sont pas enregistrées.</p><div class="rp-socio-list">${visible.map(({criterion:s,path,level})=>`<fieldset class="rp-socio ${level>1?'is-conditional':''}" style="--rp-socio-level:${Math.min(level,8)}"><legend>${level>1?`<span class="rp-socio-level">Niveau ${level}</span>`:''}${esc(s.label)} <span aria-hidden="true">*</span></legend><div class="rp-socio-options">${s.options.map((o,j)=>`<button type="button" class="rp-choice ${socioChoices[path]===j?'selected':''}" data-socio-path="${esc(path)}" data-option="${j}">${esc(o.label)}</button>`).join('')}</div></fieldset>`).join('')}</div><div class="rp-actions"><button id="next" class="button button-primary" ${complete?'':'disabled'}>Continuer</button></div></section>`;
+  root.querySelectorAll('[data-socio-path]').forEach(b=>b.onclick=()=>{const path=b.dataset.socioPath;clearSocioDescendants(path);socioChoices[path]=Number(b.dataset.option);socio()});
+  $('#next').onclick=()=>{if(!visibleSocioCriteria().every(({path})=>socioChoices[path]!==undefined))return;step=1;render()}
 }
 
 

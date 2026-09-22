@@ -178,7 +178,20 @@
       const [d,quotaData,me]=await Promise.all([api(`/api/projects/${projectId}/composer`),api(`/api/projects/${projectId}/quota`).catch(()=>({organization:null})),api('/api/me')]);
       project=d.project;reviewEvents=d.reviewEvents||[];currentChapters=d.chapters||[];currentUser=me.user;studioSubscription=me.studioSubscription||null;if(!theme)theme=project?.theme_slug||'';const chapters=currentChapters,quota=quotaData.organization;
       if(project.status!=='draft'){document.querySelector('.page-title').textContent='Relecture de la configuration';document.querySelector('.topbar .lead').textContent=currentUser?.role==='admin'?'Contrôlez et corrigez la configuration avant sa publication.':'Suivez la relecture Me&YouToo et validez les modifications importantes si nécessaire.';}if(currentUser?.role==='admin')$('validation-credit').hidden=true;
-      const socioLabels=(project.sociodemo||[]).flatMap(item=>[item.q,...(item.opts||[]).filter(option=>option.subcriterion).map(option=>`${option.subcriterion.q} (si « ${option.label} »)`)]);
+      const socioLabels=[];
+      const collectSocio=(criteria,level=1)=>{
+        (criteria||[]).forEach(item=>{
+          socioLabels.push(level===1?String(item.q||''):`${String(item.q||'')} (niveau ${level})`);
+          (item.opts||[]).forEach(option=>{
+            const children=Array.isArray(option.subcriteria)?option.subcriteria:(option.subcriterion?[option.subcriterion]:[]);
+            children.forEach(child=>{
+              socioLabels.push(`${String(child.q||'')} (si « ${String(option.label||'')} »)`);
+              collectSocio((child.opts||[]).flatMap(childOption=>Array.isArray(childOption.subcriteria)?childOption.subcriteria:(childOption.subcriterion?[childOption.subcriterion]:[])),level+2);
+            });
+          });
+        });
+      };
+      collectSocio(project.sociodemo||[]);
       $('validation-theme').textContent=project.theme_title||'Autodiagnostic';$('validation-campaign').value=project.campaign_name||project.title||'';$('validation-title').value=project.respondent_title||'';$('validation-launch-date').value=isoDate(project.launch_date);$('validation-close-date').value=isoDate(project.close_date);$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').textContent=socioLabels.join(', ')||'Aucune';
       renderValidationQuota(quota);
       renderMonthlyCampaignAllowance();

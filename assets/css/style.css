@@ -14486,3 +14486,39 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .client-logo-library-image img{max-width:100%;max-height:100%;object-fit:contain;display:block}
 @media(max-width:800px){.client-logo-library-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.client-logo-library-tools{grid-template-columns:1fr}}
 @media(max-width:520px){.client-logo-library-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* 2026-09-22 — DSD conditionnelles récursives */
+.socio-subcriterion{
+  margin-left:calc(20px + (var(--socio-depth,2) - 2) * 12px);
+  border-left-width:4px;
+}
+.socio-subcriterion .socio-subcriterion{
+  margin-top:10px;
+  background:#fff;
+}
+.socio-subcriterion .socio-level-badge{
+  background:#eaf3ff;
+}
+.rp-socio.is-conditional{
+  margin-left:calc((var(--rp-socio-level,2) - 1) * 18px);
+  padding:14px 16px;
+  border:1px solid #dce8ef;
+  border-left:4px solid #008b95;
+  border-radius:14px;
+  background:#f8fbfc;
+}
+.rp-socio-level{
+  display:inline-flex;
+  margin-right:8px;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#e8f7f7;
+  color:#087780!important;
+  font-size:11px;
+  font-weight:900;
+  vertical-align:middle;
+}
+@media(max-width:650px){
+  .socio-subcriterion{margin-left:6px!important}
+  .rp-socio.is-conditional{margin-left:0}
+}
