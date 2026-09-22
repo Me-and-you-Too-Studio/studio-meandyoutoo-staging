@@ -14380,3 +14380,76 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .studio-calendar-event.is-dei{font:inherit}
 .studio-calendar-event.is-dei strong,.studio-calendar-event.is-dei small{pointer-events:none}
 @media(max-width:680px){.calendar-dei-popover{width:calc(100vw - 20px);padding:14px}.calendar-dei-popover-title{font-size:.94rem}}
+
+/* Calendrier — client sélectionné : afficher les vraies dates de ses campagnes dans l'année */
+.studio-year-calendar.has-selected-client .studio-year-month{
+  min-height:250px;
+}
+.studio-year-month.has-client-dates .studio-year-active{
+  margin-top:12px;
+}
+.studio-year-client-campaigns{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  margin:11px 0 4px;
+  text-align:left;
+}
+.studio-year-client-campaign{
+  display:block;
+  width:100%;
+  padding:9px 10px;
+  border:1px solid #d8e5ec;
+  border-radius:10px;
+  background:#f8fbfc;
+}
+.studio-year-client-campaign-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+}
+.studio-year-client-campaign-head strong{
+  min-width:0;
+  color:#153f61;
+  font-size:.76rem;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+.studio-year-client-campaign small{
+  display:block;
+  margin-top:5px;
+  color:#5f7789;
+  font-size:.69rem;
+  font-weight:700;
+  line-height:1.25;
+}
+.studio-year-campaign-status{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  min-height:20px;
+  padding:2px 7px;
+  border-radius:999px;
+  background:#eaf1f5;
+  color:#486579;
+  font-size:.61rem;
+  font-weight:800;
+  line-height:1.15;
+  white-space:nowrap;
+}
+.studio-year-campaign-status.is-draft{background:#fff1d9;color:#8b5c11}
+.studio-year-campaign-status.is-published,.studio-year-campaign-status.is-active{background:#e3f6f1;color:#146b5e}
+.studio-year-campaign-status.is-completed{background:#edf0f3;color:#586b78}
+.studio-year-campaign-status.is-unpublished{background:#f5e8ec;color:#8a465b}
+.studio-year-campaign-status.is-configuration_submitted,.studio-year-campaign-status.is-review_pending,.studio-year-campaign-status.is-in_review{background:#eaf0ff;color:#4965a1}
+.studio-year-client-campaign-more{
+  padding:2px 4px;
+  color:#60798b;
+  font-size:.68rem;
+  font-weight:800;
+}
+@media(max-width:760px){
+  .studio-year-calendar.has-selected-client .studio-year-month{min-height:0}
+  .studio-year-client-campaign-head{flex-direction:column;gap:5px}
+}
