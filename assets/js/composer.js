@@ -207,20 +207,38 @@
     ));
   }
 
-  const countryNamesByNumericCode={
-    '032':'Argentine','040':'Autriche','056':'Belgique','072':'Botswana','076':'Brésil','100':'Bulgarie','120':'Cameroun','124':'Canada','140':'République centrafricaine','152':'Chili','156':'Chine','158':'Taïwan','178':'Congo','191':'Croatie','203':'Tchéquie','208':'Danemark','250':'France','276':'Allemagne','288':'Ghana','300':'Grèce','324':'Guinée','344':'Hong Kong','356':'Inde','380':'Italie','384':"Côte d’Ivoire",'392':'Japon','400':'Jordanie','410':'Corée du Sud','422':'Liban','430':'Liberia','442':'Luxembourg','450':'Madagascar','466':'Mali','480':'Maurice','484':'Mexique','498':'Moldavie','504':'Maroc','528':'Pays-Bas','566':'Nigeria','578':'Norvège','591':'Panama','616':'Pologne','620':'Portugal','624':'Guinée-Bissau','642':'Roumanie','643':'Fédération de Russie','686':'Sénégal','694':'Sierra Leone','703':'Slovaquie','724':'Espagne','752':'Suède','756':'Suisse','788':'Tunisie','818':'Égypte','826':'Royaume-Uni','834':'Tanzanie','840':'États-Unis','854':'Burkina Faso','858':'Uruguay'
-  };
+  const countryNamesByNumericCode={'004':'Afghanistan','008':'Albanie','012':'Algérie','020':'Andorre','024':'Angola','031':'Azerbaïdjan','032':'Argentine','036':'Australie','040':'Autriche','048':'Bahreïn','050':'Bangladesh','056':'Belgique','068':'Bolivie','072':'Botswana','076':'Brésil','100':'Bulgarie','116':'Cambodge','120':'Cameroun','124':'Canada','140':'République centrafricaine','144':'Sri Lanka','152':'Chili','156':'Chine','158':'Taïwan','170':'Colombie','178':'Congo','188':'Costa Rica','191':'Croatie','196':'Chypre','203':'Tchéquie','208':'Danemark','214':'République dominicaine','218':'Équateur','233':'Estonie','246':'Finlande','250':'France','268':'Géorgie','276':'Allemagne','288':'Ghana','300':'Grèce','320':'Guatemala','324':'Guinée','332':'Haïti','344':'Hong Kong','348':'Hongrie','356':'Inde','360':'Indonésie','368':'Irak','372':'Irlande','376':'Israël','380':'Italie','384':"Côte d’Ivoire",'392':'Japon','398':'Kazakhstan','400':'Jordanie','404':'Kenya','410':'Corée du Sud','414':'Koweït','422':'Liban','428':'Lettonie','430':'Liberia','440':'Lituanie','442':'Luxembourg','450':'Madagascar','458':'Malaisie','466':'Mali','470':'Malte','480':'Maurice','484':'Mexique','492':'Monaco','498':'Moldavie','504':'Maroc','512':'Oman','528':'Pays-Bas','554':'Nouvelle-Zélande','566':'Nigeria','578':'Norvège','591':'Panama','600':'Paraguay','604':'Pérou','608':'Philippines','616':'Pologne','620':'Portugal','624':'Guinée-Bissau','634':'Qatar','642':'Roumanie','643':'Fédération de Russie','682':'Arabie saoudite','686':'Sénégal','688':'Serbie','694':'Sierra Leone','702':'Singapour','703':'Slovaquie','704':'Vietnam','710':'Afrique du Sud','724':'Espagne','752':'Suède','756':'Suisse','764':'Thaïlande','784':'Émirats arabes unis','788':'Tunisie','792':'Turquie','804':'Ukraine','818':'Égypte','826':'Royaume-Uni','834':'Tanzanie','840':'États-Unis','854':'Burkina Faso','858':'Uruguay'};
   function countryLabel(code){
     const key=String(code||'').trim().toUpperCase();
     if(countryNamesByNumericCode[key])return countryNamesByNumericCode[key];
+    if(['UK','GB','826'].includes(key))return'Royaume-Uni';
     if(['WW','WORLDWIDE','INT','GLOBAL'].includes(key))return'International';
     if(key==='ASIA')return'Asie';
     try{return new Intl.DisplayNames(['fr'],{type:'region'}).of(key)||key;}catch(_){return key;}
   }
 
+  function campaignCountryEntries(project=state.project){
+    const byCountry=projectCountryLocales(project);
+    const grouped=new Map();
+    campaignCountries(project).forEach(code=>{
+      const label=countryLabel(code);
+      const key=label.toLocaleLowerCase('fr');
+      const current=grouped.get(key)||{label,codes:[],locales:[]};
+      current.codes.push(code);
+      current.locales=[...new Set(current.locales.concat(byCountry[code]||[]))];
+      grouped.set(key,current);
+    });
+    return [...grouped.values()].map(entry=>{
+      const selected=entry.codes.includes(state.country);
+      const numeric=entry.codes.find(code=>/^\d{3}$/.test(code));
+      return {...entry,code:selected?state.country:(numeric||entry.codes[0])};
+    }).sort((a,b)=>a.label.localeCompare(b.label,'fr',{sensitivity:'base'}));
+  }
+
   function renderCountryTabs(project=state.project){
     const root=$('composer-country-tabs');if(!root)return;
     const countries=campaignCountries(project);
+    const countryEntries=campaignCountryEntries(project);
     // Côté client, une campagne historique publiée reste consultable uniquement.
     // Côté admin Me&YouToo, le même contenu reste corrigeable comme toute campagne Studio.
     if(isLegacyClientCampaign(project)&&!isAdmin){
@@ -231,7 +249,7 @@
         ? `Périmètre historique consulté : ${esc(label(state.country))}.`
         : (countries.length>1?'Choisissez un pays pour afficher le contenu historique correspondant.':'Périmètre historique de la campagne.');
       root.hidden=false;root.style.display='';
-      root.innerHTML=`<div class="composer-country-tabs-label"><div class="composer-country-tabs-label-copy"><strong>Périmètres historiques</strong><span>${help}</span></div></div><div class="composer-country-tabs-list">${countries.map(code=>{const langs=byCountry[code]||[];return `<button type="button" class="composer-country-tab composer-country-tab-with-locales ${code===state.country?'is-active':''}" data-country-tab="${esc(code)}" aria-pressed="${code===state.country?'true':'false'}"><strong>${esc(label(code))}</strong><span>${langs.length?langs.map(locale=>esc(localeLabel(locale))).join(' · '):'Langues historiques'}</span></button>`;}).join('')}</div>`;
+      root.innerHTML=`<div class="composer-country-tabs-label"><div class="composer-country-tabs-label-copy"><strong>Périmètres historiques</strong><span>${help}</span></div></div><div class="composer-country-tabs-list">${countryEntries.map(entry=>{const active=entry.codes.includes(state.country);const langs=entry.locales;return `<button type="button" class="composer-country-tab composer-country-tab-with-locales ${active?'is-active':''}" data-country-tab="${esc(entry.code)}" aria-pressed="${active?'true':'false'}"><strong>${esc(entry.label)}</strong><span>${langs.length?langs.map(locale=>esc(localeLabel(locale))).join(' · '):'Langues historiques'}</span></button>`;}).join('')}</div>`;
       root.querySelectorAll('[data-country-tab]').forEach(button=>button.onclick=()=>switchCountry(button.dataset.countryTab));
       return;
     }
@@ -248,13 +266,13 @@
           : 'Ce périmètre est actif. Vous pouvez modifier les langues disponibles ou ajouter un autre périmètre si le catalogue le permet.');
     root.hidden=false;
     root.style.display='';
-    root.innerHTML=`<div class="composer-country-tabs-label"><div class="composer-country-tabs-label-copy"><div class="composer-inline-title"><strong>Composer par périmètre</strong>${infoDot(campaignContextInfoText,'Impact d’une modification de périmètre ou de langue')}</div><span>${activeCopy}</span></div>${state.project?.can_edit===false?'':`<button class="button button-ghost button-small composer-country-edit" type="button" data-edit-campaign-context>Modifier périmètres et langues</button>`}</div><div class="composer-country-tabs-list">${countries.map(code=>{const langs=byCountry[code]||[];return `<button type="button" class="composer-country-tab composer-country-tab-with-locales ${code===state.country?'is-active':''}" data-country-tab="${esc(code)}" aria-pressed="${code===state.country?'true':'false'}"><strong>${esc(label(code))}</strong><span>${langs.length?langs.map(locale=>esc(localeLabel(locale))).join(' · '):'Langue à préciser'}</span></button>`;}).join('')}</div>`;
+    root.innerHTML=`<div class="composer-country-tabs-label"><div class="composer-country-tabs-label-copy"><div class="composer-inline-title"><strong>Composer par périmètre</strong>${infoDot(campaignContextInfoText,'Impact d’une modification de périmètre ou de langue')}</div><span>${activeCopy}</span></div>${state.project?.can_edit===false?'':`<button class="button button-ghost button-small composer-country-edit" type="button" data-edit-campaign-context>Modifier périmètres et langues</button>`}</div><div class="composer-country-tabs-list">${countryEntries.map(entry=>{const active=entry.codes.includes(state.country);const langs=entry.locales;return `<button type="button" class="composer-country-tab composer-country-tab-with-locales ${active?'is-active':''}" data-country-tab="${esc(entry.code)}" aria-pressed="${active?'true':'false'}"><strong>${esc(entry.label)}</strong><span>${langs.length?langs.map(locale=>esc(localeLabel(locale))).join(' · '):'Langue à préciser'}</span></button>`;}).join('')}</div>`;
     root.querySelectorAll('[data-country-tab]').forEach(button=>button.onclick=()=>switchCountry(button.dataset.countryTab));
     root.querySelector('[data-edit-campaign-context]')?.addEventListener('click',openCampaignContextModal);
   }
 
   function renderComposerCountryGate(){
-    const countries=campaignCountries(state.project);
+    const countries=campaignCountryEntries(state.project);
     const gated=countries.length>1&&!state.country;
     const live=document.querySelector('.composer-live');
     const sticky=document.querySelector('.creation-sticky-actions');
@@ -301,20 +319,28 @@
     const caps=Array.isArray(data?.chapterCapabilities)?data.chapterCapabilities:[];
     const selectedChapterIds=new Set((state.chapters||[]).map(ch=>String(ch.catalog_chapter_id||'')).filter(Boolean));
     const selectedCaps=caps.filter(cap=>selectedChapterIds.has(String(cap.id)));
-    let regionNames=null;try{regionNames=new Intl.DisplayNames(['fr'],{type:'region'});}catch(_){}
-    const countryName=code=>{try{return regionNames?.of(code)||code;}catch(_){return code;}};
+    const countryName=code=>countryLabel(code);
     const normalizeLocales=list=>[...new Set((Array.isArray(list)?list:[]).map(x=>String(x||'').toLowerCase().replaceAll('_','-')).filter(Boolean))];
     const intersect=(sets)=>{if(!sets.length)return [];let out=[...sets[0]];for(const list of sets.slice(1))out=out.filter(x=>list.includes(x));return [...new Set(out)];};
     const localesForCapCountry=(cap,code)=>{
       const scoped=normalizeLocales(cap?.localesByCountry?.[code]);
       return scoped.length?scoped:normalizeLocales(cap?.worldwide?cap.locales:[]);
     };
-    const countryOptions=variants.filter(v=>v.countryCode).map(v=>{
+    const rawCountryOptions=variants.filter(v=>v.countryCode).map(v=>{
       const code=String(v.countryCode).toUpperCase();
       const perChapter=selectedCaps.map(cap=>localesForCapCountry(cap,code));
       const locales=selectedCaps.length?intersect(perChapter):normalizeLocales(v.locales);
       return {code,locales,supported:!selectedCaps.length||perChapter.every(list=>list.length>0)};
     }).filter(v=>v.supported&&v.locales.length);
+    const countryOptionGroups=new Map();
+    rawCountryOptions.forEach(item=>{
+      const label=countryName(item.code),key=label.toLocaleLowerCase('fr');
+      const current=countryOptionGroups.get(key)||{code:item.code,label,locales:[]};
+      current.locales=[...new Set(current.locales.concat(item.locales))];
+      if(/^\d{3}$/.test(item.code))current.code=item.code;
+      countryOptionGroups.set(key,current);
+    });
+    const countryOptions=[...countryOptionGroups.values()].sort((a,b)=>a.label.localeCompare(b.label,'fr',{sensitivity:'base'}));
 
     const selectionByCountry=new Map();
     currentCountries.forEach(code=>{
@@ -325,7 +351,7 @@
     });
 
     const overlay=document.createElement('div');overlay.className='translation-overlay';
-    overlay.innerHTML=`<section class="translation-modal campaign-context-modal" role="dialog" aria-modal="true"><header class="translation-head campaign-context-modal-head"><div class="campaign-context-modal-heading"><small>CONTEXTE DE CAMPAGNE</small><div class="composer-inline-title campaign-context-modal-title"><h2>Périmètres et langues</h2>${infoDot(campaignContextInfoText,'Impact d’une modification de périmètre ou de langue',true)}</div><p>Ajoutez ou retirez des périmètres, puis choisissez les langues activées pour chacun.</p></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="campaign-context-scroll"><section><h3>Périmètres</h3><p class="hint">Choisissez les pays ou périmètres à inclure dans la campagne.</p><div class="version-check-grid">${countryOptions.map(v=>`<label class="version-check"><input type="checkbox" data-context-country value="${esc(v.code)}" ${currentCountries.includes(v.code)?'checked':''}> ${esc(countryName(v.code))}</label>`).join('')}</div></section><section><h3>Langues disponibles</h3><p class="hint">Les langues proposées dépendent des périmètres cochés. Activez-les ensuite, pays par pays, dans le bloc ci-dessous.</p><div class="campaign-context-available-locales" data-context-locales></div><div class="campaign-context-selection-summary" data-context-selection-summary></div><div class="version-empty" data-context-error hidden></div></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-context-cancel>Annuler</button><button class="button button-primary" type="button" data-context-save>Mettre à jour la campagne</button></footer></section>`;
+    overlay.innerHTML=`<section class="translation-modal campaign-context-modal" role="dialog" aria-modal="true"><header class="translation-head campaign-context-modal-head"><div class="campaign-context-modal-heading"><small>CONTEXTE DE CAMPAGNE</small><div class="composer-inline-title campaign-context-modal-title"><h2>Périmètres et langues</h2>${infoDot(campaignContextInfoText,'Impact d’une modification de périmètre ou de langue',true)}</div><p>Ajoutez ou retirez des périmètres, puis choisissez les langues activées pour chacun.</p></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="campaign-context-scroll"><section><h3>Périmètres</h3><p class="hint">Choisissez les pays ou périmètres à inclure dans la campagne.</p><div class="version-check-grid">${countryOptions.map(v=>`<label class="version-check"><input type="checkbox" data-context-country value="${esc(v.code)}" ${currentCountries.includes(v.code)?'checked':''}> ${esc(v.label||countryName(v.code))}</label>`).join('')}</div></section><section><h3>Langues disponibles</h3><p class="hint">Les langues proposées dépendent des périmètres cochés. Activez-les ensuite, pays par pays, dans le bloc ci-dessous.</p><div class="campaign-context-available-locales" data-context-locales></div><div class="campaign-context-selection-summary" data-context-selection-summary></div><div class="version-empty" data-context-error hidden></div></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-context-cancel>Annuler</button><button class="button button-primary" type="button" data-context-save>Mettre à jour la campagne</button></footer></section>`;
     document.body.appendChild(overlay);
     const destroyFloatingInfo=setupFloatingInfoTooltip(overlay);
 
@@ -588,7 +614,7 @@
       ${situationText}
       <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="false"><span data-toggle-label>Voir les réponses et les scores</span> <span aria-hidden="true">⌄</span></button>
       <div class="composer-answers" id="answers-${esc(s.id)}" hidden>${answerRows}</div>
-      ${(((legacyClientImport ? (state.project?.locales||[]) : (projectCountryLocales(state.project)[state.country]||state.project?.locales||[])).length>1)?`<div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" ${legacyClientImport?'':'hidden'}>🌐 Vérifier les versions linguistiques</button></div><div class="translation-sync-warning" data-live-translation-warning ${customized?'':'hidden'}>⚠️ Vous modifiez le contenu de référence. Les autres versions linguistiques doivent être vérifiées.</div>`:'')}
+      ${((((state.country?(projectCountryLocales(state.project)[state.country]||[]):(state.project?.locales||[]))).length>1)?`<div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" ${legacyClientImport?'':'hidden'}>🌐 Vérifier les versions linguistiques</button></div><div class="translation-sync-warning" data-live-translation-warning ${customized?'':'hidden'}>⚠️ Vous modifiez le contenu de référence. Les autres versions linguistiques doivent être vérifiées.</div>`:'')}
       ${!locked?`<div class="composer-inline-help composer-context-help"><strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span></div>
       <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${customized?'Enregistré':'Enregistrement automatique'}</span></span></div>
       <div class="composer-actions">
@@ -645,9 +671,7 @@
     document.querySelectorAll('[data-replace]').forEach(b=>b.onclick=()=>openLibrary('replace',b.dataset.replace));
     document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removeSituation(b.dataset.remove));
     const projectLocales=[...new Set((state.project?.locales||[]).map(x=>String(x||'').toLowerCase().replaceAll('_','-')).filter(Boolean))];
-    const campaignLocales=isLegacyClientCampaign(state.project)
-      ? projectLocales
-      : (state.country?(projectCountryLocales(state.project)[state.country]||[]):projectLocales);
+    const campaignLocales=state.country?(projectCountryLocales(state.project)[state.country]||[]):projectLocales;
     document.querySelectorAll('[data-translations]').forEach(async b=>{
       const id=b.dataset.translations;
       if(campaignLocales.length<=1){b.hidden=true;return;}
@@ -672,7 +696,7 @@
   const localeNames={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',br:'Portugais Brésil','id-id':'Indonésien',id:'Indonésien',ar:'Arabe',ja:'Japonais','ko-kr':'Coréen',zf:'Chinois simplifié',zh:'Chinois traditionnel',bg:'Bulgare',nl:'Néerlandais','nl-be':'Néerlandais Belgique',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',tr:'Turc',cs:'Tchèque',sk:'Slovaque'};
   const localeLabel=loc=>`${localeNames[String(loc).toLowerCase()]||String(loc).toUpperCase()} (${String(loc).toUpperCase()})`;
   async function getTranslationContext(id,refresh=false){if(!refresh&&state.translationContexts.has(String(id)))return state.translationContexts.get(String(id));const ctx=await api(`/api/projects/${projectId}/situations/${id}/translations`);state.translationContexts.set(String(id),ctx);return ctx;}
-  async function openTranslationModal(id){const ctx=await getTranslationContext(id,true),legacyReadOnly=isLegacyClientCampaign()&&state.project?.can_edit===false,countryAllowed=legacyReadOnly&&state.country?(projectCountryLocales(state.project)[state.country]||[]):[],ctxLocales=[...new Set((ctx.locales||[]).map(loc=>String(loc||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))],scopedLocales=countryAllowed.length?ctxLocales.filter(loc=>countryAllowed.includes(loc)):ctxLocales,referenceLocale=scopedLocales.includes('fr')?'fr':((ctx.referenceLocale&&scopedLocales.includes(String(ctx.referenceLocale).toLowerCase().replaceAll('_','-')))?String(ctx.referenceLocale).toLowerCase().replaceAll('_','-'):(scopedLocales[0]||ctx.referenceLocale||'fr')),reference=ctx.reference||{},targets=scopedLocales.filter(x=>x!==referenceLocale);if(!targets.length)return;const overlay=document.createElement('div');overlay.className='translation-overlay';overlay.innerHTML=`<section class="translation-modal" role="dialog" aria-modal="true"><header class="translation-head"><div><small>${legacyReadOnly?'VERSIONS LINGUISTIQUES DE LA CAMPAGNE HISTORIQUE':'TRADUCTION ET ADAPTATION LOCALE ÉVENTUELLE'}</small><h2>Comparer avec la langue de référence</h2></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="translation-toolbar"><strong>${legacyReadOnly?'Langue à comparer':'Langue / adaptation à vérifier'}</strong><select data-translation-locale>${targets.map(l=>`<option value="${esc(l)}" ${l==='en'?'selected':''}>${esc(localeLabel(l))}</option>`).join('')}</select><span data-translation-status></span></div><div class="translation-grid"><section class="translation-pane reference" data-reference-pane></section><section class="translation-pane" data-target-pane></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-cancel>${legacyReadOnly?'Fermer':'Annuler'}</button>${legacyReadOnly?'':'<button class="button button-primary" type="button" data-save-translation>Enregistrer et fermer</button>'}</footer></section>`;document.body.appendChild(overlay);const close=()=>overlay.remove();overlay.querySelector('.translation-close').onclick=close;overlay.querySelector('[data-cancel]').onclick=close;const select=overlay.querySelector('[data-translation-locale]');const referencePane=overlay.querySelector('[data-reference-pane]'),target=overlay.querySelector('[data-target-pane]');
+  async function openTranslationModal(id){const ctx=await getTranslationContext(id,true),legacyReadOnly=isLegacyClientCampaign()&&state.project?.can_edit===false,countryAllowed=state.country?(projectCountryLocales(state.project)[state.country]||[]):[],ctxLocales=[...new Set((ctx.locales||[]).map(loc=>String(loc||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))],scopedLocales=countryAllowed.length?ctxLocales.filter(loc=>countryAllowed.includes(loc)):ctxLocales,referenceLocale=scopedLocales.includes('fr')?'fr':((ctx.referenceLocale&&scopedLocales.includes(String(ctx.referenceLocale).toLowerCase().replaceAll('_','-')))?String(ctx.referenceLocale).toLowerCase().replaceAll('_','-'):(scopedLocales[0]||ctx.referenceLocale||'fr')),reference=ctx.reference||{},targets=scopedLocales.filter(x=>x!==referenceLocale);if(!targets.length)return;const overlay=document.createElement('div');overlay.className='translation-overlay';overlay.innerHTML=`<section class="translation-modal" role="dialog" aria-modal="true"><header class="translation-head"><div><small>${legacyReadOnly?'VERSIONS LINGUISTIQUES DE LA CAMPAGNE HISTORIQUE':'TRADUCTION ET ADAPTATION LOCALE ÉVENTUELLE'}</small><h2>Comparer avec la langue de référence</h2></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="translation-toolbar"><strong>${legacyReadOnly?'Langue à comparer':'Langue / adaptation à vérifier'}</strong><select data-translation-locale>${targets.map(l=>`<option value="${esc(l)}" ${l==='en'?'selected':''}>${esc(localeLabel(l))}</option>`).join('')}</select><span data-translation-status></span></div><div class="translation-grid"><section class="translation-pane reference" data-reference-pane></section><section class="translation-pane" data-target-pane></section></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-cancel>${legacyReadOnly?'Fermer':'Annuler'}</button>${legacyReadOnly?'':'<button class="button button-primary" type="button" data-save-translation>Enregistrer et fermer</button>'}</footer></section>`;document.body.appendChild(overlay);const close=()=>overlay.remove();overlay.querySelector('.translation-close').onclick=close;overlay.querySelector('[data-cancel]').onclick=close;const select=overlay.querySelector('[data-translation-locale]');const referencePane=overlay.querySelector('[data-reference-pane]'),target=overlay.querySelector('[data-target-pane]');
     const statusLabel=status=>status==='missing'?'À compléter':status==='client_version'?'Personnalisée':'Traduction Me&YouToo';
     function draw(){const loc=select.value,t=ctx.translations?.[loc]||{answers:[]};const answerStates=(reference.answers||[]).map(a=>(t.answers||[]).find(x=>String(x.id)===String(a.id))||{status:'missing'});const incomplete=t.status==='missing'||answerStates.some(a=>a.status==='missing');const stale=Boolean(ctx.sourceCustomized);const overall=incomplete?'Traduction incomplète':t.status==='client_version'||answerStates.some(a=>a.status==='client_version')?'Personnalisée':'Traduction Me&YouToo';referencePane.innerHTML=`<h3>${esc(localeLabel(referenceLocale))} · référence</h3><div class="translation-reference-text">${esc(reference.content||'')}</div><h4>Réponses</h4>${(reference.answers||[]).map((a,i)=>`<div class="translation-answer"><strong>Réponse ${i+1}</strong><div class="translation-reference-text">${esc(a.content)}</div></div>`).join('')}`;target.innerHTML=`<h3>${esc(localeLabel(loc))}<span class="translation-status ${incomplete?'is-incomplete':''}">${stale?'À vérifier':overall}</span></h3>${stale&&!legacyReadOnly?`<div class="translation-sync-warning">⚠️ La référence ${esc(localeLabel(referenceLocale))} a été modifiée. Vérifiez cette traduction et son adaptation locale éventuelle.</div>`:''}<div class="translation-local-note">${legacyReadOnly?'Version historique importée en lecture seule.':'Modifier cette version n’actualise pas automatiquement les autres langues.'}</div><div class="translation-field-head"><strong>Situation</strong><span class="translation-status">${statusLabel(t.status||'missing')}</span></div><textarea rows="4" data-target-content placeholder="Traduction / adaptation à compléter" ${legacyReadOnly?'readonly':''}>${esc(t.content||'')}</textarea><h4>Réponses</h4>${(reference.answers||[]).map((a,i)=>{const ta=answerStates[i];return `<div class="translation-answer"><div class="translation-field-head"><strong>Réponse ${i+1}</strong><span class="translation-status">${statusLabel(ta.status||'missing')}</span></div><textarea rows="2" data-target-answer="${esc(a.id)}" placeholder="Traduction / adaptation à compléter" ${legacyReadOnly?'readonly':''}>${esc(ta.content||'')}</textarea></div>`}).join('')}`;}
     select.onchange=draw;draw();const saveButton=overlay.querySelector('[data-save-translation]');if(saveButton)saveButton.onclick=async()=>{const loc=select.value,content=target.querySelector('[data-target-content]').value.trim(),answers=[...target.querySelectorAll('[data-target-answer]')].map(x=>({id:Number(x.dataset.targetAnswer),content:x.value.trim()}));try{await api(`/api/projects/${projectId}/situations/${id}/translations/${encodeURIComponent(loc)}`,{method:'PATCH',body:JSON.stringify({content,answers})});state.translationContexts.delete(String(id));close();showMessage(`${localeLabel(loc)} · traduction et adaptation locale enregistrée.`,'success');}catch(e){showMessage(e.message);}};

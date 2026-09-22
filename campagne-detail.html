@@ -101,6 +101,7 @@
     var isAdmin=currentUser.role==='admin';
     var adminBack=isAdmin?'<a class="button button-secondary" href="admin.html?tab=campaigns">← Retour aux campagnes</a>':'';
     var adminInfo=isAdmin?'<a class="button button-secondary" href="client.html?projectId='+encodeURIComponent(p.id)+'&manage=1">⚙️ Infos campagne</a>':'';
+    var adminSettings=isAdmin?'<a class="button button-primary" href="parametrage.html?projectId='+encodeURIComponent(p.id)+'">⚙️ Paramétrage</a>':'';
     var resultsRestricted=Boolean(p.results_restricted);
     var share=String(p.communication_share_url||'').trim();
     var isDraft=p.status==='draft';
@@ -167,7 +168,7 @@
       : '';
 
     root.innerHTML=''+
-      '<div class="topbar compact-topbar"><div><p class="eyebrow"><a href="mes-campagnes.html">Mes campagnes</a></p><div class="badge-row">'+clientBadge+'<span class="badge '+statusClass(p.status)+'">'+esc(campaignDisplayStatus(p))+'</span><span class="tag-chip">'+esc(themeLabel(p))+'</span></div><h1 class="page-title">'+esc(name)+'</h1><p class="lead">Suivez les informations réelles de cette campagne et accédez aux éléments disponibles.</p></div><div class="top-actions">'+adminBack+adminInfo+(respondentPreview?'<a class="button button-secondary" href="'+respondentPreview+'" target="_blank" rel="noopener" title="Voir le parcours répondant avec le contenu réel enregistré pour cette campagne">👁 Aperçu répondant</a>':'')+(can('manage_kit')?'<a class="button button-primary" href="kit-communication.html'+q+'">Kit de communication</a>':'')+'</div></div>'+
+      '<div class="topbar compact-topbar"><div><p class="eyebrow"><a href="mes-campagnes.html">Mes campagnes</a></p><div class="badge-row">'+clientBadge+'<span class="badge '+statusClass(p.status)+'">'+esc(campaignDisplayStatus(p))+'</span><span class="tag-chip">'+esc(themeLabel(p))+'</span></div><h1 class="page-title">'+esc(name)+'</h1><p class="lead">Suivez les informations réelles de cette campagne et accédez aux éléments disponibles.</p></div><div class="top-actions">'+adminBack+adminInfo+adminSettings+(respondentPreview?'<a class="button button-secondary" href="'+respondentPreview+'" target="_blank" rel="noopener" title="Voir le parcours répondant avec le contenu réel enregistré pour cette campagne">👁 Aperçu répondant</a>':'')+(can('manage_kit')?'<a class="button button-primary" href="kit-communication.html'+q+'">Kit de communication</a>':'')+'</div></div>'+
       scheduleNote+
       '<section class="stats-grid" aria-label="Informations de la campagne">'+
         '<article class="stat-card"><div class="stat-icon">'+ICONS.status+'</div><p class="stat-label">Statut</p><p class="stat-value" style="font-size:1.5rem">'+esc(campaignDisplayStatus(p))+'</p></article>'+
