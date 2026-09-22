@@ -7,6 +7,7 @@
   const state={view:'year',cursor:new Date(),campaigns:[],tasks:[],organizations:[],missingDates:0,taskFilter:'todo'};
   const statusLabels={draft:'Brouillon',configuration_submitted:'À relire',review_pending:'À relire',in_review:'En relecture',client_validation_required:'Validation client',ready_to_publish:'Prête à publier',scheduled:'Programmée',published:'Publiée',active:'En cours',completed:'Terminée',unpublished:'Dépubliée'};
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function organizationLogoSrc(o){const raw=o?.logo_url||o?.logo_data||'';return raw&&raw.startsWith('/')?StudioAPI.base()+raw:raw;}
   const iso=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;};
   const parseDate=v=>v?new Date(`${String(v).slice(0,10)}T12:00:00`):null;
   const sameDay=(a,b)=>a&&b&&iso(a)===iso(b);
@@ -233,7 +234,8 @@
     if(!org){root.hidden=true;root.innerHTML='';return;}
     const rows=state.campaigns||[],drafts=rows.filter(p=>String(p.status||'')==='draft').length,ongoing=rows.filter(p=>String(p.status||'')==='active').length,completed=rows.filter(p=>String(p.status||'')==='completed').length;
     const initial=String(org.name||'C').slice(0,1).toUpperCase();
-    const logo=org.logo_data?`<span class="calendar-client-logo has-logo"><img src="${esc(org.logo_data)}" alt="Logo ${esc(org.name||'client')}"></span>`:`<span class="calendar-client-logo"><span>${esc(initial)}</span></span>`;
+    const logoSrc=organizationLogoSrc(org);
+    const logo=logoSrc?`<span class="calendar-client-logo has-logo"><img src="${esc(logoSrc)}" alt="Logo ${esc(org.name||'client')}"></span>`:`<span class="calendar-client-logo"><span>${esc(initial)}</span></span>`;
     root.innerHTML=`${logo}<div><strong>${esc(org.name||'Client')}</strong><span>${rows.length} campagne${rows.length>1?'s':''} · ${drafts} brouillon${drafts>1?'s':''} · ${ongoing} en cours · ${completed} terminée${completed>1?'s':''}</span></div>`;
     root.hidden=false;
   }

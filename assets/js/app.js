@@ -232,7 +232,7 @@
     var mainNavigation = adminInterface ? NAV_ADMIN : NAV_MAIN.concat(NAV_SECONDARY);
     var roleLabel = adminInterface ? 'Administratrice' : 'Espace client';
     var avatarHtml=(CURRENT_USER&&CURRENT_USER.profileImageData)?'<img src="'+CURRENT_USER.profileImageData+'" alt="">':((CURRENT_USER && (CURRENT_USER.firstName || CURRENT_USER.email)) ? String(CURRENT_USER.firstName || CURRENT_USER.email).charAt(0).toUpperCase() : 'C');
-    var clientLogoHtml=(!adminInterface&&CURRENT_USER&&CURRENT_USER.organizationLogoData)?'<div class="profile-company-logo"><img src="'+CURRENT_USER.organizationLogoData+'" alt="Logo '+String(CURRENT_USER.organizationName||'entreprise').replace(/["<>]/g,'')+'"></div>':'';
+    var rawCompanyLogo=(!adminInterface&&CURRENT_USER)?(CURRENT_USER.organizationLogoUrl||CURRENT_USER.organizationLogoData||''):'';var companyLogoSrc=rawCompanyLogo&&rawCompanyLogo.charAt(0)==='/'&&window.StudioAPI?window.StudioAPI.base()+rawCompanyLogo:rawCompanyLogo;var clientLogoHtml=companyLogoSrc?'<div class="profile-company-logo"><img src="'+companyLogoSrc+'" alt="Logo '+String(CURRENT_USER.organizationName||'entreprise').replace(/["<>]/g,'')+'"></div>':'';
     var switchButton = IS_ADMIN ? '<button class="interface-switch" type="button" data-interface-switch="' + (adminInterface ? 'client' : 'admin') + '">' + (adminInterface ? 'Voir mon espace client' : 'Revenir à l’administration') + '</button>' : '';
     root.classList.toggle('sidebar-admin', adminInterface);
     root.innerHTML =

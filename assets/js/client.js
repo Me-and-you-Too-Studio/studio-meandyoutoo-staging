@@ -1,5 +1,6 @@
 (function () {
   if (!StudioAPI.requireAuth("admin")) return;
+  function organizationLogoSrc(o){const raw=o?.logo_url||o?.logo_data||'';return raw&&raw.startsWith('/')?StudioAPI.base()+raw:raw;}
   const $ = (s) => document.querySelector(s),
     $$ = (s) => [...document.querySelectorAll(s)],
     esc = (v) =>
@@ -1035,10 +1036,11 @@
     const clientLogo = $("#client-logo");
     if (clientLogo) {
       const initial = String(organization.name || "C").slice(0, 1).toUpperCase();
-      clientLogo.innerHTML = organization.logo_data
-        ? '<img src="' + esc(organization.logo_data) + '" alt="Logo ' + esc(organization.name || "client") + '">'
+      const logoSrc = organizationLogoSrc(organization);
+      clientLogo.innerHTML = logoSrc
+        ? '<img src="' + esc(logoSrc) + '" alt="Logo ' + esc(organization.name || "client") + '">'
         : '<span>' + esc(initial) + '</span>';
-      clientLogo.classList.toggle("has-logo", Boolean(organization.logo_data));
+      clientLogo.classList.toggle("has-logo", Boolean(logoSrc));
     }
     $("#client-subtitle").textContent =
       (orgSectors(organization).join(" · ") || "Secteur non renseigné") +
