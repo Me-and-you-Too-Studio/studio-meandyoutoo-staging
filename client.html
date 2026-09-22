@@ -8,7 +8,7 @@
     <link rel="icon" href="assets/img/brand/favicon.png" />
     <link
       rel="stylesheet"
-      href="assets/css/style.css?v=20260922-client-logos-1"
+      href="assets/css/style.css?v=20260922-client-logo-upload-2"
     />
   </head>
   <body>
@@ -22,7 +22,12 @@
             >
             <p class="eyebrow">Administration Me&amp;YouToo</p>
             <div class="admin-client-page-identity">
-              <div class="admin-client-page-logo" id="client-logo" aria-hidden="true"><span>C</span></div>
+              <div class="admin-client-page-logo-wrap" id="client-logo-wrap">
+                <div class="admin-client-page-logo" id="client-logo"><span>C</span></div>
+                <input id="client-logo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+                <button class="admin-client-logo-upload" id="client-logo-upload" type="button" title="Ajouter le logo du client" aria-label="Ajouter le logo du client"><span id="client-logo-upload-label">Ajouter un logo</span></button>
+                <button class="admin-client-logo-remove" id="client-logo-remove" type="button" title="Supprimer le logo" aria-label="Supprimer le logo" hidden>×</button>
+              </div>
               <div><h1 id="client-name">Dossier client</h1><p id="client-subtitle">Chargement du dossier…</p></div>
             </div>
           </div>
@@ -263,6 +268,6 @@
     </dialog>
     <script src="assets/js/api.js?v=20260918-single-client-link-1"></script>
     <script src="assets/js/app.js?v=20260921-access-rights-1"></script>
-    <script src="assets/js/client.js?v=20260922-client-logos-1"></script>
+    <script src="assets/js/client.js?v=20260922-client-logo-upload-2"></script>
   </body>
 </html>

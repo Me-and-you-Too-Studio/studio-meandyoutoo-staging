@@ -1,6 +1,16 @@
 (function () {
   if (!StudioAPI.requireAuth("admin")) return;
   function organizationLogoSrc(o){const raw=o?.logo_url||o?.logo_data||'';return raw&&raw.startsWith('/')?StudioAPI.base()+raw:raw;}
+  async function optimizeOrganizationLogo(file){
+    if(!file)return null;
+    if(!/^image\/(png|jpeg|webp)$/i.test(file.type))throw new Error('Choisissez une image PNG, JPG ou WebP.');
+    if(file.size>8000000)throw new Error('L’image source est trop volumineuse (8 Mo maximum).');
+    const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('Impossible de lire cette image.'));reader.readAsDataURL(file);});
+    const image=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('Format d’image invalide.'));img.src=dataUrl;});
+    const ratio=Math.min(1,900/image.width,420/image.height),w=Math.max(1,Math.round(image.width*ratio)),h=Math.max(1,Math.round(image.height*ratio));
+    const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(image,0,0,w,h);
+    return canvas.toDataURL('image/webp',.86);
+  }
   const $ = (s) => document.querySelector(s),
     $$ = (s) => [...document.querySelectorAll(s)],
     esc = (v) =>
@@ -1034,6 +1044,9 @@
     renderFolderBar(ps);
     $("#client-name").textContent = organization.name || "Dossier client";
     const clientLogo = $("#client-logo");
+    const clientLogoUpload = $("#client-logo-upload");
+    const clientLogoUploadLabel = $("#client-logo-upload-label");
+    const clientLogoRemove = $("#client-logo-remove");
     if (clientLogo) {
       const initial = String(organization.name || "C").slice(0, 1).toUpperCase();
       const logoSrc = organizationLogoSrc(organization);
@@ -1041,6 +1054,9 @@
         ? '<img src="' + esc(logoSrc) + '" alt="Logo ' + esc(organization.name || "client") + '">'
         : '<span>' + esc(initial) + '</span>';
       clientLogo.classList.toggle("has-logo", Boolean(logoSrc));
+      if (clientLogoUploadLabel) clientLogoUploadLabel.textContent = logoSrc ? "Changer" : "Ajouter un logo";
+      if (clientLogoUpload) clientLogoUpload.title = logoSrc ? "Remplacer le logo du client" : "Ajouter le logo du client";
+      if (clientLogoRemove) clientLogoRemove.hidden = !logoSrc;
     }
     $("#client-subtitle").textContent =
       (orgSectors(organization).join(" · ") || "Secteur non renseigné") +
@@ -2183,5 +2199,43 @@
     publishDialogEl.onclick = (e) => {
       if (e.target === publishDialogEl) publishDialogEl.close();
     };
+
+  const clientLogoUpload = $("#client-logo-upload"),
+    clientLogoInput = $("#client-logo-input"),
+    clientLogoRemove = $("#client-logo-remove");
+  if (clientLogoUpload && clientLogoInput) {
+    clientLogoUpload.onclick = () => {
+      clientLogoInput.value = "";
+      clientLogoInput.click();
+    };
+    clientLogoInput.onchange = async () => {
+      const file = clientLogoInput.files?.[0];
+      if (!file || !organization?.id) return;
+      try {
+        clientLogoUpload.disabled = true;
+        const logoData = await optimizeOrganizationLogo(file);
+        await StudioAPI.request('/api/admin/organizations/' + encodeURIComponent(organization.id) + '/branding', {method:'PATCH', body:JSON.stringify({logoData})});
+        await load();
+        await StudioModal.alert({type:'success',title:'Logo enregistré',message:'Le logo de ' + (organization.name || 'ce client') + ' est maintenant utilisé dans le Studio.'});
+      } catch (e) {
+        showError(e.message || 'Impossible d’enregistrer le logo.');
+      } finally {
+        clientLogoUpload.disabled = false;
+      }
+    };
+  }
+  if (clientLogoRemove) {
+    clientLogoRemove.onclick = async () => {
+      if (!organization?.id) return;
+      const ok = await StudioModal.confirm({type:'warning',title:'Supprimer le logo ?',message:'Le logo disparaîtra des écrans du Studio. Les autres données du client ne seront pas modifiées.',confirmLabel:'Supprimer'});
+      if (!ok) return;
+      try {
+        await StudioAPI.request('/api/admin/organizations/' + encodeURIComponent(organization.id) + '/branding', {method:'PATCH', body:JSON.stringify({logoData:null})});
+        await load();
+      } catch (e) {
+        showError(e.message || 'Impossible de supprimer le logo.');
+      }
+    };
+  }
   load();
 })();
