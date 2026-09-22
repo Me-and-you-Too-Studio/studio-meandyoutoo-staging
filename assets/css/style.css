@@ -14549,3 +14549,13 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .campaign-context-empty-selection{display:grid;gap:3px;padding:24px;border:1px dashed #cadde8;border-radius:14px;background:#f8fbfc;text-align:center;color:#718596}
 .campaign-context-empty-selection strong{color:#153f64}
 @media(max-width:860px){.campaign-context-scroll{grid-template-columns:1fr}.campaign-context-scroll .version-check-grid{max-height:280px}.campaign-context-selection-row{grid-template-columns:1fr}}
+
+
+/* 2026-09-22 — accès direct Paramétrage pour l'administration */
+.admin-campaign-quick-actions{display:flex;flex-direction:column;align-items:flex-end;gap:7px;min-width:max-content;margin-left:auto;padding-top:2px}
+.admin-campaign-quick-actions[hidden]{display:none!important}
+.admin-campaign-quick-actions>span{font-size:.7rem;font-weight:800;letter-spacing:.035em;text-transform:uppercase;color:#668093}
+.admin-campaign-quick-actions .button{box-shadow:0 8px 22px rgba(0,124,132,.15);white-space:nowrap}
+.steps .step-link#composer-settings-step,.steps .step-link#profiles-settings-step{cursor:pointer}
+.steps .step-link#composer-settings-step:hover,.steps .step-link#profiles-settings-step:hover{border-color:#9fd2d6;background:#eefafa;color:#086f78}
+@media(max-width:850px){.admin-campaign-quick-actions{width:100%;align-items:stretch;margin-top:12px}.admin-campaign-quick-actions>span{display:none}.admin-campaign-quick-actions .button{width:100%;justify-content:center}.compact-topbar{flex-wrap:wrap}}
