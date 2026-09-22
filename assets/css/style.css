@@ -14760,9 +14760,9 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 
 /* 2026-09-22 — gestion centralisée des utilisations vidéo */
 .admin-media-library-card-actions{flex-wrap:wrap}
-.admin-media-usage-dialog{width:min(980px,calc(100vw - 28px));max-height:min(92vh,980px);padding:0;border:0;border-radius:22px;background:transparent;overflow:visible}
+.admin-media-usage-dialog{width:min(1100px,calc(100vw - 32px));max-height:min(92vh,980px);padding:0;border:0;border-radius:22px;background:transparent;overflow:hidden}
 .admin-media-usage-dialog::backdrop{background:rgba(11,34,54,.44);backdrop-filter:blur(3px)}
-.admin-media-usage-shell{position:relative;max-height:92vh;overflow:auto;padding:28px;border:1px solid #dbe7ee;border-radius:22px;background:#fff;box-shadow:0 28px 76px rgba(17,54,83,.25)}
+.admin-media-usage-shell{position:relative;box-sizing:border-box;width:100%;max-height:92vh;overflow-y:auto;overflow-x:hidden;padding:28px;border:1px solid #dbe7ee;border-radius:22px;background:#fff;box-shadow:0 28px 76px rgba(17,54,83,.25);scrollbar-width:thin;scrollbar-color:#b9c8d1 transparent}
 .admin-media-usage-shell h2{margin:4px 44px 8px 0;color:#123f61;font-size:1.55rem;line-height:1.2}
 .admin-media-usage-shell section{margin:16px 0;padding:17px;border:1px solid #dce8ef;border-radius:16px;background:#fbfdfe}
 .admin-media-usage-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
@@ -14775,8 +14775,8 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .admin-media-usage-badge{flex:0 0 auto;display:inline-flex;padding:6px 9px;border-radius:999px;background:#e3f5f3!important;color:#087a75!important;font-size:.68rem!important;font-weight:900}
 .admin-media-usage-empty{margin:0;padding:12px;border:1px dashed #cfdee6;border-radius:11px;color:#718697;font-size:.76rem;background:#fff}
 .admin-media-usage-scroll{max-height:320px;overflow:auto;padding-right:3px}
-.admin-media-usage-add{display:grid;grid-template-columns:minmax(260px,1.6fr) minmax(170px,.8fr) minmax(150px,.7fr) minmax(120px,.55fr) auto;gap:10px;align-items:end;margin-top:14px;padding-top:14px;border-top:1px solid #e3edf2}
-.admin-media-usage-add label{display:grid;gap:5px}.admin-media-usage-add label>span{color:#315870;font-size:.72rem;font-weight:800}.admin-media-usage-add select,.admin-media-usage-add input{min-height:42px;border:1px solid #cfdfe7;border-radius:10px;background:#fff;padding:0 10px;color:#153f64;font:inherit;font-size:.8rem}.admin-media-usage-add .button{min-height:42px;white-space:nowrap}
+.admin-media-usage-add{display:grid;grid-template-columns:minmax(260px,1.65fr) minmax(170px,1fr) minmax(150px,.9fr) minmax(120px,.75fr);gap:10px;align-items:end;margin-top:14px;padding-top:14px;border-top:1px solid #e3edf2}
+.admin-media-usage-add label{display:grid;gap:5px;min-width:0}.admin-media-usage-add label>span{color:#315870;font-size:.72rem;font-weight:800}.admin-media-usage-add select,.admin-media-usage-add input{box-sizing:border-box;width:100%;min-width:0;min-height:42px;border:1px solid #cfdfe7;border-radius:10px;background:#fff;padding:0 10px;color:#153f64;font:inherit;font-size:.8rem}.admin-media-usage-add .button{grid-column:1/-1;width:100%;min-height:46px;white-space:nowrap;margin-top:2px}
 @media(max-width:900px){.admin-media-usage-add{grid-template-columns:1fr 1fr}.admin-media-usage-add .button{grid-column:1/-1}.admin-media-usage-shell{padding:20px}}
 @media(max-width:620px){.admin-media-usage-add{grid-template-columns:1fr}.admin-media-usage-row{align-items:flex-start;flex-direction:column}.admin-media-usage-row .button{width:100%}}
 
