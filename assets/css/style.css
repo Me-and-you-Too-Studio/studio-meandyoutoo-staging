@@ -14578,3 +14578,119 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .studio-year-campaign-status{flex:0 0 auto!important}
 @media(max-width:900px){.calendar-client-identity-copy{align-items:flex-start}.calendar-client-period{width:100%;margin-left:0}.calendar-client-period>span{flex:1;min-width:0}}
 @media(max-width:760px){.calendar-client-period{flex-direction:column}.studio-year-calendar.has-selected-client .studio-year-month{min-height:0}}
+
+
+/* 2026-09-22 — actions Aperçu + Paramétrage et point info en mini-modale */
+.campaign-preview-settings-actions{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:14px;
+}
+.campaign-preview-settings-actions>.button,
+.campaign-settings-shortcut-link{
+  min-height:46px;
+  padding:0 18px;
+  border-radius:14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
+}
+.campaign-settings-shortcut{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  position:relative;
+}
+.campaign-settings-info-wrap{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.campaign-settings-info-dot{
+  width:26px;
+  height:26px;
+  min-width:26px;
+  padding:0;
+  border:1px solid #b8d9df;
+  border-radius:50%;
+  background:#eef9fa;
+  color:#087b86;
+  font:800 14px/1 Asap,Arial,sans-serif;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:help;
+  box-shadow:none;
+}
+.campaign-settings-info-dot:hover,
+.campaign-settings-info-dot:focus-visible{
+  background:#def3f5;
+  border-color:#78bcc4;
+  outline:none;
+}
+.campaign-settings-info-bubble{
+  position:absolute;
+  z-index:1200;
+  left:50%;
+  bottom:calc(100% + 12px);
+  width:min(360px,calc(100vw - 28px));
+  padding:14px 15px;
+  border:1px solid #d7e6ec;
+  border-radius:14px;
+  background:#fff;
+  color:#48667b;
+  box-shadow:0 16px 40px rgba(18,63,97,.18);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transform:translate(-50%,6px);
+  transition:opacity .14s ease,transform .14s ease,visibility .14s ease;
+  text-align:left;
+  white-space:normal;
+}
+.campaign-settings-info-bubble::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:100%;
+  width:10px;
+  height:10px;
+  background:#fff;
+  border-right:1px solid #d7e6ec;
+  border-bottom:1px solid #d7e6ec;
+  transform:translate(-50%,-5px) rotate(45deg);
+}
+.campaign-settings-info-bubble strong,
+.campaign-settings-info-bubble span{
+  display:block;
+}
+.campaign-settings-info-bubble strong{
+  margin-bottom:6px;
+  color:#123f61;
+  font-size:.9rem;
+}
+.campaign-settings-info-bubble span{
+  font-size:.78rem;
+  line-height:1.45;
+}
+.campaign-settings-info-wrap:hover .campaign-settings-info-bubble,
+.campaign-settings-info-wrap:focus-within .campaign-settings-info-bubble{
+  opacity:1;
+  visibility:visible;
+  transform:translate(-50%,0);
+}
+@media(max-width:760px){
+  .campaign-preview-settings-actions{align-items:stretch;flex-direction:column}
+  .campaign-preview-settings-actions>.button,
+  .campaign-settings-shortcut,
+  .campaign-settings-shortcut-link{width:100%}
+  .campaign-settings-shortcut{gap:7px}
+  .campaign-settings-info-bubble{left:auto;right:0;transform:translate(0,6px)}
+  .campaign-settings-info-wrap:hover .campaign-settings-info-bubble,
+  .campaign-settings-info-wrap:focus-within .campaign-settings-info-bubble{transform:none}
+  .campaign-settings-info-bubble::after{left:auto;right:8px}
+}

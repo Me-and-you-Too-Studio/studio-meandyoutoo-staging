@@ -58,7 +58,7 @@
     const a=document.createElement('a');
     a.className='button button-primary campaign-settings-shortcut-link';
     a.href=`parametrage.html?projectId=${encodeURIComponent(pid)}`;
-    a.innerHTML='⚙️ Paramétrage';
+    a.innerHTML=isAdmin?'⚙️ Paramétrage':'⚙️ Voir le paramétrage';
     a.setAttribute('aria-label',isAdmin?'Ouvrir le paramétrage de la campagne':'Consulter le paramétrage de la campagne');
     const info=document.createElement('span');
     info.className='campaign-settings-info-wrap';
@@ -67,11 +67,14 @@
     dot.className='campaign-settings-info-dot';
     dot.textContent='i';
     dot.setAttribute('aria-label','Que contient le paramétrage ?');
+    dot.setAttribute('aria-describedby','campaign-settings-help');
     const bubble=document.createElement('span');
+    bubble.id='campaign-settings-help';
     bubble.className='campaign-settings-info-bubble';
+    bubble.setAttribute('role','tooltip');
     bubble.innerHTML=isAdmin
-      ?'<strong>Paramétrage de la campagne</strong>Vous y retrouvez notamment l’introduction, les questions socio-démographiques (DSD), les dates de campagne, les ressources après résultats et les autres réglages de diffusion.'
-      :'<strong>Paramétrage de la campagne</strong>Vous pouvez consulter ici l’introduction, les questions socio-démographiques (DSD), les dates de campagne, les ressources après résultats et les autres réglages. Si la campagne est verrouillée, utilisez « Demander un ajustement » : vous ne modifiez pas directement ces éléments.';
+      ?'<strong>Paramétrage de la campagne</strong><span>Retrouvez ici l’introduction, les questions socio-démographiques (DSD), les dates de campagne, les ressources après résultats et les autres réglages de diffusion.</span>'
+      :'<strong>Paramétrage de la campagne</strong><span>Vous pouvez consulter l’introduction, les DSD, les dates de campagne, les ressources après résultats et les autres réglages. Si une modification est nécessaire, utilisez « Demander un ajustement » : vous ne modifiez pas directement ces éléments.</span>';
     info.append(dot,bubble);
     wrap.append(a,info);
     return wrap;
