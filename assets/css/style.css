@@ -14694,3 +14694,23 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
   .campaign-settings-info-wrap:focus-within .campaign-settings-info-bubble{transform:none}
   .campaign-settings-info-bubble::after{left:auto;right:8px}
 }
+
+
+/* 2026-09-22 — sélecteur client admin moderne */
+.admin-client-direct-access{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:16px 0 12px;padding:14px 16px;border:1px solid #dbe8ef;border-radius:16px;background:linear-gradient(135deg,#f9fcfd,#f4fafb)}
+.admin-client-direct-copy{display:grid;gap:2px;color:#153f64}.admin-client-direct-copy strong{font-size:.92rem}.admin-client-direct-copy span{font-size:.76rem;color:#718596}
+.admin-client-picker{position:relative;min-width:360px;max-width:520px;width:min(48vw,520px)}
+.admin-client-picker-native{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+.admin-client-picker-button{width:100%;min-height:52px;display:grid;grid-template-columns:36px minmax(0,1fr) 24px;align-items:center;gap:10px;padding:7px 12px;border:1px solid #bfd7df;border-radius:14px;background:#fff;color:#143f63;box-shadow:0 5px 16px rgba(17,72,101,.07);cursor:pointer;text-align:left;font:inherit;transition:.15s ease}
+.admin-client-picker-button:hover,.admin-client-picker-button[aria-expanded="true"]{border-color:#6db7bd;box-shadow:0 8px 24px rgba(12,126,136,.13);transform:translateY(-1px)}
+.admin-client-picker-icon{width:36px;height:36px;border-radius:10px;background:#e8f7f7;color:#087b84;display:flex;align-items:center;justify-content:center;font-size:1rem}
+.admin-client-picker-label{font-weight:800;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-client-picker-chevron{font-size:1.15rem;color:#5d778a;text-align:center;transition:transform .15s ease}.admin-client-picker-button[aria-expanded="true"] .admin-client-picker-chevron{transform:rotate(180deg)}
+.admin-client-picker-popover{position:absolute;z-index:1200;top:calc(100% + 8px);right:0;width:100%;min-width:380px;padding:10px;border:1px solid #d7e5ec;border-radius:16px;background:#fff;box-shadow:0 22px 50px rgba(18,63,97,.18)}
+.admin-client-picker-popover[hidden]{display:none!important}
+.admin-client-picker-search{display:flex;align-items:center;gap:8px;padding:0 11px;margin-bottom:8px;border:1px solid #d7e4eb;border-radius:11px;background:#f8fbfc}.admin-client-picker-search span{color:#6f8798}.admin-client-picker-search input{width:100%;min-height:42px;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;padding:0!important;font:inherit;color:#153f64}
+.admin-client-picker-list{display:flex;flex-direction:column;gap:4px;max-height:360px;overflow:auto;padding:2px}
+.admin-client-picker-option{width:100%;display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 10px;border:0;border-radius:11px;background:transparent;color:#173f64;text-align:left;cursor:pointer;font:inherit}.admin-client-picker-option:hover,.admin-client-picker-option:focus{background:#eef8f9;outline:none}.admin-client-picker-option>span:nth-child(2){min-width:0;display:grid;gap:2px}.admin-client-picker-option strong{font-size:.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.admin-client-picker-option small{font-size:.7rem;color:#7a8d9b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.admin-client-picker-open{padding:5px 9px;border-radius:999px;background:#f0f6f8;color:#365c72;font-size:.68rem;font-weight:800}
+.admin-client-picker-avatar{width:38px;height:38px;border-radius:10px;background:#0f6f8e;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;overflow:hidden}.admin-client-picker-avatar.has-logo{background:#fff;border:1px solid #dbe8ef;padding:4px}.admin-client-picker-avatar img{display:block;max-width:100%;max-height:100%;object-fit:contain}
+.admin-client-picker-empty{padding:22px 12px;text-align:center;color:#718596;font-size:.8rem}
+@media(max-width:900px){.admin-client-direct-access{align-items:stretch;flex-direction:column}.admin-client-picker{min-width:0;max-width:none;width:100%}.admin-client-picker-popover{min-width:0;left:0;right:0}}
