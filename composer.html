@@ -1,8 +1,8 @@
 <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Composer une campagne — Studio Me&YouToo</title><meta name="robots" content="noindex,nofollow"><link rel="icon" href="assets/img/brand/favicon.png"><link rel="stylesheet" href="assets/css/style.css?v=20260922-admin-settings-shortcut-1"></head>
+<title>Composer une campagne — Studio Me&YouToo</title><meta name="robots" content="noindex,nofollow"><link rel="icon" href="assets/img/brand/favicon.png"><link rel="stylesheet" href="assets/css/style.css?v=20260922-settings-next-preview-1"></head>
 <body class="creation-editor-page"><a class="skip-link" href="#contenu">Aller au contenu</a><header class="mobile-header"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo Studio"><button class="icon-button" aria-label="Ouvrir le menu" aria-expanded="false" data-menu-toggle><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button></header>
 <div class="app-shell"><aside class="sidebar" aria-label="Navigation principale" id="sidebar-root"></aside>
-<main class="main" id="contenu"><a class="composer-context-back" id="composer-top-back" href="mes-campagnes.html">← Mes campagnes</a><div class="topbar compact-topbar"><div><p class="eyebrow"><span id="theme-link">Thématique</span></p><h1 class="page-title" id="composer-page-title">Composer et personnaliser votre diagnostic comportemental</h1><div class="step-time-badge"><span aria-hidden="true">⏱</span> Temps moyen : 10 minutes</div><p class="lead" id="composer-page-lead">Composez votre autodiagnostic à partir des contenus Me&YouToo et contextualisez, si nécessaire, certaines formulations à votre organisation.</p><div id="composer-campaign-context" class="theme-availability-tags" hidden></div><div id="composer-country-tabs" class="composer-country-tabs" hidden></div></div><div class="admin-campaign-quick-actions" id="composer-admin-quick-actions" hidden><span>Accès rapide admin</span><a class="button button-primary" id="composer-quick-settings" href="parametrage.html">⚙️ Paramétrage</a></div></div>
+<main class="main" id="contenu"><a class="composer-context-back" id="composer-top-back" href="mes-campagnes.html">← Mes campagnes</a><div class="topbar compact-topbar"><div><p class="eyebrow"><span id="theme-link">Thématique</span></p><h1 class="page-title" id="composer-page-title">Composer et personnaliser votre diagnostic comportemental</h1><div class="step-time-badge"><span aria-hidden="true">⏱</span> Temps moyen : 10 minutes</div><p class="lead" id="composer-page-lead">Composez votre autodiagnostic à partir des contenus Me&YouToo et contextualisez, si nécessaire, certaines formulations à votre organisation.</p><div id="composer-campaign-context" class="theme-availability-tags" hidden></div><div id="composer-country-tabs" class="composer-country-tabs" hidden></div></div></div>
 <nav class="steps" aria-label="Étapes de composition"><span class="step"><span class="step-num">1</span>Choisir</span><span class="step" aria-current="step"><span class="step-num">2</span>Composer</span><span class="step"><span class="step-num">3</span>Personnaliser</span><a class="step step-link" id="composer-settings-step" href="parametrage.html"><span class="step-num">4</span>Paramétrer</a><span class="step"><span class="step-num">5</span>Transmettre</span></nav>
 <div id="composer-readonly-banner" class="composer-alert" data-tone="success" hidden><strong>🔒 Campagne en lecture seule.</strong> Vous pouvez revoir le contenu de cette campagne, mais aucune modification directe n’est possible après transmission. <button id="composer-adjustment-link" class="button button-secondary button-small" type="button" data-content-adjustment="situation">Demander un ajustement</button></div>
 <div id="composer-alert" class="composer-alert" hidden></div>
@@ -33,10 +33,6 @@
   var settingsHref='parametrage.html'+(projectId?'?projectId='+encodeURIComponent(projectId):'');
   var settingsStep=document.getElementById('composer-settings-step');
   if(settingsStep)settingsStep.href=settingsHref;
-  var quickSettings=document.getElementById('composer-quick-settings');
-  if(quickSettings)quickSettings.href=settingsHref;
-  var quickActions=document.getElementById('composer-admin-quick-actions');
-  if(quickActions)quickActions.hidden=!isAdmin;
   var originalRequest=window.StudioAPI&&window.StudioAPI.request;
 
   function loadComposerScript(){
@@ -169,4 +165,4 @@
   });
 })();
 </script>
-<script src="assets/js/preview-launcher.js?v=20260905-3"></script></body></html>
+<script src="assets/js/preview-launcher.js?v=20260922-settings-next-preview-1"></script></body></html>

@@ -49,6 +49,47 @@
     return b;
   }
 
+  function makeSettingsAction(){
+    if(!isProject)return null;
+    const user=window.StudioAPI?.user?.()||{};
+    const isAdmin=user.role==='admin'&&(!window.StudioAPI?.interfaceMode||window.StudioAPI.interfaceMode()!=='client');
+    const wrap=document.createElement('span');
+    wrap.className='campaign-settings-shortcut';
+    const a=document.createElement('a');
+    a.className='button button-primary campaign-settings-shortcut-link';
+    a.href=`parametrage.html?projectId=${encodeURIComponent(pid)}`;
+    a.innerHTML='⚙️ Paramétrage';
+    a.setAttribute('aria-label',isAdmin?'Ouvrir le paramétrage de la campagne':'Consulter le paramétrage de la campagne');
+    const info=document.createElement('span');
+    info.className='campaign-settings-info-wrap';
+    const dot=document.createElement('button');
+    dot.type='button';
+    dot.className='campaign-settings-info-dot';
+    dot.textContent='i';
+    dot.setAttribute('aria-label','Que contient le paramétrage ?');
+    const bubble=document.createElement('span');
+    bubble.className='campaign-settings-info-bubble';
+    bubble.innerHTML=isAdmin
+      ?'<strong>Paramétrage de la campagne</strong>Vous y retrouvez notamment l’introduction, les questions socio-démographiques (DSD), les dates de campagne, les ressources après résultats et les autres réglages de diffusion.'
+      :'<strong>Paramétrage de la campagne</strong>Vous pouvez consulter ici l’introduction, les questions socio-démographiques (DSD), les dates de campagne, les ressources après résultats et les autres réglages. Si la campagne est verrouillée, utilisez « Demander un ajustement » : vous ne modifiez pas directement ces éléments.';
+    info.append(dot,bubble);
+    wrap.append(a,info);
+    return wrap;
+  }
+
+  function addTopActions(target){
+    if(!isProject||!target)return;
+    if(target.querySelector('.campaign-preview-settings-actions'))return;
+    const actions=document.createElement('div');
+    actions.className='campaign-preview-settings-actions';
+    const preview=makeButton('top');
+    preview.classList.add('rp-trigger');
+    const settings=makeSettingsAction();
+    actions.append(preview);
+    if(settings)actions.append(settings);
+    target.appendChild(actions);
+  }
+
   function syncSticky(){
     if(!isProject)return;
     const sticky=document.querySelector('.creation-sticky-actions');
@@ -75,11 +116,7 @@
 
     if(isProject){
       const t=document.querySelector('.compact-topbar>div')||document.querySelector('.topbar>div');
-      if(t&&!document.querySelector('[data-rp="top"]')){
-        const topButton=makeButton('top');
-        topButton.classList.add('rp-trigger');
-        t.appendChild(topButton);
-      }
+      if(t&&!document.querySelector('[data-rp="top"]'))addTopActions(t);
 
       syncSticky();
 

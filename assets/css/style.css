@@ -14559,3 +14559,17 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .steps .step-link#composer-settings-step,.steps .step-link#profiles-settings-step{cursor:pointer}
 .steps .step-link#composer-settings-step:hover,.steps .step-link#profiles-settings-step:hover{border-color:#9fd2d6;background:#eefafa;color:#086f78}
 @media(max-width:850px){.admin-campaign-quick-actions{width:100%;align-items:stretch;margin-top:12px}.admin-campaign-quick-actions>span{display:none}.admin-campaign-quick-actions .button{width:100%;justify-content:center}.compact-topbar{flex-wrap:wrap}}
+
+
+/* 2026-09-22 — Aperçu + Paramétrage regroupés en haut des pages campagne */
+.campaign-preview-settings-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.campaign-preview-settings-actions .rp-trigger{margin-top:0}
+.campaign-settings-shortcut{display:inline-flex;align-items:center;gap:6px}
+.campaign-settings-shortcut-link{white-space:nowrap;text-decoration:none}
+.campaign-settings-info-wrap{position:relative;display:inline-flex;align-items:center}
+.campaign-settings-info-dot{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:1px solid #0a8893;border-radius:50%;background:#e8f5f6;color:#0a7580;font:800 12px/1 Arial;cursor:help}
+.campaign-settings-info-dot:hover,.campaign-settings-info-dot:focus-visible{background:#0a7580;color:#fff;outline:none;box-shadow:0 0 0 4px rgba(10,117,128,.12)}
+.campaign-settings-info-bubble{position:absolute;z-index:120;left:50%;top:calc(100% + 9px);transform:translateX(-50%) translateY(5px);width:min(360px,calc(100vw - 44px));padding:12px 14px;border-radius:12px;background:#173862;color:#fff;font-size:.8rem;font-weight:600;line-height:1.45;box-shadow:0 12px 32px rgba(15,45,78,.24);opacity:0;visibility:hidden;pointer-events:none;transition:.15s;text-align:left}
+.campaign-settings-info-bubble strong{display:block;margin-bottom:4px;color:#fff;font-size:.82rem}
+.campaign-settings-info-wrap:hover .campaign-settings-info-bubble,.campaign-settings-info-wrap:focus-within .campaign-settings-info-bubble{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+@media(max-width:720px){.campaign-preview-settings-actions{align-items:stretch}.campaign-preview-settings-actions>.button,.campaign-settings-shortcut{width:100%}.campaign-settings-shortcut-link{flex:1;justify-content:center}.campaign-settings-info-bubble{left:auto;right:0;transform:translateY(5px)}.campaign-settings-info-wrap:hover .campaign-settings-info-bubble,.campaign-settings-info-wrap:focus-within .campaign-settings-info-bubble{transform:translateY(0)}}
