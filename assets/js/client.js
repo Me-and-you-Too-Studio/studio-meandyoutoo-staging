@@ -1032,6 +1032,14 @@
     projects = new Map(ps.map((p) => [String(p.id), p]));
     renderFolderBar(ps);
     $("#client-name").textContent = organization.name || "Dossier client";
+    const clientLogo = $("#client-logo");
+    if (clientLogo) {
+      const initial = String(organization.name || "C").slice(0, 1).toUpperCase();
+      clientLogo.innerHTML = organization.logo_data
+        ? '<img src="' + esc(organization.logo_data) + '" alt="Logo ' + esc(organization.name || "client") + '">'
+        : '<span>' + esc(initial) + '</span>';
+      clientLogo.classList.toggle("has-logo", Boolean(organization.logo_data));
+    }
     $("#client-subtitle").textContent =
       (orgSectors(organization).join(" · ") || "Secteur non renseigné") +
       " · " +
