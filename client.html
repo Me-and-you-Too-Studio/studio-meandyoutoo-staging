@@ -8,7 +8,7 @@
     <link rel="icon" href="assets/img/brand/favicon.png" />
     <link
       rel="stylesheet"
-      href="assets/css/style.css?v=20260922-client-logo-upload-2"
+      href="assets/css/style.css?v=20260922-client-logo-library-1"
     />
   </head>
   <body>
@@ -39,6 +39,21 @@
             </button>
           </div>
         </section>
+
+        <dialog id="client-logo-library-dialog" class="admin-dialog client-logo-library-dialog">
+          <div class="client-logo-library-shell">
+            <button type="button" class="admin-dialog-close" id="client-logo-library-close" aria-label="Fermer">×</button>
+            <p class="eyebrow">Identité du client</p>
+            <h2>Choisir un logo</h2>
+            <p class="admin-dialog-intro">Sélectionnez un logo déjà présent dans les références Me&amp;YouToo, ou importez un autre fichier.</p>
+            <div class="client-logo-library-tools">
+              <input id="client-logo-library-search" type="search" placeholder="Rechercher Infrabel, Adecco, Air France…">
+              <button class="button button-secondary" id="client-logo-upload-computer" type="button">Importer depuis mon ordinateur</button>
+            </div>
+            <div id="client-logo-library-state" class="client-logo-library-state">Chargement des logos…</div>
+            <div id="client-logo-library-grid" class="client-logo-library-grid"></div>
+          </div>
+        </dialog>
         <div id="client-alert" class="composer-alert" hidden></div>
         <section id="client-summary" class="admin-client-summary"></section>
         <section class="admin-folder-panel admin-client-contacts-panel">
@@ -268,6 +283,6 @@
     </dialog>
     <script src="assets/js/api.js?v=20260918-single-client-link-1"></script>
     <script src="assets/js/app.js?v=20260921-access-rights-1"></script>
-    <script src="assets/js/client.js?v=20260922-client-logo-upload-2"></script>
+    <script src="assets/js/client.js?v=20260922-client-logo-library-1"></script>
   </body>
 </html>

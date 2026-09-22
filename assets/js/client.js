@@ -2203,10 +2203,45 @@
   const clientLogoUpload = $("#client-logo-upload"),
     clientLogoInput = $("#client-logo-input"),
     clientLogoRemove = $("#client-logo-remove");
+  const logoLibraryDialog = $("#client-logo-library-dialog"),
+    logoLibraryClose = $("#client-logo-library-close"),
+    logoLibrarySearch = $("#client-logo-library-search"),
+    logoLibraryGrid = $("#client-logo-library-grid"),
+    logoLibraryState = $("#client-logo-library-state"),
+    logoUploadComputer = $("#client-logo-upload-computer");
+  let logoLibraryItems = [];
+  const renderLogoLibrary = () => {
+    if (!logoLibraryGrid) return;
+    const q = String(logoLibrarySearch?.value || "").trim().toLowerCase();
+    const items = logoLibraryItems.filter(x => !q || String(x.name||"").toLowerCase().includes(q));
+    logoLibraryGrid.innerHTML = items.map((item,i) => `<button type="button" class="client-logo-library-card" data-logo-index="${i}" data-logo-url="${esc(item.sourceUrl)}"><span class="client-logo-library-image"><img src="${esc(item.sourceUrl)}" alt="${esc(item.name)}" loading="lazy"></span><strong>${esc(item.name)}</strong></button>`).join('');
+    if (logoLibraryState) { logoLibraryState.hidden = Boolean(items.length); logoLibraryState.textContent = items.length ? '' : (logoLibraryItems.length ? 'Aucun logo ne correspond à cette recherche.' : 'Aucun logo disponible.'); }
+  };
+  const loadLogoLibrary = async () => {
+    if (logoLibraryItems.length) return renderLogoLibrary();
+    if (logoLibraryState) {logoLibraryState.hidden=false;logoLibraryState.textContent='Chargement des logos Me&YouToo…';}
+    try {
+      const data=await StudioAPI.request('/api/admin/client-logo-library');
+      logoLibraryItems=Array.isArray(data?.items)?data.items:[];
+      renderLogoLibrary();
+    } catch(e) { if(logoLibraryState){logoLibraryState.hidden=false;logoLibraryState.textContent=e.message||'Impossible de charger la bibliothèque de logos.';} }
+  };
+  if (logoLibraryClose) logoLibraryClose.onclick=()=>logoLibraryDialog?.close();
+  if (logoLibrarySearch) logoLibrarySearch.oninput=renderLogoLibrary;
+  if (logoUploadComputer && clientLogoInput) logoUploadComputer.onclick=()=>{clientLogoInput.value='';clientLogoInput.click();};
+  if (logoLibraryGrid) logoLibraryGrid.onclick=async(e)=>{
+    const card=e.target.closest('[data-logo-url]'); if(!card||!organization?.id)return;
+    try {
+      card.disabled=true;
+      await StudioAPI.request('/api/admin/organizations/'+encodeURIComponent(organization.id)+'/branding',{method:'PATCH',body:JSON.stringify({logoSourceUrl:card.dataset.logoUrl})});
+      logoLibraryDialog?.close(); await load();
+      await StudioModal.alert({type:'success',title:'Logo rattaché',message:'Le logo de '+(organization.name||'ce client')+' est maintenant utilisé dans le Studio.'});
+    } catch(err){showError(err.message||'Impossible de rattacher ce logo.');card.disabled=false;}
+  };
   if (clientLogoUpload && clientLogoInput) {
-    clientLogoUpload.onclick = () => {
-      clientLogoInput.value = "";
-      clientLogoInput.click();
+    clientLogoUpload.onclick = async () => {
+      if (logoLibraryDialog?.showModal) { logoLibraryDialog.showModal(); await loadLogoLibrary(); }
+      else { clientLogoInput.value = ""; clientLogoInput.click(); }
     };
     clientLogoInput.onchange = async () => {
       const file = clientLogoInput.files?.[0];
@@ -2215,6 +2250,7 @@
         clientLogoUpload.disabled = true;
         const logoData = await optimizeOrganizationLogo(file);
         await StudioAPI.request('/api/admin/organizations/' + encodeURIComponent(organization.id) + '/branding', {method:'PATCH', body:JSON.stringify({logoData})});
+        logoLibraryDialog?.close();
         await load();
         await StudioModal.alert({type:'success',title:'Logo enregistré',message:'Le logo de ' + (organization.name || 'ce client') + ' est maintenant utilisé dans le Studio.'});
       } catch (e) {
