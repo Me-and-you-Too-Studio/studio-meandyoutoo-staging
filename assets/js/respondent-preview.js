@@ -33,7 +33,37 @@ function normalizeSocioCriterion(s,i,path){
   if(!options.length)return null;
   return {key:String(s?.kind||s?.key||s?.source_id||path||i),label:s?.q||s?.question||s?.label||s?.name||s?.title||`Question ${i+1}`,options};
 }
-function normalizeSocio(list){return (Array.isArray(list)?list:[]).filter(Boolean).map((s,i)=>normalizeSocioCriterion(s,i,String(i))).filter(Boolean)}
+function socioTranslationRow(node,locale){
+  const translations=node?.translations&&typeof node.translations==='object'&&!Array.isArray(node.translations)?node.translations:{};
+  const loc=String(locale||'fr').toLowerCase().replaceAll('_','-');
+  const normalized={};Object.entries(translations).forEach(([k,v])=>{normalized[String(k||'').toLowerCase().replaceAll('_','-')]=v});
+  return normalized[loc]||normalized[loc.split('-')[0]]||null;
+}
+function localizeSocioNode(node,locale){
+  if(!node||typeof node!=='object')return node;
+  const out={...node},tr=socioTranslationRow(node,locale);
+  if(tr&&typeof tr==='object'){
+    for(const key of ['q','question','label','name','title','text'])if(tr[key]!==undefined&&tr[key]!==null&&String(tr[key]).trim()){out[key]=tr[key];break}
+  }
+  const options=Array.isArray(node.options)?node.options:(Array.isArray(node.opts)?node.opts:null);
+  const translatedOptions=Array.isArray(tr?.options)?tr.options:(Array.isArray(tr?.opts)?tr.opts:null);
+  if(options){
+    const rows=options.map((option,index)=>{
+      if(!option||typeof option!=='object')return typeof translatedOptions?.[index]==='string'?translatedOptions[index]:option;
+      const localized={...option},optionTr=socioTranslationRow(option,locale),flatTr=translatedOptions?.[index];
+      const source=(flatTr&&typeof flatTr==='object')?flatTr:optionTr;
+      let label=(typeof flatTr==='string'&&flatTr.trim())?flatTr:'';
+      if(!label&&source)for(const key of ['label','text','value','title'])if(source[key]!==undefined&&String(source[key]).trim()){label=source[key];break}
+      if(label){if('label'in option)localized.label=label;else if('text'in option)localized.text=label;else if('value'in option)localized.value=label;else localized.label=label}
+      if(Array.isArray(option.subcriteria))localized.subcriteria=option.subcriteria.map(child=>localizeSocioNode(child,locale));
+      if(option.subcriterion&&typeof option.subcriterion==='object')localized.subcriterion=localizeSocioNode(option.subcriterion,locale);
+      return localized;
+    });
+    if(Array.isArray(node.options))out.options=rows;else out.opts=rows;
+  }
+  return out;
+}
+function normalizeSocio(list){return (Array.isArray(list)?list:[]).filter(Boolean).map(s=>localizeSocioNode(s,previewLocale)).map((s,i)=>normalizeSocioCriterion(s,i,String(i))).filter(Boolean)}
 function fallbackSocio(){return [{key:'gender',label:'Vous êtes :',options:[{label:'Une femme'},{label:'Un homme'},{label:'Non-binaire'},{label:'Autre'}]}]}
 function normalizeProfile(p){return {...p,title:p.title||p.titre||'Profil',summary:clean(p.summary||p.resume||p.phrase||''),content:clean(p.content||p.description||p.desc||''),scoring_min:num(p.scoring_min??p.min,0),scoring_max:num(p.scoring_max??p.max,0),top_score:num(p.top_score,0)}}
 function normalizeAnswer(a,i){return typeof a==='object'?{...a,label:a.text||a.content||a.label||`Réponse ${i+1}`,score:num(a.score,0),display_order:num(a.position??a.display_order??i,i)}:{label:String(a),score:0,display_order:i}}
