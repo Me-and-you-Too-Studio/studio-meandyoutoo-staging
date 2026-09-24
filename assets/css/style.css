@@ -14801,3 +14801,8 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .admin-media-usage-badge.is-excluded{background:#fde9e4!important;color:#a64031!important}
 @media(max-width:980px){.admin-media-usage-add{grid-template-columns:1fr 1fr}.admin-media-usage-add .button{grid-column:1/-1}}
 @media(max-width:620px){.admin-media-usage-row-actions{width:100%;justify-content:space-between}.admin-media-usage-add{grid-template-columns:1fr}}
+
+/* Admin campagnes — indique explicitement les périmètres/langues masqués sur les cartes compactes. */
+.admin-campaign-meta-tags span.is-more{font-weight:900;cursor:help}
+.admin-campaign-meta-tags span.is-country.is-more{border-style:dashed;background:#e8f3fb}
+.admin-campaign-meta-tags span.is-language.is-more{border-style:dashed;background:#e4f6f1}
