@@ -121,9 +121,11 @@ function projectPreviewContext(payload){
   });
   return {countries,byCountry};
 }
+const countryNamesByNumericCode={'004':'Afghanistan','008':'Albanie','012':'Algérie','020':'Andorre','024':'Angola','031':'Azerbaïdjan','032':'Argentine','036':'Australie','040':'Autriche','048':'Bahreïn','050':'Bangladesh','056':'Belgique','068':'Bolivie','072':'Botswana','076':'Brésil','100':'Bulgarie','116':'Cambodge','120':'Cameroun','124':'Canada','140':'République centrafricaine','144':'Sri Lanka','152':'Chili','156':'Chine','158':'Taïwan','170':'Colombie','178':'Congo','188':'Costa Rica','191':'Croatie','196':'Chypre','203':'Tchéquie','208':'Danemark','214':'République dominicaine','218':'Équateur','233':'Estonie','246':'Finlande','250':'France','268':'Géorgie','276':'Allemagne','288':'Ghana','300':'Grèce','320':'Guatemala','324':'Guinée','332':'Haïti','344':'Hong Kong','348':'Hongrie','356':'Inde','360':'Indonésie','368':'Irak','372':'Irlande','376':'Israël','380':'Italie','384':'Côte d’Ivoire','392':'Japon','398':'Kazakhstan','400':'Jordanie','404':'Kenya','410':'Corée du Sud','414':'Koweït','422':'Liban','428':'Lettonie','430':'Liberia','440':'Lituanie','442':'Luxembourg','450':'Madagascar','458':'Malaisie','466':'Mali','470':'Malte','480':'Maurice','484':'Mexique','492':'Monaco','498':'Moldavie','504':'Maroc','512':'Oman','528':'Pays-Bas','554':'Nouvelle-Zélande','566':'Nigeria','578':'Norvège','591':'Panama','600':'Paraguay','604':'Pérou','608':'Philippines','616':'Pologne','620':'Portugal','624':'Guinée-Bissau','634':'Qatar','642':'Roumanie','643':'Fédération de Russie','682':'Arabie saoudite','686':'Sénégal','688':'Serbie','694':'Sierra Leone','702':'Singapour','703':'Slovaquie','704':'Vietnam','710':'Afrique du Sud','724':'Espagne','752':'Suède','756':'Suisse','764':'Thaïlande','784':'Émirats arabes unis','788':'Tunisie','792':'Turquie','804':'Ukraine','818':'Égypte','826':'Royaume-Uni','834':'Tanzanie','840':'États-Unis','854':'Burkina Faso','858':'Uruguay'};
 function countryLabel(code){
-  const cc=normalizeCountryCode(code),special={WW:'International',WORLDWIDE:'International',INT:'International',GLOBAL:'International',ASIA:'Asie','250':'France','276':'Allemagne','032':'Argentine','040':'Autriche','076':'Brésil','124':'Canada','152':'Chili','156':'Chine','158':'Taïwan','208':'Danemark','724':'Espagne','840':'États-Unis','344':'Hong Kong','392':'Japon','484':'Mexique','578':'Norvège','591':'Panama','620':'Portugal','752':'Suède','756':'Suisse','858':'Uruguay','410':'Corée du Sud'};
+  const cc=normalizeCountryCode(code),special={WW:'International',WORLDWIDE:'International',INT:'International',GLOBAL:'International',ASIA:'Asie'};
   if(special[cc])return special[cc];
+  if(/^\d{1,3}$/.test(cc))return countryNamesByNumericCode[cc.padStart(3,'0')]||cc;
   try{return new Intl.DisplayNames(['fr'],{type:'region'}).of(cc)||cc}catch(_){return cc}
 }
 const localeNamesFr={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',br:'Portugais Brésil',bg:'Bulgare',ja:'Japonais','ko-kr':'Coréen',ko:'Coréen',zf:'Chinois simplifié',zh:'Chinois traditionnel',nl:'Néerlandais','nl-be':'Néerlandais (Belgique)',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',tr:'Turc',cs:'Tchèque',sk:'Slovaque',id:'Indonésien',ar:'Arabe'};
@@ -143,11 +145,12 @@ function contextChooser(){
   const blocks=[];
   let stepNumber=1;
   if(state.needsCountry){
-    const countryButtons=previewCountries.map(code=>`<button type="button" class="rp-context-choice ${code===previewCountry?'selected':''}" data-preview-country="${esc(code)}" aria-pressed="${code===previewCountry?'true':'false'}"><span>🌍</span><strong>${esc(countryLabel(code))}</strong></button>`).join('');
-    blocks.push(`<div class="rp-context-step"><div class="rp-context-step-head"><span>${stepNumber++}</span><div><strong>Choisissez le périmètre</strong><small>${previewCountries.length} périmètres disponibles</small></div></div><div class="rp-context-options">${countryButtons||'<div class="rp-context-empty">Aucun périmètre configuré pour cette campagne.</div>'}</div></div>`);
+    const countryOptions=previewCountries.map(code=>`<option value="${esc(code)}" ${code===previewCountry?'selected':''}>${esc(countryLabel(code))}</option>`).join('');
+    blocks.push(`<div class="rp-context-step"><div class="rp-context-step-head"><span>${stepNumber++}</span><div><strong>Choisissez le périmètre</strong><small>${previewCountries.length} périmètres disponibles</small></div></div><label class="rp-context-select-wrap" for="rp-preview-country"><span>Périmètre</span><select id="rp-preview-country" class="rp-context-select"><option value="">Sélectionner un périmètre…</option>${countryOptions}</select></label></div>`);
   }
   if(previewCountry&&state.needsLocale){
-    blocks.push(`<div class="rp-context-step ${state.needsCountry?'rp-context-language-step':''}"><div class="rp-context-step-head"><span>${stepNumber++}</span><div><strong>Choisissez la langue</strong><small>${state.locales.length} langues disponibles</small></div></div><div class="rp-context-options">${state.locales.map(loc=>`<button type="button" class="rp-context-choice rp-context-locale ${loc===previewLocale?'selected':''}" data-preview-locale="${esc(loc)}" aria-pressed="${loc===previewLocale?'true':'false'}"><strong>${esc(localeLabelFr(loc))}</strong></button>`).join('')}</div></div>`);
+    const localeOptions=state.locales.map(loc=>`<option value="${esc(loc)}" ${loc===previewLocale?'selected':''}>${esc(localeLabelFr(loc))}</option>`).join('');
+    blocks.push(`<div class="rp-context-step ${state.needsCountry?'rp-context-language-step':''}"><div class="rp-context-step-head"><span>${stepNumber++}</span><div><strong>Choisissez la langue</strong><small>${state.locales.length} langues disponibles</small></div></div><label class="rp-context-select-wrap" for="rp-preview-locale"><span>Langue</span><select id="rp-preview-locale" class="rp-context-select"><option value="">Sélectionner une langue…</option>${localeOptions}</select></label></div>`);
   }
   const loading=contextLoading?`<div class="rp-context-loading" role="status">Chargement du parcours…</div>`:'';
   const error=contextError?`<div class="rp-context-error" role="alert">${esc(contextError)}</div>`:'';
@@ -165,21 +168,23 @@ async function loadSelectedPreviewContext(){
 }
 function bindContextChooser(){
   if(!liveProjectPreview)return;
-  root.querySelectorAll('[data-preview-country]').forEach(button=>button.onclick=async()=>{
-    const country=normalizeCountryCode(button.dataset.previewCountry);
-    if(!country||contextLoading)return;
+  const countrySelect=root.querySelector('#rp-preview-country');
+  if(countrySelect)countrySelect.onchange=async()=>{
+    const country=normalizeCountryCode(countrySelect.value);
+    if(contextLoading)return;
     previewCountry=country;
-    availablePreviewLocales=previewCountryLocales[country]||[];
+    availablePreviewLocales=country?(previewCountryLocales[country]||[]):[];
     previewLocale=availablePreviewLocales.length===1?availablePreviewLocales[0]:'';
     contextError='';resetPreviewProgress();
-    if(previewLocale)await loadSelectedPreviewContext();else render();
-  });
-  root.querySelectorAll('[data-preview-locale]').forEach(button=>button.onclick=async()=>{
-    const locale=normalizeLocaleCode(button.dataset.previewLocale);
+    if(previewCountry&&previewLocale)await loadSelectedPreviewContext();else render();
+  };
+  const localeSelect=root.querySelector('#rp-preview-locale');
+  if(localeSelect)localeSelect.onchange=async()=>{
+    const locale=normalizeLocaleCode(localeSelect.value);
     if(!previewCountry||!locale||contextLoading)return;
     previewLocale=locale;availablePreviewLocales=previewCountryLocales[previewCountry]||[];resetPreviewProgress();
     await loadSelectedPreviewContext();
-  });
+  };
 }
 
 const modeLabel=()=>mode==='project'?'Votre campagne composée':'Version catalogue Me&YouToo';
