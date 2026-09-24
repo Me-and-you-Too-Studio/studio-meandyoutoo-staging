@@ -216,6 +216,7 @@
     cs: "Tchèque",
     sk: "Slovaque",
     id: "Indonésien",
+    "id-id": "Indonésien",
     ar: "Arabe"
   };
 
@@ -248,13 +249,15 @@
   }
 
   function projectCountries(p) {
-    // Sur les campagnes client historiques, le code pays legacy est un repère technique.
-    // Il ne doit pas être présenté comme le périmètre métier de la campagne.
-    if (isLegacyClientProject(p)) return [];
     var map = projectCountryLocaleMap(p);
     var fromMap = Object.keys(map);
     var fallback = Array.isArray(p && p.countries) ? p.countries.map(normalizeCountryCode).filter(Boolean) : [];
     return Array.from(new Set(fromMap.concat(fallback)));
+  }
+
+  function projectIsFranceOnly(p) {
+    var countries = projectCountries(p);
+    return countries.length === 1 && countries[0] === "FR";
   }
 
   function projectLocales(p) {
@@ -299,11 +302,19 @@
       var countries = hasContextualProjects ? Array.from(new Set(projects.reduce(function (all, p) { return all.concat(projectCountries(p)); }, [])))
         .sort(function (a, b) { return countryLabel(a).localeCompare(countryLabel(b), "fr", { sensitivity: "base" }); }) : [];
               if (countryLabelRoot) countryLabelRoot.hidden = countries.length === 0;
-      if (activeCountry !== "all" && !countries.includes(activeCountry)) activeCountry = "all";
-      countryFilter.innerHTML = '<option value="all">Tous les périmètres</option>' + countries.map(function (code) {
-        var count = projects.filter(function (p) { return projectCountries(p).includes(code); }).length;
-        return '<option value="' + esc(code) + '" ' + (activeCountry === code ? "selected" : "") + '>' + esc(countryLabel(code)) + ' · ' + count + '</option>';
-      }).join("");
+      var countryEntries = countries.map(function (code) { return { code: code, label: countryLabel(code) }; })
+        .filter(function (item) { return item.label && item.label !== "France" && item.label !== "International"; });
+      var validCountryValues = ["all", "__france__", "__international__"].concat(countryEntries.map(function (item) { return item.code; }));
+      if (!validCountryValues.includes(activeCountry)) activeCountry = "all";
+      countryFilter.innerHTML =
+        '<option value="all">Tous les périmètres</option>' +
+        '<optgroup label="Accès rapide">' +
+          '<option value="__france__" ' + (activeCountry === "__france__" ? "selected" : "") + '>France</option>' +
+          '<option value="__international__" ' + (activeCountry === "__international__" ? "selected" : "") + '>International</option>' +
+        '</optgroup>' +
+        (countryEntries.length ? '<optgroup label="Pays">' + countryEntries.map(function (item) {
+          return '<option value="' + esc(item.code) + '" ' + (activeCountry === item.code ? "selected" : "") + '>' + esc(item.label) + '</option>';
+        }).join("") + '</optgroup>' : '');
       countryFilter.onchange = function (event) { activeCountry = event.target.value; renderCards(); };
     }
     if (localeFilter) {
@@ -1272,7 +1283,10 @@
         .toLowerCase();
       var inFolder = activeFolder === "all" || (activeFolder === "unclassified" ? !p.folder_id : String(p.folder_id || "") === activeFolder);
       var inTheme = activeTheme === "all" || themeLabel(p) === activeTheme;
-      var inCountry = activeCountry === "all" || countries.includes(activeCountry);
+      var inCountry = activeCountry === "all" ||
+        (activeCountry === "__france__" ? projectIsFranceOnly(p) :
+          activeCountry === "__international__" ? (countries.length > 0 && !projectIsFranceOnly(p)) :
+          countries.includes(activeCountry));
       var inLocale = activeLocale === "all" || locales.includes(activeLocale);
       return inFolder && inTheme && inCountry && inLocale && matchesPeriod(p) && matchesFilter(p) && (!term || haystack.indexOf(term) !== -1);
     });
