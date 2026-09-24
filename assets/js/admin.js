@@ -159,7 +159,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     }
     function adminCampaignOngoingStatus(p){return adminCampaignLifecycle(typeof p==='object'?p:{status:p})==='ongoing';}
     function adminCampaignFinishedStatus(p){return adminCampaignIsFinished(typeof p==='object'?p:{status:p});}
-    function adminCampaignEndingSoon(p){if(adminCampaignLifecycle(p)!=='ongoing'||!p.close_date)return false;const now=new Date(),limit=new Date(now.getTime()+14*24*60*60*1000),d=adminCampaignDate(p.close_date,true);return Boolean(d&&d>=now&&d<=limit);}
+    function adminCampaignEndingSoon(p){if(adminCampaignLifecycle(p)!=='ongoing'||!p.close_date)return false;const now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate()),limit=new Date(today);limit.setDate(limit.getDate()+14);limit.setHours(23,59,59,999);const d=adminCampaignDate(p.close_date,true);return Boolean(d&&d>=now&&d<=limit);}
     function adminCampaignHasResults(p){return Boolean(String(p.communication_results_url||'').trim());}
     function adminCampaignQuickMatch(p,key){
       if(!key||key==='all')return true;
@@ -172,6 +172,14 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     }
     function adminCampaignQuickLabel(key){return({all:'Toutes',endingSoon:'Fin proche',results:'Résultats',draft:'Brouillon',review:'À publier',scheduled:'Programmée',ongoing:'En cours',finished:'Terminée',unpublished:'Dépubliée',archived:'Archivée'})[key]||labels[key]||key;}
     function adminCampaignQuickIcon(key){return({all:'✨',endingSoon:'🔴',results:'📊',draft:'✏️',review:'🚀',scheduled:'🗓️',ongoing:'🟢',finished:'🏁',unpublished:'🛑',archived:'📦'})[key]||'•';}
+    function adminCampaignQuickHelp(key){return({
+      endingSoon:{title:'Fin proche',message:'Cette catégorie regroupe uniquement les campagnes actuellement « En cours » dont la date de fin se situe entre aujourd’hui et J+14 inclus.\n\nÀ J+15, la campagne n’entre pas encore dans « Fin proche ». Dès que sa date de fin est dépassée, elle bascule dans « Terminée ».'},
+      draft:{title:'Brouillon',message:'Une campagne Studio native reste dans « Brouillon » tant qu’elle n’a pas été transmise à Me&YouToo pour relecture et publication.\n\nLes campagnes historiques importées (legacy) ne sont pas comptées comme brouillons, même si leur ancien statut technique est « draft ».'},
+      review:{title:'À publier',message:'Cette catégorie regroupe les campagnes déjà transmises par le client et qui attendent encore une action Me&YouToo : relecture, validation, éventuel retour client ou publication.\n\nLa campagne quitte cette catégorie lorsqu’elle est publiée, remise en brouillon ou change de statut.'},
+      ongoing:{title:'En cours',message:'Une campagne est « En cours » lorsqu’elle est publiée ou active, que sa date de début est arrivée et que sa date de fin n’est pas dépassée.\n\nSi aucune date de fin n’est renseignée, elle reste dans cette catégorie tant que son statut permet la diffusion.'},
+      finished:{title:'Terminée',message:'Pour une campagne Studio native, « Terminée » signifie que la date de fin est dépassée ou que son statut est « completed / closed ».\n\nPour le patrimoine historique (legacy), les anciens statuts « draft » et « unpublished » sont également classés comme terminés afin de restituer correctement les anciennes campagnes.'}
+    })[key]||null;}
+    function openAdminCampaignQuickHelp(key){const help=adminCampaignQuickHelp(key);if(!help)return;if(window.StudioModal)window.StudioModal.alert({eyebrow:'Comprendre les catégories',title:help.title,message:help.message,type:'info',confirmLabel:'J’ai compris'});}
     function adminCampaignStageLabel(p){
       const raw=normalizedStatus(p);
       if(adminCampaignIsLegacy(p)){
@@ -230,8 +238,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const root=$('#admin-campaign-quick-filters');if(!root)return;
       const keys=['all','endingSoon','results','draft','review','scheduled','ongoing','finished','unpublished','archived'];
       const count=key=>key==='all'?rows.length:rows.filter(p=>adminCampaignQuickMatch(p,key)).length;
-      root.innerHTML=keys.filter(key=>key==='all'||key==='review'||count(key)>0).map(key=>`<button type="button" class="admin-campaign-filter-chip ${key==='review'?'is-publish':''} ${state.campaignQuickFilter===key?'is-active':''}" data-admin-campaign-filter="${esc(key)}"><span>${adminCampaignQuickIcon(key)} ${esc(adminCampaignQuickLabel(key))}</span><strong>${fmt(count(key))}</strong></button>`).join('');
+      root.innerHTML=keys.filter(key=>key==='all'||key==='review'||count(key)>0).map(key=>{const help=adminCampaignQuickHelp(key);return `<span class="admin-campaign-filter-chip-wrap ${help?'has-info':''}"><button type="button" class="admin-campaign-filter-chip ${key==='review'?'is-publish':''} ${state.campaignQuickFilter===key?'is-active':''}" data-admin-campaign-filter="${esc(key)}"><span>${adminCampaignQuickIcon(key)} ${esc(adminCampaignQuickLabel(key))}</span><strong>${fmt(count(key))}</strong></button>${help?`<button type="button" class="admin-campaign-filter-info-dot" data-admin-campaign-filter-info="${esc(key)}" aria-label="Comprendre la catégorie ${esc(adminCampaignQuickLabel(key))}">i</button>`:''}</span>`;}).join('');
       root.querySelectorAll('[data-admin-campaign-filter]').forEach(button=>button.onclick=()=>{state.campaignQuickFilter=button.dataset.adminCampaignFilter||'all';renderCampaigns();});
+      root.querySelectorAll('[data-admin-campaign-filter-info]').forEach(button=>button.onclick=event=>{event.preventDefault();event.stopPropagation();openAdminCampaignQuickHelp(button.dataset.adminCampaignFilterInfo);});
       $$('[data-admin-campaign-kpi]').forEach(button=>button.classList.toggle('is-active',button.dataset.adminCampaignKpi===state.campaignQuickFilter||(button.dataset.adminCampaignKpi==='review'&&state.campaignQuickFilter==='review')));
     }
     function renderAdminCampaignKpis(rows){

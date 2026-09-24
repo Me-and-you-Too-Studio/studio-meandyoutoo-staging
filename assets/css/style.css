@@ -14804,3 +14804,11 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 
 /* Admin campagnes — indique explicitement les périmètres/langues masqués sur les cartes compactes. */
 .admin-campaign-meta-tags .is-more{font-weight:900;cursor:pointer}.admin-campaign-meta-tags button.is-more{appearance:none;-webkit-appearance:none}.admin-campaign-meta-tags button.is-more:hover,.admin-campaign-meta-tags button.is-more:focus-visible{box-shadow:0 0 0 2px rgba(18,63,115,.12);outline:none}.admin-campaign-meta-tags .is-country.is-more{border-style:dashed;background:#e8f3fb}.admin-campaign-meta-tags .is-language.is-more{border-style:dashed;background:#e4f6f1}.admin-campaign-meta-tags [hidden]{display:none!important}
+
+/* 2026-09-24 — Aides contextuelles des catégories Campagnes */
+.admin-campaign-filter-chip-wrap{position:relative;display:inline-flex;align-items:center}
+.admin-campaign-filter-chip-wrap.has-info .admin-campaign-filter-chip{padding-right:38px}
+.admin-campaign-filter-info-dot{position:absolute;right:8px;top:50%;z-index:2;transform:translateY(-50%);display:grid;place-items:center;width:20px;height:20px;padding:0;border:1px solid rgba(39,97,127,.32);border-radius:50%;background:rgba(255,255,255,.92);color:#27617f;font:900 .72rem/1 Asap,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(23,63,100,.08);transition:transform .15s ease,background .15s ease,color .15s ease,border-color .15s ease}
+.admin-campaign-filter-info-dot:hover,.admin-campaign-filter-info-dot:focus-visible{transform:translateY(-50%) scale(1.06);background:#173f64;color:#fff;border-color:#173f64;outline:none}
+.admin-campaign-filter-chip-wrap .admin-campaign-filter-chip.is-active+.admin-campaign-filter-info-dot{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.52);color:#fff}
+.admin-campaign-filter-chip-wrap .admin-campaign-filter-chip.is-active+.admin-campaign-filter-info-dot:hover,.admin-campaign-filter-chip-wrap .admin-campaign-filter-chip.is-active+.admin-campaign-filter-info-dot:focus-visible{background:#fff;color:#173f64;border-color:#fff}
