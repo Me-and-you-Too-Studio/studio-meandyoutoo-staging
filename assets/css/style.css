@@ -14830,3 +14830,10 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .rp-context-select:hover{border-color:#79bfc4}
 .rp-context-select:focus{border-color:#008b95;box-shadow:0 0 0 3px rgba(0,139,149,.12)}
 @media(max-width:680px){.rp-context-select-wrap{max-width:none;width:100%}.rp-context-select{width:100%}}
+
+/* Aperçu répondant : le choix périmètre/langue précède toujours l’introduction */
+.rp-context-gate{max-width:760px}
+.rp-context-gate>.rp-help{max-width:650px;margin-left:auto;margin-right:auto}
+.rp-context-chooser-gate{margin-bottom:0}
+.rp-context-step.is-disabled{opacity:.55}
+.rp-context-step.is-disabled .rp-context-select{cursor:not-allowed;background:#f3f6f8}
