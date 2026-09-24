@@ -85,7 +85,7 @@
     de:"Allemand", es:"Espagnol", it:"Italien", pt:"Portugais", br:"Portugais Brésil",
     bg:"Bulgare", ja:"Japonais", "ko-kr":"Coréen", pl:"Polonais", ro:"Roumain",
     ru:"Russe", "sv-se":"Suédois", tr:"Turc", zf:"Chinois simplifié", zh:"Chinois traditionnel",
-    cs:"Tchèque", sk:"Slovaque", id:"Indonésien", ar:"Arabe"
+    cs:"Tchèque", sk:"Slovaque", id:"Indonésien", "id-id":"Indonésien", ar:"Arabe"
   };
   function campaignLocales(p){
     return [...new Set((Array.isArray(p?.locales)?p.locales:[])
@@ -144,6 +144,22 @@
       return '<label class="legacy-locale-choice"><input type="checkbox" data-legacy-locale value="'+esc(loc)+'" '+(current.includes(loc)?'checked':'')+'> <span>'+esc(label)+'</span></label>';
     }).join("");
   }
+  function legacyScopeChoicesHtml(p){
+    const selectedCountries=new Set(campaignCountries(p));
+    const map=p?.country_locales&&typeof p.country_locales==="object"?p.country_locales:{};
+    const availableLocales=[...new Set([...campaignLocales(p),...Object.values(map).flatMap(v=>Array.isArray(v)?v:[])].map(v=>String(v||"").trim().toLowerCase().replaceAll("_","-")).filter(Boolean))];
+    return Object.entries(campaignCountryNamesByNumericCode)
+      .sort((a,b)=>a[1].localeCompare(b[1],"fr"))
+      .map(([code,label])=>{
+        const checked=selectedCountries.has(code);
+        const configured=[...new Set((Array.isArray(map[code])?map[code]:(checked?campaignLocales(p):[])).map(v=>String(v||"").trim().toLowerCase().replaceAll("_","-")).filter(Boolean))];
+        const locales=availableLocales.map(loc=>{
+          const localeLabel=(campaignLocaleNames[loc]||loc.toUpperCase())+" ("+loc.toUpperCase()+")";
+          return '<label class="legacy-locale-choice"><input type="checkbox" data-legacy-scope-locale="'+esc(code)+'" value="'+esc(loc)+'" '+(configured.includes(loc)?'checked':'')+' '+(checked?'':'disabled')+'> <span>'+esc(localeLabel)+'</span></label>';
+        }).join("");
+        return '<div class="legacy-country-choice '+(checked?'is-selected':'')+'" data-legacy-country-row="'+esc(code)+'"><label class="legacy-country-toggle"><input type="checkbox" data-legacy-country value="'+esc(code)+'" '+(checked?'checked':'')+'> <span>'+esc(label)+'</span></label><div class="legacy-country-locales" '+(checked?'':'hidden')+'><small>Langues réellement diffusées dans ce pays</small><div class="legacy-locale-choices">'+locales+'</div></div></div>';
+      }).join("");
+  }
   function campaignCountries(p){
     return [...new Set((Array.isArray(p?.countries)?p.countries:[])
       .concat(p?.selected_country_code?[p.selected_country_code]:[])
@@ -153,8 +169,6 @@
     const countries=campaignCountries(p);
     if(!countries.length)return "";
     const labels=countries.map(code=>({code,label:campaignCountryLabel(code)}));
-    const onlyFrance=labels.length===1&&["FR","250"].includes(labels[0].code);
-    if(onlyFrance)return "";
     const visible=labels.slice(0,3);
     const extra=labels.slice(3);
     const tag=item=>'<span class="campaign-meta-tag">'+esc(item.label)+'</span>';
@@ -1383,11 +1397,9 @@
       '<p class="eyebrow">Administration de la campagne</p>' +
       '<h2>' + esc(p.campaign_name || p.title || "Campagne") + '</h2>' +
       '<p>Pour une campagne historique, les dates sont initialisées à partir du pack de passations du client. Vous pouvez les modifier ici si la campagne suit un calendrier différent.</p>' +
-      (p.legacy_history===true && campaignCountries(p).length===1
-        ? '<section class="legacy-scope-management"><div class="legacy-scope-head"><div><strong>Périmètre historique</strong><p>Corrigez ici un périmètre importé erroné sans modifier le contenu historique de la campagne.</p></div><span class="info-dot" title="Cette correction modifie uniquement le rattachement pays/langues du projet. Les situations, réponses, scores, profils et traductions restent inchangés.">i</span></div><div class="admin-form-grid"><label class="field"><span>Pays</span><select id="admin-management-legacy-country">'+legacyCountryOptions(campaignCountries(p)[0])+'</select></label><div class="field" style="grid-column:1/-1"><span>Langues du périmètre</span><div id="admin-management-legacy-locales" class="legacy-locale-choices">'+legacyLocaleChoicesHtml(p,campaignCountries(p)[0])+'</div><small class="hint">Sélectionnez uniquement les langues réellement diffusées pour ce pays. Cette correction ne supprime aucune traduction du contenu historique.</small></div></div></section>'
-        : (p.legacy_history===true && campaignCountries(p).length>1
-          ? '<div class="info-box"><strong>Périmètres historiques multi-pays</strong><br>Cette campagne contient plusieurs pays. La correction manuelle pays par pays reste volontairement désactivée ici pour éviter de réaffecter des situations au mauvais périmètre.</div>'
-          : '')) +
+      (p.legacy_history===true
+        ? '<section class="legacy-scope-management"><div class="legacy-scope-head"><div><strong>Périmètre historique</strong><p>Sélectionnez tous les pays réellement couverts par cette campagne historique, puis les langues diffusées dans chacun d’eux.</p></div><span class="info-dot" title="Cette correction modifie uniquement le rattachement pays/langues du projet. Les situations, réponses, scores, profils et traductions restent inchangés.">i</span></div><div id="admin-management-legacy-scopes" class="legacy-country-choices">'+legacyScopeChoicesHtml(p)+'</div><small class="hint">Vous pouvez sélectionner plusieurs pays. Chaque pays sélectionné doit conserver au moins une langue. Cette correction ne supprime aucune traduction du contenu historique.</small></section>'
+        : '') +
       '<div class="admin-form-grid">' +
       '<label class="field" style="grid-column:1/-1"><span>Base catalogue de référence</span><select id="admin-management-theme">' + catalogThemeOptions(p.theme_id) + '</select><small class="hint">Pour un import historique non relié, vous pouvez choisir ici la base catalogue correspondante. Cela ne remplace ni ne modifie le contenu historique importé.</small></label>' +
       '<label class="field"><span>Date de début</span><input id="admin-management-launch" type="date" value="' + esc(isoDay(p.launch_date || organization?.pack_started_at)) + '"></label>' +
@@ -1400,16 +1412,21 @@
       '</div>' +
       '<div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" id="admin-management-save" type="button">Enregistrer</button></div></form>';
     document.body.append(dialog);
-    const legacyCountrySelect=dialog.querySelector("#admin-management-legacy-country");
-    if(legacyCountrySelect){
-      legacyCountrySelect.onchange=()=>{
-        const country=legacyCountrySelect.value;
-        const map=p?.country_locales&&typeof p.country_locales==="object"?p.country_locales:{};
-        const preferred=new Set((Array.isArray(map[country])?map[country]:campaignLocales(p)).map(v=>String(v||"").toLowerCase()));
-        dialog.querySelectorAll("[data-legacy-locale]").forEach(input=>{
-          input.checked=preferred.has(String(input.value||"").toLowerCase());
-        });
-      };
+    const legacyScopeRoot=dialog.querySelector("#admin-management-legacy-scopes");
+    if(legacyScopeRoot){
+      legacyScopeRoot.querySelectorAll("[data-legacy-country]").forEach(input=>{
+        input.onchange=()=>{
+          const row=input.closest("[data-legacy-country-row]");
+          const localeInputs=[...row.querySelectorAll("[data-legacy-scope-locale]")];
+          row.classList.toggle("is-selected",input.checked);
+          row.querySelector(".legacy-country-locales").hidden=!input.checked;
+          localeInputs.forEach(locale=>locale.disabled=!input.checked);
+          if(input.checked&&!localeInputs.some(locale=>locale.checked)&&localeInputs.length){
+            const preferred=localeInputs.find(locale=>locale.value==="fr")||localeInputs[0];
+            preferred.checked=true;
+          }
+        };
+      });
     }
     dialog.querySelector("#admin-management-save").onclick = async () => {
       const launchDate = dialog.querySelector("#admin-management-launch").value,
@@ -1424,12 +1441,30 @@
         return;
       }
       try {
+        let legacyCountryLocales;
+        if(legacyScopeRoot){
+          legacyCountryLocales={};
+          const selectedCountries=[...legacyScopeRoot.querySelectorAll("[data-legacy-country]:checked")];
+          if(!selectedCountries.length){
+            showError("Sélectionnez au moins un pays pour le périmètre historique.");
+            return;
+          }
+          for(const countryInput of selectedCountries){
+            const code=countryInput.value;
+            const row=countryInput.closest("[data-legacy-country-row]");
+            const locales=[...row.querySelectorAll("[data-legacy-scope-locale]:checked")].map(input=>input.value);
+            if(!locales.length){
+              showError("Sélectionnez au moins une langue pour "+campaignCountryLabel(code)+".");
+              return;
+            }
+            legacyCountryLocales[code]=locales;
+          }
+        }
         await StudioAPI.request("/api/admin/projects/" + p.id + "/management", {
           method: "PATCH",
           body: JSON.stringify({
             themeId: dialog.querySelector("#admin-management-theme").value || null,
-            legacyCountryCode: legacyCountrySelect ? legacyCountrySelect.value : undefined,
-            legacyLocales: legacyCountrySelect ? [...dialog.querySelectorAll("[data-legacy-locale]:checked")].map(input=>input.value) : undefined,
+            legacyCountryLocales,
             launchDate: launchDate || null,
             closeDate: closeDate || null,
             commanditaireName: dialog.querySelector("#admin-management-commanditaire-name").value.trim(),
@@ -1445,7 +1480,7 @@
         await StudioModal.alert({
           eyebrow: "Campagne mise à jour",
           title: "Les informations ont été enregistrées",
-          message: "Les informations de campagne ont été enregistrées. Pour une campagne historique mono-pays, la correction éventuelle du périmètre a également été appliquée sans modifier son contenu.",
+          message: "Les informations de campagne ont été enregistrées. Pour une campagne historique, les périmètres et les langues par pays ont également été enregistrés sans modifier le contenu historique.",
           type: "success",
           confirmLabel: "Fermer",
         });
