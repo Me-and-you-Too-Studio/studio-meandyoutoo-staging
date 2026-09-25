@@ -60,7 +60,7 @@
     tr:'Turc',cs:'Tchèque',sk:'Slovaque',id:'Indonésien'
   };
   const countryNames={
-    AR:'Argentine',AT:'Autriche',BR:'Brésil',CA:'Canada',CH:'Suisse',CL:'Chili',CN:'Chine',DE:'Allemagne',DK:'Danemark',
+    EU:'Europe',AR:'Argentine',AT:'Autriche',BR:'Brésil',CA:'Canada',CH:'Suisse',CL:'Chili',CN:'Chine',DE:'Allemagne',DK:'Danemark',
     ES:'Espagne',FR:'France',HK:'Hong Kong',JP:'Japon',KR:'Corée du Sud',MX:'Mexique',NO:'Norvège',PA:'Panama',PT:'Portugal',
     SE:'Suède',TW:'Taïwan',US:'États-Unis',UY:'Uruguay',BE:'Belgique',GB:'Royaume-Uni',IT:'Italie',NL:'Pays-Bas',PL:'Pologne',
     RO:'Roumanie',RU:'Russie',TR:'Turquie',BG:'Bulgarie',AU:'Australie',IN:'Inde',SG:'Singapour'
@@ -213,11 +213,15 @@
       ...themes.flatMap(t=>countries(t).map(x=>'country:'+x))
     ]);
     scopeFilter.innerHTML='<option value="">Tous les périmètres</option>';
-    const broad=allScopes.filter(x=>x.startsWith('scope:')).sort((a,b)=>scopeLabel(a.slice(6)).localeCompare(scopeLabel(b.slice(6)),'fr'));
-    const nations=allScopes.filter(x=>x.startsWith('country:')).sort((a,b)=>countryLabel(a.slice(8)).localeCompare(countryLabel(b.slice(8)),'fr'));
+    const broad=allScopes.filter(x=>x.startsWith('scope:')||x==='country:EU').sort((a,b)=>{
+      const la=a.startsWith('scope:')?scopeLabel(a.slice(6)):countryLabel(a.slice(8));
+      const lb=b.startsWith('scope:')?scopeLabel(b.slice(6)):countryLabel(b.slice(8));
+      return la.localeCompare(lb,'fr');
+    });
+    const nations=allScopes.filter(x=>x.startsWith('country:')&&x!=='country:EU').sort((a,b)=>countryLabel(a.slice(8)).localeCompare(countryLabel(b.slice(8)),'fr'));
     if(broad.length){
       const g=document.createElement('optgroup');g.label='Zones culturelles';
-      broad.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=scopeLabel(v.slice(6));g.appendChild(o)});
+      broad.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v.startsWith('scope:')?scopeLabel(v.slice(6)):countryLabel(v.slice(8));g.appendChild(o)});
       scopeFilter.appendChild(g);
     }
     if(nations.length){
