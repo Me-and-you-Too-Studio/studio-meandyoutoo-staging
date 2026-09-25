@@ -2189,7 +2189,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const tags=[...new Set((Array.isArray(theme?.admin_tags)?theme.admin_tags:[]).map(x=>String(x||'').trim()).filter(Boolean))];
     return `<div class="admin-library-theme-scope">
       ${countries.length?`<span class="admin-library-theme-scope-label"><b>Périmètre culturel</b></span>${countries.map(c=>`<span class="admin-library-theme-scope-tag is-scope">${esc(libraryCountryLabel(c))}</span>`).join('')}`:''}
-      ${tags.map(tag=>`<span class="admin-library-theme-scope-tag is-manual">${esc(tag)}</span>`).join('')}
+      ${tags.length?`<span class="admin-library-theme-scope-label"><b>Tags client</b></span>${tags.map(tag=>`<span class="admin-library-theme-scope-tag is-manual">${esc(tag)}</span>`).join('')}`:''}
       <span class="admin-library-theme-scope-tag is-language"><b>Langues disponibles</b> ${locales.map(libraryLocaleLabel).join(' · ')}</span>
     </div>`;
   }

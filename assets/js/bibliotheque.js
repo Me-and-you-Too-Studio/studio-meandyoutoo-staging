@@ -72,15 +72,17 @@
   };
 
   let themes=[];
-  const href=t=>known[norm(t.slug)]||('theme.html?theme='+encodeURIComponent(t.slug));
+  // Le détail client est toujours alimenté par l'API : aucun titre/texte statique ne doit court-circuiter l'admin.
+  const href=t=>'theme.html?theme='+encodeURIComponent(t.slug);
   const locales=t=>uniq((Array.isArray(t.available_locales)?t.available_locales:[]).map(norm));
   const scopes=t=>uniq((Array.isArray(t.cultural_scopes)?t.cultural_scopes:[]).map(norm));
   const countries=t=>uniq((Array.isArray(t.country_codes)?t.country_codes:[]).map(x=>String(x||'').toUpperCase()));
   const localeLabel=x=>(localeNames[norm(x)]||String(x).toUpperCase())+' ('+String(x).toUpperCase()+')';
   const scopeLabel=x=>scopeNames[norm(x)]||String(x).replaceAll('-',' ').replace(/^./,c=>c.toUpperCase());
   const countryLabel=x=>countryNames[String(x).toUpperCase()]||String(x).toUpperCase();
-  const displayTitle=t=>shortTitles[norm(t.slug)]||t.title||'Thématique D&I';
-  const description=t=>t.description||fallbackDescriptions[norm(t.slug)]||'Une thématique issue du référentiel propriétaire Me&YouToo.';
+  // Source de vérité client : les champs enregistrés par l'admin.
+  const displayTitle=t=>String(t.title||'').trim()||'Thématique D&I';
+  const description=t=>String(t.description||'').trim()||'Aucune description renseignée.';
   const themeTags=t=>uniq((Array.isArray(t.admin_tags)?t.admin_tags:[]).map(x=>String(x||'').trim()));
 
   // Illustrations du catalogue : une image différente par thématique.
@@ -161,7 +163,10 @@
       // On calcule donc les contenus sur un périmètre de référence et uniquement
       // sur le choix de chapitre par défaut de chaque groupe.
       const allLocales=uniq([...locales(theme),...extraLocales]);
-      const allCountries=uniq([...countries(theme),...extraCountries]);
+      const adminCountries=countries(theme);
+      // Si l'admin a défini un périmètre culturel sur la thématique, il prévaut
+      // strictement sur les pays techniques retrouvés dans les variantes/chapitres.
+      const allCountries=adminCountries.length?adminCountries:extraCountries;
       const referenceCountry=allCountries.includes('FR')?'FR':(allCountries[0]||'FR');
       const referenceLocale=allLocales.includes('fr')?'fr':(allLocales[0]||'fr');
       let displayCatalogCount=null;
@@ -252,7 +257,7 @@
       </summary>
       <div class="topic-expanded">
         ${diagnosticLine}
-        ${tags.length?`<div class="topic-business-tags" aria-label="Tags métier">${tags.map(tag=>`<span>${esc(tag)}</span>`).join('')}</div>`:''}
+        ${tags.length?`<div class="topic-business-tags" aria-label="Tags métier"><strong class="topic-business-tags-label">Tags</strong>${tags.map(tag=>`<span>${esc(tag)}</span>`).join('')}</div>`:''}
         <div class="topic-expanded-grid">
           <div class="topic-detail-block"><strong>Périmètres disponibles</strong><div class="topic-chip-list">${chips(perimeterItems,perimeterFormatter,4)}</div></div>
           <div class="topic-detail-block"><strong>Langues disponibles</strong><div class="topic-chip-list">${chips(loc,localeLabel,6)}</div></div>
@@ -288,13 +293,20 @@
   async function load(){
     try{
       const data=await StudioAPI.request('/api/catalog/themes');
-      const visibleLive=(data.themes||[]).filter(t=>!hiddenClientCatalogSlugs.has(norm(t.slug)));
-      const live=new Map(visibleLive.map(t=>[norm(t.slug),t]));
-      themes=plannedThemes.filter(base=>!hiddenClientCatalogSlugs.has(norm(base.slug))).map(base=>mergeTheme(base,live.get(norm(base.slug))));
-      for(const t of visibleLive)if(!themes.some(x=>norm(x.slug)===norm(t.slug)))themes.push(mergeTheme({slug:norm(t.slug)},t));
+      // Quand l'API répond, le catalogue client reprend uniquement les données live
+      // administrées dans le Catalogue Me&YouToo. Aucun titre, tag ou descriptif local
+      // ne doit écraser une modification faite côté admin.
+      themes=(data.themes||[])
+        .filter(t=>!hiddenClientCatalogSlugs.has(norm(t.slug)))
+        .map(t=>({...t}));
       themes=await Promise.all(themes.map(enrichThemeCapabilities));
-    }catch(_){
-      themes=plannedThemes.filter(base=>!hiddenClientCatalogSlugs.has(norm(base.slug)));
+    }catch(error){
+      // Ne pas afficher silencieusement un ancien catalogue hardcodé si l'API est
+      // indisponible : cela ferait croire que les modifications admin n'ont pas été prises en compte.
+      themes=[];
+      root.innerHTML='<article class="card library-no-result"><h3>Catalogue momentanément indisponible</h3><p>Impossible de charger les informations administrées par Me&amp;YouToo. Réessayez dans quelques instants.</p></article>';
+      updateThemeCount();
+      return;
     }
     assignIllustrations(themes);
     updateThemeCount();
