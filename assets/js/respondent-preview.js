@@ -3,7 +3,7 @@ const previewSource=new URLSearchParams(location.search).get('source')||'live';
 const liveProjectPreview=(new URLSearchParams(location.search).get('mode')||((new URLSearchParams(location.search).get('projectId'))?'project':'catalog'))==='project'&&previewSource!=='saved';
 let previewLocale=String(new URLSearchParams(location.search).get('lang')||document.documentElement.lang||'fr').toLowerCase().replaceAll('_','-');
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=h=>{let x=document.createElement('div');x.innerHTML=String(h||'').replace(/<\s*br\s*\/?\s*>/gi,'\n').replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi,'</$1>\n\n');return(x.textContent||'').replace(/\u00a0/g,' ').replace(/[ \t]+\n/g,'\n').replace(/\n[ \t]+/g,'\n').replace(/\n{3,}/g,'\n\n').replace(/([.!?])(?=[A-ZÀ-ÖØ-Þ])/g,'$1 ').trim()},q=new URLSearchParams(location.search),pid=q.get('projectId'),theme=q.get('theme')||'',mode=q.get('mode')||(pid?'project':'catalog'),root=$('#rp');
-let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[],availablePreviewLocales=[],previewCountry='',previewCountries=[],previewCountryLocales={},contextLoading=false,contextError='',contextConfirmed=mode!=='project';
+let d,ci=0,qi=0,step=-1,socioChoices={},answers={},chapterResults=[],availablePreviewLocales=[],previewCountry='',previewCountries=[],previewCountryLocales={},contextLoading=false,contextError='',contextConfirmed=false;
 
 function apiBase(){
   const host=String(location.hostname||'').toLowerCase(),path=String(location.pathname||'').toLowerCase();
@@ -172,7 +172,6 @@ function contextSelectionState(){
   };
 }
 function contextChooser(){
-  if(mode!=='project')return'';
   const state=contextSelectionState();
   const countryOptions=previewCountries.map(code=>`<option value="${esc(code)}" ${code===previewCountry?'selected':''}>${esc(countryLabel(code))}</option>`).join('');
   const localeOptions=state.locales.map(loc=>`<option value="${esc(loc)}" ${loc===previewLocale?'selected':''}>${esc(localeLabelFr(loc))}</option>`).join('');
@@ -199,7 +198,9 @@ async function loadSelectedPreviewContext(){
   if(!previewCountry||!previewLocale)return;
   contextError='';contextLoading=true;render();
   try{
-    const payload=await api(`/api/projects/${pid}/composer?respondentPreview=1&countryCode=${encodeURIComponent(previewCountry)}&locale=${encodeURIComponent(previewLocale)}`);
+    const payload=mode==='project'
+      ? await api(`/api/projects/${pid}/composer?respondentPreview=1&countryCode=${encodeURIComponent(previewCountry)}&locale=${encodeURIComponent(previewLocale)}`)
+      : await api(`/api/catalog/themes/${encodeURIComponent(theme)}/template?countryCode=${encodeURIComponent(previewCountry)}&locale=${encodeURIComponent(previewLocale)}`);
     norm(payload);
     availablePreviewLocales=previewCountryLocales[previewCountry]||[];
     resetPreviewProgress();
@@ -213,7 +214,7 @@ async function loadSelectedPreviewContext(){
   }
 }
 function bindContextChooser(){
-  if(mode!=='project'||contextConfirmed)return;
+  if(contextConfirmed)return;
   const countrySelect=root.querySelector('#rp-preview-country');
   if(countrySelect)countrySelect.onchange=()=>{
     if(contextLoading)return;
@@ -408,7 +409,7 @@ function done(){
   bindFinalInteractions();
   $('#again').onclick=()=>{step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[];norm.lastShuffleSeed=Date.now();if(mode==='project'){contextConfirmed=false;previewCountry='';previewLocale='';availablePreviewLocales=[];}render()}
 }
-function render(){if(mode==='project'&&!contextConfirmed){root.innerHTML=head('Choix du parcours')+contextChooser();bindContextChooser();return}if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult();else if(step===3)showChapterResult();bindLanguagePicker()}
+function render(){if(!contextConfirmed){root.innerHTML=head('Choix du parcours')+contextChooser();bindContextChooser();return}if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult();else if(step===3)showChapterResult();bindLanguagePicker()}
 async function loadPreviewData(preserveStep=false){try{
   if(mode==='project'&&pid){
     const base=await api(`/api/projects/${pid}/composer?respondentPreview=1`);
@@ -423,9 +424,14 @@ async function loadPreviewData(preserveStep=false){try{
     contextError='';
     norm(base);
   }else{
-    previewCountry='FR';
-    try{const v=await api(`/api/catalog/themes/${encodeURIComponent(theme)}/variants`);const fr=(v.variants||[]).find(x=>String(x.countryCode||'').toUpperCase()==='FR');availablePreviewLocales=(fr?.locales||['fr']).map(x=>String(x).toLowerCase().replaceAll('_','-'));if(!availablePreviewLocales.includes(previewLocale))previewLocale=availablePreviewLocales.includes('fr')?'fr':availablePreviewLocales[0];}catch(_){availablePreviewLocales=['fr'];previewLocale='fr';}
-    norm(await api(`/api/catalog/themes/${encodeURIComponent(theme)}/template?countryCode=FR&locale=${encodeURIComponent(previewLocale)}`));
+    const v=await api(`/api/catalog/themes/${encodeURIComponent(theme)}/variants`);
+    const variants=Array.isArray(v?.variants)?v.variants:[];
+    previewCountries=[...new Set(variants.map(x=>normalizeCountryCode(x.countryCode)).filter(Boolean))];
+    previewCountryLocales={};
+    variants.forEach(x=>{const cc=normalizeCountryCode(x.countryCode);if(cc)previewCountryLocales[cc]=[...new Set((x.locales||[]).map(normalizeLocaleCode).filter(Boolean))];});
+    if(!previewCountries.length){const fallback=normalizeCountryCode((v?.countryCodes||[])[0]||'FR');previewCountries=[fallback];previewCountryLocales[fallback]=(v?.availableLocales||['fr']).map(normalizeLocaleCode).filter(Boolean);}
+    previewCountry='';previewLocale='';availablePreviewLocales=[];contextConfirmed=false;contextLoading=false;contextError='';
+    norm(await api(`/api/catalog/themes/${encodeURIComponent(theme)}/template?countryCode=${encodeURIComponent(previewCountries[0])}&locale=${encodeURIComponent((previewCountryLocales[previewCountries[0]]||['fr'])[0]||'fr')}`));
   }
   if(!preserveStep)resetPreviewProgress();
   render();bindLanguagePicker();
