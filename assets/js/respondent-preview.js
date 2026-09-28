@@ -115,9 +115,11 @@ function norm(x){
     }))
   };
   if(live?.project){
-    if(live.project.respondent_title||live.project.title)d.title=live.project.respondent_title||live.project.title;
-    if(live.project.introduction_html||live.project.intro)d.intro=clean(live.project.introduction_html||live.project.intro);
-    if(Array.isArray(live.project.sociodemo))d.socio=normalizeSocio(live.project.sociodemo);
+    const referenceLocale=normalizeLocaleCode(pr.selected_locale||live.project.selected_locale||'fr');
+    const useLiveReferenceText=previewLocale===referenceLocale;
+    if(useLiveReferenceText&&(live.project.respondent_title||live.project.title))d.title=live.project.respondent_title||live.project.title;
+    if(useLiveReferenceText&&(live.project.introduction_html||live.project.intro))d.intro=clean(live.project.introduction_html||live.project.intro);
+    if(useLiveReferenceText&&Array.isArray(live.project.sociodemo))d.socio=normalizeSocio(live.project.sociodemo);
     if(Array.isArray(live.project.result_buttons))d.resources=normalizeResources(live.project.result_buttons);
   }
   if(live?.chapters && !liveProjectPreview && previewLocale===String(pr.selected_locale||'fr').toLowerCase().replaceAll('_','-')){
@@ -194,20 +196,27 @@ function contextChooser(){
     </div>
   </section>`;
 }
-async function loadSelectedPreviewContext(){
+async function loadSelectedPreviewContext(preservePosition=false){
   if(!previewCountry||!previewLocale)return;
-  contextError='';contextLoading=true;render();
+  const previous={step,ci,qi};
+  contextError='';contextLoading=true;
+  if(!preservePosition)render();
   try{
     const payload=mode==='project'
       ? await api(`/api/projects/${pid}/composer?respondentPreview=1&countryCode=${encodeURIComponent(previewCountry)}&locale=${encodeURIComponent(previewLocale)}`)
       : await api(`/api/catalog/themes/${encodeURIComponent(theme)}/template?countryCode=${encodeURIComponent(previewCountry)}&locale=${encodeURIComponent(previewLocale)}`);
     norm(payload);
     availablePreviewLocales=previewCountryLocales[previewCountry]||[];
-    resetPreviewProgress();
+    socioChoices={};answers={};chapterResults=[];
+    if(preservePosition){
+      step=previous.step;
+      ci=Math.max(0,Math.min(previous.ci,Math.max(0,d.chapters.length-1)));
+      qi=Math.max(0,Math.min(previous.qi,Math.max(0,(d.chapters[ci]?.situations?.length||1)-1)));
+    }else resetPreviewProgress();
     contextConfirmed=true;
   }catch(error){
     contextError=error.message||'Impossible de charger ce parcours.';
-    contextConfirmed=false;
+    if(!preservePosition)contextConfirmed=false;
   }finally{
     contextLoading=false;
     render();
@@ -240,7 +249,7 @@ const modeLabel=()=>mode==='project'?'Votre campagne composée':'Version catalog
 const head=t=>`<header class="rp-head"><img src="assets/img/brand/logo-meayt-color.png"><div><b>${mode==='project'?'Aperçu de ma campagne':'Aperçu répondant'}</b><span>${esc(t||modeLabel())}</span></div>${mode==='project'?'':languagePicker()}</header>`;
 function localeLabel(code){const k=String(code||'').toLowerCase().replaceAll('_','-'),n={fr:'Français',en:'English',es:'Español',de:'Deutsch',it:'Italiano',pt:'Português',br:'Português (Brasil)',nl:'Nederlands','nl-be':'Nederlands (België)',pl:'Polski',cs:'Čeština',sk:'Slovenčina',id:'Bahasa Indonesia',ja:'日本語','ko-kr':'한국어',ko:'한국어',zh:'繁體中文',zf:'简体中文',bg:'Български',ro:'Română',ru:'Русский','sv-se':'Svenska',tr:'Türkçe'};return (n[k]||k.toUpperCase())+' ('+k.toUpperCase()+')'}
 function languagePicker(){if(availablePreviewLocales.length<2)return'';return `<div class="rp-language-picker"><label for="rp-lang">Langue</label><select id="rp-lang">${availablePreviewLocales.map(l=>`<option value="${esc(l)}" ${l===previewLocale?'selected':''}>${esc(localeLabel(l))}</option>`).join('')}</select></div>`}
-function bindLanguagePicker(){const el=$('#rp-lang');if(el)el.onchange=async()=>{previewLocale=el.value;await loadPreviewData(true)}}
+function bindLanguagePicker(){const el=$('#rp-lang');if(el)el.onchange=async()=>{const locale=normalizeLocaleCode(el.value);if(!locale||locale===previewLocale)return;previewLocale=locale;availablePreviewLocales=previewCountryLocales[previewCountry]||availablePreviewLocales;await loadSelectedPreviewContext(true)}}
 const totalSituations=()=>d.chapters.reduce((n,c)=>n+c.situations.length,0);
 const situationNumber=()=>d.chapters.slice(0,ci).reduce((n,c)=>n+c.situations.length,0)+qi+1;
 const answerKey=(c=ci,s=qi)=>`${c}:${s}`;
