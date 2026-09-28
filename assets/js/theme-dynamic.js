@@ -49,16 +49,11 @@
       const ill=document.getElementById('dynamic-theme-illustration');
       ill.innerHTML=`<img src="assets/img/illustrations/theme-${esc(slug)}.png" alt="" onerror="this.parentElement.style.display='none'">`;
 
-      document.getElementById('dynamic-theme-body').innerHTML=logicalGroups.map((group,index)=>{
-        if(group.choiceGroup){
-          const ordered=[...group.chapters].sort((a,b)=>(Number(b.is_default_choice)-Number(a.is_default_choice))||((Number(a.position)||0)-(Number(b.position)||0))||Number(a.id)-Number(b.id));
-          const options=ordered.map(c=>`<div class="theme-choice-option"><strong>${esc(c.choice_label||c.title)}</strong><span>${(c.situations||[]).length} situation${(c.situations||[]).length>1?'s':''}</span>${c.is_default_choice?'<small>Choix par défaut</small>':''}</div>`).join('');
-          const available=ordered.reduce((n,c)=>n+(c.situations||[]).length,0);
-          return `<tr class="theme-choice-row"><td><div class="theme-choice-heading"><strong>${esc(groupLabel(group,index,logicalGroups.length))}</strong><span>Choisissez une seule version dans Composer</span></div><div class="theme-choice-options">${options}</div></td><td>${available}<small class="theme-choice-count-note"> disponibles</small></td><td>Choix d’une variante complète dans Composer</td></tr>`;
-        }
-        const c=group.chapters[0];
-        return `<tr><td><strong>${esc(c.title)}</strong></td><td>${(c.situations||[]).length}</td><td>${esc(c.locked?(c.lock_reason||'Obligatoire · non modifiable'):'Sélection personnalisable')}</td></tr>`;
-      }).join('')||'<tr><td colspan="3">Aucun chapitre n’est encore publié pour cette thématique.</td></tr>';
+      // Le tableau détaillé (descriptions + colonne Action + aperçu du catalogue) est
+      // rendu exclusivement par theme-start.js. Les deux scripts lançaient auparavant
+      // des requêtes asynchrones concurrentes : si theme-dynamic.js terminait en dernier,
+      // il réécrivait les lignes avec une version à 3 colonnes et laissait la colonne
+      // « Action » vide. On ne touche donc plus au tbody ici.
     }catch(e){
       document.getElementById('dynamic-theme-title').textContent='Thématique indisponible';
       document.getElementById('dynamic-theme-description').textContent=e.message;
