@@ -2505,7 +2505,17 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
     const safe=rows.filter(r=>['WOULD_INSERT_ONLY','APPLIED_INSERT_ONLY','ALREADY_OK'].includes(r.status));
     root.innerHTML=`<div class="admin-library-note"><strong>${result?.applied?'Rattrapage appliqué':'Résultat du dry-run'}</strong><span>${fmt(rows.length)} campagne(s) analysée(s) · ${fmt(result?.totalCandidates||0)} variante(s) candidate(s). ${result?.message?esc(result.message):''}</span></div>${summary?`<div class="admin-migration-kpis">${summary}</div>`:''}${risky.length?`<div class="admin-library-note"><strong>Points protégés / à contrôler</strong><span>${risky.slice(0,12).map(r=>`${esc(r.clientName||r.client_name||'Client')} #${esc(r.surveyId||r.survey_id||'')} — ${esc(r.status)} : ${esc(r.detail||'')}`).join('<br>')}${risky.length>12?`<br>… ${fmt(risky.length-12)} autre(s) cas.`:''}</span></div>`:''}${safe.length?`<div class="admin-library-note"><strong>Variantes sûres</strong><span>${fmt(safe.reduce((n,r)=>n+Number(r.toInsert||0),0))} variante(s) absente(s) peuvent être ajoutées sans remplacer l’existant.</span></div>`:''}`;
   }
-  const legacyDsdPlanFile=$('#legacy-dsd-plan-file'),legacyDsdDryRun=$('#legacy-dsd-dryrun'),legacyDsdApply=$('#legacy-dsd-apply'),legacyDsdStatus=$('#legacy-dsd-plan-status');
+  const legacyDsdPlanFile=$('#legacy-dsd-plan-file'),legacyDsdDryRun=$('#legacy-dsd-dryrun'),legacyDsdApply=$('#legacy-dsd-apply'),legacyDsdRollback=$('#legacy-dsd-rollback'),legacyDsdStatus=$('#legacy-dsd-plan-status');
+  async function refreshLegacyDsdRollbackStatus(){
+    if(!legacyDsdRollback)return;
+    try{
+      const status=await StudioAPI.request('/api/admin/legacy-dsd-variants/rollback-status');
+      legacyDsdRollback._patchSessionId=status?.patch?.patch_session_id||null;
+      legacyDsdRollback.disabled=!status?.available;
+      legacyDsdRollback.title=status?.available?`Dernier patch : ${status.patch.project_count||0} projet(s), ${status.patch.inserted_variants||0} variante(s) ajoutée(s)`:'Aucun patch DSD annulable';
+    }catch(_){legacyDsdRollback.disabled=true;legacyDsdRollback._patchSessionId=null;}
+  }
+  refreshLegacyDsdRollbackStatus();
   if(legacyDsdPlanFile)legacyDsdPlanFile.onchange=async()=>{
     const file=legacyDsdPlanFile.files?.[0];legacyDsdPlanFile._plan=null;legacyDsdPlanFile._dryRun=null;if(legacyDsdDryRun)legacyDsdDryRun.disabled=true;if(legacyDsdApply)legacyDsdApply.disabled=true;if($('#legacy-dsd-results'))$('#legacy-dsd-results').innerHTML='';
     if(!file){if(legacyDsdStatus)legacyDsdStatus.textContent='Aucun plan chargé.';return;}
@@ -2565,11 +2575,11 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
     const counts=rows.reduce((acc,row)=>(acc[row.status]=(acc[row.status]||0)+1,acc),{});
     return {rows,counts,updates,totalCampaigns:rows.length,totalCandidates,applied,message:applied?'Application par lots terminée : seules les variantes absentes ont été ajoutées.':'Dry-run par lots terminé : aucune donnée Studio modifiée.'};
   }
-  async function runLegacyDsdBatches(endpoint,plan,{confirmation=null,applied=false}={}){
+  async function runLegacyDsdBatches(endpoint,plan,{confirmation=null,applied=false,patchSessionId=null}={}){
     const batches=legacyDsdPlanBatches(plan),results=[];
     for(let i=0;i<batches.length;i++){
       if(legacyDsdStatus)legacyDsdStatus.innerHTML=`Traitement DSD : lot <strong>${fmt(i+1)}/${fmt(batches.length)}</strong>…`;
-      const payload={plan:batches[i]};if(confirmation)payload.confirmation=confirmation;
+      const payload={plan:batches[i]};if(confirmation)payload.confirmation=confirmation;if(patchSessionId)payload.patchSessionId=patchSessionId;
       results.push(await StudioAPI.request(endpoint,{method:'POST',body:JSON.stringify(payload)}));
     }
     return mergeLegacyDsdBatchResults(results,{applied});
@@ -2583,7 +2593,19 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
     const variants=(dry.rows||[]).reduce((n,r)=>n+(r.status==='WOULD_INSERT_ONLY'?Number(r.toInsert||0):0),0);
     const ok=await StudioModal.confirm({type:'danger',eyebrow:'RATTRAPAGE DSD LEGACY',title:`Ajouter ${variants} variante(s) DSD absente(s) ?`,message:'Studio ajoutera uniquement les variantes absentes. Aucune variante existante ne sera remplacée, projects.sociodemo restera inchangé et Orange #382 est explicitement protégé. Le plan sera appliqué par petits lots pour éviter les limites de taille serveur.',cancelLabel:'Annuler',confirmLabel:'Appliquer les variantes sûres'});if(!ok)return;
     legacyDsdApply.disabled=true;legacyDsdDryRun.disabled=true;
-    try{const result=await runLegacyDsdBatches('/api/admin/legacy-dsd-variants/apply',plan,{confirmation:'APPLY_SAFE_DSD_VARIANTS',applied:true});renderLegacyDsdPatchResults(result);legacyDsdPlanFile._dryRun=null;if(legacyDsdStatus)legacyDsdStatus.innerHTML=`Application DSD terminée par lots · <strong>${fmt(result.totalCampaigns||0)}</strong> campagne(s).`;await StudioModal.alert({title:'Rattrapage DSD terminé',message:result.message||'Les variantes DSD sûres ont été ajoutées.',confirmLabel:'Fermer'});}catch(error){showError(error.message);legacyDsdApply.disabled=false;}finally{legacyDsdDryRun.disabled=false;}
+    try{const patchSessionId=(globalThis.crypto?.randomUUID?.()||`dsd-${Date.now()}-${Math.random().toString(36).slice(2,10)}`);const result=await runLegacyDsdBatches('/api/admin/legacy-dsd-variants/apply',plan,{confirmation:'APPLY_SAFE_DSD_VARIANTS',applied:true,patchSessionId});renderLegacyDsdPatchResults(result);legacyDsdPlanFile._dryRun=null;if(legacyDsdStatus)legacyDsdStatus.innerHTML=`Application DSD terminée par lots · <strong>${fmt(result.totalCampaigns||0)}</strong> campagne(s) · sauvegarde rollback créée.`;await refreshLegacyDsdRollbackStatus();await StudioModal.alert({title:'Rattrapage DSD terminé',message:(result.message||'Les variantes DSD sûres ont été ajoutées.')+' Une sauvegarde de rollback est disponible tant qu’aucune modification ultérieure ne vient remplacer ces variantes.',confirmLabel:'Fermer'});}catch(error){showError(error.message);legacyDsdApply.disabled=false;}finally{legacyDsdDryRun.disabled=false;}
+  };
+  if(legacyDsdRollback)legacyDsdRollback.onclick=async()=>{
+    const patchSessionId=legacyDsdRollback._patchSessionId||null;
+    const ok=await StudioModal.confirm({type:'danger',eyebrow:'ROLLBACK DSD',title:'Annuler le dernier patch DSD ?',message:'Studio restaurera le snapshot sociodemo_variants enregistré avant le patch. Si une campagne a été modifiée depuis, elle sera ignorée pour ne pas écraser un changement manuel.',cancelLabel:'Garder le patch',confirmLabel:'Annuler le dernier patch'});if(!ok)return;
+    legacyDsdRollback.disabled=true;if(legacyDsdApply)legacyDsdApply.disabled=true;if(legacyDsdDryRun)legacyDsdDryRun.disabled=true;
+    try{
+      const result=await StudioAPI.request('/api/admin/legacy-dsd-variants/rollback',{method:'POST',body:JSON.stringify({confirmation:'ROLLBACK_LAST_DSD_PATCH',patchSessionId})});
+      const restored=Number(result?.counts?.RESTORED||0),skipped=Number(result?.counts?.SKIP_CHANGED_SINCE_PATCH||0)+Number(result?.counts?.SKIP_PROJECT_NOT_FOUND||0);
+      if(legacyDsdStatus)legacyDsdStatus.innerHTML=`Rollback DSD terminé · <strong>${fmt(restored)}</strong> projet(s) restauré(s)${skipped?` · ${fmt(skipped)} ignoré(s) car modifié(s) ou introuvable(s)`:''}.`;
+      await refreshLegacyDsdRollbackStatus();
+      await StudioModal.alert({title:'Rollback DSD terminé',message:`${restored} projet(s) restauré(s). ${skipped?`${skipped} projet(s) n’ont pas été écrasés car leur état avait changé depuis le patch.`:'Aucune modification postérieure n’a été écrasée.'}`,confirmLabel:'Fermer'});
+    }catch(error){showError(error.message);await refreshLegacyDsdRollbackStatus();}finally{if(legacyDsdDryRun)legacyDsdDryRun.disabled=!legacyDsdPlanFile?._plan;}
   };
   bindNavigation();
   const migrationBtn=$('#new-migration-batch');if(migrationBtn)migrationBtn.onclick=openMigrationDialog;
