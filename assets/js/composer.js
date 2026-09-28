@@ -192,6 +192,8 @@
       const data=await api(`/api/projects/${projectId}/composer?${query.toString()}`);
       state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);
       state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));
+      state.translationContexts.clear();
+      await preloadActiveTranslationContexts();
       renderCampaignContext();
       render();
       const url=new URL(location.href);url.searchParams.set('locale',state.locale);history.replaceState(null,'',url);
@@ -505,7 +507,7 @@
     $('catalog-progress').style.width='100%';
     $('duration-estimate').textContent=`${Math.max(3,Math.round(total*.35))} à ${Math.max(5,Math.round(total*.45))} minutes · ${total} situations`;
     $('chapter-nav').innerHTML=state.chapters.map((ch,i)=>{const blocking=firstInvalidIndex(i),blocked=blocking!==-1,st=chapterCountStatus(ch);return `<article class="creation-chapter-item ${i===state.active?'is-active':''} ${st.below||st.above?'is-incomplete':''}"><button class="creation-chapter-head" data-chapter="${i}" type="button"><span><small>Partie ${i+1}</small>${esc(ch.title)}</span><strong>${ch.situations.length}</strong></button><div class="creation-chapter-tabs"><button class="${i===state.active?'is-active':''}" data-chapter="${i}" type="button">Questions</button><button class="${blocked?'is-disabled':''}" data-profile-chapter="${i}" data-blocking-chapter="${blocking}" aria-disabled="${blocked}" type="button">Profils</button></div></article>`;}).join('');
-    document.querySelectorAll('[data-chapter]').forEach(button=>button.onclick=()=>{state.active=Number(button.dataset.chapter);history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${state.active}${state.country?`&countryCode=${encodeURIComponent(state.country)}`:''}`);render();window.scrollTo({top:0,behavior:'smooth'});});
+    document.querySelectorAll('[data-chapter]').forEach(button=>button.onclick=async()=>{state.active=Number(button.dataset.chapter);history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${state.active}${state.country?`&countryCode=${encodeURIComponent(state.country)}`:''}${state.locale?`&locale=${encodeURIComponent(state.locale)}`:''}`);await preloadActiveTranslationContexts();render();window.scrollTo({top:0,behavior:'smooth'});});
     document.querySelectorAll('[data-profile-chapter]').forEach(button=>button.onclick=async()=>{const blocking=Number(button.dataset.blockingChapter);if(blocking>=0){await showIncompleteChapterModal(blocking,'Complétez les situations avant de personnaliser les profils');return;}location.href=`personnalisation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${button.dataset.profileChapter}${state.country?`&countryCode=${encodeURIComponent(state.country)}`:''}`;});
   }
 
@@ -607,6 +609,37 @@
     }
   }
 
+  const normalizeLocale=loc=>String(loc||'').trim().toLowerCase().replaceAll('_','-');
+  function translationViewForSituation(s){
+    const ctx=state.translationContexts.get(String(s?.id));
+    if(!ctx)return null;
+    const referenceLocale=normalizeLocale(ctx.referenceLocale||'fr');
+    const targetLocale=normalizeLocale(state.locale||referenceLocale);
+    if(!targetLocale||targetLocale===referenceLocale)return null;
+    const reference=ctx.reference||{};
+    const target=ctx.translations?.[targetLocale]||{status:'missing',content:'',answers:[]};
+    const referenceAnswers=Array.isArray(reference.answers)?reference.answers:[];
+    const targetAnswers=referenceAnswers.map(ref=>{
+      const found=(target.answers||[]).find(item=>String(item.id)===String(ref.id));
+      return {id:ref.id,referenceContent:ref.content||'',content:found?.content||'',status:found?.status||'missing'};
+    });
+    return {referenceLocale,targetLocale,reference,target,targetAnswers};
+  }
+  async function preloadActiveTranslationContexts(){
+    if(!isLegacyClientCampaign(state.project)||state.project?.can_edit===false)return;
+    const ch=state.chapters[state.active];
+    if(!ch||!Array.isArray(ch.situations))return;
+    await Promise.allSettled(ch.situations.map(s=>getTranslationContext(s.id)));
+  }
+  function translationAnswerHtml(baseAnswer,translated,referenceLocale){
+    return `<div class="composer-answer ${baseAnswer.is_best?'is-best':''}">
+      <div class="translation-reference-text"><strong>${esc(localeLabel(referenceLocale))} · référence :</strong> ${esc(translated?.referenceContent||'')}</div>
+      <textarea class="composer-inline-answer" data-answer-input="${esc(baseAnswer.id)}" data-original-answer="${esc(translated?.referenceContent||'')}" rows="2" placeholder="Traduction ${esc(localeLabel(state.locale))} à compléter">${esc(translated?.content||'')}</textarea>
+      <span class="composer-score">Score ${Number(baseAnswer.score).toLocaleString('fr-FR')}</span>
+      ${baseAnswer.is_best?`<span class="composer-best">${bestAnswerLabel()}</span>`:''}
+    </div>`;
+  }
+
   function situationHtml(s,index){
     const ch=state.chapters[state.active];
     const stereotypes=isStereotypesChapter(ch);
@@ -622,6 +655,8 @@
     const originalText=s.original_content_localized||s.original_content||s.content||'';
     const submitted=submittedSituation(s.id);
     const legacyClientImport=isLegacyClientCampaign();
+    const translationView=translationViewForSituation(s);
+    const directTranslationEdit=Boolean(translationView&&legacyClientImport&&state.project?.can_edit!==false&&!locked);
     // Une traduction du catalogue Me&YouToo n'est jamais une personnalisation.
     // Le tag « Personnalisée » repose uniquement sur une vraie contextualisation enregistrée.
     const customized=!legacyClientImport&&Boolean(s.has_customization);
@@ -629,17 +664,26 @@
     const hasLibrary=chapterHasLibrary(ch);
     const situationText=locked
       ?`<h3>${esc(s.content)}</h3>`
-      :`<div class="composer-inline-field">
+      :directTranslationEdit
+        ?`<div class="composer-inline-field">
+          <div class="composer-inline-help composer-context-help"><strong>${esc(localeLabel(translationView.referenceLocale))} · texte de référence</strong><span>${esc(translationView.reference.content||s.content||'')}</span></div>
+          <div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Traduction ${esc(localeLabel(translationView.targetLocale))}</label><span class="composer-context-tag">Version linguistique</span></div>
+          <textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation" data-situation-input="${esc(s.id)}" data-original-situation="${esc(translationView.reference.content||'')}" rows="3" placeholder="Traduction ${esc(localeLabel(translationView.targetLocale))} à compléter">${esc(translationView.target.content||'')}</textarea>
+          <small class="composer-field-guidance">Vous modifiez uniquement la version ${esc(localeLabel(translationView.targetLocale))}. La version ${esc(localeLabel(translationView.referenceLocale))} reste inchangée.</small>
+        </div>`
+        :`<div class="composer-inline-field">
           <div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Texte de la mise en situation</label><span class="composer-context-tag">Contextualisation uniquement</span></div>
           <textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation ${String(originalText)!==String(s.content||'')?'is-customized':''}" data-situation-input="${esc(s.id)}" data-original-situation="${esc(originalText)}" rows="3">${esc(s.content)}</textarea>
           <div data-live-situation-diff>${reviewDiff(originalText,submitted?.content,s.content,'la situation Me&YouToo')}</div>
           <small class="composer-field-guidance">${hasLibrary?'Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel. Si le sens ne convient pas, utilisez « Remplacer » et choisissez une autre situation dans la bibliothèque.':'Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel sans changer le sens de la situation.'}</small>
         </div>`;
-    const answerRows=(s.answers||[]).map(a=>{const original=(s.original_answers||[]).find(o=>String(o.id)===String(a.id)),sent=(submitted?.answers||[]).find(o=>String(o.id)===String(a.id));return answerHtml(a,!locked,original?.content||a.content,sent?.content??null);}).join('');
+    const answerRows=directTranslationEdit
+      ?(s.answers||[]).map(a=>{const ta=translationView.targetAnswers.find(item=>String(item.id)===String(a.id))||{id:a.id,referenceContent:a.content||'',content:''};return translationAnswerHtml(a,ta,translationView.referenceLocale);}).join('')
+      :(s.answers||[]).map(a=>{const original=(s.original_answers||[]).find(o=>String(o.id)===String(a.id)),sent=(submitted?.answers||[]).find(o=>String(o.id)===String(a.id));return answerHtml(a,!locked,original?.content||a.content,sent?.content??null);}).join('');
     const tone=situationTone(s,index,ch);
     return `<article class="composer-situation ${tone} ${locked?'is-locked':''} ${customized?'has-customization':''}" data-situation-card="${esc(s.id)}">
       <div class="composer-situation-head">
-        <div class="composer-situation-tags">${showMethodologyChip?`<span class="composer-lock-chip">🔒 Situation socle — texte non modifiable</span>`:`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':''}</div>
+        <div class="composer-situation-tags">${showMethodologyChip?`<span class="composer-lock-chip">🔒 Situation socle — texte non modifiable</span>`:`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${directTranslationEdit?`<span class="composer-customized-tag">🌐 ${esc(localeLabel(translationView.targetLocale))}</span>`:(customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':'')}</div>
         <div class="composer-situation-head-actions"><span class="composer-origin">Situation Me&YouToo</span><button class="button button-ghost button-small composer-collapse-situation" type="button" data-collapse-situation="${esc(s.id)}" aria-expanded="false">Déplier</button></div>
       </div>
       <div class="composer-situation-body" id="situation-body-${esc(s.id)}" hidden>
@@ -648,10 +692,10 @@
       <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="false"><span data-toggle-label>Voir les réponses et les scores</span> <span aria-hidden="true">⌄</span></button>
       <div class="composer-answers" id="answers-${esc(s.id)}" hidden>${answerRows}</div>
       ${((((state.country?(projectCountryLocales(state.project)[state.country]||[]):(state.project?.locales||[]))).length>1)?`<div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" ${legacyClientImport?'':'hidden'}>🌐 Vérifier les versions linguistiques</button></div><div class="translation-sync-warning" data-live-translation-warning ${customized?'':'hidden'}>⚠️ Vous modifiez le contenu de référence. Les autres versions linguistiques doivent être vérifiées.</div>`:'')}
-      ${!locked?`<div class="composer-inline-help composer-context-help"><strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span></div>
-      <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${customized?'Enregistré':'Enregistrement automatique'}</span></span></div>
+      ${!locked?`<div class="composer-inline-help composer-context-help">${directTranslationEdit?`<strong>Vous travaillez en ${esc(localeLabel(translationView.targetLocale))}</strong><span>Complétez la traduction de la situation et de chaque réponse. Le français reste votre référence et ne sera pas modifié.</span>`:`<strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span>`}</div>
+      <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${directTranslationEdit?'Enregistrement automatique de la traduction':(customized?'Enregistré':'Enregistrement automatique')}</span></span></div>
       <div class="composer-actions">
-        ${customized?`<button class="button button-ghost" type="button" data-reset="${esc(s.id)}">↶ ${state.project?.review_mode?'Annuler ma correction':'Annuler mes modifications'}</button>`:''}
+        ${!directTranslationEdit&&customized?`<button class="button button-ghost" type="button" data-reset="${esc(s.id)}">↶ ${state.project?.review_mode?'Annuler ma correction':'Annuler mes modifications'}</button>`:''}
         ${hasLibrary?`<button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer</button>`:''}
         <button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button>
       </div>`:canReplaceLocked?`<div class="composer-inline-help composer-context-help composer-socle-help"><strong>Situation socle Stéréotypes</strong><span>Le texte et les réponses ne se modifient pas directement. Vous pouvez toutefois remplacer cette situation par une autre situation validée de la bibliothèque Me&YouToo.</span></div><div class="composer-actions"><button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer via la bibliothèque</button></div>`:''}
@@ -774,6 +818,13 @@
     if(answerInputs.some(input=>!String(input.value||'').trim())){setSaveStatus(card,'is-error','Non enregistré · une réponse est vide');return;}
     setSaveStatus(card,'is-saving','Enregistrement…');
     try{
+      const translationView=translationViewForSituation(s);
+      if(translationView&&isLegacyClientCampaign(state.project)&&state.project?.can_edit!==false){
+        await api(`/api/projects/${projectId}/situations/${id}/translations/${encodeURIComponent(translationView.targetLocale)}`,{method:'PATCH',body:JSON.stringify({content:situationText,answers})});
+        await getTranslationContext(id,true);
+        setSaveStatus(card,'is-saved',`${localeLabel(translationView.targetLocale)} · traduction enregistrée`);
+        return;
+      }
       const saved=await api(`/api/projects/${projectId}/situations/${id}`,{method:'PATCH',body:JSON.stringify({customContent:situationText,customAnswers:answers})});
       if(!saved?.situation)throw new Error('La sauvegarde n’a pas été confirmée par le serveur.');
       const hasCustomization=refreshLiveDiff(card,s,situationText,answers);
@@ -989,7 +1040,7 @@
     else if(!project.can_edit){href=`campagne-detail.html?projectId=${encodeURIComponent(projectId)}`;label='← Retour à la campagne';}
     ['composer-top-back','composer-theme-back'].forEach(id=>{const link=$(id);if(link){link.href=href;link.textContent=label;}});
   }
-  async function load(){try{await ensureProject();const query=new URLSearchParams();if(state.country)query.set('countryCode',state.country);if(state.locale)query.set('locale',state.locale);const data=await api(`/api/projects/${projectId}/composer${query.toString()?`?${query.toString()}`:''}`);state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);const countries=campaignCountries(data.project);state.country=requestedCountry&&countries.includes(requestedCountry)?requestedCountry:(countries.length===1?countries[0]:'');const locales=projectContentLocales(data.project);if(isLegacyClientCampaign(data.project)&&!requestedLocale&&locales.includes('fr'))state.locale='fr';else if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':(locales[0]||'fr');if(state.country!==requestedCountry||state.locale!==(requestedLocale||'fr')){const q2=new URLSearchParams();if(state.country)q2.set('countryCode',state.country);if(state.locale)q2.set('locale',state.locale);const refreshed=await api(`/api/projects/${projectId}/composer?${q2.toString()}`);state.project=refreshed.project;state.chapters=refreshed.chapters;rememberComposerContext(refreshed);}state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title||data.project.legacy_theme_title||'Campagne historique';const clientName=$('composer-client-name');if(clientName){const name=String(state.project?.organization_name||'').trim();clientName.textContent=name?`Client : ${name}`:'';clientName.hidden=!name;}renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();configureContextBack(state.project);if(state.project.can_edit)await saveStep('composer');if(state.country)render();if(requestedSituation&&state.country){requestAnimationFrame(()=>{const card=document.querySelector(`[data-situation-card="${CSS.escape(String(requestedSituation))}"]`);if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea,button')?.focus({preventScroll:true});}});}if(state.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!state.project.can_edit)showMessage('Campagne historique en lecture seule. Choisissez une langue ci-dessus pour consulter ses traductions.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
+  async function load(){try{await ensureProject();const query=new URLSearchParams();if(state.country)query.set('countryCode',state.country);if(state.locale)query.set('locale',state.locale);const data=await api(`/api/projects/${projectId}/composer${query.toString()?`?${query.toString()}`:''}`);state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);const countries=campaignCountries(data.project);state.country=requestedCountry&&countries.includes(requestedCountry)?requestedCountry:(countries.length===1?countries[0]:'');const locales=projectContentLocales(data.project);if(isLegacyClientCampaign(data.project)&&!requestedLocale&&locales.includes('fr'))state.locale='fr';else if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':(locales[0]||'fr');if(state.country!==requestedCountry||state.locale!==(requestedLocale||'fr')){const q2=new URLSearchParams();if(state.country)q2.set('countryCode',state.country);if(state.locale)q2.set('locale',state.locale);const refreshed=await api(`/api/projects/${projectId}/composer?${q2.toString()}`);state.project=refreshed.project;state.chapters=refreshed.chapters;rememberComposerContext(refreshed);}state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title||data.project.legacy_theme_title||'Campagne historique';const clientName=$('composer-client-name');if(clientName){const name=String(state.project?.organization_name||'').trim();clientName.textContent=name?`Client : ${name}`:'';clientName.hidden=!name;}renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();configureContextBack(state.project);if(state.project.can_edit)await saveStep('composer');if(state.country){await preloadActiveTranslationContexts();render();}if(requestedSituation&&state.country){requestAnimationFrame(()=>{const card=document.querySelector(`[data-situation-card="${CSS.escape(String(requestedSituation))}"]`);if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea,button')?.focus({preventScroll:true});}});}if(state.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!state.project.can_edit)showMessage('Campagne historique en lecture seule. Choisissez une langue ci-dessus pour consulter ses traductions.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
 
   $('library-button').onclick=async()=>{
     const status=chapterCountStatus(state.chapters[state.active]);
