@@ -136,18 +136,47 @@
     if(Object.keys(map).length)state.composerCountryLocales=map;
   }
 
+  function projectContentLocales(project=state.project){
+    const normalize=list=>[...new Set((Array.isArray(list)?list:[]).map(locale=>String(locale||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
+    const locales=[];
+    locales.push(...(Array.isArray(project?.locales)?project.locales:[]));
+    if(project?.selected_locale)locales.push(project.selected_locale);
+    locales.push(...(Array.isArray(project?.content_locales)?project.content_locales:[]));
+    const intro=project?.introduction_variants_resolved&&typeof project.introduction_variants_resolved==='object'&&!Array.isArray(project.introduction_variants_resolved)?project.introduction_variants_resolved:{};
+    locales.push(...Object.keys(intro));
+    const socioByLocale=project?.sociodemo_language_variants_resolved&&typeof project.sociodemo_language_variants_resolved==='object'&&!Array.isArray(project.sociodemo_language_variants_resolved)?project.sociodemo_language_variants_resolved:{};
+    locales.push(...Object.keys(socioByLocale));
+    const collectVariantLocales=value=>{
+      if(!value||typeof value!=='object'||Array.isArray(value))return;
+      for(const [key,child] of Object.entries(value)){
+        const norm=String(key||'').trim().toLowerCase().replaceAll('_','-');
+        if(/^[a-z]{2}(?:-[a-z]{2})?$/.test(norm)&&Array.isArray(child))locales.push(norm);
+        else if(child&&typeof child==='object'&&!Array.isArray(child))collectVariantLocales(child);
+      }
+    };
+    collectVariantLocales(project?.sociodemo_variants);
+    return normalize(locales);
+  }
+
   function projectCountryLocales(project=state.project){
     const raw=normalizeCountryLocaleMap(project?.country_locales);
     const context=normalizeCountryLocaleMap(state.composerCountryLocales);
     const countries=campaignCountries(project);
     const normalize=list=>[...new Set((Array.isArray(list)?list:[]).map(locale=>String(locale||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
-    const global=normalize((Array.isArray(project?.locales)?project.locales:[]).concat(project?.selected_locale?[project.selected_locale]:[]));
+    const global=projectContentLocales(project);
     const out={};
     countries.forEach(code=>{
       const key=String(code||'').trim().toUpperCase();
       const explicit=normalize(raw[key]);
-      const resolved=explicit.length?explicit:normalize(context[key]);
-      out[key]=resolved.length?resolved:(countries.length===1?global:[]);
+      const contextual=normalize(context[key]);
+      // Un AD mono-périmètre peut être multilingue : dans ce cas, toutes les
+      // langues réellement disponibles appartiennent à ce même périmètre.
+      if(countries.length===1){
+        out[key]=normalize([...explicit,...contextual,...global]);
+      }else{
+        const resolved=explicit.length?explicit:contextual;
+        out[key]=resolved;
+      }
     });
     return out;
   }
@@ -173,18 +202,18 @@
   function renderCampaignContext(){
     const root=$('composer-campaign-context');if(!root)return;
     const readOnly=Boolean(window.STUDIO_COMPOSER_READ_ONLY||document.body.dataset.campaignReadOnly==='true');
-    if(readOnly){
+    const legacy=isLegacyClientCampaign(state.project);
+    if(readOnly||legacy){
       const names={fr:'Français',nl:'Néerlandais','nl-be':'Néerlandais Belgique',en:'Anglais',de:'Allemand',es:'Espagnol',it:'Italien',pt:'Portugais',br:'Portugais Brésil',bg:'Bulgare',ja:'Japonais','ko-kr':'Coréen',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',tr:'Turc',zf:'Chinois simplifié',zh:'Chinois traditionnel',cs:'Tchèque',sk:'Slovaque',id:'Indonésien',ar:'Arabe'};
       const byCountry=projectCountryLocales(state.project);
       const countryLocales=state.country&&Array.isArray(byCountry[state.country])?byCountry[state.country]:[];
-      const locales=[...new Set((countryLocales.length?countryLocales:(Array.isArray(state.project?.locales)?state.project.locales:[]))
-        .concat(state.project?.selected_locale?[state.project.selected_locale]:[])
-        .map(v=>String(v||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
+      const locales=[...new Set((countryLocales.length?countryLocales:projectContentLocales(state.project)).map(v=>String(v||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
       if(locales.length){
         if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':locales[0];
         root.hidden=false;
         root.style.display='';
-        root.innerHTML=`<div class="theme-availability-pills"><strong>${state.country?'Langues du périmètre sélectionné':'Langues disponibles'}</strong>${locales.map(loc=>`<span class="theme-availability-pill is-language">${esc(names[loc]||loc.toUpperCase())} (${esc(loc.toUpperCase())})</span>`).join('')}<small>${state.country?'Les langues affichées correspondent au pays sélectionné. ':''}Utilisez la mappemonde 🌐 sous chaque situation pour comparer les traductions.</small></div>`;
+        root.innerHTML=`<div class="theme-availability-pills"><strong>${legacy?'Langues de la campagne':'Langues disponibles'}</strong>${locales.map(loc=>`<button type="button" class="theme-availability-pill is-language ${loc===state.locale?'is-active':''}" data-composer-locale="${esc(loc)}" aria-pressed="${loc===state.locale?'true':'false'}">${esc(names[loc]||loc.toUpperCase())} (${esc(loc.toUpperCase())})</button>`).join('')}<small>${legacy?'Cliquez sur une langue pour afficher le contenu historique correspondant.':'Utilisez la mappemonde 🌐 sous chaque situation pour comparer les traductions.'}</small></div>`;
+        root.querySelectorAll('[data-composer-locale]').forEach(button=>button.addEventListener('click',()=>switchLegacyLocale(button.dataset.composerLocale)));
         return;
       }
     }
@@ -314,7 +343,7 @@
     const normalizeCode=value=>String(value||'').trim().toUpperCase();
     const normalizeLocales=list=>[...new Set((Array.isArray(list)?list:[]).map(x=>String(x||'').toLowerCase().replaceAll('_','-')).filter(Boolean))];
     const currentCountries=[...new Set((Array.isArray(state.project?.countries)?state.project.countries:[]).concat(state.project?.selected_country_code?[state.project.selected_country_code]:[]).map(normalizeCode).filter(Boolean))];
-    const currentLocales=[...new Set((Array.isArray(state.project?.locales)?state.project.locales:[]).concat(state.project?.selected_locale?[state.project.selected_locale]:[]).map(x=>String(x||'').toLowerCase().replaceAll('_','-')).filter(Boolean))];
+    const currentLocales=projectContentLocales(state.project);
     const storedByCountry=state.project?.country_locales&&typeof state.project.country_locales==='object'&&!Array.isArray(state.project.country_locales)?state.project.country_locales:{};
     const countryName=code=>countryLabel(code);
     const countryKey=code=>countryName(code).toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
@@ -960,7 +989,7 @@
     else if(!project.can_edit){href=`campagne-detail.html?projectId=${encodeURIComponent(projectId)}`;label='← Retour à la campagne';}
     ['composer-top-back','composer-theme-back'].forEach(id=>{const link=$(id);if(link){link.href=href;link.textContent=label;}});
   }
-  async function load(){try{await ensureProject();const query=new URLSearchParams();if(state.country)query.set('countryCode',state.country);if(state.locale)query.set('locale',state.locale);const data=await api(`/api/projects/${projectId}/composer${query.toString()?`?${query.toString()}`:''}`);state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);const countries=campaignCountries(data.project);state.country=requestedCountry&&countries.includes(requestedCountry)?requestedCountry:(countries.length===1?countries[0]:'');const locales=[...new Set((Array.isArray(data.project?.locales)?data.project.locales:[]).map(v=>String(v||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];if(isLegacyClientCampaign(data.project)&&locales.includes('fr'))state.locale='fr';else if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':(locales[0]||'fr');if(state.country!==requestedCountry||state.locale!==(requestedLocale||'fr')){const q2=new URLSearchParams();if(state.country)q2.set('countryCode',state.country);if(state.locale)q2.set('locale',state.locale);const refreshed=await api(`/api/projects/${projectId}/composer?${q2.toString()}`);state.project=refreshed.project;state.chapters=refreshed.chapters;rememberComposerContext(refreshed);}state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title||data.project.legacy_theme_title||'Campagne historique';renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();configureContextBack(state.project);if(state.project.can_edit)await saveStep('composer');if(state.country)render();if(requestedSituation&&state.country){requestAnimationFrame(()=>{const card=document.querySelector(`[data-situation-card="${CSS.escape(String(requestedSituation))}"]`);if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea,button')?.focus({preventScroll:true});}});}if(state.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!state.project.can_edit)showMessage('Campagne historique en lecture seule. Choisissez une langue ci-dessus pour consulter ses traductions.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
+  async function load(){try{await ensureProject();const query=new URLSearchParams();if(state.country)query.set('countryCode',state.country);if(state.locale)query.set('locale',state.locale);const data=await api(`/api/projects/${projectId}/composer${query.toString()?`?${query.toString()}`:''}`);state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);const countries=campaignCountries(data.project);state.country=requestedCountry&&countries.includes(requestedCountry)?requestedCountry:(countries.length===1?countries[0]:'');const locales=projectContentLocales(data.project);if(isLegacyClientCampaign(data.project)&&!requestedLocale&&locales.includes('fr'))state.locale='fr';else if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':(locales[0]||'fr');if(state.country!==requestedCountry||state.locale!==(requestedLocale||'fr')){const q2=new URLSearchParams();if(state.country)q2.set('countryCode',state.country);if(state.locale)q2.set('locale',state.locale);const refreshed=await api(`/api/projects/${projectId}/composer?${q2.toString()}`);state.project=refreshed.project;state.chapters=refreshed.chapters;rememberComposerContext(refreshed);}state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title||data.project.legacy_theme_title||'Campagne historique';const clientName=$('composer-client-name');if(clientName){const name=String(state.project?.organization_name||'').trim();clientName.textContent=name?`Client : ${name}`:'';clientName.hidden=!name;}renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();configureContextBack(state.project);if(state.project.can_edit)await saveStep('composer');if(state.country)render();if(requestedSituation&&state.country){requestAnimationFrame(()=>{const card=document.querySelector(`[data-situation-card="${CSS.escape(String(requestedSituation))}"]`);if(card){card.classList.add('review-direct-target');card.scrollIntoView({behavior:'smooth',block:'center'});card.querySelector('textarea,button')?.focus({preventScroll:true});}});}if(state.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!state.project.can_edit)showMessage('Campagne historique en lecture seule. Choisissez une langue ci-dessus pour consulter ses traductions.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
 
   $('library-button').onclick=async()=>{
     const status=chapterCountStatus(state.chapters[state.active]);
