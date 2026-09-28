@@ -154,6 +154,15 @@
 </div>
 </div>
 <div id="anon-alert" class="anonymity-live-alert" hidden></div>
+<div id="socio-context" class="anonymity-guide" hidden>
+  <div class="anonymity-guide-title">🌍 Données d’analyse par périmètre et langue</div>
+  <p>Les questions affichées aux répondants peuvent différer selon le périmètre et la langue. Sélectionnez le contexte à consulter ou modifier.</p>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,220px));gap:12px;align-items:end;max-width:480px">
+    <label class="field"><span>Périmètre</span><select id="socio-country"></select></label>
+    <label class="field"><span>Langue</span><select id="socio-locale"></select></label>
+  </div>
+  <small id="socio-context-note"></small>
+</div>
 <div class="socio-examples-visible"><strong>Critères proposés</strong><span>Genre est obligatoire. Les autres critères sont facultatifs.</span><div class="socio-example-buttons"><button type="button" data-example="age">+ Âge</button><button type="button" data-example="0">+ Business Unit</button><button type="button" data-example="1">+ Régions</button><button type="button" data-example="2">+ Fonction</button><button type="button" data-example="3">+ Manager / collaborateur</button></div></div>
 <div id="socio-list">
 </div>
@@ -195,7 +204,7 @@
 <script src="assets/js/project-context.js?v=20260902-explicit-theme-start-1">
 </script>
 <script src="assets/js/content-adjustment.js?v=20260903-nested-adjustment-1"></script>
-<script src="assets/js/parametrage.js?v=20260922-dsd-accordion-1">
+<script src="assets/js/parametrage.js?v=20260928-dsd-multilang-1">
 </script>
 <script src="assets/js/pack-requests.js?v=20260822-1"></script>
 <script src="assets/js/preview-launcher.js?v=20260905-3"></script></body>
