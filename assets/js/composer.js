@@ -484,7 +484,7 @@
   function bestAnswerLabel(){return isLegalChapter()?'Réponse correcte':'Réponse la plus appropriée';}
   function isStereotypesChapter(ch=state.chapters[state.active]){
     // Règle transversale Me&YouToo : tout chapitre « Stéréotypes… » est un socle méthodologique,
-    // y compris lorsqu'il provient d'un import historique client sans rattachement catalogue.
+    // quelle que soit la thématique qui le réutilise (Sexisme, Alliés de la mixité, etc.).
     return canonical(ch?.slug||ch?.title).includes('stereotype');
   }
   function isAggressionChapter(ch=state.chapters[state.active]){return canonical(ch?.slug||ch?.title).includes('agression sexuelle');}
@@ -887,12 +887,32 @@
   function render(){
     const ch=state.chapters[state.active];if(!ch)return;
     const stereotypes=isStereotypesChapter(ch),status=chapterCountStatus(ch);
+    const methodologyLocked=Boolean(stereotypes&&!isAdmin);
+    const guidance=document.querySelector('.composer-customization-guidance');
+    const objective=document.querySelector('.creation-objective');
+    if(guidance){
+      if(methodologyLocked){
+        guidance.innerHTML=`<div class="composer-customization-guidance-icon" aria-hidden="true">🔒</div><div><strong>Pourquoi ce chapitre est-il non modifiable ?</strong><p>Le chapitre <strong>« Stéréotypes de genre »</strong> est issu d’un <strong>programme de recherche-action mené en entreprise auprès de plusieurs centaines de collaborateurs</strong>.</p><p>Ses situations, leurs formulations, les réponses, la sélection des situations et les profils associés ont été construits comme un <strong>ensemble méthodologique</strong>. Les modifier ferait perdre la cohérence de la mesure et la comparabilité des résultats.</p><p>Ce chapitre est donc <strong>consultable mais non modifiable par les clients</strong>, partout où il est utilisé dans le Studio Me&YouToo.</p></div>`;
+      }else{
+        guidance.innerHTML=`<div class="composer-customization-guidance-icon" aria-hidden="true">✎</div><div><strong>Personnalisez le contexte, pas le sens</strong><p>Vous pouvez adapter une mise en situation ou une réponse à votre organisation : <strong>changer un prénom</strong>, utiliser votre <strong>terminologie interne</strong>, préciser un <strong>métier</strong>, un <strong>secteur d’activité</strong> ou un <strong>contexte professionnel</strong>.</p><p><strong>À conserver impérativement :</strong> le sens de la situation, l’intention pédagogique et le niveau de pertinence des réponses. Les scores restent définis par Me&YouToo.</p><p class="composer-library-guidance"><strong>Le sens ne vous convient pas ?</strong> Ne réécrivez pas la situation : utilisez <strong>Remplacer</strong> pour choisir une autre mise en situation dans la bibliothèque Me&YouToo.</p><p class="composer-customization-validation">Vos adaptations seront <strong>transmises à Me&YouToo pour validation avant toute publication</strong>.</p></div>`;
+      }
+    }
+    if(objective){
+      const strong=objective.querySelector('strong'),copy=objective.querySelector('p');
+      if(methodologyLocked){
+        if(strong)strong.textContent='Objectif de cette étape';
+        if(copy)copy.textContent='Consultez le socle méthodologique « Stéréotypes de genre ». Son contenu est conservé à l’identique dans votre autodiagnostic.';
+      }else{
+        if(strong)strong.textContent='Objectif de cette étape';
+        if(copy)copy.textContent='Choisissez les situations de cette partie et adaptez uniquement celles qui nécessitent une contextualisation à votre organisation.';
+      }
+    }
     $('chapter-kicker').textContent=`Chapitre ${state.active+1} · Questions`;
     $('chapter-title').textContent=ch.title;
-    const effectiveChapterLocked=Boolean(stereotypes&&!isAdmin);
+    const effectiveChapterLocked=methodologyLocked;
     const campaignReadOnly=Boolean(state.project?.can_edit===false&&!state.project?.review_mode);
     $('chapter-desc').textContent=effectiveChapterLocked
-      ?'Les situations de ce chapitre constituent un socle méthodologique Me&YouToo : leur texte, leurs réponses et leur sélection ne sont pas modifiables.'
+      ?'Ce chapitre est issu d’un programme de recherche-action mené en entreprise auprès de plusieurs centaines de collaborateurs. Il constitue un socle méthodologique Me&YouToo et n’est pas modifiable par les clients.'
       :campaignReadOnly
         ?`${status.count} situation${status.count>1?'s':''} dans cette campagne historique · consultation en lecture seule.`
       :status.rules.min!=null
