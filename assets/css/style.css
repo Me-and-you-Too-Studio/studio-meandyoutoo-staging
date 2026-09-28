@@ -14837,3 +14837,9 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .rp-context-chooser-gate{margin-bottom:0}
 .rp-context-step.is-disabled{opacity:.55}
 .rp-context-step.is-disabled .rp-context-select{cursor:not-allowed;background:#f3f6f8}
+
+/* Calendar campaign hover card: same visual language as DEI event cards. */
+.calendar-campaign-popover::before{background:#0b8c95}
+.calendar-campaign-popover .calendar-dei-popover-date{background:#eef8f8;color:#176c73}
+.calendar-campaign-popover .calendar-dei-popover-title{margin-bottom:7px}
+.calendar-campaign-popover .calendar-dei-popover-category{line-height:1.35;margin-bottom:14px}
