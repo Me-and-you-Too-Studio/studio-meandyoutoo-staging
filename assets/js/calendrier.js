@@ -109,6 +109,18 @@
     pop.addEventListener('mouseleave',scheduleHideDeiPopover);
     return pop;
   }
+  const recommendationThemeSlugs={
+    'Compréhension du sexisme':'sexisme',
+    'Allié·e de la mixité':'mixite',
+    'Diversité des origines':'origines',
+    'LGBT+':'lgbt',
+    'Collègue inclusif':'collegue-inclusif',
+    'Handicap':'handicap'
+  };
+  function recommendationThemeHref(recommendation){
+    const slug=recommendationThemeSlugs[recommendation];
+    return slug?'theme.html?theme='+encodeURIComponent(slug):'bibliotheque.html';
+  }
   function showDeiPopover(trigger){
     if(deiPopoverHideTimer)clearTimeout(deiPopoverHideTimer);
     const index=Number(trigger.dataset.deiEvent),e=deiEvents[index];
@@ -116,7 +128,7 @@
     const date=parseDate(trigger.dataset.deiDate)||state.cursor;
     const pop=ensureDeiPopover();
     const category=deiCategoryLabels[e.category]||'Événement DEI';
-    pop.innerHTML=`<div class="calendar-dei-popover-head"><span class="calendar-dei-popover-date">${esc(deiEventDateDetail(e,date))}</span><button type="button" class="calendar-dei-popover-close" aria-label="Fermer">×</button></div><strong class="calendar-dei-popover-title">${esc(e.title)}</strong><span class="calendar-dei-popover-category">${esc(category)}</span>${e.recommendation?`<div class="calendar-dei-popover-reco"><span>Autodiagnostic recommandé</span><strong>${esc(e.recommendation)}</strong></div>`:''}<a class="button button-primary calendar-dei-popover-cta" href="bibliotheque.html">Voir le catalogue →</a>`;
+    pop.innerHTML=`<div class="calendar-dei-popover-head"><span class="calendar-dei-popover-date">${esc(deiEventDateDetail(e,date))}</span><button type="button" class="calendar-dei-popover-close" aria-label="Fermer">×</button></div><strong class="calendar-dei-popover-title">${esc(e.title)}</strong><span class="calendar-dei-popover-category">${esc(category)}</span>${e.recommendation?`<div class="calendar-dei-popover-reco"><span>Autodiagnostic recommandé</span><strong>${esc(e.recommendation)}</strong></div>`:''}<a class="button button-primary calendar-dei-popover-cta" href="${recommendationThemeHref(e.recommendation)}">Voir le catalogue →</a>`;
     pop.hidden=false;
     pop.className=`calendar-dei-popover is-${esc(e.category)} is-visible`;
     pop.querySelector('.calendar-dei-popover-close').onclick=hideDeiPopover;
