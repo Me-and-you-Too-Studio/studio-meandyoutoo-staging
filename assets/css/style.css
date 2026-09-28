@@ -14843,3 +14843,9 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .calendar-campaign-popover .calendar-dei-popover-date{background:#eef8f8;color:#176c73}
 .calendar-campaign-popover .calendar-dei-popover-title{margin-bottom:7px}
 .calendar-campaign-popover .calendar-dei-popover-category{line-height:1.35;margin-bottom:14px}
+
+/* Calendrier — alignement des filtres admin/client */
+.calendar-filterbar{align-items:end}
+.calendar-filterbar:has(#calendar-org-filter:not([hidden])){grid-template-columns:minmax(180px,.9fr) minmax(180px,.9fr) minmax(180px,.9fr) auto minmax(250px,1.2fr)}
+@media(max-width:1180px){.calendar-filterbar:has(#calendar-org-filter:not([hidden])){grid-template-columns:1fr 1fr 1fr}.calendar-filterbar:has(#calendar-org-filter:not([hidden])) #calendar-search{grid-column:span 2}}
+@media(max-width:760px){.calendar-filterbar:has(#calendar-org-filter:not([hidden])){grid-template-columns:1fr}.calendar-filterbar:has(#calendar-org-filter:not([hidden])) #calendar-search{grid-column:auto}}

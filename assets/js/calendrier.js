@@ -232,7 +232,16 @@
   }
   function filteredCampaigns(){
     const q=$('#calendar-search').value.trim().toLowerCase(),status=$('#calendar-status-filter').value,org=$('#calendar-org-filter').value;
-    return state.campaigns.filter(p=>(!status||p.status===status)&&(!org||String(p.organization_id)===String(org))&&(!q||[campaignName(p),p.organization_name,p.theme_title,statusLabels[p.status]].some(v=>String(v||'').toLowerCase().includes(q))));
+    const period=range(),periodStart=parseDate(period.start),periodEnd=parseDate(period.end);
+    const matchesStatus=p=>{
+      if(!status)return true;
+      if(status!=='active')return p.status===status;
+      const start=parseDate(p.launch_date),end=parseDate(p.close_date);
+      if(!start&&!end)return p.status==='active';
+      const a=start||end,b=end||start;
+      return a<=periodEnd&&b>=periodStart;
+    };
+    return state.campaigns.filter(p=>matchesStatus(p)&&(!org||String(p.organization_id)===String(org))&&(!q||[campaignName(p),p.organization_name,p.theme_title,statusLabels[p.status]].some(v=>String(v||'').toLowerCase().includes(q))));
   }
   function filteredTasksForCalendar(){
     if(!$('#calendar-show-tasks').checked)return[];
