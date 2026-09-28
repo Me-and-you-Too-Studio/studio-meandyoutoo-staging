@@ -2511,16 +2511,79 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
     if(!file){if(legacyDsdStatus)legacyDsdStatus.textContent='Aucun plan chargé.';return;}
     try{const plan=JSON.parse(await file.text()),surveys=Array.isArray(plan?.surveys)?plan.surveys:[];if(!surveys.length)throw new Error('Aucune campagne dans ce plan');legacyDsdPlanFile._plan=plan;if(legacyDsdStatus)legacyDsdStatus.innerHTML=`<strong>${esc(file.name)}</strong> · ${fmt(surveys.length)} campagne(s) dans le plan.`;if(legacyDsdDryRun)legacyDsdDryRun.disabled=false;}catch(error){if(legacyDsdStatus)legacyDsdStatus.textContent='Plan JSON invalide : '+error.message;}
   };
+  const LEGACY_DSD_BATCH_MAX_BYTES=6*1024*1024;
+  function legacyDsdPlanBatches(plan){
+    const surveys=Array.isArray(plan?.surveys)?plan.surveys:[],fragments=[];
+    surveys.forEach(item=>{
+      const desired=item?.desired&&typeof item.desired==='object'&&!Array.isArray(item.desired)?item.desired:{};
+      Object.entries(desired).forEach(([country,localeMap])=>{
+        if(!localeMap||typeof localeMap!=='object'||Array.isArray(localeMap))return;
+        Object.entries(localeMap).forEach(([locale,value])=>{
+          if(!Array.isArray(value)||!value.length)return;
+          fragments.push({...item,desired:{[country]:{[locale]:value}}});
+        });
+      });
+    });
+    if(!fragments.length)throw new Error('Aucune variante DSD exploitable dans ce plan.');
+    const batches=[];let current=[];
+    for(const fragment of fragments){
+      const candidate=[...current,fragment];
+      const bytes=new Blob([JSON.stringify({plan:{surveys:candidate}})]).size;
+      if(bytes>LEGACY_DSD_BATCH_MAX_BYTES&&current.length){batches.push({surveys:current});current=[fragment];}
+      else current=candidate;
+      const singleBytes=new Blob([JSON.stringify({plan:{surveys:[fragment]}})]).size;
+      if(singleBytes>25*1024*1024)throw new Error(`Une variante DSD est trop volumineuse (${Math.round(singleBytes/1024/1024)} Mo). Elle doit être traitée séparément.`);
+    }
+    if(current.length)batches.push({surveys:current});
+    return batches;
+  }
+  function mergeLegacyDsdBatchResults(results,{applied=false}={}){
+    const grouped=new Map(),updates=[];let totalCandidates=0;
+    for(const result of results){
+      totalCandidates+=Number(result?.totalCandidates||0);
+      if(Array.isArray(result?.updates))updates.push(...result.updates);
+      for(const row of (result?.rows||[])){
+        const key=[row.clientId||row.client_id||'',row.surveyId||row.survey_id||'',row.projectId||''].join('|');
+        if(!grouped.has(key))grouped.set(key,{...row,toInsert:0,alreadyOk:0,preserveDifferent:0,invalid:0,_statuses:new Set()});
+        const agg=grouped.get(key);
+        agg.toInsert+=Number(row.toInsert||0);agg.alreadyOk+=Number(row.alreadyOk||0);agg.preserveDifferent+=Number(row.preserveDifferent||0);agg.invalid+=Number(row.invalid||0);agg._statuses.add(row.status);
+      }
+    }
+    const rows=[...grouped.values()].map(row=>{
+      const statuses=row._statuses;delete row._statuses;
+      if(statuses.has('SKIP_MANUAL_DSD_PROTECTED'))row.status='SKIP_MANUAL_DSD_PROTECTED';
+      else if(statuses.has('SKIP_AMBIGUOUS'))row.status='SKIP_AMBIGUOUS';
+      else if(statuses.has('SKIP_PROJECT_NOT_FOUND'))row.status='SKIP_PROJECT_NOT_FOUND';
+      else if(statuses.has('SKIP_INVALID_PLAN'))row.status='SKIP_INVALID_PLAN';
+      else if(applied&&statuses.has('APPLIED_INSERT_ONLY'))row.status='APPLIED_INSERT_ONLY';
+      else if(statuses.has('WOULD_INSERT_ONLY'))row.status='WOULD_INSERT_ONLY';
+      else if(statuses.has('PRESERVE_EXISTING_DIFFERENT'))row.status='PRESERVE_EXISTING_DIFFERENT';
+      else row.status='ALREADY_OK';
+      row.detail=`${row.toInsert} variante(s) absente(s) à ajouter · ${row.alreadyOk} déjà identique(s) · ${row.preserveDifferent} existante(s) différente(s) conservée(s) · ${row.invalid} invalide(s) ignorée(s)`;
+      return row;
+    });
+    const counts=rows.reduce((acc,row)=>(acc[row.status]=(acc[row.status]||0)+1,acc),{});
+    return {rows,counts,updates,totalCampaigns:rows.length,totalCandidates,applied,message:applied?'Application par lots terminée : seules les variantes absentes ont été ajoutées.':'Dry-run par lots terminé : aucune donnée Studio modifiée.'};
+  }
+  async function runLegacyDsdBatches(endpoint,plan,{confirmation=null,applied=false}={}){
+    const batches=legacyDsdPlanBatches(plan),results=[];
+    for(let i=0;i<batches.length;i++){
+      if(legacyDsdStatus)legacyDsdStatus.innerHTML=`Traitement DSD : lot <strong>${fmt(i+1)}/${fmt(batches.length)}</strong>…`;
+      const payload={plan:batches[i]};if(confirmation)payload.confirmation=confirmation;
+      results.push(await StudioAPI.request(endpoint,{method:'POST',body:JSON.stringify(payload)}));
+    }
+    return mergeLegacyDsdBatchResults(results,{applied});
+  }
   if(legacyDsdDryRun)legacyDsdDryRun.onclick=async()=>{
     const plan=legacyDsdPlanFile?._plan;if(!plan)return;legacyDsdDryRun.disabled=true;if(legacyDsdApply)legacyDsdApply.disabled=true;
-    try{const result=await StudioAPI.request('/api/admin/legacy-dsd-variants/dry-run',{method:'POST',body:JSON.stringify({plan})});legacyDsdPlanFile._dryRun=result;renderLegacyDsdPatchResults(result);const hasInsert=(result.rows||[]).some(r=>r.status==='WOULD_INSERT_ONLY'&&Number(r.toInsert||0)>0);if(legacyDsdApply)legacyDsdApply.disabled=!hasInsert;}catch(error){showError(error.message);}finally{legacyDsdDryRun.disabled=false;}
+    try{const result=await runLegacyDsdBatches('/api/admin/legacy-dsd-variants/dry-run',plan);legacyDsdPlanFile._dryRun=result;renderLegacyDsdPatchResults(result);const hasInsert=(result.rows||[]).some(r=>r.status==='WOULD_INSERT_ONLY'&&Number(r.toInsert||0)>0);if(legacyDsdApply)legacyDsdApply.disabled=!hasInsert;if(legacyDsdStatus)legacyDsdStatus.innerHTML=`Plan traité par lots · <strong>${fmt(result.totalCampaigns||0)}</strong> campagne(s).`;}catch(error){showError(error.message);}finally{legacyDsdDryRun.disabled=false;}
   };
   if(legacyDsdApply)legacyDsdApply.onclick=async()=>{
     const plan=legacyDsdPlanFile?._plan,dry=legacyDsdPlanFile?._dryRun;if(!plan||!dry)return;
     const variants=(dry.rows||[]).reduce((n,r)=>n+(r.status==='WOULD_INSERT_ONLY'?Number(r.toInsert||0):0),0);
-    const ok=await StudioModal.confirm({type:'danger',eyebrow:'RATTRAPAGE DSD LEGACY',title:`Ajouter ${variants} variante(s) DSD absente(s) ?`,message:'Studio ajoutera uniquement les variantes absentes. Aucune variante existante ne sera remplacée, projects.sociodemo restera inchangé et Orange #382 est explicitement protégé.',cancelLabel:'Annuler',confirmLabel:'Appliquer les variantes sûres'});if(!ok)return;
+    const ok=await StudioModal.confirm({type:'danger',eyebrow:'RATTRAPAGE DSD LEGACY',title:`Ajouter ${variants} variante(s) DSD absente(s) ?`,message:'Studio ajoutera uniquement les variantes absentes. Aucune variante existante ne sera remplacée, projects.sociodemo restera inchangé et Orange #382 est explicitement protégé. Le plan sera appliqué par petits lots pour éviter les limites de taille serveur.',cancelLabel:'Annuler',confirmLabel:'Appliquer les variantes sûres'});if(!ok)return;
     legacyDsdApply.disabled=true;legacyDsdDryRun.disabled=true;
-    try{const result=await StudioAPI.request('/api/admin/legacy-dsd-variants/apply',{method:'POST',body:JSON.stringify({plan,confirmation:'APPLY_SAFE_DSD_VARIANTS'})});renderLegacyDsdPatchResults(result);legacyDsdPlanFile._dryRun=null;await StudioModal.alert({title:'Rattrapage DSD terminé',message:result.message||'Les variantes DSD sûres ont été ajoutées.',confirmLabel:'Fermer'});}catch(error){showError(error.message);legacyDsdApply.disabled=false;}finally{legacyDsdDryRun.disabled=false;}
+    try{const result=await runLegacyDsdBatches('/api/admin/legacy-dsd-variants/apply',plan,{confirmation:'APPLY_SAFE_DSD_VARIANTS',applied:true});renderLegacyDsdPatchResults(result);legacyDsdPlanFile._dryRun=null;if(legacyDsdStatus)legacyDsdStatus.innerHTML=`Application DSD terminée par lots · <strong>${fmt(result.totalCampaigns||0)}</strong> campagne(s).`;await StudioModal.alert({title:'Rattrapage DSD terminé',message:result.message||'Les variantes DSD sûres ont été ajoutées.',confirmLabel:'Fermer'});}catch(error){showError(error.message);legacyDsdApply.disabled=false;}finally{legacyDsdDryRun.disabled=false;}
   };
   bindNavigation();
   const migrationBtn=$('#new-migration-batch');if(migrationBtn)migrationBtn.onclick=openMigrationDialog;
