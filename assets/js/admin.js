@@ -2499,11 +2499,16 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
   const chapterForm=$('#library-chapter-form');if(chapterForm)chapterForm.onsubmit=async e=>{e.preventDefault();if(!chapterForm.reportValidity())return;const id=$('#library-chapter-id').value,themeId=$('#library-chapter-theme-id').value,payload={title:$('#library-chapter-title').value.trim(),clientDescription:$('#library-chapter-client-description').value.trim(),locked:$('#library-chapter-locked').checked,lockReason:$('#library-chapter-lock-reason').value.trim()};try{await StudioAPI.request(id?'/api/admin/catalog/chapters/'+id:'/api/admin/catalog/themes/'+themeId+'/chapters',{method:id?'PATCH':'POST',body:JSON.stringify(payload)});$('#library-chapter-dialog').close();await refreshLibrary();}catch(error){showError(error.message);}};
   function renderLegacyDsdPatchResults(result){
     const root=$('#legacy-dsd-results');if(!root)return;
-    const rows=Array.isArray(result?.rows)?result.rows:[],counts=result?.counts||{};
-    const summary=Object.entries(counts).map(([key,value])=>`<article><strong>${fmt(value)}</strong><span>${esc(key)}</span></article>`).join('');
+    const rows=Array.isArray(result?.rows)?result.rows:[],counts=result?.counts||{},vb=result?.variantBreakdown||{};
+    const campaignSummary=Object.entries(counts).map(([key,value])=>`<article><strong>${fmt(value)}</strong><span>${esc(key)}</span></article>`).join('');
+    const variantCards=[
+      ['À ajouter',vb.toInsert],['Déjà identiques',vb.alreadyOk],['Existantes différentes conservées',vb.preserveDifferent],
+      ['Protégées manuellement',vb.protected],['Projet introuvable',vb.projectNotFound],['Projet ambigu',vb.ambiguous],['Invalides',vb.invalid]
+    ].filter(([,value])=>Number(value||0)>0).map(([label,value])=>`<article><strong>${fmt(value)}</strong><span>${esc(label)}</span></article>`).join('');
     const risky=rows.filter(r=>['SKIP_AMBIGUOUS','SKIP_PROJECT_NOT_FOUND','PRESERVE_EXISTING_DIFFERENT','SKIP_INVALID_PLAN','SKIP_MANUAL_DSD_PROTECTED'].includes(r.status));
-    const safe=rows.filter(r=>['WOULD_INSERT_ONLY','APPLIED_INSERT_ONLY','ALREADY_OK'].includes(r.status));
-    root.innerHTML=`<div class="admin-library-note"><strong>${result?.applied?'Rattrapage appliqué':'Résultat du dry-run'}</strong><span>${fmt(rows.length)} campagne(s) analysée(s) · ${fmt(result?.totalCandidates||0)} variante(s) candidate(s). ${result?.message?esc(result.message):''}</span></div>${summary?`<div class="admin-migration-kpis">${summary}</div>`:''}${risky.length?`<div class="admin-library-note"><strong>Points protégés / à contrôler</strong><span>${risky.slice(0,12).map(r=>`${esc(r.clientName||r.client_name||'Client')} #${esc(r.surveyId||r.survey_id||'')} — ${esc(r.status)} : ${esc(r.detail||'')}`).join('<br>')}${risky.length>12?`<br>… ${fmt(risky.length-12)} autre(s) cas.`:''}</span></div>`:''}${safe.length?`<div class="admin-library-note"><strong>Variantes sûres</strong><span>${fmt(safe.reduce((n,r)=>n+Number(r.toInsert||0),0))} variante(s) absente(s) peuvent être ajoutées sans remplacer l’existant.</span></div>`:''}`;
+    const expected=Number(result?.totalPlannedCandidates||0),accounted=Number(vb.accounted||0),difference=Number(vb.difference||0);
+    const reconcile=expected?`<div class="admin-library-note"><strong>Contrôle des variantes</strong><span><strong>${fmt(expected)}</strong> variante(s) dans le plan = <strong>${fmt(accounted)}</strong> variante(s) expliquée(s) par le dry-run${difference?` · <strong>écart : ${fmt(difference)}</strong>`:' · total cohérent ✅'}.</span></div>`:'';
+    root.innerHTML=`<div class="admin-library-note"><strong>${result?.applied?'Rattrapage appliqué':'Résultat du dry-run'}</strong><span>${fmt(rows.length)} campagne(s) analysée(s) · ${fmt(expected||result?.totalCandidates||0)} variante(s) dans le plan. ${result?.message?esc(result.message):''}</span></div>${variantCards?`<div class="admin-migration-kpis">${variantCards}</div>`:''}${reconcile}${campaignSummary?`<div class="admin-library-note"><strong>Statut des campagnes</strong><span>${Object.entries(counts).map(([key,value])=>`${fmt(value)} ${esc(key)}`).join(' · ')}</span></div>`:''}${risky.length?`<div class="admin-library-note"><strong>Points protégés / à contrôler</strong><span>${risky.slice(0,12).map(r=>`${esc(r.clientName||r.client_name||'Client')} #${esc(r.surveyId||r.survey_id||'')} — ${esc(r.status)} : ${esc(r.detail||'')}`).join('<br>')}${risky.length>12?`<br>… ${fmt(risky.length-12)} autre(s) cas.`:''}</span></div>`:''}${Number(vb.toInsert||0)>0?`<div class="admin-library-note"><strong>Variantes sûres</strong><span>${fmt(vb.toInsert)} variante(s) absente(s) peuvent être ajoutées sans remplacer l’existant.</span></div>`:''}`;
   }
   const legacyDsdPlanFile=$('#legacy-dsd-plan-file'),legacyDsdDryRun=$('#legacy-dsd-dryrun'),legacyDsdApply=$('#legacy-dsd-apply'),legacyDsdRollback=$('#legacy-dsd-rollback'),legacyDsdStatus=$('#legacy-dsd-plan-status');
   async function refreshLegacyDsdRollbackStatus(){
@@ -2547,16 +2552,16 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
     if(current.length)batches.push({surveys:current});
     return batches;
   }
-  function mergeLegacyDsdBatchResults(results,{applied=false}={}){
+  function mergeLegacyDsdBatchResults(results,{applied=false,totalPlannedCandidates=0}={}){
     const grouped=new Map(),updates=[];let totalCandidates=0;
     for(const result of results){
       totalCandidates+=Number(result?.totalCandidates||0);
       if(Array.isArray(result?.updates))updates.push(...result.updates);
       for(const row of (result?.rows||[])){
         const key=[row.clientId||row.client_id||'',row.surveyId||row.survey_id||'',row.projectId||''].join('|');
-        if(!grouped.has(key))grouped.set(key,{...row,toInsert:0,alreadyOk:0,preserveDifferent:0,invalid:0,_statuses:new Set()});
+        if(!grouped.has(key))grouped.set(key,{...row,toInsert:0,alreadyOk:0,preserveDifferent:0,invalid:0,plannedCandidates:0,_statuses:new Set()});
         const agg=grouped.get(key);
-        agg.toInsert+=Number(row.toInsert||0);agg.alreadyOk+=Number(row.alreadyOk||0);agg.preserveDifferent+=Number(row.preserveDifferent||0);agg.invalid+=Number(row.invalid||0);agg._statuses.add(row.status);
+        agg.toInsert+=Number(row.toInsert||0);agg.alreadyOk+=Number(row.alreadyOk||0);agg.preserveDifferent+=Number(row.preserveDifferent||0);agg.invalid+=Number(row.invalid||0);agg.plannedCandidates+=1;agg._statuses.add(row.status);
       }
     }
     const rows=[...grouped.values()].map(row=>{
@@ -2573,16 +2578,25 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
       return row;
     });
     const counts=rows.reduce((acc,row)=>(acc[row.status]=(acc[row.status]||0)+1,acc),{});
-    return {rows,counts,updates,totalCampaigns:rows.length,totalCandidates,applied,message:applied?'Application par lots terminée : seules les variantes absentes ont été ajoutées.':'Dry-run par lots terminé : aucune donnée Studio modifiée.'};
+    const variantBreakdown=rows.reduce((acc,row)=>{
+      acc.toInsert+=Number(row.toInsert||0);acc.alreadyOk+=Number(row.alreadyOk||0);acc.preserveDifferent+=Number(row.preserveDifferent||0);acc.invalid+=Number(row.invalid||0);
+      if(row.status==='SKIP_MANUAL_DSD_PROTECTED')acc.protected+=Number(row.plannedCandidates||0);
+      if(row.status==='SKIP_PROJECT_NOT_FOUND')acc.projectNotFound+=Number(row.plannedCandidates||0);
+      if(row.status==='SKIP_AMBIGUOUS')acc.ambiguous+=Number(row.plannedCandidates||0);
+      return acc;
+    },{toInsert:0,alreadyOk:0,preserveDifferent:0,protected:0,projectNotFound:0,ambiguous:0,invalid:0});
+    variantBreakdown.accounted=variantBreakdown.toInsert+variantBreakdown.alreadyOk+variantBreakdown.preserveDifferent+variantBreakdown.protected+variantBreakdown.projectNotFound+variantBreakdown.ambiguous+variantBreakdown.invalid;
+    variantBreakdown.difference=Number(totalPlannedCandidates||0)-variantBreakdown.accounted;
+    return {rows,counts,updates,totalCampaigns:rows.length,totalCandidates,totalPlannedCandidates,variantBreakdown,applied,message:applied?'Application par lots terminée : seules les variantes absentes ont été ajoutées.':'Dry-run par lots terminé : aucune donnée Studio modifiée.'};
   }
   async function runLegacyDsdBatches(endpoint,plan,{confirmation=null,applied=false,patchSessionId=null}={}){
-    const batches=legacyDsdPlanBatches(plan),results=[];
+    const batches=legacyDsdPlanBatches(plan),results=[],totalPlannedCandidates=batches.reduce((n,b)=>n+(Array.isArray(b?.surveys)?b.surveys.length:0),0);
     for(let i=0;i<batches.length;i++){
       if(legacyDsdStatus)legacyDsdStatus.innerHTML=`Traitement DSD : lot <strong>${fmt(i+1)}/${fmt(batches.length)}</strong>…`;
       const payload={plan:batches[i]};if(confirmation)payload.confirmation=confirmation;if(patchSessionId)payload.patchSessionId=patchSessionId;
       results.push(await StudioAPI.request(endpoint,{method:'POST',body:JSON.stringify(payload)}));
     }
-    return mergeLegacyDsdBatchResults(results,{applied});
+    return mergeLegacyDsdBatchResults(results,{applied,totalPlannedCandidates});
   }
   if(legacyDsdDryRun)legacyDsdDryRun.onclick=async()=>{
     const plan=legacyDsdPlanFile?._plan;if(!plan)return;legacyDsdDryRun.disabled=true;if(legacyDsdApply)legacyDsdApply.disabled=true;
