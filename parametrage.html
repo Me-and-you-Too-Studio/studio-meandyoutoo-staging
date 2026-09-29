@@ -29,7 +29,9 @@
 <div class="step-time-badge"><span aria-hidden="true">⏱</span> Temps moyen : 5 minutes</div>
 <p class="lead">Définissez le nom de la campagne, les dates, l’introduction et les données d’analyse demandées aux répondants.</p>
 </div>
-<div class="top-actions">
+<div class="top-actions" style="align-items:center;flex-wrap:wrap">
+<span id="param-autosave-status" class="meta" data-tone="saved">Enregistrement automatique</span>
+<button class="button button-primary" id="param-next-top" type="button">Vérifier la configuration →</button>
 <a class="button button-secondary" id="param-client-folder" href="#" hidden>← Retour au dossier client</a>
 </div>
 </div>
@@ -197,7 +199,7 @@
 </div>
 <div class="top-actions" style="justify-content:flex-end">
 <a class="button button-ghost" id="param-back">← Étape précédente</a>
-<button class="button button-primary" id="param-next" type="submit">Enregistrer et vérifier</button>
+<button class="button button-primary" id="param-next" type="submit">Vérifier la configuration →</button>
 </div>
 </form>
 </main>
@@ -208,10 +210,10 @@
 </script>
 <script src="assets/js/app.js?v=20260904-permissions-3">
 </script>
-<script src="assets/js/project-context.js?v=20260902-explicit-theme-start-1">
+<script src="assets/js/project-context.js?v=20260929-project-identity-1">
 </script>
 <script src="assets/js/content-adjustment.js?v=20260903-nested-adjustment-1"></script>
-<script src="assets/js/parametrage.js?v=20260929-dsd-locale-selector-1">
+<script src="assets/js/parametrage.js?v=20260929-autosave-1">
 </script>
 <script src="assets/js/pack-requests.js?v=20260822-1"></script>
 <script src="assets/js/preview-launcher.js?v=20260905-3"></script></body>
