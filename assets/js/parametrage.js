@@ -2,6 +2,7 @@
   const p=new URLSearchParams(location.search);let theme=p.get('theme')||'',projectId=p.get('projectId')||'';
   const api=(url,opt={})=>window.StudioAPI.request(url,opt);let baseTitle='',socio=[],socioLanguageVariants={},introVariants={},introResolvedVariants={},socioContextCountry='',socioContextLocale='',socioContextBaseline='',socioContextHasStored=false,introContextBaseline='',introContextHasStored=false,resultResources=[],resourceLibrary=[],quota=null,referenceIntro='',project=null;
   let autosaveTimer=null,autosaveInFlight=null,autosavePending=false,autosaveEnabled=false,lastSavedFingerprint='';
+  const autosaveDirtyFields=new Set();
   const currentUser=window.StudioAPI.user&&window.StudioAPI.user()||{},canOrder=currentUser.role==='admin'||Boolean(currentUser.permissions&&currentUser.permissions.order_passations);
   const isReadOnly=()=>Boolean(project&&project.can_edit===false);
   const isLegacyClientCampaign=()=>Boolean(project&&(project.source_type==='legacy_client'||project.legacy_history===true||project.legacy_source==='meayt-legacy'));
@@ -277,6 +278,32 @@
   function updateVigilance(){const total=Number($('nb-respondents').value)||0,allOptions=allSocioOptions(),counts=allOptions.map(o=>Number(o.n)||0).filter(n=>n>0),min=counts.length?Math.min(...counts):0,missing=allOptions.filter(o=>!Number(o.n)).length,subcount=countSubcriteria();let level='Faible',cls='low',text='Les groupes estimés sont suffisamment larges.';if(!total||!counts.length){level='À compléter';cls='';text='Renseignez les effectifs estimés par option.';}if(total&&total<8){level='Élevé';cls='high';text='Le nombre total de répondants est insuffisant pour une analyse collective.';}else if((min&&min<8)||socio.length>=4){level='Élevé';cls='high';text='Des groupes sont trop petits ou les croisements sont trop nombreux.';}else if((min&&min<10)||socio.length>=3||subcount){level='Modéré';cls='medium';text='Certains croisements devront être interprétés avec prudence.';}$('anonymity-level').textContent=level;$('anonymity-level').className='anonymity-level '+cls;$('anonymity-summary-text').textContent=text;$('anonymity-metrics').innerHTML=`<span class="anonymity-metric">${socio.length} critère(s)</span><span class="anonymity-metric">${subcount} sous-critère(s)</span><span class="anonymity-metric">Plus petit groupe : ${min||'—'}</span><span class="anonymity-metric">${missing} effectif(s) manquant(s)</span>`;const live=$('anon-alert');if(total&&total<8){live.hidden=false;live.className='anonymity-live-alert danger';live.innerHTML='<strong>🚨 Attention : moins de 8 répondants sont prévus au total.</strong><span>Le volume est insuffisant pour restituer des résultats collectifs fiables et anonymes.</span>';}else if(min&&min<8){live.hidden=false;live.className='anonymity-live-alert danger';live.innerHTML='<strong>🚨 Attention : au moins un groupe compte moins de 8 répondants.</strong>';}else if(min&&min<10){live.hidden=false;live.className='anonymity-live-alert warning';live.innerHTML='<strong>⚠️ Vigilance : au moins un groupe compte seulement 8 ou 9 répondants.</strong>';}else{live.hidden=true;live.innerHTML='';}}
   const normalizeIntro=value=>String(value||'').replace(/<br\s*\/?>/gi,' ').replace(/<\/p>/gi,' ').replace(/<\/li>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;|&#160;/gi,' ').replace(/&amp;/gi,'&').replace(/&quot;|&#34;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/\s+/g,' ').trim();
   function settingsReadiness(){const intro=$('intro').value.trim(),launch=$('launch-date').value,close=$('close-date').value;return{introChanged:Boolean(intro)&&normalizeIntro(intro)!==normalizeIntro(referenceIntro),launchFilled:Boolean(launch),closeFilled:Boolean(close),intro,launch,close};}
+  function autosaveFieldIndicator(el){
+    if(!el||!el.isConnected||!el.matches?.('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea, select'))return null;
+    if(el.readOnly||el.disabled)return null;
+    const host=el.parentElement;if(!host)return null;
+    host.classList.add('field-autosave-host');el.classList.add('field-autosave-input');
+    let badge=host.querySelector(':scope > .field-autosave-indicator');
+    if(!badge){badge=document.createElement('span');badge.className='field-autosave-indicator';badge.setAttribute('aria-hidden','true');host.appendChild(badge);}
+    const refresh=()=>{if(!el.isConnected||!badge.isConnected)return;badge.style.top=`${el.offsetTop+(el.offsetHeight/2)}px`;};
+    refresh();requestAnimationFrame(refresh);
+    return badge;
+  }
+  function setAutosaveFieldState(el,state){
+    const badge=autosaveFieldIndicator(el);if(!badge)return;
+    const map={saving:'…',saved:'✓',pending:'•',error:'!'};
+    badge.dataset.state=state;badge.textContent=map[state]||'';badge.classList.add('is-visible');
+    badge.title=state==='saved'?'Enregistré automatiquement':state==='saving'?'Enregistrement en cours':state==='pending'?'Enregistrement en attente':state==='error'?"Échec de l’enregistrement automatique":'';
+  }
+  function markAutosaveActiveField(){
+    const el=document.activeElement;if(!el||!el.closest?.('#contenu'))return;
+    const badge=autosaveFieldIndicator(el);if(!badge)return;
+    autosaveDirtyFields.add(el);setAutosaveFieldState(el,'saving');
+  }
+  function settleAutosaveFields(state){
+    [...autosaveDirtyFields].forEach(el=>{if(!el?.isConnected){autosaveDirtyFields.delete(el);return;}setAutosaveFieldState(el,state);});
+    if(state==='saved')autosaveDirtyFields.clear();
+  }
   function autosaveStatus(message,tone='saved'){
     const el=$('param-autosave-status');if(!el)return;
     el.dataset.tone=tone;el.textContent=message;
@@ -304,7 +331,7 @@
     if(!autosaveEnabled||isReadOnly()||!projectId)return true;
     if(autosaveInFlight){autosavePending=true;await autosaveInFlight;if(autosavePending){autosavePending=false;return autosaveNow();}return true;}
     const payload=autosavePayload(),fingerprint=autosaveFingerprint(payload);
-    if(fingerprint===lastSavedFingerprint){autosaveStatus('✓ Enregistré automatiquement','saved');return true;}
+    if(fingerprint===lastSavedFingerprint){autosaveStatus('✓ Enregistré automatiquement','saved');settleAutosaveFields('saved');return true;}
     autosaveStatus('Enregistrement…','saving');
     autosaveInFlight=(async()=>{
       try{
@@ -312,11 +339,12 @@
         if(data?.project)project={...project,...data.project};
         lastSavedFingerprint=fingerprint;
         autosaveStatus('✓ Enregistré automatiquement','saved');
+        settleAutosaveFields('saved');
         return true;
       }catch(error){
         const message=String(error?.message||'').trim();
-        if(/intitulé|réponse|critère|socio|date de clôture/i.test(message))autosaveStatus('Saisie en cours — enregistrement dès que le bloc est complet','pending');
-        else autosaveStatus('⚠ Enregistrement automatique interrompu','error');
+        if(/intitulé|réponse|critère|socio|date de clôture/i.test(message)){autosaveStatus('Saisie en cours — enregistrement dès que le bloc est complet','pending');settleAutosaveFields('pending');}
+        else{autosaveStatus('⚠ Enregistrement automatique interrompu','error');settleAutosaveFields('error');}
         return false;
       }finally{autosaveInFlight=null;}
     })();
@@ -326,7 +354,7 @@
   }
   function scheduleAutosave(delay=700){
     if(!autosaveEnabled||isReadOnly())return;
-    clearTimeout(autosaveTimer);autosaveStatus('Modifications en cours…','saving');
+    clearTimeout(autosaveTimer);markAutosaveActiveField();autosaveStatus('Modifications en cours…','saving');
     autosaveTimer=setTimeout(()=>{autosaveTimer=null;autosaveNow();},delay);
   }
   async function flushAutosave(){clearTimeout(autosaveTimer);autosaveTimer=null;return autosaveNow();}
