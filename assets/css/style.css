@@ -14978,3 +14978,16 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
   color:#0b7180;
   background:#f7fcfc;
 }
+
+
+/* Traductions DSD à renseigner */
+.translation-todo-alert{
+  border-color:#e7b44b;
+  background:#fff9e9;
+}
+.is-translation-todo{
+  position:relative;
+}
+.socio-current-editor input:placeholder-shown{
+  border-style:dashed;
+}
