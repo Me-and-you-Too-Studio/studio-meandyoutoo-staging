@@ -12,7 +12,29 @@
   const iso=d=>{const x=new Date();x.setDate(x.getDate()+d);return x.toISOString().slice(0,10);};
   const genderRequiredTheme=()=>['sexisme','mixite','allie-mixite'].includes(String(theme||'').toLowerCase());
   const defaultSocio=()=>genderRequiredTheme()?[{kind:'gender',q:'Quel est votre genre ?',opts:[{label:'Homme',n:0},{label:'Femme',n:0},{label:'Non binaire',n:0},{label:'Autre',n:0}]}]:[];
-  const AGE={kind:'age',q:'Votre âge',opts:['Moins de 20 ans','Entre 20 et 34 ans','Entre 35 et 49 ans','Entre 50 et 65 ans','Plus de 65 ans'].map(label=>({label,n:0}))};
+  const AGE_TRANSLATIONS={
+    fr:['Votre âge',['Moins de 20 ans','Entre 20 et 34 ans','Entre 35 et 49 ans','Entre 50 et 65 ans','Plus de 65 ans']],
+    en:['Your age',['Under 20','20 to 34','35 to 49','50 to 65','Over 65']],
+    de:['Ihr Alter',['Unter 20 Jahre','20 bis 34 Jahre','35 bis 49 Jahre','50 bis 65 Jahre','Über 65 Jahre']],
+    es:['Su edad',['Menos de 20 años','Entre 20 y 34 años','Entre 35 y 49 años','Entre 50 y 65 años','Más de 65 años']],
+    it:['La sua età',['Meno di 20 anni','Tra 20 e 34 anni','Tra 35 e 49 anni','Tra 50 e 65 anni','Più di 65 anni']],
+    br:['Sua idade',['Menos de 20 anos','Entre 20 e 34 anos','Entre 35 e 49 anos','Entre 50 e 65 anos','Mais de 65 anos']],
+    pt:['A sua idade',['Menos de 20 anos','Entre 20 e 34 anos','Entre 35 e 49 anos','Entre 50 e 65 anos','Mais de 65 anos']],
+    nl:['Uw leeftijd',['Jonger dan 20 jaar','20 tot 34 jaar','35 tot 49 jaar','50 tot 65 jaar','Ouder dan 65 jaar']],
+    'nl-be':['Uw leeftijd',['Jonger dan 20 jaar','20 tot 34 jaar','35 tot 49 jaar','50 tot 65 jaar','Ouder dan 65 jaar']],
+    pl:['Twój wiek',['Poniżej 20 lat','20–34 lata','35–49 lat','50–65 lat','Powyżej 65 lat']],
+    ro:['Vârsta dvs.',['Sub 20 de ani','Între 20 și 34 de ani','Între 35 și 49 de ani','Între 50 și 65 de ani','Peste 65 de ani']],
+    ru:['Ваш возраст',['Младше 20 лет','От 20 до 34 лет','От 35 до 49 лет','От 50 до 65 лет','Старше 65 лет']],
+    tr:['Yaşınız',['20 yaşından küçük','20–34 yaş','35–49 yaş','50–65 yaş','65 yaşından büyük']],
+    bg:['Вашата възраст',['Под 20 години','Между 20 и 34 години','Между 35 и 49 години','Между 50 и 65 години','Над 65 години']],
+    'sv-se':['Din ålder',['Under 20 år','20–34 år','35–49 år','50–65 år','Över 65 år']],
+    ja:['年齢',['20歳未満','20～34歳','35～49歳','50～65歳','65歳超']],
+    'ko-kr':['연령',['20세 미만','20~34세','35~49세','50~65세','65세 초과']],
+    zf:['您的年龄',['20岁以下','20至34岁','35至49岁','50至65岁','65岁以上']],
+    zh:['您的年齡',['20歲以下','20至34歲','35至49歲','50至65歲','65歲以上']]
+  };
+  const ageForLocale=locale=>{const loc=normalizeLocale(locale),row=AGE_TRANSLATIONS[loc]||AGE_TRANSLATIONS.fr;return{kind:'age',q:row[0],opts:row[1].map(label=>({label,n:0}))};};
+  const AGE=ageForLocale('fr');
   const EXAMPLES=[['Business Unit',['Business Unit 1','Business Unit 2']],['Régions',['Région 1','Région 2']],['Fonction',['Fonction 1','Fonction 2']],['Manager ou collaborateur',['Manager','Collaborateur']]];
   const newSubcriterion=()=>({q:'Précisez votre choix',opts:[{label:'Sous-réponse 1',n:0},{label:'Sous-réponse 2',n:0}],subcriteria:[]});
   const rawSubcriteria=option=>Array.isArray(option?.subcriteria)?option.subcriteria:(option?.subcriterion?[option.subcriterion]:[]);
@@ -407,7 +429,7 @@
   $('intro').addEventListener('input',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave();}});
   $('launch-date').addEventListener('change',()=>{if(!isReadOnly()){syncCloseMin();updateNextState();scheduleAutosave(0);}});
   $('close-date').addEventListener('change',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave(0);}});
-  document.querySelectorAll('[data-example]').forEach(b=>b.onclick=()=>{if(isReadOnly())return;const k=b.dataset.example;if(k==='age'){if(!socio.some(c=>c.kind==='age'||c.q==='Votre âge'))socio.push(clone(AGE));}else{const e=EXAMPLES[+k];socio.push({q:e[0],opts:e[1].map(label=>({label,n:0}))});}renderSocio();scheduleAutosave(0);});
+  document.querySelectorAll('[data-example]').forEach(b=>b.onclick=()=>{if(isReadOnly())return;const k=b.dataset.example;if(k==='age'){storeActiveSocio();for(const loc of projectLocales()){const n=normalizeLocale(loc),items=Array.isArray(socioLanguageVariants[n])?clone(socioLanguageVariants[n]):[];if(!items.some(c=>c.kind==='age')){items.push(ageForLocale(n));socioLanguageVariants[n]=items;}}if(!socio.some(c=>c.kind==='age'))socio.push(ageForLocale(socioContextLocale));socioContextHasStored=true;socioContextBaseline=JSON.stringify(normalizedSocio(socio));}else{const e=EXAMPLES[+k];socio.push({q:e[0],opts:e[1].map(label=>({label,n:0}))});}renderSocio();scheduleAutosave(0);});
   $('add-result-resource').onclick=()=>openResourceModal();
   $('result-preview-toggle').onclick=()=>{const button=$('result-preview-toggle'),body=$('result-resources-preview'),open=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',String(!open));body.hidden=open;button.querySelector('span').textContent=open?'⌄':'⌃';};
   window.StudioParametragePreviewSnapshot=()=>{storeActiveLanguageContent();return {project:{theme:project?.theme_title||'',title:$('respondent-title')?.value.trim()||project?.respondent_title||baseTitle||'Autodiagnostic',intro:$('intro')?.value.trim()||'',socio:socio,result_buttons:resultResources.filter(resourceComplete)},respondent_context:{countryCode:socioContextCountry,locale:socioContextLocale}};};
