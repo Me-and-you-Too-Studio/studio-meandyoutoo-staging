@@ -14899,3 +14899,75 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 
 /* Age benchmark: optional criterion, standardized bands once selected */
 .socio-age-info{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-left:8px;border-radius:50%;background:#e8f7f8;color:#087f86;font-size:12px;font-weight:800;cursor:help;vertical-align:middle}.socio-card-age .socio-lock-help{display:block;margin-top:7px;color:#52647a;font-size:12px;line-height:1.45}
+
+
+/* Paramétrage DSD — navigation multilingue persistante */
+#socio-dsd-context{
+  position:sticky;
+  top:12px;
+  z-index:30;
+  background:rgba(255,255,255,.97);
+  box-shadow:0 8px 24px rgba(18,55,88,.10);
+  border:1px solid rgba(15,137,145,.18);
+  backdrop-filter:blur(8px);
+}
+.socio-sticky-languages{
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px solid rgba(18,55,88,.12);
+}
+.socio-sticky-languages-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:10px;
+}
+.socio-sticky-languages-head span{
+  font-size:.82rem;
+  color:#5c6f85;
+}
+.socio-sticky-language-buttons{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.socio-sticky-language-buttons button{
+  border:1px solid #c9d8e7;
+  background:#fff;
+  border-radius:12px;
+  padding:8px 12px;
+  cursor:pointer;
+  color:#17345b;
+  font-weight:700;
+}
+.socio-sticky-language-buttons button small{
+  display:block;
+  margin-top:2px;
+  font-size:.68rem;
+  font-weight:600;
+  color:#6a7b90;
+}
+.socio-sticky-language-buttons button.is-active{
+  border-color:#0f8991;
+  background:#eefafa;
+  box-shadow:0 0 0 2px rgba(15,137,145,.08);
+}
+.socio-sticky-language-buttons button.is-reference{
+  border-style:solid;
+}
+.socio-go-reference{
+  margin-top:10px;
+  border:0;
+  background:transparent;
+  color:#0b7180;
+  font-weight:800;
+  cursor:pointer;
+  padding:4px 0;
+}
+@media (max-width:760px){
+  #socio-dsd-context{top:6px;}
+  .socio-sticky-languages-head{align-items:flex-start;flex-direction:column;gap:4px;}
+  .socio-sticky-language-buttons{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;}
+  .socio-sticky-language-buttons button{flex:0 0 auto;}
+}
