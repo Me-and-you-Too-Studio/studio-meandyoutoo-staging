@@ -262,7 +262,7 @@
     const ro=isReadOnly(),structureEditable=!ro&&normalizeLocale(socioReference().locale)===normalizeLocale(socioContextLocale);
     const toolbar=`<div class="socio-tree-toolbar"><div><strong>Données socio-démographiques</strong><span>Repliez les critères et ouvrez uniquement la branche que vous souhaitez modifier.</span></div><div class="socio-tree-toolbar-actions"><button type="button" class="button button-ghost button-small" data-socio-collapse-all>Tout replier</button><button type="button" class="button button-secondary button-small" data-socio-expand-all>Tout déplier</button></div></div>`;
     $('socio-list').innerHTML=toolbar+socio.map((criterion,i)=>{
-      const path=String(i),isGender=genderRequiredTheme()&&criterion.kind==='gender',isAge=criterion.kind==='age'||String(criterion.q||'').trim()==='Votre âge',locked=isGender||isAge||ro,isOpen=socioOpenRoots.has(path),stats=criterionStats(criterion);
+      const path=String(i),isGender=genderRequiredTheme()&&criterion.kind==='gender',isAge=criterion.kind==='age'||String(criterion.q||'').trim()==='Votre âge',locked=isGender||isAge||ro,isOpen=socioOpenRoots.has(path),stats=criterionStats(criterion),translationMode=Boolean(referenceCriterionFor(criterion,i)),criterionStructureEditable=structureEditable&&!translationMode;
       const optionsHtml=criterion.opts.map((option,j)=>{
         const optionPath=`${path}|${j}`;
         if(locked){
@@ -272,10 +272,10 @@
           return `<div class="socio-option-block"><div class="socio-option-unit locked-option"><div class="socio-option"><div class="socio-answer-field locked-field"><span>Réponse figée</span><input value="${esc(option.label)}" readonly tabindex="-1" aria-label="Réponse non modifiable"></div><div class="socio-count-field ${state.cls}"><span>Effectif estimé</span><input data-tree-n="${optionPath}" type="number" min="0" value="${Number(option.n)||''}" readonly tabindex="-1"></div>${removeControl}</div><div class="socio-option-hint ${state.cls}">${state.hint}</div></div>${children}</div>`;
         }
         const children=(option.subcriteria||[]).map((child,k)=>renderNestedCriterion(child,`${path}.${j}.${k}`,2,option.label)).join('');
-        return `<div class="socio-option-block">${answerRow(option,optionPath,structureEditable&&criterion.opts.length>2)}${children}${structureEditable?`<button class="socio-add-sub" type="button" data-tree-child-add="${optionPath}">+ Ajouter un sous-critère pour cette réponse</button>`:''}</div>`;
+        return `<div class="socio-option-block">${answerRow(option,optionPath,criterionStructureEditable&&criterion.opts.length>2)}${children}${criterionStructureEditable?`<button class="socio-add-sub" type="button" data-tree-child-add="${optionPath}">+ Ajouter un sous-critère pour cette réponse</button>`:''}</div>`;
       }).join('');
       const lockText=ro?'Campagne en lecture seule.':isGender?'Obligatoire · réponses standardisées. Homme et Femme sont obligatoires ; Non binaire et Autre peuvent être supprimés.':isAge?'Tranches d’âge standardisées pour permettre la comparaison avec le benchmark global Me&YouToo. Elles ne peuvent être ni modifiées, ni ajoutées, ni supprimées.':'';
-      const headerAction=ro?'<span class="socio-required-badge">🔒 Lecture seule</span>':isGender?`<span class="socio-required-badge">Obligatoire</span>`:structureEditable?`<button class="button button-danger-soft" type="button" data-socio-remove="${i}" ${socio.length<=1?'disabled':''}>Supprimer le critère</button>`:'';
+      const headerAction=ro?'<span class="socio-required-badge">🔒 Lecture seule</span>':isGender?`<span class="socio-required-badge">Obligatoire</span>`:criterionStructureEditable?`<button class="button button-danger-soft" type="button" data-socio-remove="${i}" ${socio.length<=1?'disabled':''}>Supprimer le critère</button>`:'';
       const branchBadge=stats.nested?`<span class="socio-tree-badge">${stats.nested} sous-question${stats.nested>1?'s':''} · profondeur ${stats.maxDepth}</span>`:'';
       return `<article class="socio-card socio-card-foldable ${isOpen?'is-open':'is-collapsed'} ${locked?'socio-card-locked':''} ${isGender?'socio-card-gender':''} ${isAge?'socio-card-age':''}" ${ro?'style="background:var(--royal-blue-tint)"':''}>
         <div class="socio-card-fold-head">
@@ -289,9 +289,9 @@
         <div class="socio-card-fold-body" ${isOpen?'':'hidden'}>
           <div class="socio-translation-compare ${referenceCriterionFor(criterion,i)?'has-reference':''}">
             ${renderSocioReference(criterion,i)}
-            <div class="socio-current-editor"><div class="socio-current-head"><strong>Version répondant · ${esc(localeLabel(socioContextLocale))}</strong><span class="status-pill">${esc(String(socioContextLocale).toUpperCase())}</span></div>${!structureEditable&&!ro?'<div class="socio-translation-structure-note">La structure se modifie dans la langue de référence. Ici, vous traduisez uniquement les libellés existants.</div>':''}
+            <div class="socio-current-editor"><div class="socio-current-head"><strong>Version répondant · ${esc(localeLabel(socioContextLocale))}</strong><span class="status-pill">${esc(String(socioContextLocale).toUpperCase())}</span></div>${translationMode&&!ro?'<div class="socio-translation-structure-note">La structure se modifie dans la langue de référence. Ici, vous traduisez uniquement les libellés existants.</div>':''}
               <div class="socio-card-head"><span class="socio-number socio-number-spacer" aria-hidden="true"></span><div class="field socio-question"><label>Question posée aux répondants ${locked?'<span class="socio-lock-badge">🔒 Figé</span>':''}${isAge?'<span class="socio-age-info" title="Les tranches d’âge sont standardisées afin de permettre la comparaison de vos résultats avec le benchmark global Me&YouToo." aria-label="Information benchmark âge">i</span>':''}</label><input data-tree-q="${path}" value="${esc(criterion.q)}" ${locked?'readonly tabindex="-1"':''}>${locked?`<span class="socio-lock-help">${lockText}</span>`:''}</div><span></span></div>
-              <div class="socio-options">${optionsHtml}</div>${!locked&&structureEditable?`<button class="button button-ghost" type="button" data-tree-option-add="${path}">+ Ajouter une réponse</button>`:''}
+              <div class="socio-options">${optionsHtml}</div>${!locked&&criterionStructureEditable?`<button class="button button-ghost" type="button" data-tree-option-add="${path}">+ Ajouter une réponse</button>`:''}
             </div>
           </div>
         </div>
