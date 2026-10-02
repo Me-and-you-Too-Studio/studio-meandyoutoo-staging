@@ -14971,3 +14971,10 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
   .socio-sticky-language-buttons{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;}
   .socio-sticky-language-buttons button{flex:0 0 auto;}
 }
+
+#add-socio.is-translation-redirect{
+  border-style:dashed;
+  border-color:#0f8991;
+  color:#0b7180;
+  background:#f7fcfc;
+}

@@ -83,15 +83,21 @@
     const editable=!isReadOnly()&&isSocioReferenceLocale();
     const examples=document.querySelector('.socio-examples-visible');
     const addCustom=$('add-socio');
-    if(examples)examples.hidden=!editable;
-    if(addCustom)addCustom.hidden=!editable;
+    if(examples){examples.hidden=!editable;examples.style.display=editable?'':'none';}
+    if(addCustom){
+      addCustom.hidden=false;
+      addCustom.style.display=isReadOnly()?'none':'';
+      addCustom.textContent=editable?'+ Ajouter un critère personnalisé':'+ Ajouter une donnée d’analyse';
+      addCustom.title=editable?'':'La structure se construit dans la langue de référence.';
+      addCustom.classList.toggle('is-translation-redirect',!editable);
+    }
   }
   function renderStickySocioLanguages(){
     const host=$('socio-dsd-context');if(!host)return;
     let bar=host.querySelector('.socio-sticky-languages');
     if(!bar){bar=document.createElement('div');bar.className='socio-sticky-languages';host.appendChild(bar);}
     const ref=socioReference(),refLoc=normalizeLocale(ref.locale),current=normalizeLocale(socioContextLocale);
-    bar.innerHTML=`<div class="socio-sticky-languages-head"><strong>Langue travaillée</strong>${refLoc?`<span>Structure pilotée depuis ${esc(localeLabel(refLoc))} (${esc(refLoc.toUpperCase())})</span>`:''}</div><div class="socio-sticky-language-buttons">${projectLocales().map(loc=>{const n=normalizeLocale(loc),count=reviewCount(n),isRef=n===refLoc;return `<button type="button" class="${n===current?'is-active':''} ${isRef?'is-reference':''}" data-sticky-locale="${esc(n)}">${esc(localeLabel(n))} <small>${esc(n.toUpperCase())}${isRef?' · Référence':count?` · ${count} à vérifier`:''}</small></button>`;}).join('')}</div>${refLoc&&current!==refLoc?`<button type="button" class="socio-go-reference" data-sticky-locale="${esc(refLoc)}">← Aller à la langue de référence</button>`:''}`;
+    bar.innerHTML=`<div class="socio-sticky-languages-head"><strong>Langue travaillée</strong>${refLoc?`<span>Structure pilotée depuis ${esc(localeLabel(refLoc))} (${esc(refLoc.toUpperCase())})</span>`:''}</div><div class="socio-sticky-language-buttons">${projectLocales().map(loc=>{const n=normalizeLocale(loc),count=reviewCount(n),isRef=n===refLoc;return `<button type="button" class="${n===current?'is-active':''} ${isRef?'is-reference':''}" data-sticky-locale="${esc(n)}">${esc(localeLabel(n))} <small>${esc(n.toUpperCase())}${isRef?' · Référence':count?` · ${count} à vérifier`:''}</small></button>`;}).join('')}</div>${refLoc&&current!==refLoc?`<button type="button" class="socio-go-reference" data-sticky-locale="${esc(refLoc)}">← Modifier la structure en ${esc(localeLabel(refLoc))}</button>`:''}`;
     bar.querySelectorAll('[data-sticky-locale]').forEach(btn=>btn.onclick=()=>{storeActiveLanguageContent();activateLanguage(btn.dataset.stickyLocale);renderSocioContext();renderSocio();scheduleAutosave(0);});
   }
   function referenceCriterionFor(criterion,index){const ref=socioReference();if(!ref.items?.length||normalizeLocale(ref.locale)===normalizeLocale(socioContextLocale))return null;let match=null;if(criterion?.source_id!==undefined)match=ref.items.find(c=>String(c?.source_id??'')===String(criterion.source_id));if(!match)match=ref.items[index]||null;return match?{locale:ref.locale,criterion:match}:null;}
@@ -480,7 +486,7 @@
   function syncCloseMin(){const d=$('launch-date').value;if(!d)return;const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+1);const min=x.toISOString().slice(0,10);$('close-date').min=min;if(!isReadOnly()&&$('close-date').value&&$('close-date').value<min)$('close-date').value='';}
   function invalidCriterion(c){return !String(c?.q||'').trim()||!Array.isArray(c?.opts)||c.opts.length<2||c.opts.some(o=>!String(o?.label||'').trim()||(o.subcriteria||[]).some(invalidCriterion));}
   function invalidSocio(){return socio.some(invalidCriterion);}
-  $('add-socio').onclick=()=>{if(isReadOnly())return;ensureAllLocaleSocioVariants();const criterion={q:'Nouvelle donnée personnalisée',opts:[{label:'Réponse 1',n:0},{label:'Réponse 2',n:0}]},index=socio.length;socio.push(criterion);propagateRootCriterionAdd(criterion,index);renderSocioContext();renderSocio();scheduleAutosave(0);};
+  $('add-socio').onclick=async()=>{if(isReadOnly())return;const addCriterion=()=>{ensureAllLocaleSocioVariants();const criterion={q:'Nouvelle donnée personnalisée',opts:[{label:'Réponse 1',n:0},{label:'Réponse 2',n:0}]},index=socio.length;socio.push(criterion);propagateRootCriterionAdd(criterion,index);renderSocioContext();renderSocio();scheduleAutosave(0);setTimeout(()=>document.querySelector(`[data-socio-root-toggle="${index}"]`)?.scrollIntoView({behavior:'smooth',block:'center'}),80);};if(isSocioReferenceLocale())return addCriterion();const ref=socioReference(),refLoc=normalizeLocale(ref.locale);if(!refLoc)return;const ok=await window.StudioModal.confirm({eyebrow:'Données d’analyse multilingues',title:'La structure se construit dans la langue de référence',message:`Pour garantir les mêmes critères, réponses et sous-critères dans toutes les langues, ajoutez la donnée depuis ${localeLabel(refLoc)} (${refLoc.toUpperCase()}). Elle sera ensuite disponible dans toutes les langues du projet pour être traduite.`,type:'info',cancelLabel:'Rester ici',confirmLabel:`Passer en ${localeLabel(refLoc)} et ajouter`});if(!ok)return;storeActiveLanguageContent();activateLanguage(refLoc);renderSocioContext();renderSocio();addCriterion();};
   $('intro').addEventListener('input',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave();}});
   $('launch-date').addEventListener('change',()=>{if(!isReadOnly()){syncCloseMin();updateNextState();scheduleAutosave(0);}});
   $('close-date').addEventListener('change',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave(0);}});
