@@ -14878,3 +14878,11 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .parameter-reference-head{display:flex;align-items:center;gap:10px;margin-bottom:7px;color:#203b68}
 .parameter-reference-panel p{margin:0 0 12px;color:#60758b;font-size:.9rem}
 .parameter-reference-text{white-space:pre-wrap;line-height:1.55;color:#304a61;background:#fff;border:1px solid #e0e9ee;border-radius:10px;padding:12px 14px}
+
+/* Paramétrage multilingue : référence et langue travaillée côte à côte */
+.parameter-intro-compare{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:stretch}
+.parameter-intro-compare .parameter-reference-panel{margin:0;min-height:100%;box-sizing:border-box}
+.parameter-intro-compare .parameter-intro-edit{min-width:0}
+.parameter-intro-compare .parameter-reference-text{min-height:292px;max-height:430px;overflow:auto}
+.parameter-intro-compare textarea{width:100%;box-sizing:border-box}
+@media (max-width:900px){.parameter-intro-compare{grid-template-columns:1fr}.parameter-intro-compare .parameter-reference-text{min-height:auto;max-height:300px}}

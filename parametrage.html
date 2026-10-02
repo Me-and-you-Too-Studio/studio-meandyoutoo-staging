@@ -89,16 +89,17 @@
 <fieldset>
 <legend>Introduction visible par les répondants</legend>
 <p class="section-desc">L’introduction est reprise du référentiel Me&YouToo et doit être adaptée par l’organisation.</p>
-<div class="field">
-<label for="intro">Texte d’introduction <span class="req">*</span><span class="field-help"><button class="field-help-button" type="button" aria-label="À quoi sert l’introduction ?">?</button><span class="field-help-content" role="tooltip">Ce texte est présenté aux répondants avant les questions. Adaptez-le au contexte et au ton de votre organisation.</span></span>
-</label>
-<textarea id="intro" rows="15" required>
-</textarea>
-</div>
-<div id="intro-reference-panel" class="parameter-reference-panel" hidden>
-  <div class="parameter-reference-head"><strong id="intro-reference-title">Référence Me&YouToo</strong><span id="intro-reference-badge" class="status-pill">FR</span></div>
-  <p>Cette version de référence reste visible pour contrôler votre adaptation ou une autre traduction. Elle n’est pas modifiée ici.</p>
-  <div id="intro-reference-text" class="parameter-reference-text"></div>
+<div class="parameter-intro-compare">
+  <div id="intro-reference-panel" class="parameter-reference-panel" hidden>
+    <div class="parameter-reference-head"><strong id="intro-reference-title">Référence Me&YouToo</strong><span id="intro-reference-badge" class="status-pill">FR</span></div>
+    <p>Référence en lecture seule pour contrôler la langue travaillée.</p>
+    <div id="intro-reference-text" class="parameter-reference-text"></div>
+  </div>
+  <div class="field parameter-intro-edit">
+    <label for="intro"><span id="intro-edit-title">Texte d’introduction</span> <span class="req">*</span><span class="field-help"><button class="field-help-button" type="button" aria-label="À quoi sert l’introduction ?">?</button><span class="field-help-content" role="tooltip">Ce texte est présenté aux répondants avant les questions. Adaptez-le au contexte et au ton de votre organisation.</span></span>
+    </label>
+    <textarea id="intro" rows="15" required></textarea>
+  </div>
 </div>
 </fieldset>
 <fieldset>
