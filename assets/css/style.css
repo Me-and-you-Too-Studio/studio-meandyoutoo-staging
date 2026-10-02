@@ -14893,3 +14893,6 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 @media(max-width:980px){.socio-translation-compare.has-reference{grid-template-columns:1fr}.socio-reference-panel{position:static}}
 
 .translation-review-alert{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:11px 13px;border:1px solid #e6b85c;border-radius:12px;background:#fff8e8;color:#6f4b00}.translation-review-alert strong{color:#7a4b00}.translation-review-alert span{flex:1;min-width:220px}.translation-review-alert button{border:1px solid #d4a444;background:#fff;border-radius:9px;padding:7px 10px;font-weight:700;cursor:pointer}.translation-review-alert[hidden]{display:none!important}
+
+/* Diff de traduction : référence projet modifiée depuis la dernière validation */
+.translation-diff-add{display:inline;padding:1px 3px;margin:0 1px;border-radius:4px;background:#dff5e6;color:#17663a;text-decoration:none;font-weight:800}.translation-diff-remove{display:inline;padding:1px 3px;margin:0 1px;border-radius:4px;background:#fde5e2;color:#a2382d;text-decoration:line-through;text-decoration-thickness:2px}.has-translation-diff{line-height:1.75}.parameter-reference-text .translation-diff-add,.parameter-reference-text .translation-diff-remove{white-space:pre-wrap}.socio-reference-panel li.has-translation-diff{padding-top:6px;padding-bottom:6px}
