@@ -14896,3 +14896,6 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 
 /* Diff de traduction : référence projet modifiée depuis la dernière validation */
 .translation-diff-add{display:inline;padding:1px 3px;margin:0 1px;border-radius:4px;background:#dff5e6;color:#17663a;text-decoration:none;font-weight:800}.translation-diff-remove{display:inline;padding:1px 3px;margin:0 1px;border-radius:4px;background:#fde5e2;color:#a2382d;text-decoration:line-through;text-decoration-thickness:2px}.has-translation-diff{line-height:1.75}.parameter-reference-text .translation-diff-add,.parameter-reference-text .translation-diff-remove{white-space:pre-wrap}.socio-reference-panel li.has-translation-diff{padding-top:6px;padding-bottom:6px}
+
+/* Age benchmark: optional criterion, standardized bands once selected */
+.socio-age-info{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-left:8px;border-radius:50%;background:#e8f7f8;color:#087f86;font-size:12px;font-weight:800;cursor:help;vertical-align:middle}.socio-card-age .socio-lock-help{display:block;margin-top:7px;color:#52647a;font-size:12px;line-height:1.45}
