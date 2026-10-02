@@ -2,7 +2,7 @@
   const p=new URLSearchParams(location.search),theme=p.get('theme')||'',projectId=p.get('projectId')||'',requestedProfile=p.get('profile')||'';let active=Math.max(0,Number(p.get('chapter')||0)),chapters=[],project=null,mediaLibrary=[];const translationContexts=new Map();
   const api=(url,opt={})=>window.StudioAPI.request(url,opt),$=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const currentUser=window.StudioAPI?.user?.()||{};
-  const isAdmin=()=>currentUser.role==='admin'&&(!window.StudioAPI?.interfaceMode||window.StudioAPI.interfaceMode()!=='client');
+  const isAdmin=()=>currentUser.role==='admin';
   const isReadOnly=()=>Boolean(project&&project.can_edit===false);
   const isLegacyClientCampaign=()=>Boolean(project&&(project.source_type==='legacy_client'||project.legacy_history===true||project.legacy_source==='meayt-legacy'));
   const colorRank=color=>{const c=String(color||'').toLowerCase();if(c.includes('ff847')||c.includes('ff84')||c.includes('b423')||c.includes('red'))return 0;if(c.includes('ffc')||c.includes('yellow'))return 1;if(c.includes('77cd')||c.includes('green'))return 2;return 3;};

@@ -539,6 +539,11 @@
       );
     var content = contentPage(p);
     var respondentPreview = respondentPreviewPage(p);
+    if (currentUser.role === "admin" && q) {
+      more.push('<a href="composer.html' + q + '">✏️ Modifier le contenu</a>');
+      more.push('<a href="personnalisation.html' + q + '">👤 Modifier les profils</a>');
+      more.push('<a href="parametrage.html' + q + '">⚙️ Modifier le paramétrage</a>');
+    }
     if (respondentPreview) {
       visible.push(
         '<a class="campaign-btn" href="' +

@@ -778,6 +778,9 @@
       id = p.id,
       q = "?projectId=" + encodeURIComponent(id),
       more = [];
+    more.push('<a href="composer.html' + q + '">✏️ Modifier le contenu</a>');
+    more.push('<a href="personnalisation.html' + q + '">👤 Modifier les profils</a>');
+    more.push('<a href="parametrage.html' + q + '">⚙️ Modifier le paramétrage</a>');
     more.push('<button type="button" data-rename="' + id + '">✏️ Renommer</button>');
     more.push('<button type="button" data-move-folder="' + id + '">📁 Classer</button>');
     let primary = "";
