@@ -298,6 +298,45 @@
       </article>`;
     }).join('');bindSocio();updateVigilance();
   }
+  function criterionByPathIn(criteria,path){
+    const parts=String(path).split('.').map(Number);let criterion=criteria?.[parts[0]];
+    for(let i=1;i<parts.length;i+=2)criterion=criterion?.opts?.[parts[i]]?.subcriteria?.[parts[i+1]];
+    return criterion;
+  }
+  function optionByPathIn(criteria,path){const [criterionPath,index]=String(path).split('|');return criterionByPathIn(criteria,criterionPath)?.opts?.[Number(index)];}
+  function ensureAllLocaleSocioVariants(){
+    storeActiveSocio();
+    const active=normalizeLocale(socioContextLocale),snapshot=clone(socio);
+    for(const loc of projectLocales()){
+      const n=normalizeLocale(loc);if(n===active)continue;
+      if(!Array.isArray(socioLanguageVariants[n])||!socioLanguageVariants[n].length)socioLanguageVariants[n]=clone(snapshot);
+    }
+  }
+  function markNewTranslationPaths(locale,paths,sourceLocale,sourceCriteria){
+    const st=reviewState(),loc=normalizeLocale(locale);st.socio[loc]=[...new Set([...(Array.isArray(st.socio[loc])?st.socio[loc]:[]),...paths])];
+    st.baselines.socio[loc]=st.baselines.socio[loc]&&typeof st.baselines.socio[loc]==='object'?st.baselines.socio[loc]:{};
+    for(const path of paths)if(!st.baselines.socio[loc][path])st.baselines.socio[loc][path]={referenceLocale:normalizeLocale(sourceLocale),text:reviewPathValue(sourceCriteria,path)};
+  }
+  function pathsForCriterion(criterion,index){const key=criterionKey(criterion,index),paths=[`q:${key}`];(criterion?.opts||[]).forEach((o,j)=>paths.push(`o:${key}:${String(o?.source_id??`i${j}`)}`));return paths;}
+  function propagateRootCriterionAdd(criterion,index){
+    const sourceLocale=normalizeLocale(socioContextLocale),sourceSnapshot=clone(socio);
+    for(const loc of projectLocales()){
+      const n=normalizeLocale(loc);if(n===sourceLocale)continue;
+      const rows=Array.isArray(socioLanguageVariants[n])?socioLanguageVariants[n]:(socioLanguageVariants[n]=[]);
+      rows.splice(index,0,clone(criterion));markNewTranslationPaths(n,pathsForCriterion(criterion,index),sourceLocale,sourceSnapshot);
+    }
+  }
+  function propagateRootCriterionRemove(index){for(const loc of projectLocales()){const n=normalizeLocale(loc);if(n===normalizeLocale(socioContextLocale))continue;socioLanguageVariants[n]?.splice(index,1);}}
+  function propagateOptionAdd(criterionPath,option){
+    const sourceLocale=normalizeLocale(socioContextLocale),sourceSnapshot=clone(socio),rootIndex=Number(String(criterionPath).split('.')[0]);
+    for(const loc of projectLocales()){
+      const n=normalizeLocale(loc);if(n===sourceLocale)continue;const criterion=criterionByPathIn(socioLanguageVariants[n],criterionPath);if(!criterion)continue;
+      criterion.opts=Array.isArray(criterion.opts)?criterion.opts:[];criterion.opts.push(clone(option));markNewTranslationPaths(n,pathsForCriterion(sourceSnapshot[rootIndex],rootIndex),sourceLocale,sourceSnapshot);
+    }
+  }
+  function propagateOptionRemove(criterionPath,index){for(const loc of projectLocales()){const n=normalizeLocale(loc);if(n===normalizeLocale(socioContextLocale))continue;criterionByPathIn(socioLanguageVariants[n],criterionPath)?.opts?.splice(Number(index),1);}}
+  function propagateChildAdd(optionPath,child){for(const loc of projectLocales()){const n=normalizeLocale(loc);if(n===normalizeLocale(socioContextLocale))continue;const option=optionByPathIn(socioLanguageVariants[n],optionPath);if(!option)continue;option.subcriteria=Array.isArray(option.subcriteria)?option.subcriteria:[];option.subcriteria.push(clone(child));}}
+  function propagateChildRemove(path){const info=criterionParentInfo(path);if(!info)return;for(const loc of projectLocales()){const n=normalizeLocale(loc);if(n===normalizeLocale(socioContextLocale))continue;criterionByPathIn(socioLanguageVariants[n],info.parentPath)?.opts?.[info.optionIndex]?.subcriteria?.splice(info.childIndex,1);}}
   function bindSocio(){
     document.querySelectorAll('[data-socio-root-toggle]').forEach(el=>el.onclick=()=>{const path=el.dataset.socioRootToggle;socioOpenRoots.has(path)?socioOpenRoots.delete(path):socioOpenRoots.add(path);renderSocio();});
     document.querySelectorAll('[data-socio-branch-toggle]').forEach(el=>el.onclick=()=>{const path=el.dataset.socioBranchToggle;socioOpenBranches.has(path)?socioOpenBranches.delete(path):socioOpenBranches.add(path);renderSocio();});
@@ -307,12 +346,12 @@
     document.querySelectorAll('[data-tree-q]').forEach(el=>el.oninput=()=>{const criterion=getCriterionByPath(el.dataset.treeQ);if(criterion){criterion.q=el.value;scheduleAutosave();}});
     document.querySelectorAll('[data-tree-label]').forEach(el=>el.oninput=()=>{const option=getOptionByPath(el.dataset.treeLabel);if(option){option.label=el.value;scheduleAutosave();}});
     document.querySelectorAll('[data-tree-n]').forEach(el=>el.oninput=()=>{const option=getOptionByPath(el.dataset.treeN);if(option){option.n=Number(el.value)||0;updateOptionVisual(el);scheduleAutosave();}});
-    document.querySelectorAll('[data-socio-remove]').forEach(el=>el.onclick=()=>{socio.splice(+el.dataset.socioRemove,1);renderSocio();scheduleAutosave(0);});
-    document.querySelectorAll('[data-tree-option-remove]').forEach(el=>el.onclick=()=>{const [criterionPath,index]=el.dataset.treeOptionRemove.split('|'),criterion=getCriterionByPath(criterionPath);criterion?.opts?.splice(Number(index),1);renderSocio();scheduleAutosave(0);});
-    document.querySelectorAll('[data-tree-option-add]').forEach(el=>el.onclick=()=>{const criterion=getCriterionByPath(el.dataset.treeOptionAdd);criterion?.opts?.push({label:el.dataset.treeOptionAdd.includes('.')?'Nouvelle sous-réponse':'Nouvelle réponse',n:0,subcriteria:[]});renderSocio();scheduleAutosave(0);});
-    document.querySelectorAll('[data-tree-child-add]').forEach(el=>el.onclick=()=>{const option=getOptionByPath(el.dataset.treeChildAdd);if(!option)return;option.subcriteria=Array.isArray(option.subcriteria)?option.subcriteria:[];option.subcriteria.push(newSubcriterion());renderSocio();scheduleAutosave(0);});
+    document.querySelectorAll('[data-socio-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const index=+el.dataset.socioRemove;propagateRootCriterionRemove(index);socio.splice(index,1);renderSocio();scheduleAutosave(0);});
+    document.querySelectorAll('[data-tree-option-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const [criterionPath,index]=el.dataset.treeOptionRemove.split('|'),criterion=getCriterionByPath(criterionPath);propagateOptionRemove(criterionPath,index);criterion?.opts?.splice(Number(index),1);renderSocio();scheduleAutosave(0);});
+    document.querySelectorAll('[data-tree-option-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const criterionPath=el.dataset.treeOptionAdd,criterion=getCriterionByPath(criterionPath),option={label:criterionPath.includes('.')?'Nouvelle sous-réponse':'Nouvelle réponse',n:0,subcriteria:[]};criterion?.opts?.push(option);propagateOptionAdd(criterionPath,option);renderSocio();scheduleAutosave(0);});
+    document.querySelectorAll('[data-tree-child-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const optionPath=el.dataset.treeChildAdd,option=getOptionByPath(optionPath);if(!option)return;const child=newSubcriterion();option.subcriteria=Array.isArray(option.subcriteria)?option.subcriteria:[];option.subcriteria.push(child);propagateChildAdd(optionPath,child);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-review-clear]').forEach(el=>el.onclick=()=>clearCriterionReview(socioContextLocale,socio[Number(el.dataset.reviewClear)],Number(el.dataset.reviewClear)));
-    document.querySelectorAll('[data-tree-criterion-remove]').forEach(el=>el.onclick=()=>{const info=criterionParentInfo(el.dataset.treeCriterionRemove);if(!info)return;const parent=getCriterionByPath(info.parentPath);parent?.opts?.[info.optionIndex]?.subcriteria?.splice(info.childIndex,1);renderSocio();scheduleAutosave(0);});
+    document.querySelectorAll('[data-tree-criterion-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const path=el.dataset.treeCriterionRemove,info=criterionParentInfo(path);if(!info)return;propagateChildRemove(path);const parent=getCriterionByPath(info.parentPath);parent?.opts?.[info.optionIndex]?.subcriteria?.splice(info.childIndex,1);renderSocio();scheduleAutosave(0);});
   }
   function walkCriteria(criteria,cb,depth=1){(criteria||[]).forEach(c=>{cb(c,depth);(c.opts||[]).forEach(o=>walkCriteria(o.subcriteria||[],cb,depth+1));});}
   function allSocioOptions(){const out=[];walkCriteria(socio,c=>(c.opts||[]).forEach(o=>out.push(o)));return out;}
@@ -425,11 +464,11 @@
   function syncCloseMin(){const d=$('launch-date').value;if(!d)return;const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+1);const min=x.toISOString().slice(0,10);$('close-date').min=min;if(!isReadOnly()&&$('close-date').value&&$('close-date').value<min)$('close-date').value='';}
   function invalidCriterion(c){return !String(c?.q||'').trim()||!Array.isArray(c?.opts)||c.opts.length<2||c.opts.some(o=>!String(o?.label||'').trim()||(o.subcriteria||[]).some(invalidCriterion));}
   function invalidSocio(){return socio.some(invalidCriterion);}
-  $('add-socio').onclick=()=>{if(isReadOnly())return;socio.push({q:'',opts:[{label:'',n:0},{label:'',n:0}]});renderSocio();scheduleAutosave(0);};
+  $('add-socio').onclick=()=>{if(isReadOnly())return;ensureAllLocaleSocioVariants();const criterion={q:'Nouvelle donnée personnalisée',opts:[{label:'Réponse 1',n:0},{label:'Réponse 2',n:0}]},index=socio.length;socio.push(criterion);propagateRootCriterionAdd(criterion,index);renderSocioContext();renderSocio();scheduleAutosave(0);};
   $('intro').addEventListener('input',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave();}});
   $('launch-date').addEventListener('change',()=>{if(!isReadOnly()){syncCloseMin();updateNextState();scheduleAutosave(0);}});
   $('close-date').addEventListener('change',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave(0);}});
-  document.querySelectorAll('[data-example]').forEach(b=>b.onclick=()=>{if(isReadOnly())return;const k=b.dataset.example;if(k==='age'){storeActiveSocio();for(const loc of projectLocales()){const n=normalizeLocale(loc),items=Array.isArray(socioLanguageVariants[n])?clone(socioLanguageVariants[n]):[];if(!items.some(c=>c.kind==='age')){items.push(ageForLocale(n));socioLanguageVariants[n]=items;}}if(!socio.some(c=>c.kind==='age'))socio.push(ageForLocale(socioContextLocale));socioContextHasStored=true;socioContextBaseline=JSON.stringify(normalizedSocio(socio));}else{const e=EXAMPLES[+k];socio.push({q:e[0],opts:e[1].map(label=>({label,n:0}))});}renderSocio();scheduleAutosave(0);});
+  document.querySelectorAll('[data-example]').forEach(b=>b.onclick=()=>{if(isReadOnly())return;const k=b.dataset.example;if(k==='age'){storeActiveSocio();for(const loc of projectLocales()){const n=normalizeLocale(loc),items=Array.isArray(socioLanguageVariants[n])?clone(socioLanguageVariants[n]):[];if(!items.some(c=>c.kind==='age')){items.push(ageForLocale(n));socioLanguageVariants[n]=items;}}if(!socio.some(c=>c.kind==='age'))socio.push(ageForLocale(socioContextLocale));socioContextHasStored=true;socioContextBaseline=JSON.stringify(normalizedSocio(socio));}else{ensureAllLocaleSocioVariants();const e=EXAMPLES[+k],criterion={q:e[0],opts:e[1].map(label=>({label,n:0}))},index=socio.length;socio.push(criterion);propagateRootCriterionAdd(criterion,index);renderSocioContext();}renderSocio();scheduleAutosave(0);});
   $('add-result-resource').onclick=()=>openResourceModal();
   $('result-preview-toggle').onclick=()=>{const button=$('result-preview-toggle'),body=$('result-resources-preview'),open=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',String(!open));body.hidden=open;button.querySelector('span').textContent=open?'⌄':'⌃';};
   window.StudioParametragePreviewSnapshot=()=>{storeActiveLanguageContent();return {project:{theme:project?.theme_title||'',title:$('respondent-title')?.value.trim()||project?.respondent_title||baseTitle||'Autodiagnostic',intro:$('intro')?.value.trim()||'',socio:socio,result_buttons:resultResources.filter(resourceComplete)},respondent_context:{countryCode:socioContextCountry,locale:socioContextLocale}};};
