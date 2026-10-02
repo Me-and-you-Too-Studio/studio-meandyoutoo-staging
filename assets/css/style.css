@@ -14864,3 +14864,17 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 
 /* Admin catalogue — référence FR visible pendant l’édition multilingue */
 .admin-translation-reference-note{display:flex;gap:10px;align-items:flex-start;margin:14px 0;padding:12px 14px;border:1px solid #cfe3e8;border-radius:12px;background:#f4fafb;font-size:13px;line-height:1.45}.admin-translation-reference-note strong{white-space:nowrap;color:#0b5269}.admin-translation-reference-note span{color:#47616c}.admin-translation-grid.has-reference{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}.admin-editorial-field.is-reference textarea,.admin-dsd-card .is-reference input,.admin-dsd-option input.is-reference{background:#f5f7f8;color:#52636b;border-color:#d8e0e4}.admin-dsd-translation-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.admin-dsd-option.has-reference{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}@media(max-width:900px){.admin-translation-grid.has-reference,.admin-dsd-translation-row,.admin-dsd-option.has-reference{grid-template-columns:1fr}.admin-translation-reference-note{flex-direction:column;gap:4px}}
+
+
+/* Sélection pays/langues : un pays par ligne, consigne lisible */
+[data-locale-checks].version-check-grid{display:block}
+.version-country-languages{display:block;width:100%;padding:14px 0 16px;border-bottom:1px solid #e3ebf0}
+.version-country-languages:last-child{border-bottom:0}
+.version-country-languages-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 10px}
+.version-country-languages-head strong{display:block;color:#203b68;font-size:1rem}
+.version-country-languages-head small{display:block;color:#60758b;line-height:1.4}
+.version-country-languages>.version-check-grid{display:flex;flex-wrap:wrap;gap:9px}
+.parameter-reference-panel{margin:14px 0 0;padding:16px 18px;border:1px solid #d9e6ec;border-radius:14px;background:#f7fafb}
+.parameter-reference-head{display:flex;align-items:center;gap:10px;margin-bottom:7px;color:#203b68}
+.parameter-reference-panel p{margin:0 0 12px;color:#60758b;font-size:.9rem}
+.parameter-reference-text{white-space:pre-wrap;line-height:1.55;color:#304a61;background:#fff;border:1px solid #e0e9ee;border-radius:10px;padding:12px 14px}
