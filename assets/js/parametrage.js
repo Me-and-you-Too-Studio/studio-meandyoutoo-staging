@@ -436,7 +436,7 @@
       launchDate:String($('launch-date')?.value||'').trim()||null,
       closeDate:String($('close-date')?.value||'').trim()||null,
       nbRespondents:rawRespondents?Number(rawRespondents):null,
-      sociodemo:Array.isArray(project?.sociodemo)?project.sociodemo:socio,
+      sociodemo:(()=>{const ref=socioReference();return Array.isArray(ref.items)&&ref.items.length?clone(ref.items):clone(socio);})(),
       sociodemoLanguageVariants:socioLanguageVariants,
       translationReviewState:reviewState()
     };
