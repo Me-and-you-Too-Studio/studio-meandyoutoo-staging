@@ -12,6 +12,7 @@
   const iso=d=>{const x=new Date();x.setDate(x.getDate()+d);return x.toISOString().slice(0,10);};
   const genderRequiredTheme=()=>['sexisme','mixite','allie-mixite'].includes(String(theme||'').toLowerCase());
   const defaultSocio=()=>genderRequiredTheme()?[{kind:'gender',q:'Quel est votre genre ?',opts:[{label:'Homme',n:0},{label:'Femme',n:0},{label:'Non binaire',n:0},{label:'Autre',n:0}]}]:[];
+  const normalizeLocale=value=>String(value||'fr').trim().toLowerCase().replaceAll('_','-')||'fr';
   const AGE_TRANSLATIONS={
     fr:['Votre âge',['Moins de 20 ans','Entre 20 et 34 ans','Entre 35 et 49 ans','Entre 50 et 65 ans','Plus de 65 ans']],
     en:['Your age',['Under 20','20 to 34','35 to 49','50 to 65','Over 65']],
@@ -55,7 +56,6 @@
   const isBlankAutoCriterion=criterion=>{const q=String(criterion?.q||'').trim();const labels=(Array.isArray(criterion?.opts)?criterion.opts:[]).map(o=>String(o?.label||'').trim());const noRealQuestion=!q||q==='Nouvelle donnée';const noRealAnswers=!labels.length||labels.every(label=>!label||/^Réponse\s*[12]$/i.test(label));return !criterion?.kind&&noRealQuestion&&noRealAnswers;};
   const clone=v=>JSON.parse(JSON.stringify(v));
   const normalizeCountry=value=>String(value||'').trim().toUpperCase();
-  const normalizeLocale=value=>String(value||'fr').trim().toLowerCase().replaceAll('_','-')||'fr';
   const normalizeSocioLanguageVariants=(value,sourceSurveyId='')=>{const out={};if(!value||typeof value!=='object'||Array.isArray(value))return out;const surveyId=String(sourceSurveyId||'').trim();const scoped=surveyId&&value.bySurvey&&typeof value.bySurvey==='object'&&!Array.isArray(value.bySurvey)&&value.bySurvey[surveyId]&&typeof value.bySurvey[surveyId]==='object'&&!Array.isArray(value.bySurvey[surveyId])?value.bySurvey[surveyId]:value;const add=(locale,items)=>{const loc=normalizeLocale(locale);if(loc&&Array.isArray(items)&&!out[loc])out[loc]=normalizedSocio(items);};for(const [key,items] of Object.entries(scoped)){if(key==='bySurvey')continue;if(Array.isArray(items))add(key,items);}const buckets=Object.entries(scoped).filter(([key,val])=>key!=='bySurvey'&&val&&typeof val==='object'&&!Array.isArray(val));buckets.sort(([a],[b])=>{const rank=k=>k==='250'?0:['ALL','*','default'].includes(k)?1:2;return rank(a)-rank(b)||String(a).localeCompare(String(b));});for(const [,locales] of buckets)for(const [locale,items] of Object.entries(locales||{}))add(locale,items);return out;};
   const normalizeIntroVariants=value=>{const out={};if(!value||typeof value!=='object'||Array.isArray(value))return out;for(const [locale,text] of Object.entries(value)){const loc=normalizeLocale(locale),v=String(text??'').trim();if(loc&&v)out[loc]=v;}return out;};
   const countryLabel=code=>{try{return new Intl.DisplayNames(['fr'],{type:'region'}).of(code)||code}catch(_){return code}};
