@@ -34,7 +34,7 @@
     zf:['您的年龄',['20岁以下','20至34岁','35至49岁','50至65岁','65岁以上']],
     zh:['您的年齡',['20歲以下','20至34歲','35至49歲','50至65歲','65歲以上']]
   };
-  const ageForLocale=locale=>{const loc=normalizeLocale(locale),row=AGE_TRANSLATIONS[loc]||AGE_TRANSLATIONS.fr;return{kind:'age',q:row[0],opts:row[1].map(label=>({label,n:0}))};};
+  const ageForLocale=locale=>{const loc=String(locale||'fr').trim().toLowerCase().replaceAll('_','-'),row=AGE_TRANSLATIONS[loc]||AGE_TRANSLATIONS.fr;return{kind:'age',q:row[0],opts:row[1].map(label=>({label,n:0}))};};
   const AGE=ageForLocale('fr');
   const EXAMPLES=[['Business Unit',['Business Unit 1','Business Unit 2']],['Régions',['Région 1','Région 2']],['Fonction',['Fonction 1','Fonction 2']],['Manager ou collaborateur',['Manager','Collaborateur']]];
   const newSubcriterion=()=>({q:'Précisez votre choix',opts:[{label:'Sous-réponse 1',n:0},{label:'Sous-réponse 2',n:0}],subcriteria:[]});
