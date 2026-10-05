@@ -1945,9 +1945,15 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     };
     const syncLocales=()=>{
       const chapter=selectedChapter();
-      const explicit=[...new Set((Array.isArray(chapter?.available_locales)&&chapter.available_locales.length?chapter.available_locales:[]).map(normLocale).filter(Boolean))];
+      const catalogLocales=(Array.isArray(chapter?.available_locales)?chapter.available_locales:[]).map(normLocale).filter(Boolean);
+      const campaignLocales=(usage.compatibleLocalesByChapter?.[String(chapter?.id)]||[]).map(normLocale).filter(Boolean);
       const fallback=normLocale(video?.locale||usage.video?.locale||'');
-      const locales=explicit.length?explicit:(fallback?[fallback]:[]);
+      // Union du catalogue + campagnes Studio/legacy réellement compatibles.
+      // Cela permet par ex. de proposer BR lorsqu'une campagne historique Orange
+      // utilise Management inclusif N2 en portugais du Brésil, même si le chapitre
+      // catalogue n'expose actuellement que FR/EN.
+      const locales=[...new Set([...catalogLocales,...campaignLocales,...(fallback?[fallback]:[])])]
+        .sort((a,b)=>localeName(a).localeCompare(localeName(b),'fr',{sensitivity:'base'}));
       localeSelect.disabled=!chapter;
       localeSelect.innerHTML=!chapter?'<option value="">Choisir d’abord un chapitre…</option>':'<option value="">Toutes les langues compatibles</option>'+locales.map(loc=>`<option value="${esc(loc)}">${esc(localeName(loc))}</option>`).join('');
       if(chapter&&fallback&&locales.includes(fallback))localeSelect.value=fallback;
