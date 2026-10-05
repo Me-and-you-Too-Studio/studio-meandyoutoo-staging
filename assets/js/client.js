@@ -110,16 +110,24 @@
   }
 
   const campaignCountryNamesByNumericCode={
-    '032':'Argentine','040':'Autriche','056':'Belgique','072':'Botswana','076':'Brésil','100':'Bulgarie',
-    '120':'Cameroun','124':'Canada','140':'République centrafricaine','152':'Chili','156':'Chine','158':'Taïwan',
-    '178':'Congo','191':'Croatie','203':'Tchéquie','208':'Danemark','250':'France','276':'Allemagne','288':'Ghana',
-    '300':'Grèce','324':'Guinée','344':'Hong Kong','356':'Inde','380':'Italie','384':"Côte d’Ivoire",'392':'Japon',
-    '400':'Jordanie','410':'Corée du Sud','422':'Liban','430':'Liberia','442':'Luxembourg','450':'Madagascar',
-    '466':'Mali','480':'Maurice','484':'Mexique','498':'Moldavie','504':'Maroc','528':'Pays-Bas','566':'Nigeria',
-    '578':'Norvège','591':'Panama','616':'Pologne','620':'Portugal','624':'Guinée-Bissau','642':'Roumanie',
-    '643':'Fédération de Russie','686':'Sénégal','694':'Sierra Leone','703':'Slovaquie','724':'Espagne','752':'Suède',
-    '756':'Suisse','788':'Tunisie','818':'Égypte','826':'Royaume-Uni','834':'Tanzanie','840':'États-Unis',
-    '854':'Burkina Faso','858':'Uruguay'
+    '004':'Afghanistan','008':'Albanie','012':'Algérie','020':'Andorre','024':'Angola','031':'Azerbaïdjan',
+    '032':'Argentine','036':'Australie','040':'Autriche','048':'Bahreïn','050':'Bangladesh','056':'Belgique',
+    '068':'Bolivie','072':'Botswana','076':'Brésil','100':'Bulgarie','116':'Cambodge','120':'Cameroun',
+    '124':'Canada','140':'République centrafricaine','144':'Sri Lanka','152':'Chili','156':'Chine','158':'Taïwan',
+    '170':'Colombie','178':'Congo','188':'Costa Rica','191':'Croatie','196':'Chypre','203':'Tchéquie',
+    '208':'Danemark','214':'République dominicaine','218':'Équateur','233':'Estonie','246':'Finlande','250':'France',
+    '268':'Géorgie','276':'Allemagne','288':'Ghana','300':'Grèce','320':'Guatemala','324':'Guinée',
+    '332':'Haïti','344':'Hong Kong','348':'Hongrie','356':'Inde','360':'Indonésie','368':'Irak','372':'Irlande',
+    '376':'Israël','380':'Italie','384':"Côte d’Ivoire",'392':'Japon','398':'Kazakhstan','400':'Jordanie',
+    '404':'Kenya','410':'Corée du Sud','414':'Koweït','422':'Liban','428':'Lettonie','430':'Liberia',
+    '440':'Lituanie','442':'Luxembourg','450':'Madagascar','458':'Malaisie','466':'Mali','470':'Malte',
+    '480':'Maurice','484':'Mexique','492':'Monaco','498':'Moldavie','504':'Maroc','512':'Oman','528':'Pays-Bas',
+    '554':'Nouvelle-Zélande','566':'Nigeria','578':'Norvège','591':'Panama','600':'Paraguay','604':'Pérou',
+    '608':'Philippines','616':'Pologne','620':'Portugal','624':'Guinée-Bissau','634':'Qatar','642':'Roumanie',
+    '643':'Fédération de Russie','682':'Arabie saoudite','686':'Sénégal','688':'Serbie','694':'Sierra Leone',
+    '702':'Singapour','703':'Slovaquie','704':'Vietnam','710':'Afrique du Sud','724':'Espagne','752':'Suède',
+    '756':'Suisse','764':'Thaïlande','784':'Émirats arabes unis','788':'Tunisie','792':'Turquie','804':'Ukraine',
+    '818':'Égypte','826':'Royaume-Uni','834':'Tanzanie','840':'États-Unis','854':'Burkina Faso','858':'Uruguay'
   };
   function campaignCountryLabel(code){
     const key=String(code||"").trim().toUpperCase();
