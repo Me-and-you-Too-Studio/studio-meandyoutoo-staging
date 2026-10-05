@@ -3,6 +3,7 @@
   const pid=p.get('projectId')||'';
   const theme=p.get('theme')||document.querySelector('[data-start-theme]')?.dataset.startTheme||'';
   const isProject=Boolean(pid);
+  const pageName=(location.pathname.split('/').pop()||'').toLowerCase();
 
   function modal(){
     let m=document.querySelector('#rp-modal');
@@ -50,7 +51,7 @@
   }
 
   function makeSettingsAction(){
-    if(!isProject)return null;
+    if(!isProject||pageName==='parametrage.html')return null;
     const user=window.StudioAPI?.user?.()||{};
     const isAdmin=user.role==='admin'&&(!window.StudioAPI?.interfaceMode||window.StudioAPI.interfaceMode()!=='client');
     const wrap=document.createElement('span');
@@ -118,8 +119,21 @@
     }
 
     if(isProject){
-      const t=document.querySelector('.compact-topbar>div')||document.querySelector('.topbar>div');
-      if(t&&!document.querySelector('[data-rp="top"]'))addTopActions(t);
+      if(pageName==='parametrage.html'){
+        const topActions=document.querySelector('.compact-topbar > .top-actions');
+        if(topActions&&!document.querySelector('[data-rp="top"]')){
+          const preview=makeButton('top');
+          preview.classList.add('rp-trigger','rp-trigger-topbar');
+          const firstAction=topActions.querySelector('a,button');
+          if(firstAction)topActions.insertBefore(preview,firstAction);else topActions.appendChild(preview);
+        }
+      }else if(pageName==='composer.html'){
+        const topbar=document.querySelector('.compact-topbar');
+        if(topbar&&!document.querySelector('[data-rp="top"]'))addTopActions(topbar);
+      }else{
+        const t=document.querySelector('.compact-topbar>div')||document.querySelector('.topbar>div');
+        if(t&&!document.querySelector('[data-rp="top"]'))addTopActions(t);
+      }
 
       syncSticky();
 

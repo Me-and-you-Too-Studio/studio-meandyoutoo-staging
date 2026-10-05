@@ -6,7 +6,7 @@
 <title>Paramétrer la campagne — Studio Me&YouToo</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20260918-project-quota-resources-2">
+<link rel="stylesheet" href="assets/css/style.css?v=20261005-diffusion-url-ui-1">
 
 <style id="field-autosave-indicator-style">
 .field-autosave-host{position:relative;}
@@ -43,7 +43,7 @@
 <div class="top-actions" style="align-items:center;flex-wrap:wrap">
 <span id="param-autosave-status" class="meta" data-tone="saved">Enregistrement automatique</span>
 <a class="button button-secondary" id="param-content-top" href="#">← Contenu</a>
-<button class="button button-primary" id="param-next-top" type="button">Vérifier la configuration →</button>
+<button class="button button-primary" id="param-next-top" type="button">Continuer vers la transmission →</button>
 <a class="button button-secondary" id="param-client-folder" href="#" hidden>← Retour au dossier client</a>
 </div>
 </div>
@@ -73,10 +73,17 @@
 <input id="respondent-title" required placeholder="Ex. Êtes-vous un collègue sexiste ?">
 <span class="hint">Ce titre est affiché aux répondants au début de l’autodiagnostic.</span>
 </div>
-<div class="field">
-<label for="organization-slug">Identifiant de votre espace de diffusion <span class="field-help"><button class="field-help-button" type="button" aria-label="À quoi sert cet identifiant ?">?</button><span class="field-help-content" role="tooltip">Cet identifiant court est créé automatiquement depuis le nom de votre entreprise. Il servira à préparer l’adresse de diffusion remise par Me&YouToo.</span></span></label>
-<input id="organization-slug" class="slug-preview" readonly aria-readonly="true">
-<span class="slug-preview-note" id="organization-slug-note">Généré automatiquement à partir du nom renseigné dans Mon compte. Le lien définitif sera fourni par Me&YouToo.</span>
+<div class="field diffusion-address-field">
+<label for="diffusion-slug">Adresse de diffusion <span class="field-help"><button class="field-help-button" type="button" aria-label="Comment est construite l’adresse de diffusion ?">?</button><span class="field-help-content" role="tooltip">L’adresse répondant est composée de l’adresse Me&YouToo, de l’identifiant du client puis du slug de la campagne. Pour une campagne historique, l’adresse déjà importée est conservée.</span></span></label>
+<div class="diffusion-url-builder">
+  <span class="diffusion-url-prefix" id="diffusion-url-prefix">https://selfdiag-mayt.meandyoutoo.app/…/</span>
+  <input id="diffusion-slug" class="diffusion-slug-input" autocomplete="off" spellcheck="false" placeholder="slug-de-la-campagne" aria-describedby="diffusion-url-note">
+</div>
+<div class="diffusion-url-preview-row">
+  <span class="diffusion-url-preview" id="diffusion-url-preview">Adresse en attente du slug de campagne.</span>
+  <a class="button button-ghost button-small" id="diffusion-url-open" href="#" target="_blank" rel="noopener" hidden>Ouvrir ↗</a>
+</div>
+<span class="slug-preview-note" id="diffusion-url-note">Le nom du client constitue automatiquement la première partie de l’adresse. Saisissez uniquement le slug souhaité pour cette campagne.</span>
 </div>
 </fieldset>
 <div id="socio-context" class="anonymity-guide" hidden>
@@ -219,7 +226,7 @@
 </div>
 <div class="top-actions" style="justify-content:flex-end">
 <a class="button button-ghost" id="param-back">← Étape précédente</a>
-<button class="button button-primary" id="param-next" type="submit">Vérifier la configuration →</button>
+<button class="button button-primary" id="param-next" type="submit">Continuer vers la transmission →</button>
 </div>
 </form>
 </main>
@@ -233,8 +240,8 @@
 <script src="assets/js/project-context.js?v=20260929-project-identity-1">
 </script>
 <script src="assets/js/content-adjustment.js?v=20260903-nested-adjustment-1"></script>
-<script src="assets/js/parametrage.js?v=20260929-autosave-field-1">
+<script src="assets/js/parametrage.js?v=20261005-diffusion-url-1">
 </script>
 <script src="assets/js/pack-requests.js?v=20260822-1"></script>
-<script src="assets/js/preview-launcher.js?v=20260905-3"></script></body>
+<script src="assets/js/preview-launcher.js?v=20261005-top-actions-1"></script></body>
 </html>

@@ -14991,3 +14991,59 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .socio-current-editor input:placeholder-shown{
   border-style:dashed;
 }
+
+
+/* 2026-10-05 — actions du bandeau + adresse de diffusion */
+.compact-topbar > .campaign-preview-settings-actions{
+  margin:0 0 0 auto;
+  flex:0 0 auto;
+  align-self:center;
+  justify-content:flex-end;
+}
+.compact-topbar > .campaign-preview-settings-actions .campaign-settings-shortcut{align-items:center}
+.compact-topbar > .campaign-preview-settings-actions .button,
+.compact-topbar > .campaign-preview-settings-actions .campaign-settings-shortcut-link{min-height:46px}
+.compact-topbar > .top-actions .rp-trigger-topbar{min-height:46px;white-space:nowrap}
+.diffusion-address-field{max-width:100%}
+.diffusion-url-builder{
+  display:grid;
+  grid-template-columns:auto minmax(220px,1fr);
+  align-items:stretch;
+  border:1px solid #c9dbe5;
+  border-radius:14px;
+  overflow:hidden;
+  background:#fff;
+}
+.diffusion-url-prefix{
+  display:flex;
+  align-items:center;
+  padding:0 14px;
+  background:#eef5f8;
+  border-right:1px solid #c9dbe5;
+  color:#45677d;
+  font-size:.82rem;
+  font-weight:800;
+  white-space:nowrap;
+}
+.diffusion-url-builder .diffusion-slug-input{
+  min-height:48px;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  background:#fff!important;
+  color:#17355f!important;
+  font-weight:850;
+}
+.diffusion-url-builder .diffusion-slug-input:focus{outline:2px solid #7bc5cb;outline-offset:-2px}
+.diffusion-url-builder.is-readonly{background:#f5f8fa}
+.diffusion-url-builder.is-readonly .diffusion-slug-input{background:#f5f8fa!important;color:#526b7c!important}
+.diffusion-url-preview-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px}
+.diffusion-url-preview{color:#0b6f77;font-size:.8rem;font-weight:800;overflow-wrap:anywhere}
+.diffusion-url-preview.is-legacy{color:#395c73}
+@media(max-width:900px){
+  .compact-topbar > .campaign-preview-settings-actions{width:100%;margin-left:0;justify-content:flex-start}
+}
+@media(max-width:720px){
+  .diffusion-url-builder{grid-template-columns:1fr}
+  .diffusion-url-prefix{min-height:42px;border-right:0;border-bottom:1px solid #c9dbe5;white-space:normal;overflow-wrap:anywhere}
+}
