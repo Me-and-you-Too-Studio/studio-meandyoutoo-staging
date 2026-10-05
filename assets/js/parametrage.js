@@ -83,6 +83,7 @@
   function introReference(){const socioRef=normalizeLocale(socioReference().locale),preferred=[socioRef,'fr','en','es',...projectLocales()].filter(Boolean),seen=new Set();for(const loc of preferred){const n=normalizeLocale(loc);if(seen.has(n))continue;seen.add(n);const text=String(introVariants?.[n]??introResolvedVariants?.[n]??'').trim();if(text)return{locale:n,text};}const primary=normalizeLocale(project?.selected_locale||(Array.isArray(project?.locales)&&project.locales[0])||'fr'),projectIntro=String(project?.introduction_html||'').trim();if(projectIntro)return{locale:primary,text:projectIntro};const themeIntro=String(project?.theme_introduction_html||'').trim();return themeIntro?{locale:'fr',text:themeIntro}:{locale:'',text:''};}
   function socioReference(){const preferred=[normalizeLocale(project?.selected_locale),'fr','en','es',...projectLocales()],seen=new Set();for(const loc of preferred){const n=normalizeLocale(loc);if(!n||seen.has(n))continue;seen.add(n);const items=socioForLocale(n);if(Array.isArray(items)&&items.length)return{locale:n,items};}const first=Object.keys(socioLanguageVariants||{}).find(loc=>Array.isArray(socioLanguageVariants[loc])&&socioLanguageVariants[loc].length);return first?{locale:first,items:socioForLocale(first)}:{locale:'',items:[]};}
   function isSocioReferenceLocale(){const ref=socioReference();return Boolean(ref.locale)&&normalizeLocale(ref.locale)===normalizeLocale(socioContextLocale);}
+  function canAdminCleanLegacyVariant(){const refLoc=normalizeLocale(socioReference().locale),currentLoc=normalizeLocale(socioContextLocale);return currentUser.role==='admin'&&isLegacyClientCampaign()&&!isReadOnly()&&Boolean(refLoc)&&Boolean(currentLoc)&&refLoc!==currentLoc;}
   function syncSocioStructureControls(){
     const editable=!isReadOnly()&&isSocioReferenceLocale();
     const examples=document.querySelector('.socio-examples-visible');
@@ -261,12 +262,11 @@
   function criterionParentInfo(path){const parts=String(path).split('.').map(Number);if(parts.length<3)return null;const childIndex=parts.pop(),optionIndex=parts.pop(),parentPath=parts.join('.');return{parentPath,optionIndex,childIndex};}
   const answerRow=(option,optionPath,removable,locked=false)=>{const state=optionState(option.n),ro=isReadOnly();return`<div class="socio-option-unit ${locked?'locked-option':''}"><div class="socio-option"><div class="socio-answer-field ${locked?'locked-field':''}"><span>${locked?'Réponse figée':'Réponse'}</span><input data-tree-label="${optionPath}" value="${esc(option.label)}" aria-label="Réponse possible" ${ro||locked?'readonly tabindex="-1"':''}></div><div class="socio-count-field ${state.cls}"><span>Effectif estimé</span><input data-tree-n="${optionPath}" type="number" min="0" placeholder="Ex. 25" value="${Number(option.n)||''}" aria-label="Effectif estimé" ${ro||locked?'readonly tabindex="-1"':''}></div>${ro||locked?'<span class="socio-option-spacer" aria-hidden="true"></span>':`<button type="button" class="socio-option-remove" data-tree-option-remove="${optionPath}" ${removable?'':'disabled'}>×</button>`}</div><div class="socio-option-hint ${state.cls}">${state.hint}</div></div>`;};
   function renderNestedCriterion(criterion,path,level,conditionLabel){
-    const ro=isReadOnly(),stats=criterionStats(criterion),isOpen=socioOpenBranches.has(path),structureEditable=!ro&&normalizeLocale(socioReference().locale)===normalizeLocale(socioContextLocale),orphanCriterion=!ro&&isHistoricalOrphanCriterion(criterion);
+    const ro=isReadOnly(),stats=criterionStats(criterion),isOpen=socioOpenBranches.has(path),structureEditable=!ro&&normalizeLocale(socioReference().locale)===normalizeLocale(socioContextLocale),legacyVariantCleanup=canAdminCleanLegacyVariant();
     const options=(criterion.opts||[]).map((option,j)=>{
       const optionPath=`${path}|${j}`;
       const children=(option.subcriteria||[]).map((child,k)=>renderNestedCriterion(child,`${path}.${j}.${k}`,level+1,option.label)).join('');
-      const orphanOption=!ro&&isHistoricalOrphanOption(option);
-      return `<div class="socio-option-block">${answerRow(option,optionPath,(structureEditable&&criterion.opts.length>2)||orphanOption)}${orphanOption?'<span class="socio-orphan-note">Élément historique absent de la référence</span>':''}${children}${structureEditable?`<button class="socio-add-sub" type="button" data-tree-child-add="${optionPath}">+ Ajouter une sous-question pour cette réponse</button>`:''}</div>`;
+      return `<div class="socio-option-block">${answerRow(option,optionPath,structureEditable&&criterion.opts.length>2)}${children}${structureEditable?`<button class="socio-add-sub" type="button" data-tree-child-add="${optionPath}">+ Ajouter une sous-question pour cette réponse</button>`:''}</div>`;
     }).join('');
     const nestedLabel=stats.nested?` · ${stats.nested} sous-branche${stats.nested>1?'s':''}`:'';
     const depthLabel=stats.maxDepth>1?` · jusqu’au niveau ${level+stats.maxDepth-1}`:'';
@@ -276,7 +276,7 @@
           <span class="socio-sub-summary-main"><span class="socio-level-badge">Niveau ${level} · si « ${esc(conditionLabel||'cette réponse')} »</span><strong>${esc(criterion.q||'Question complémentaire')}</strong><small>${stats.responses} réponse${stats.responses>1?'s':''}${nestedLabel}${depthLabel}</small></span>
           <span class="socio-chevron" aria-hidden="true">⌄</span>
         </button>
-        ${structureEditable?`<button type="button" class="socio-sub-remove" data-tree-criterion-remove="${path}">Retirer</button>`:orphanCriterion?`<button type="button" class="socio-sub-remove socio-orphan-remove" data-orphan-criterion-remove="${path}">Retirer de cette langue</button>`:''}
+        ${structureEditable?`<button type="button" class="socio-sub-remove" data-tree-criterion-remove="${path}">Retirer</button>`:legacyVariantCleanup?`<button type="button" class="socio-sub-remove socio-sub-remove-variant" data-tree-criterion-remove-variant="${path}">Retirer de cette langue</button>`:''}
       </div>
       <div class="socio-sub-body" ${isOpen?'':'hidden'}>
         <div class="field"><label>Question complémentaire</label><input data-tree-q="${path}" value="${esc(criterion.q)}" ${ro?'readonly tabindex="-1"':''}></div>
@@ -300,12 +300,10 @@
           return `<div class="socio-option-block"><div class="socio-option-unit locked-option"><div class="socio-option"><div class="socio-answer-field locked-field"><span>Réponse figée</span><input value="${esc(option.label)}" readonly tabindex="-1" aria-label="Réponse non modifiable"></div><div class="socio-count-field ${state.cls}"><span>Effectif estimé</span><input data-tree-n="${optionPath}" type="number" min="0" value="${Number(option.n)||''}" readonly tabindex="-1"></div>${removeControl}</div><div class="socio-option-hint ${state.cls}">${state.hint}</div></div>${children}</div>`;
         }
         const children=(option.subcriteria||[]).map((child,k)=>renderNestedCriterion(child,`${path}.${j}.${k}`,2,option.label)).join('');
-        const orphanOption=!ro&&isHistoricalOrphanOption(option);
-        return `<div class="socio-option-block">${answerRow(option,optionPath,(criterionStructureEditable&&criterion.opts.length>2)||orphanOption)}${orphanOption?'<span class="socio-orphan-note">Élément historique absent de la référence</span>':''}${children}${criterionStructureEditable?`<button class="socio-add-sub" type="button" data-tree-child-add="${optionPath}">+ Ajouter un sous-critère pour cette réponse</button>`:''}</div>`;
+        return `<div class="socio-option-block">${answerRow(option,optionPath,criterionStructureEditable&&criterion.opts.length>2)}${children}${criterionStructureEditable?`<button class="socio-add-sub" type="button" data-tree-child-add="${optionPath}">+ Ajouter un sous-critère pour cette réponse</button>`:''}</div>`;
       }).join('');
       const lockText=ro?'Campagne en lecture seule.':isGender?'Obligatoire · réponses standardisées. Homme et Femme sont obligatoires ; Non binaire et Autre peuvent être supprimés.':isAge?'Tranches d’âge standardisées pour permettre la comparaison avec le benchmark global Me&YouToo. Elles ne peuvent être ni modifiées, ni ajoutées, ni supprimées.':'';
-      const orphanRoot=!ro&&isHistoricalOrphanCriterion(criterion);
-      const headerAction=ro?'<span class="socio-required-badge">🔒 Lecture seule</span>':isGender?`<span class="socio-required-badge">Obligatoire</span>`:criterionStructureEditable?`<button class="button button-danger-soft" type="button" data-socio-remove="${i}" ${socio.length<=1?'disabled':''}>Supprimer le critère</button>`:orphanRoot?`<button class="button button-danger-soft" type="button" data-orphan-root-remove="${i}">Retirer de cette langue</button>`:'';
+      const headerAction=ro?'<span class="socio-required-badge">🔒 Lecture seule</span>':isGender?`<span class="socio-required-badge">Obligatoire</span>`:criterionStructureEditable?`<button class="button button-danger-soft" type="button" data-socio-remove="${i}" ${socio.length<=1?'disabled':''}>Supprimer le critère</button>`:'';
       const branchBadge=stats.nested?`<span class="socio-tree-badge">${stats.nested} sous-question${stats.nested>1?'s':''} · profondeur ${stats.maxDepth}</span>`:'';
       return `<article class="socio-card socio-card-foldable ${isOpen?'is-open':'is-collapsed'} ${locked?'socio-card-locked':''} ${isGender?'socio-card-gender':''} ${isAge?'socio-card-age':''}" ${ro?'style="background:var(--royal-blue-tint)"':''}>
         <div class="socio-card-fold-head">
@@ -341,22 +339,6 @@
     return optionIds.length>=2&&optionIds.every(Boolean)?`o:${optionIds.join('|')}`:'';
   }
   const optionStructureKey=option=>{const id=stableSourceId(option);return id?`o:${id}`:'';};
-  function collectReferenceStructureIds(){
-    const ref=socioReference(),criterionIds=new Set(),criterionKeys=new Set(),optionIds=new Set();
-    const walk=criteria=>{(criteria||[]).forEach(c=>{const cid=stableSourceId(c),ckey=criterionStructureKey(c);if(cid)criterionIds.add(cid);if(ckey)criterionKeys.add(ckey);(c?.opts||[]).forEach(o=>{const oid=stableSourceId(o);if(oid)optionIds.add(oid);walk(o?.subcriteria||[]);});});};
-    walk(ref.items||[]);
-    return{locale:normalizeLocale(ref.locale),criterionIds,criterionKeys,optionIds};
-  }
-  function isHistoricalOrphanCriterion(criterion){
-    if(currentUser.role!=='admin'||isSocioReferenceLocale())return false;
-    const ref=collectReferenceStructureIds(),id=stableSourceId(criterion);if(id)return !ref.criterionIds.has(id);
-    const key=criterionStructureKey(criterion);return Boolean(key)&&!ref.criterionKeys.has(key);
-  }
-  function isHistoricalOrphanOption(option){
-    if(currentUser.role!=='admin'||isSocioReferenceLocale())return false;
-    const id=stableSourceId(option);if(!id)return false;
-    return !collectReferenceStructureIds().optionIds.has(id);
-  }
   function matchingIndexByKey(referenceItem,targetItems,fallbackIndex,keyFn){
     const key=keyFn(referenceItem);
     if(key)return (targetItems||[]).findIndex(item=>keyFn(item)===key);
@@ -455,12 +437,20 @@
     document.querySelectorAll('[data-tree-label]').forEach(el=>el.oninput=()=>{const option=getOptionByPath(el.dataset.treeLabel);if(option){option.label=el.value;const root=Number(String(el.dataset.treeLabel).split('.')[0]),key=criterionKey(socio[root],root),idx=Number(String(el.dataset.treeLabel).split('|').pop()),ref=socioReference().items?.[root],optKey=String(ref?.opts?.[idx]?.source_id??`i${idx}`),path=`o:${key}:${optKey}`;if(String(el.value||'').trim())clearTranslationTodoPath(socioContextLocale,path);scheduleAutosave();renderSocioContext();}});
     document.querySelectorAll('[data-tree-n]').forEach(el=>el.oninput=()=>{const option=getOptionByPath(el.dataset.treeN);if(option){option.n=Number(el.value)||0;updateOptionVisual(el);scheduleAutosave();}});
     document.querySelectorAll('[data-socio-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const index=+el.dataset.socioRemove;propagateRootCriterionRemove(index);socio.splice(index,1);renderSocio();scheduleAutosave(0);});
-    document.querySelectorAll('[data-tree-option-remove]').forEach(el=>el.onclick=()=>{const [criterionPath,index]=el.dataset.treeOptionRemove.split('|'),criterion=getCriterionByPath(criterionPath),option=criterion?.opts?.[Number(index)];if(!criterion||!option)return;if(isHistoricalOrphanOption(option)){criterion.opts.splice(Number(index),1);renderSocio();scheduleAutosave(0);return;}ensureAllLocaleSocioVariants();propagateOptionRemove(criterionPath,index);criterion.opts.splice(Number(index),1);renderSocio();scheduleAutosave(0);});
+    document.querySelectorAll('[data-tree-option-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const [criterionPath,index]=el.dataset.treeOptionRemove.split('|'),criterion=getCriterionByPath(criterionPath);propagateOptionRemove(criterionPath,index);criterion?.opts?.splice(Number(index),1);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-tree-option-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const criterionPath=el.dataset.treeOptionAdd,criterion=getCriterionByPath(criterionPath),option={label:criterionPath.includes('.')?'Nouvelle sous-réponse':'Nouvelle réponse',n:0,subcriteria:[]};criterion?.opts?.push(option);propagateOptionAdd(criterionPath,option);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-tree-child-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const optionPath=el.dataset.treeChildAdd,option=getOptionByPath(optionPath);if(!option)return;const child=newSubcriterion();option.subcriteria=Array.isArray(option.subcriteria)?option.subcriteria:[];option.subcriteria.push(child);propagateChildAdd(optionPath,child);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-review-clear]').forEach(el=>el.onclick=()=>clearCriterionReview(socioContextLocale,socio[Number(el.dataset.reviewClear)],Number(el.dataset.reviewClear)));
-    document.querySelectorAll('[data-orphan-root-remove]').forEach(el=>el.onclick=async()=>{const index=Number(el.dataset.orphanRootRemove),criterion=socio[index];if(!isHistoricalOrphanCriterion(criterion))return;const ok=await window.StudioModal.confirm({eyebrow:'Nettoyage historique',title:'Retirer uniquement de cette langue ?',message:`Ce critère n’existe plus dans la structure de référence ${localeLabel(socioReference().locale)}. Il sera supprimé uniquement de ${localeLabel(socioContextLocale)}. Les autres contenus et traductions ne seront pas modifiés.`,type:'warning',cancelLabel:'Annuler',confirmLabel:'Retirer de cette langue'});if(!ok)return;socio.splice(index,1);renderSocio();scheduleAutosave(0);});
-    document.querySelectorAll('[data-orphan-criterion-remove]').forEach(el=>el.onclick=async()=>{const path=el.dataset.orphanCriterionRemove,criterion=getCriterionByPath(path),info=criterionParentInfo(path);if(!criterion||!info||!isHistoricalOrphanCriterion(criterion))return;const ok=await window.StudioModal.confirm({eyebrow:'Nettoyage historique',title:'Retirer cette branche uniquement de cette langue ?',message:`Cette sous-question n’existe plus dans la structure de référence ${localeLabel(socioReference().locale)}. Elle sera supprimée uniquement de ${localeLabel(socioContextLocale)}. Les autres branches, traductions et effectifs resteront inchangés.`,type:'warning',cancelLabel:'Annuler',confirmLabel:'Retirer de cette langue'});if(!ok)return;const parent=getCriterionByPath(info.parentPath);parent?.opts?.[info.optionIndex]?.subcriteria?.splice(info.childIndex,1);renderSocio();scheduleAutosave(0);});
+    document.querySelectorAll('[data-tree-criterion-remove-variant]').forEach(el=>el.onclick=async()=>{
+      if(!canAdminCleanLegacyVariant())return;
+      const path=el.dataset.treeCriterionRemoveVariant,info=criterionParentInfo(path),criterion=getCriterionByPath(path);if(!info||!criterion)return;
+      const locale=normalizeLocale(socioContextLocale),ref=socioReference();
+      const ok=await window.StudioModal.confirm({eyebrow:'Nettoyage historique',title:`Retirer cette sous-question uniquement en ${localeLabel(locale)}`,message:`Cette action supprime « ${String(criterion.q||'cette sous-question')} » uniquement de la version ${localeLabel(locale)} (${locale.toUpperCase()}). La structure de référence ${localeLabel(ref.locale)} (${String(ref.locale||'').toUpperCase()}) et les autres langues ne seront pas modifiées. Les autres traductions et effectifs déjà renseignés restent inchangés.`,type:'warning',cancelLabel:'Annuler',confirmLabel:'Retirer de cette langue'});
+      if(!ok)return;
+      const parent=getCriterionByPath(info.parentPath);parent?.opts?.[info.optionIndex]?.subcriteria?.splice(info.childIndex,1);
+      socioContextHasStored=true;
+      renderSocio();scheduleAutosave(0);
+    });
     document.querySelectorAll('[data-tree-criterion-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const path=el.dataset.treeCriterionRemove,info=criterionParentInfo(path);if(!info)return;propagateChildRemove(path);const parent=getCriterionByPath(info.parentPath);parent?.opts?.[info.optionIndex]?.subcriteria?.splice(info.childIndex,1);renderSocio();scheduleAutosave(0);});
   }
   function walkCriteria(criteria,cb,depth=1){(criteria||[]).forEach(c=>{cb(c,depth);(c.opts||[]).forEach(o=>walkCriteria(o.subcriteria||[],cb,depth+1));});}
