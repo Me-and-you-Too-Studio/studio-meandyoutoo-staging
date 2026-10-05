@@ -15051,3 +15051,15 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 /* 2026-10-05 — nettoyage admin des variantes DSD legacy désynchronisées */
 .socio-orphan-note{display:inline-flex;margin:6px 0 2px;padding:4px 8px;border-radius:999px;background:#fff5e8;color:#8a5a14;font-size:.7rem;font-weight:800}
 .socio-orphan-remove{white-space:nowrap}
+
+/* Médiathèque — repères visibles dans la modale de gestion des utilisations */
+.admin-media-usage-tags-panel{display:grid;gap:10px;margin:14px 0 16px;padding:14px 15px;border:1px solid #d8e6ec;border-radius:14px;background:#f8fbfc}
+.admin-media-usage-tags-panel>div:first-child{display:grid;gap:3px}
+.admin-media-usage-tags-panel strong{color:#153f64;font-size:.82rem}
+.admin-media-usage-tags-panel>div:first-child span{color:#708596;font-size:.74rem;line-height:1.4}
+.admin-media-usage-tags{display:flex;flex-wrap:wrap;gap:7px}
+.admin-media-usage-tag{display:inline-flex;align-items:center;min-height:30px;padding:5px 10px;border-radius:999px;border:1px solid #cddfe7;background:#fff;color:#28546e;font-size:.72rem;font-weight:800;line-height:1.15}
+.admin-media-usage-tag.is-classification{background:#eefaf5;border-color:#cbe9d8;color:#227043}
+.admin-media-usage-tag.is-theme{background:#eef8f0;border-color:#cae8d0;color:#246f37}
+.admin-media-usage-tag.is-keyword{background:#eef6fb;border-color:#cfe2ee;color:#235f84}
+.admin-media-usage-no-tag{color:#7b8e9b;font-size:.74rem;font-style:italic}
