@@ -15047,3 +15047,7 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
   .diffusion-url-builder{grid-template-columns:1fr}
   .diffusion-url-prefix{min-height:42px;border-right:0;border-bottom:1px solid #c9dbe5;white-space:normal;overflow-wrap:anywhere}
 }
+
+/* 2026-10-05 — nettoyage admin des variantes DSD legacy désynchronisées */
+.socio-orphan-note{display:inline-flex;margin:6px 0 2px;padding:4px 8px;border-radius:999px;background:#fff5e8;color:#8a5a14;font-size:.7rem;font-weight:800}
+.socio-orphan-remove{white-space:nowrap}
