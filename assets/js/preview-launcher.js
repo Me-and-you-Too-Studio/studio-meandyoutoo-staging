@@ -127,9 +127,19 @@
           const firstAction=topActions.querySelector('a,button');
           if(firstAction)topActions.insertBefore(preview,firstAction);else topActions.appendChild(preview);
         }
-      }else if(pageName==='composer.html'){
-        const topbar=document.querySelector('.compact-topbar');
-        if(topbar&&!document.querySelector('[data-rp="top"]'))addTopActions(topbar);
+      }else if(pageName==='composer.html'||pageName==='personnalisation.html'){
+        const anchor=pageName==='personnalisation.html'
+          ?document.querySelector('#profiles-context')
+          :document.querySelector('.compact-topbar');
+        if(anchor&&!document.querySelector('[data-rp="top"]')){
+          const host=document.createElement('div');
+          host.className='campaign-actions-below-context';
+          anchor.insertAdjacentElement('afterend',host);
+          addTopActions(host);
+        }else if(!document.querySelector('[data-rp="top"]')){
+          const topbar=document.querySelector('.compact-topbar');
+          if(topbar)addTopActions(topbar);
+        }
       }else{
         const t=document.querySelector('.compact-topbar>div')||document.querySelector('.topbar>div');
         if(t&&!document.querySelector('[data-rp="top"]'))addTopActions(t);

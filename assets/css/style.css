@@ -15092,3 +15092,9 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .admin-media-usage-tag.is-theme{background:#eef8f0;border-color:#cae8d0;color:#246f37}
 .admin-media-usage-tag.is-keyword{background:#eef6fb;border-color:#cfe2ee;color:#235f84}
 .admin-media-usage-no-tag{color:#7b8e9b;font-size:.74rem;font-style:italic}
+
+
+/* 2026-10-06 — actions campagne sous le bloc de contexte */
+.campaign-actions-below-context{display:flex;justify-content:flex-start;margin:14px 0 20px;}
+.campaign-actions-below-context .campaign-preview-settings-actions{margin-top:0;}
+@media(max-width:760px){.campaign-actions-below-context{width:100%;}.campaign-actions-below-context .campaign-preview-settings-actions{width:100%;}}
