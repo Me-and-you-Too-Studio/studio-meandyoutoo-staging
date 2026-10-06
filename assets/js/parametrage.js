@@ -47,6 +47,7 @@
     return {
       ...(item?.kind?{kind:String(item.kind)}:{}),
       ...(item?.source_id!==undefined?{source_id:item.source_id}:{}),
+      ...(item?.multiple===true||item?.multi_select===true||item?.multiple_answers===true?{multiple:true}:{}),
       q:String(item?.q||item?.question||''),
       opts:(Array.isArray(item?.opts)?item.opts:[]).map(option=>({
         ...(option?.source_id!==undefined?{source_id:option.source_id}:{}),
@@ -185,6 +186,57 @@
       }
       // Business (1), Innovation (4) et Corporate Functions (8) sont déjà dans le bon ordre : aucun déplacement.
     }
+    return{changed};
+  }
+  function repairOrange382FrenchLabels(meta){
+    if(!isOrange382Project(meta)||!Array.isArray(socioLanguageVariants?.fr))return{changed:false};
+    const questionMap=new Map([
+      ['Your division','Votre division'],
+      ['Area','Région'],
+      ['Please select, among the following, the segment you work for:','Parmi les propositions suivantes, sélectionnez votre famille de métiers :'],
+      ['lease select, among the following, the segment you work for:','Parmi les propositions suivantes, sélectionnez votre famille de métiers :'],
+      ['OB France Regions','Régions OB France']
+    ]);
+    const answerMap=new Map([
+      ['Human resources','Ressources Humaines'],
+      ['Finance, Performance and Strategy','Finance, Performance et Stratégie'],
+      ['Marketing & Communication','Marketing et Communication'],
+      ['Sales and Customer Relations','Vente & Relation Client'],
+      ['Technology, Innovation, Networks and Data','Technologies, Innovation, Réseaux et Data'],
+      ['Other support functions','Autres Fonctions Support'],
+      ['Caribbean','Caraïbes'],
+      ['Great North East','Grand Nord-Est'],
+      ['Great West','Grand Ouest'],
+      ['Great South East','Grand Sud-Est'],
+      ['Great South West','Grand Sud-Ouest'],
+      ['Reunion','La Réunion'],
+      ['Other geographical area','Autre zone géographique'],
+      ['SubSaharan Africa','Afrique subsaharienne'],
+      ['Americas','Amériques'],
+      ['Asia','Asie'],
+      ['Eastern Europe','Europe de l’Est'],
+      ['Western Europe','Europe de l’Ouest'],
+      ['Middle East & North Africa','Moyen-Orient et Afrique du Nord'],
+      ['Not in France','Hors de France'],
+      ['France - Caribbean','France - Caraïbes'],
+      ['France - Great North East','France - Grand Nord-Est'],
+      ['France - Great West','France - Grand Ouest'],
+      ['France - Great South East','France - Grand Sud-Est'],
+      ['France - Great South West','France - Grand Sud-Ouest'],
+      ['France - Reunion','France - La Réunion'],
+      ['France - Other geographical area','France - Autre zone géographique']
+    ]);
+    let changed=false;
+    const visit=criterion=>{
+      const currentQ=String(criterion?.q||'').trim();
+      if(questionMap.has(currentQ)){criterion.q=questionMap.get(currentQ);changed=true;}
+      for(const option of criterion?.opts||[]){
+        const currentLabel=String(option?.label||'').trim();
+        if(answerMap.has(currentLabel)){option.label=answerMap.get(currentLabel);changed=true;}
+        for(const child of option?.subcriteria||[])visit(child);
+      }
+    };
+    for(const criterion of socioLanguageVariants.fr)visit(criterion);
     return{changed};
   }
   function socioReference(){const stable=normalizeLocale(socioReferenceLocaleStable);if(stable){const stableItems=socioForLocale(stable);if(Array.isArray(stableItems)&&stableItems.length)return{locale:stable,items:stableItems};}const preferred=[normalizeLocale(project?.selected_locale),'fr','en','es',...projectLocales()],seen=new Set();for(const loc of preferred){const n=normalizeLocale(loc);if(!n||seen.has(n))continue;seen.add(n);const items=socioForLocale(n);if(Array.isArray(items)&&items.length)return{locale:n,items};}const first=Object.keys(socioLanguageVariants||{}).find(loc=>Array.isArray(socioLanguageVariants[loc])&&socioLanguageVariants[loc].length);return first?{locale:first,items:socioForLocale(first)}:{locale:'',items:[]};}
@@ -386,6 +438,7 @@
       </div>
       <div class="socio-sub-body" ${isOpen?'':'hidden'}>
         <div class="field"><label>Question complémentaire</label><input data-tree-q="${path}" value="${esc(criterion.q)}" ${ro?'readonly tabindex="-1"':''}></div>
+        <div class="socio-selection-mode"><span>Mode de réponse</span>${structureEditable?`<button type="button" class="button button-small ${criterion.multiple?'button-primary':'button-secondary'}" data-tree-multiple="${path}" aria-pressed="${criterion.multiple?'true':'false'}">${criterion.multiple?'✓ Plusieurs réponses possibles':'Une seule réponse'}</button>`:`<span class="status-pill">${criterion.multiple?'Plusieurs réponses possibles':'Une seule réponse'}</span>`}</div>
         <div class="socio-sub-options">${options}</div>
         ${structureEditable?`<button class="button button-ghost" type="button" data-tree-option-add="${path}">+ Ajouter une sous-réponse</button>`:''}
       </div>
@@ -425,6 +478,7 @@
             ${renderSocioReference(criterion,i)}
             <div class="socio-current-editor"><div class="socio-current-head"><strong>Version répondant · ${esc(localeLabel(socioContextLocale))}</strong><span class="status-pill">${esc(String(socioContextLocale).toUpperCase())}</span></div>${translationMode&&!ro?'<div class="socio-translation-structure-note">La structure se modifie dans la langue de référence. Ici, vous traduisez uniquement les libellés existants.</div>':''}
               <div class="socio-card-head"><span class="socio-number socio-number-spacer" aria-hidden="true"></span><div class="field socio-question"><label>Question posée aux répondants ${locked?'<span class="socio-lock-badge">🔒 Figé</span>':''}${isAge?'<span class="socio-age-info" title="Les tranches d’âge sont standardisées afin de permettre la comparaison de vos résultats avec le benchmark global Me&YouToo." aria-label="Information benchmark âge">i</span>':''}</label><input data-tree-q="${path}" value="${esc(criterion.q)}" ${locked?'readonly tabindex="-1"':''}>${locked?`<span class="socio-lock-help">${lockText}</span>`:''}</div><span></span></div>
+              ${!locked?`<div class="socio-selection-mode"><span>Mode de réponse</span>${criterionStructureEditable?`<button type="button" class="button button-small ${criterion.multiple?'button-primary':'button-secondary'}" data-tree-multiple="${path}" aria-pressed="${criterion.multiple?'true':'false'}">${criterion.multiple?'✓ Plusieurs réponses possibles':'Une seule réponse'}</button>`:`<span class="status-pill">${criterion.multiple?'Plusieurs réponses possibles':'Une seule réponse'}</span>`}</div>`:''}
               <div class="socio-options">${optionsHtml}</div>${!locked&&criterionStructureEditable?`<button class="button button-ghost" type="button" data-tree-option-add="${path}">+ Ajouter une réponse</button>`:''}
             </div>
           </div>
@@ -523,6 +577,15 @@
     }
   }
   function propagateRootCriterionRemove(index){const reference=clone(socio),removedCriterion=reference[index];for(const loc of projectLocales()){const n=normalizeLocale(loc);if(n===normalizeLocale(socioContextLocale))continue;const rows=socioLanguageVariants[n];if(!Array.isArray(rows))continue;const targetIndex=matchingIndexByKey(removedCriterion,rows,index,criterionStructureKey);if(targetIndex>=0)rows.splice(targetIndex,1);}}
+  function propagateCriterionMultiple(criterionPath,multiple){
+    const reference=clone(socio);
+    for(const loc of projectLocales()){
+      const n=normalizeLocale(loc);if(n===normalizeLocale(socioContextLocale))continue;
+      const resolved=resolveCriterionPathInTarget(reference,socioLanguageVariants[n],criterionPath),targetCriterion=resolved?.criterion;
+      if(!targetCriterion)continue;
+      if(multiple)targetCriterion.multiple=true;else delete targetCriterion.multiple;
+    }
+  }
   function propagateOptionAdd(criterionPath,option){
     const sourceLocale=normalizeLocale(socioContextLocale),sourceSnapshot=clone(socio),rootIndex=Number(String(criterionPath).split('.')[0]);
     for(const loc of projectLocales()){
@@ -542,6 +605,7 @@
     document.querySelectorAll('[data-tree-q]').forEach(el=>el.oninput=()=>{const criterion=getCriterionByPath(el.dataset.treeQ);if(criterion){criterion.q=el.value;const root=Number(String(el.dataset.treeQ).split('.')[0]),key=criterionKey(socio[root],root),path=`q:${key}`;if(String(el.value||'').trim())clearTranslationTodoPath(socioContextLocale,path);scheduleAutosave();renderSocioContext();}});
     document.querySelectorAll('[data-tree-label]').forEach(el=>el.oninput=()=>{const option=getOptionByPath(el.dataset.treeLabel);if(option){option.label=el.value;const root=Number(String(el.dataset.treeLabel).split('.')[0]),key=criterionKey(socio[root],root),idx=Number(String(el.dataset.treeLabel).split('|').pop()),ref=socioReference().items?.[root],optKey=String(ref?.opts?.[idx]?.source_id??`i${idx}`),path=`o:${key}:${optKey}`;if(String(el.value||'').trim())clearTranslationTodoPath(socioContextLocale,path);scheduleAutosave();renderSocioContext();}});
     document.querySelectorAll('[data-tree-n]').forEach(el=>el.oninput=()=>{const option=getOptionByPath(el.dataset.treeN);if(option){option.n=Number(el.value)||0;updateOptionVisual(el);scheduleAutosave();}});
+    document.querySelectorAll('[data-tree-multiple]').forEach(el=>el.onclick=()=>{if(isReadOnly()||!isSocioReferenceLocale())return;ensureAllLocaleSocioVariants();const path=el.dataset.treeMultiple,criterion=getCriterionByPath(path);if(!criterion)return;criterion.multiple=!criterion.multiple;propagateCriterionMultiple(path,criterion.multiple);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-socio-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const index=+el.dataset.socioRemove;propagateRootCriterionRemove(index);socio.splice(index,1);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-tree-option-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const [criterionPath,index]=el.dataset.treeOptionRemove.split('|'),criterion=getCriterionByPath(criterionPath);propagateOptionRemove(criterionPath,index);criterion?.opts?.splice(Number(index),1);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-tree-option-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const criterionPath=el.dataset.treeOptionAdd,criterion=getCriterionByPath(criterionPath),option={label:criterionPath.includes('.')?'Nouvelle sous-réponse':'Nouvelle réponse',n:0,subcriteria:[]};criterion?.opts?.push(option);propagateOptionAdd(criterionPath,option);renderSocio();scheduleAutosave(0);});
@@ -665,7 +729,7 @@
   async function load(){try{
     if(!projectId){if(!theme)throw new Error('Thématique manquante.');location.replace(`theme-${encodeURIComponent(theme)}.html?theme=${encodeURIComponent(theme)}`);return;}
     const data=await api(`/api/projects/${projectId}/composer`),meta=data.project||{};project=meta;translationReviewState=meta.translation_review_state&&typeof meta.translation_review_state==='object'?clone(meta.translation_review_state):{intro:{},socio:{}};reviewState();if(!theme)theme=meta.theme_slug||'';await Promise.all([loadQuota(),loadResourceLibrary()]);
-    baseTitle=meta.base_title||meta.theme_title||meta.title||'Autodiagnostic';referenceIntro=stripHtml(meta.theme_introduction_html||'');$('param-theme').textContent=meta.theme_title||'Autodiagnostic';$('campaign-name').value=meta.campaign_name||baseTitle;$('respondent-title').value=meta.respondent_title||meta.respondent_title_default||baseTitle;const organizationName=meta.organization_name||quota?.name||'votre-entreprise',existingShareUrl=String(meta.communication_share_url||'').trim(),parsedShareUrl=parseDiffusionUrl(existingShareUrl);diffusionExistingUrl=existingShareUrl;diffusionCustomerSlug=parsedShareUrl?.customer||slugify(organizationName)||'votre-entreprise';const diffusionInput=$('diffusion-slug');diffusionInput.value=parsedShareUrl?.slug||(isLegacyClientCampaign()&&!existingShareUrl?slugify(meta.legacy_slug||''):'');diffusionDirty=false;if(isLegacyClientCampaign()&&currentUser.role!=='admin'&&existingShareUrl){diffusionInput.readOnly=true;diffusionInput.setAttribute('aria-readonly','true');diffusionInput.closest('.diffusion-url-builder')?.classList.add('is-readonly');}renderDiffusionAddress();$('launch-date').min=isLegacyClientCampaign()?'':iso(5);$('launch-date').value=meta.launch_date?String(meta.launch_date).slice(0,10):(isLegacyClientCampaign()?'':iso(5));$('close-date').value=meta.close_date?String(meta.close_date).slice(0,10):'';syncCloseMin();$('nb-respondents').value=meta.estimated_respondents||'';const sourceSurveyId=String(meta.legacy_survey_id||meta.theme_legacy_id||'').trim(),themeSocioVariants=normalizeSocioLanguageVariants(meta.theme_sociodemo_variants,sourceSurveyId),legacyProjectSocioVariants=normalizeSocioLanguageVariants(meta.sociodemo_variants,sourceSurveyId),resolvedSocioVariants=normalizeSocioLanguageVariants(meta.sociodemo_language_variants_resolved||{},sourceSurveyId),storedSocioVariants=normalizeSocioLanguageVariants(meta.sociodemo_language_variants||{},sourceSurveyId);socioLanguageVariants={...themeSocioVariants,...legacyProjectSocioVariants,...resolvedSocioVariants,...storedSocioVariants};const inferredReferenceLocale=inferSocioReferenceLocale(meta),initialReferenceCandidates=[inferredReferenceLocale,String(meta.sociodemo_reference_locale||'').trim(),String(meta.reference_locale||'').trim(),'fr','en','es',...projectLocales()],initialReferenceSeen=new Set();socioReferenceLocaleStable='';for(const candidate of initialReferenceCandidates){const loc=normalizeLocale(candidate);if(!loc||initialReferenceSeen.has(loc))continue;initialReferenceSeen.add(loc);if(Array.isArray(socioLanguageVariants?.[loc])&&socioLanguageVariants[loc].length){socioReferenceLocaleStable=loc;break;}}if(!socioReferenceLocaleStable){socioReferenceLocaleStable=Object.keys(socioLanguageVariants||{}).find(loc=>Array.isArray(socioLanguageVariants[loc])&&socioLanguageVariants[loc].length)||'';}const orangeOrderRepair=repairOrange382DivisionOrder(meta),socioStructureRepair={changed:Boolean(orangeOrderRepair.changed),removed:0};introResolvedVariants=normalizeIntroVariants(meta.introduction_variants_resolved||{});introVariants=normalizeIntroVariants(meta.introduction_variants||{});const countries=projectCountries();socioContextCountry=normalizeCountry(meta.selected_country_code)||(countries[0]||'');const locales=projectLocales();socioContextLocale=locales.includes(normalizeLocale(meta.selected_locale))?normalizeLocale(meta.selected_locale):(locales[0]||'fr');activateLanguage(socioContextLocale);resultResources=normalizeResultResources(meta.result_buttons);renderSocioContext();renderSocio();renderResultResources();renderQuota();const clientFolderLink=$('param-client-folder');if(clientFolderLink&&currentUser.role==='admin'&&meta.organization_id){clientFolderLink.hidden=false;clientFolderLink.href=`client.html?organizationId=${encodeURIComponent(meta.organization_id)}`;}$('param-back').href=`composer.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;$('param-back').textContent='← Revenir au contenu';const contentTop=$('param-content-top');if(contentTop)contentTop.href=`composer.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;
+    baseTitle=meta.base_title||meta.theme_title||meta.title||'Autodiagnostic';referenceIntro=stripHtml(meta.theme_introduction_html||'');$('param-theme').textContent=meta.theme_title||'Autodiagnostic';$('campaign-name').value=meta.campaign_name||baseTitle;$('respondent-title').value=meta.respondent_title||meta.respondent_title_default||baseTitle;const organizationName=meta.organization_name||quota?.name||'votre-entreprise',existingShareUrl=String(meta.communication_share_url||'').trim(),parsedShareUrl=parseDiffusionUrl(existingShareUrl);diffusionExistingUrl=existingShareUrl;diffusionCustomerSlug=parsedShareUrl?.customer||slugify(organizationName)||'votre-entreprise';const diffusionInput=$('diffusion-slug');diffusionInput.value=parsedShareUrl?.slug||(isLegacyClientCampaign()&&!existingShareUrl?slugify(meta.legacy_slug||''):'');diffusionDirty=false;if(isLegacyClientCampaign()&&currentUser.role!=='admin'&&existingShareUrl){diffusionInput.readOnly=true;diffusionInput.setAttribute('aria-readonly','true');diffusionInput.closest('.diffusion-url-builder')?.classList.add('is-readonly');}renderDiffusionAddress();$('launch-date').min=isLegacyClientCampaign()?'':iso(5);$('launch-date').value=meta.launch_date?String(meta.launch_date).slice(0,10):(isLegacyClientCampaign()?'':iso(5));$('close-date').value=meta.close_date?String(meta.close_date).slice(0,10):'';syncCloseMin();$('nb-respondents').value=meta.estimated_respondents||'';const sourceSurveyId=String(meta.legacy_survey_id||meta.theme_legacy_id||'').trim(),themeSocioVariants=normalizeSocioLanguageVariants(meta.theme_sociodemo_variants,sourceSurveyId),legacyProjectSocioVariants=normalizeSocioLanguageVariants(meta.sociodemo_variants,sourceSurveyId),resolvedSocioVariants=normalizeSocioLanguageVariants(meta.sociodemo_language_variants_resolved||{},sourceSurveyId),storedSocioVariants=normalizeSocioLanguageVariants(meta.sociodemo_language_variants||{},sourceSurveyId);socioLanguageVariants={...themeSocioVariants,...legacyProjectSocioVariants,...resolvedSocioVariants,...storedSocioVariants};const inferredReferenceLocale=inferSocioReferenceLocale(meta),initialReferenceCandidates=[inferredReferenceLocale,String(meta.sociodemo_reference_locale||'').trim(),String(meta.reference_locale||'').trim(),'fr','en','es',...projectLocales()],initialReferenceSeen=new Set();socioReferenceLocaleStable='';for(const candidate of initialReferenceCandidates){const loc=normalizeLocale(candidate);if(!loc||initialReferenceSeen.has(loc))continue;initialReferenceSeen.add(loc);if(Array.isArray(socioLanguageVariants?.[loc])&&socioLanguageVariants[loc].length){socioReferenceLocaleStable=loc;break;}}if(!socioReferenceLocaleStable){socioReferenceLocaleStable=Object.keys(socioLanguageVariants||{}).find(loc=>Array.isArray(socioLanguageVariants[loc])&&socioLanguageVariants[loc].length)||'';}const orangeOrderRepair=repairOrange382DivisionOrder(meta),orangeFrenchRepair=repairOrange382FrenchLabels(meta),socioStructureRepair={changed:Boolean(orangeOrderRepair.changed||orangeFrenchRepair.changed),removed:0};introResolvedVariants=normalizeIntroVariants(meta.introduction_variants_resolved||{});introVariants=normalizeIntroVariants(meta.introduction_variants||{});const countries=projectCountries();socioContextCountry=normalizeCountry(meta.selected_country_code)||(countries[0]||'');const locales=projectLocales();socioContextLocale=locales.includes(normalizeLocale(meta.selected_locale))?normalizeLocale(meta.selected_locale):(locales[0]||'fr');activateLanguage(socioContextLocale);resultResources=normalizeResultResources(meta.result_buttons);renderSocioContext();renderSocio();renderResultResources();renderQuota();const clientFolderLink=$('param-client-folder');if(clientFolderLink&&currentUser.role==='admin'&&meta.organization_id){clientFolderLink.hidden=false;clientFolderLink.href=`client.html?organizationId=${encodeURIComponent(meta.organization_id)}`;}$('param-back').href=`composer.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;$('param-back').textContent='← Revenir au contenu';const contentTop=$('param-content-top');if(contentTop)contentTop.href=`composer.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;
     if(isReadOnly())applyReadOnlyUI();else{if(project?.review_mode){const reviewUrl=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`,alert=$('param-alert');alert.hidden=false;alert.dataset.tone='success';alert.innerHTML='<strong>✎ Correction Me&YouToo active.</strong> Modifiez uniquement les paramètres nécessaires, puis revenez directement au contrôle qualité.';$('param-back').href=reviewUrl;$('param-back').textContent='← Retour au contrôle qualité';$('param-next').textContent='Enregistrer et revenir au contrôle qualité';if($('param-next-top'))$('param-next-top').textContent='Enregistrer et revenir au contrôle qualité';}updateNextState();await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:'parametrage'})});autosaveEnabled=true;lastSavedFingerprint=autosaveFingerprint(autosavePayload());autosaveStatus('✓ Enregistré automatiquement','saved');if(socioStructureRepair.changed){lastSavedFingerprint='';await autosaveNow();}}
   }catch(error){show(error.message);}}
   function syncCloseMin(){const d=$('launch-date').value;if(!d)return;const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+1);const min=x.toISOString().slice(0,10);$('close-date').min=min;if(!isReadOnly()&&$('close-date').value&&$('close-date').value<min)$('close-date').value='';}

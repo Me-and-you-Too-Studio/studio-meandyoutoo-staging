@@ -15098,3 +15098,7 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .campaign-actions-below-context{display:flex;justify-content:flex-start;margin:14px 0 20px;}
 .campaign-actions-below-context .campaign-preview-settings-actions{margin-top:0;}
 @media(max-width:760px){.campaign-actions-below-context{width:100%;}.campaign-actions-below-context .campaign-preview-settings-actions{width:100%;}}
+
+
+/* 2026-10-06 — DSD : choix unique / choix multiple */
+.socio-selection-mode{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 14px;padding:10px 12px;border:1px solid #dbe8ee;border-radius:12px;background:#f8fbfc}.socio-selection-mode>span:first-child{font-size:.76rem;font-weight:800;color:#60758b;text-transform:uppercase;letter-spacing:.03em}.socio-selection-mode .status-pill{margin-left:auto}.socio-selection-mode .button{margin-left:auto;white-space:nowrap}@media(max-width:680px){.socio-selection-mode{align-items:flex-start;flex-direction:column}.socio-selection-mode .button,.socio-selection-mode .status-pill{margin-left:0}}
