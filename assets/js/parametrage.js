@@ -149,6 +149,32 @@
         changed=true;
       }
 
+      // Cyberdefense uniquement : sous Région (N3), la réponse « Orange Business - France »
+      // doit ouvrir « OB France Regions » (N4). On réutilise les libellés/réponses déjà
+      // présents dans la branche Orange Business de la même langue, sans recopier les
+      // dépendances Famille de métiers plus profondes (la famille a déjà été choisie au N2).
+      const businessBranch=division.opts[0];
+      const businessRoots=Array.isArray(businessBranch?.subcriteria)?businessBranch.subcriteria:[];
+      const businessArea=businessRoots.find(root=>Array.isArray(root?.opts)&&root.opts.length>=5) || businessRoots[0];
+      const businessFranceOption=businessArea?.opts?.[1];
+      const sourceFranceRegions=(Array.isArray(businessFranceOption?.subcriteria)?businessFranceOption.subcriteria:[]).find(child=>Array.isArray(child?.opts)&&child.opts.length===8);
+      const cyberBranch=division.opts[4];
+      const cyberFamily=Array.isArray(cyberBranch?.subcriteria)?cyberBranch.subcriteria[0]:null;
+      if(sourceFranceRegions&&cyberFamily&&Array.isArray(cyberFamily.opts)){
+        for(const familyOption of cyberFamily.opts){
+          const areaCriterion=(Array.isArray(familyOption?.subcriteria)?familyOption.subcriteria:[]).find(child=>Array.isArray(child?.opts)&&child.opts.length>=5);
+          const cyberFranceOption=areaCriterion?.opts?.[1];
+          if(!cyberFranceOption)continue;
+          cyberFranceOption.subcriteria=Array.isArray(cyberFranceOption.subcriteria)?cyberFranceOption.subcriteria:[];
+          const alreadyHasFranceRegions=cyberFranceOption.subcriteria.some(child=>Array.isArray(child?.opts)&&child.opts.length===sourceFranceRegions.opts.length&&String(child?.q||'').trim()===String(sourceFranceRegions.q||'').trim());
+          if(alreadyHasFranceRegions)continue;
+          const franceRegions=clone(sourceFranceRegions);
+          franceRegions.opts=(franceRegions.opts||[]).map(option=>({...option,subcriteria:[]}));
+          cyberFranceOption.subcriteria.push(franceRegions);
+          changed=true;
+        }
+      }
+
       // 6 Wholesale, 7 France: Famille de métiers et Région restent deux N2 indépendants.
       // On retire uniquement les doublons "famille de métiers" imbriqués sous Région.
       for(const optionIndex of [5,6]){
