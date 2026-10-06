@@ -97,6 +97,70 @@
     if(meta?.legacy_history===true&&legacyCustomer==='20'&&legacySurvey==='382'&&Array.isArray(socioLanguageVariants?.en)&&socioLanguageVariants.en.length)return'en';
     return'';
   }
+
+  function isOrange382Project(meta){
+    const legacyCustomer=String(meta?.legacy_customer_id||meta?.legacyCustomerId||'').trim();
+    const legacySurvey=String(meta?.legacy_survey_id||meta?.legacySurveyId||'').trim();
+    return legacySurvey==='382'&&(legacyCustomer==='20'||String(projectId||'')==='266');
+  }
+  function orangeFamilyLikeCriterion(criterion,familyCriterion){
+    const familyCount=Array.isArray(familyCriterion?.opts)?familyCriterion.opts.length:0;
+    const count=Array.isArray(criterion?.opts)?criterion.opts.length:0;
+    return familyCount===6&&count===familyCount;
+  }
+  function stripDuplicateFamilyChildren(areaCriterion,familyCriterion){
+    let changed=false;
+    for(const option of areaCriterion?.opts||[]){
+      const children=Array.isArray(option?.subcriteria)?option.subcriteria:[];
+      const kept=children.filter(child=>!orangeFamilyLikeCriterion(child,familyCriterion));
+      if(kept.length!==children.length){option.subcriteria=kept;changed=true;}
+    }
+    return changed;
+  }
+  function repairOrange382DivisionOrder(meta){
+    if(!isOrange382Project(meta))return{changed:false};
+    let changed=false;
+    for(const [loc,criteria] of Object.entries(socioLanguageVariants||{})){
+      if(!Array.isArray(criteria)||!criteria.length)continue;
+      let divisionIndex=-1;
+      if(loc==='en')divisionIndex=criteria.findIndex(c=>/division/i.test(String(c?.q||'')));
+      if(divisionIndex<0){
+        const en=socioLanguageVariants?.en;
+        const enIndex=Array.isArray(en)?en.findIndex(c=>/division/i.test(String(c?.q||''))):-1;
+        divisionIndex=enIndex>=0&&criteria[enIndex]?enIndex:5;
+      }
+      const division=criteria[divisionIndex];
+      if(!division||!Array.isArray(division.opts)||division.opts.length<8)continue;
+
+      // 2 Europe, 3 MEA, 5 Cyberdefense: famille de métiers (N2), puis Région (N3).
+      for(const optionIndex of [1,2,4]){
+        const branch=division.opts[optionIndex];
+        const roots=Array.isArray(branch?.subcriteria)?branch.subcriteria:[];
+        if(roots.length<2)continue;
+        const family=roots[0],area=roots[1];
+        if(!family||!area||!Array.isArray(family.opts)||family.opts.length!==6)continue;
+        stripDuplicateFamilyChildren(area,family);
+        for(const familyOption of family.opts){
+          familyOption.subcriteria=Array.isArray(familyOption.subcriteria)?familyOption.subcriteria:[];
+          const alreadyHasArea=familyOption.subcriteria.some(child=>String(child?.q||'').trim()===String(area?.q||'').trim()&&Array.isArray(child?.opts)&&child.opts.length===area.opts.length);
+          if(!alreadyHasArea)familyOption.subcriteria.push(clone(area));
+        }
+        branch.subcriteria=[family,...roots.slice(2)];
+        changed=true;
+      }
+
+      // 6 Wholesale, 7 France: Famille de métiers et Région restent deux N2 indépendants.
+      // On retire uniquement les doublons "famille de métiers" imbriqués sous Région.
+      for(const optionIndex of [5,6]){
+        const branch=division.opts[optionIndex],roots=Array.isArray(branch?.subcriteria)?branch.subcriteria:[];
+        if(roots.length<2)continue;
+        const family=roots[0],area=roots[1];
+        if(stripDuplicateFamilyChildren(area,family))changed=true;
+      }
+      // Business (1), Innovation (4) et Corporate Functions (8) sont déjà dans le bon ordre : aucun déplacement.
+    }
+    return{changed};
+  }
   function socioReference(){const stable=normalizeLocale(socioReferenceLocaleStable);if(stable){const stableItems=socioForLocale(stable);if(Array.isArray(stableItems)&&stableItems.length)return{locale:stable,items:stableItems};}const preferred=[normalizeLocale(project?.selected_locale),'fr','en','es',...projectLocales()],seen=new Set();for(const loc of preferred){const n=normalizeLocale(loc);if(!n||seen.has(n))continue;seen.add(n);const items=socioForLocale(n);if(Array.isArray(items)&&items.length)return{locale:n,items};}const first=Object.keys(socioLanguageVariants||{}).find(loc=>Array.isArray(socioLanguageVariants[loc])&&socioLanguageVariants[loc].length);return first?{locale:first,items:socioForLocale(first)}:{locale:'',items:[]};}
   function isSocioReferenceLocale(){const ref=socioReference();return Boolean(ref.locale)&&normalizeLocale(ref.locale)===normalizeLocale(socioContextLocale);}
   function canAdminCleanLegacyVariant(){const refLoc=normalizeLocale(socioReference().locale),currentLoc=normalizeLocale(socioContextLocale);return currentUser.role==='admin'&&isLegacyClientCampaign()&&!isReadOnly()&&Boolean(refLoc)&&Boolean(currentLoc)&&refLoc!==currentLoc;}
@@ -575,7 +639,7 @@
   async function load(){try{
     if(!projectId){if(!theme)throw new Error('Thématique manquante.');location.replace(`theme-${encodeURIComponent(theme)}.html?theme=${encodeURIComponent(theme)}`);return;}
     const data=await api(`/api/projects/${projectId}/composer`),meta=data.project||{};project=meta;translationReviewState=meta.translation_review_state&&typeof meta.translation_review_state==='object'?clone(meta.translation_review_state):{intro:{},socio:{}};reviewState();if(!theme)theme=meta.theme_slug||'';await Promise.all([loadQuota(),loadResourceLibrary()]);
-    baseTitle=meta.base_title||meta.theme_title||meta.title||'Autodiagnostic';referenceIntro=stripHtml(meta.theme_introduction_html||'');$('param-theme').textContent=meta.theme_title||'Autodiagnostic';$('campaign-name').value=meta.campaign_name||baseTitle;$('respondent-title').value=meta.respondent_title||meta.respondent_title_default||baseTitle;const organizationName=meta.organization_name||quota?.name||'votre-entreprise',existingShareUrl=String(meta.communication_share_url||'').trim(),parsedShareUrl=parseDiffusionUrl(existingShareUrl);diffusionExistingUrl=existingShareUrl;diffusionCustomerSlug=parsedShareUrl?.customer||slugify(organizationName)||'votre-entreprise';const diffusionInput=$('diffusion-slug');diffusionInput.value=parsedShareUrl?.slug||(isLegacyClientCampaign()&&!existingShareUrl?slugify(meta.legacy_slug||''):'');diffusionDirty=false;if(isLegacyClientCampaign()&&currentUser.role!=='admin'&&existingShareUrl){diffusionInput.readOnly=true;diffusionInput.setAttribute('aria-readonly','true');diffusionInput.closest('.diffusion-url-builder')?.classList.add('is-readonly');}renderDiffusionAddress();$('launch-date').min=isLegacyClientCampaign()?'':iso(5);$('launch-date').value=meta.launch_date?String(meta.launch_date).slice(0,10):(isLegacyClientCampaign()?'':iso(5));$('close-date').value=meta.close_date?String(meta.close_date).slice(0,10):'';syncCloseMin();$('nb-respondents').value=meta.estimated_respondents||'';const sourceSurveyId=String(meta.legacy_survey_id||meta.theme_legacy_id||'').trim(),themeSocioVariants=normalizeSocioLanguageVariants(meta.theme_sociodemo_variants,sourceSurveyId),legacyProjectSocioVariants=normalizeSocioLanguageVariants(meta.sociodemo_variants,sourceSurveyId),resolvedSocioVariants=normalizeSocioLanguageVariants(meta.sociodemo_language_variants_resolved||{},sourceSurveyId),storedSocioVariants=normalizeSocioLanguageVariants(meta.sociodemo_language_variants||{},sourceSurveyId);socioLanguageVariants={...themeSocioVariants,...legacyProjectSocioVariants,...resolvedSocioVariants,...storedSocioVariants};const inferredReferenceLocale=inferSocioReferenceLocale(meta),initialReferenceCandidates=[inferredReferenceLocale,String(meta.sociodemo_reference_locale||'').trim(),String(meta.reference_locale||'').trim(),'fr','en','es',...projectLocales()],initialReferenceSeen=new Set();socioReferenceLocaleStable='';for(const candidate of initialReferenceCandidates){const loc=normalizeLocale(candidate);if(!loc||initialReferenceSeen.has(loc))continue;initialReferenceSeen.add(loc);if(Array.isArray(socioLanguageVariants?.[loc])&&socioLanguageVariants[loc].length){socioReferenceLocaleStable=loc;break;}}if(!socioReferenceLocaleStable){socioReferenceLocaleStable=Object.keys(socioLanguageVariants||{}).find(loc=>Array.isArray(socioLanguageVariants[loc])&&socioLanguageVariants[loc].length)||'';}const socioStructureRepair={changed:false,removed:0};introResolvedVariants=normalizeIntroVariants(meta.introduction_variants_resolved||{});introVariants=normalizeIntroVariants(meta.introduction_variants||{});const countries=projectCountries();socioContextCountry=normalizeCountry(meta.selected_country_code)||(countries[0]||'');const locales=projectLocales();socioContextLocale=locales.includes(normalizeLocale(meta.selected_locale))?normalizeLocale(meta.selected_locale):(locales[0]||'fr');activateLanguage(socioContextLocale);resultResources=normalizeResultResources(meta.result_buttons);renderSocioContext();renderSocio();renderResultResources();renderQuota();const clientFolderLink=$('param-client-folder');if(clientFolderLink&&currentUser.role==='admin'&&meta.organization_id){clientFolderLink.hidden=false;clientFolderLink.href=`client.html?organizationId=${encodeURIComponent(meta.organization_id)}`;}$('param-back').href=`composer.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;$('param-back').textContent='← Revenir au contenu';const contentTop=$('param-content-top');if(contentTop)contentTop.href=`composer.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;
+    baseTitle=meta.base_title||meta.theme_title||meta.title||'Autodiagnostic';referenceIntro=stripHtml(meta.theme_introduction_html||'');$('param-theme').textContent=meta.theme_title||'Autodiagnostic';$('campaign-name').value=meta.campaign_name||baseTitle;$('respondent-title').value=meta.respondent_title||meta.respondent_title_default||baseTitle;const organizationName=meta.organization_name||quota?.name||'votre-entreprise',existingShareUrl=String(meta.communication_share_url||'').trim(),parsedShareUrl=parseDiffusionUrl(existingShareUrl);diffusionExistingUrl=existingShareUrl;diffusionCustomerSlug=parsedShareUrl?.customer||slugify(organizationName)||'votre-entreprise';const diffusionInput=$('diffusion-slug');diffusionInput.value=parsedShareUrl?.slug||(isLegacyClientCampaign()&&!existingShareUrl?slugify(meta.legacy_slug||''):'');diffusionDirty=false;if(isLegacyClientCampaign()&&currentUser.role!=='admin'&&existingShareUrl){diffusionInput.readOnly=true;diffusionInput.setAttribute('aria-readonly','true');diffusionInput.closest('.diffusion-url-builder')?.classList.add('is-readonly');}renderDiffusionAddress();$('launch-date').min=isLegacyClientCampaign()?'':iso(5);$('launch-date').value=meta.launch_date?String(meta.launch_date).slice(0,10):(isLegacyClientCampaign()?'':iso(5));$('close-date').value=meta.close_date?String(meta.close_date).slice(0,10):'';syncCloseMin();$('nb-respondents').value=meta.estimated_respondents||'';const sourceSurveyId=String(meta.legacy_survey_id||meta.theme_legacy_id||'').trim(),themeSocioVariants=normalizeSocioLanguageVariants(meta.theme_sociodemo_variants,sourceSurveyId),legacyProjectSocioVariants=normalizeSocioLanguageVariants(meta.sociodemo_variants,sourceSurveyId),resolvedSocioVariants=normalizeSocioLanguageVariants(meta.sociodemo_language_variants_resolved||{},sourceSurveyId),storedSocioVariants=normalizeSocioLanguageVariants(meta.sociodemo_language_variants||{},sourceSurveyId);socioLanguageVariants={...themeSocioVariants,...legacyProjectSocioVariants,...resolvedSocioVariants,...storedSocioVariants};const inferredReferenceLocale=inferSocioReferenceLocale(meta),initialReferenceCandidates=[inferredReferenceLocale,String(meta.sociodemo_reference_locale||'').trim(),String(meta.reference_locale||'').trim(),'fr','en','es',...projectLocales()],initialReferenceSeen=new Set();socioReferenceLocaleStable='';for(const candidate of initialReferenceCandidates){const loc=normalizeLocale(candidate);if(!loc||initialReferenceSeen.has(loc))continue;initialReferenceSeen.add(loc);if(Array.isArray(socioLanguageVariants?.[loc])&&socioLanguageVariants[loc].length){socioReferenceLocaleStable=loc;break;}}if(!socioReferenceLocaleStable){socioReferenceLocaleStable=Object.keys(socioLanguageVariants||{}).find(loc=>Array.isArray(socioLanguageVariants[loc])&&socioLanguageVariants[loc].length)||'';}const orangeOrderRepair=repairOrange382DivisionOrder(meta),socioStructureRepair={changed:Boolean(orangeOrderRepair.changed),removed:0};introResolvedVariants=normalizeIntroVariants(meta.introduction_variants_resolved||{});introVariants=normalizeIntroVariants(meta.introduction_variants||{});const countries=projectCountries();socioContextCountry=normalizeCountry(meta.selected_country_code)||(countries[0]||'');const locales=projectLocales();socioContextLocale=locales.includes(normalizeLocale(meta.selected_locale))?normalizeLocale(meta.selected_locale):(locales[0]||'fr');activateLanguage(socioContextLocale);resultResources=normalizeResultResources(meta.result_buttons);renderSocioContext();renderSocio();renderResultResources();renderQuota();const clientFolderLink=$('param-client-folder');if(clientFolderLink&&currentUser.role==='admin'&&meta.organization_id){clientFolderLink.hidden=false;clientFolderLink.href=`client.html?organizationId=${encodeURIComponent(meta.organization_id)}`;}$('param-back').href=`composer.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;$('param-back').textContent='← Revenir au contenu';const contentTop=$('param-content-top');if(contentTop)contentTop.href=`composer.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;
     if(isReadOnly())applyReadOnlyUI();else{if(project?.review_mode){const reviewUrl=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`,alert=$('param-alert');alert.hidden=false;alert.dataset.tone='success';alert.innerHTML='<strong>✎ Correction Me&YouToo active.</strong> Modifiez uniquement les paramètres nécessaires, puis revenez directement au contrôle qualité.';$('param-back').href=reviewUrl;$('param-back').textContent='← Retour au contrôle qualité';$('param-next').textContent='Enregistrer et revenir au contrôle qualité';if($('param-next-top'))$('param-next-top').textContent='Enregistrer et revenir au contrôle qualité';}updateNextState();await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:'parametrage'})});autosaveEnabled=true;lastSavedFingerprint=autosaveFingerprint(autosavePayload());autosaveStatus('✓ Enregistré automatiquement','saved');if(socioStructureRepair.changed){lastSavedFingerprint='';await autosaveNow();}}
   }catch(error){show(error.message);}}
   function syncCloseMin(){const d=$('launch-date').value;if(!d)return;const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+1);const min=x.toISOString().slice(0,10);$('close-date').min=min;if(!isReadOnly()&&$('close-date').value&&$('close-date').value<min)$('close-date').value='';}
