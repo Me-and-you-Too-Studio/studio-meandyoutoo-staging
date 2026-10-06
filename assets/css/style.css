@@ -8341,6 +8341,35 @@ body.sidebar-collapsed .sidebar-notification-root {
   color: #60778a;
   margin: 5px 0;
 }
+
+.admin-ad-chapters {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid #d9e8ef;
+  border-radius: 14px;
+  background: #f7fbfd;
+}
+.admin-ad-chapters-head {
+  color: #123b63;
+  margin-bottom: 8px;
+}
+.admin-ad-chapter-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.admin-ad-chapter-list span {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid #cfe2ec;
+  background: #fff;
+  color: #355d76;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .admin-ad-tags {
   display: flex;
   gap: 8px;

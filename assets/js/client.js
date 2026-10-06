@@ -879,6 +879,7 @@
       catalogBase = p.theme_id ? (p.theme_title || "Base catalogue reliée") : "Non reliée",
       title = p.campaign_name || p.title || "Sans nom",
       respondent = p.respondent_title || title,
+      chapters = Array.isArray(p.chapters) ? p.chapters.filter((chapter) => chapter && String(chapter.title || "").trim()) : [],
       contact = orgUsers(organization).find((u) => u.access_level === "owner") || orgUsers(organization)[0],
       explicitCommanditaire = [p.commanditaire_name, p.commanditaire_job_title, p.commanditaire_email].filter(Boolean),
       commanditaire = explicitCommanditaire.length
@@ -927,6 +928,7 @@
       '</strong></div>' + (p.legacy_history && p.legacy_theme_title ? '<div class="admin-ad-meta">Thématique historique : <strong>' + esc(p.legacy_theme_title) + '</strong></div>' : '') + '<div class="admin-ad-meta">Titre répondants : <strong>' +
       esc(respondent) +
       '</strong></div>' +
+      (chapters.length ? '<div class="admin-ad-chapters"><div class="admin-ad-chapters-head"><strong>Chapitres : ' + chapters.length + '</strong></div><div class="admin-ad-chapter-list">' + chapters.map((chapter) => '<span>' + esc(chapter.title) + '</span>').join('') + '</div></div>' : '<div class="admin-ad-meta">Chapitres : <strong>0</strong></div>') +
       campaignCountriesHtml(p) +
       campaignLocalesHtml(p) +
       (p.legacy_history && p.legacy_survey_id ? '<div class="admin-ad-meta">Survey historique : <strong>#' + esc(p.legacy_survey_id) + '</strong></div>' : '') +
