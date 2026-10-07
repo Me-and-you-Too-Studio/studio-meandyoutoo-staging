@@ -998,7 +998,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const selectedMigrationLocales=new Set(savedMigrationLocales);
       selectedMigrationLocales.add('fr');
       const newCatalogMode=Boolean(themeEntity && !themeEntity.target_entity_id && themeEntity.source_payload?.catalogCreateIfMissing===true);
-      const reviewContext={newCatalogMode,clientMode,countryLocaleMap:reviewCountryLocaleMap,businessEntities};
+      const complementaryLibraryMode=String(metaEntity?.source_payload?.importMode||themeEntity?.source_payload?.importMode||'')==='complementary_library';
+      const reviewContext={newCatalogMode,clientMode,complementaryLibraryMode,countryLocaleMap:reviewCountryLocaleMap,businessEntities};
 
       const chapterHtml=chapters.map(ch=>{
         const direct=children.get(String(ch.legacy_id))||[];
@@ -1065,6 +1066,12 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
             <span>Les ${businessEntities.length} éléments métier de ce lot peuvent être définis en une seule fois comme référence du nouveau catalogue. La revue reste disponible pour contrôler chapitres, pays, réponses, scores, profils et traductions avant le test staging.</span>
           </div>
           <button type="button" class="button button-primary" id="migration-use-legacy-all">Importer tout ce lot comme nouvelle référence Me&YouToo</button>
+        </section>`:complementaryLibraryMode?`<section class="migration-review-global-decision">
+          <div>
+            <strong>Bibliothèque complémentaire</strong>
+            <span>Ce lot a été préparé pour enrichir les chapitres existants sans modifier les situations de base. Studio a comparé le fichier au catalogue actuellement chargé : les doublons exacts restent conservés tels quels, les autres situations peuvent être ajoutées en bibliothèque complémentaire.</span>
+          </div>
+          <button type="button" class="button button-primary" id="migration-add-complementary-all">Ajouter tous les nouveaux contenus à la bibliothèque complémentaire</button>
         </section>`:''}
 
         <section class="migration-review-global-languages">
@@ -1197,6 +1204,37 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
         }catch(error){
           globalReferenceBtn.disabled=false;globalReferenceBtn.textContent='Importer tout ce lot comme nouvelle référence Me&YouToo';
           showError(error?.message||'Impossible de valider globalement le lot.');
+        }
+      };
+
+      const globalComplementaryBtn=$('#migration-add-complementary-all');
+      if(globalComplementaryBtn)globalComplementaryBtn.onclick=async()=>{
+        const newSituations=businessEntities.filter(entity=>entity.entity_type==='situation'&&entity.comparison?.status!=='exact_match');
+        const ok=await StudioModal.confirm({
+          eyebrow:'BIBLIOTHÈQUE COMPLÉMENTAIRE',
+          title:`Ajouter ${newSituations.length} situation${newSituations.length>1?'s':''} à la bibliothèque complémentaire ?`,
+          message:'Les situations de base ne seront pas remplacées. Cette décision prépare uniquement le test staging ; aucune écriture catalogue n’est faite avant ce test.',
+          cancelLabel:'Annuler',confirmLabel:'Préparer l’ajout'
+        });
+        if(!ok)return;
+        globalComplementaryBtn.disabled=true;globalComplementaryBtn.textContent='Préparation…';
+        try{
+          const result=await StudioAPI.request(`/api/admin/migrations/${migrationBatch.id}/review/add-complementary-all`,{method:'POST',body:'{}'});
+          const situationIds=new Set(newSituations.map(x=>String(x.legacy_id)));
+          businessEntities.forEach(entity=>{
+            if(entity.entity_type==='situation'&&entity.comparison?.status!=='exact_match')entity.review_status='add_complementary';
+            if(entity.entity_type==='answer'&&situationIds.has(String(entity.legacy_parent_id||'')))entity.review_status='add_complementary';
+          });
+          dirty.clear();
+          syncDecisionControlsFromData();
+          refreshDecisionHistory();
+          refreshReviewCounters();
+          applyReviewFilter(root.dataset.activeFilter||'all');
+          updateSaveUi(`✓ ${result?.situations||newSituations.length} situations prêtes pour la bibliothèque complémentaire.`);
+          globalComplementaryBtn.textContent='Bibliothèque complémentaire préparée';
+        }catch(error){
+          globalComplementaryBtn.disabled=false;globalComplementaryBtn.textContent='Ajouter tous les nouveaux contenus à la bibliothèque complémentaire';
+          showError(error?.message||'Impossible de préparer la bibliothèque complémentaire.');
         }
       };
 
