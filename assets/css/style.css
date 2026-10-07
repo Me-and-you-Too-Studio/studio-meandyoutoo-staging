@@ -15136,3 +15136,12 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .admin-campaign-access-heading{text-align:center!important}
 @media(max-width:1050px){.admin-campaign-selection-bar{align-items:flex-start;flex-direction:column}.admin-campaign-selection-actions{width:100%;justify-content:flex-start}}
 @media(max-width:650px){.admin-campaign-selection-actions{display:grid;grid-template-columns:1fr}.admin-campaign-selection-actions select,.admin-campaign-selection-actions .button{width:100%;max-width:none}}
+
+/* Edition rapide des tags depuis la liste des situations */
+.admin-quick-tags{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px;padding-top:8px;border-top:1px dashed #cfe1e6}
+.admin-quick-tags-label{display:flex;align-items:center;gap:6px;color:#173b5f;font-size:.8rem}
+.admin-quick-tags-controls{display:flex;align-items:center;gap:7px;flex:1;min-width:420px}
+.admin-quick-tags-controls select,.admin-quick-tags-controls input{height:34px;border:1px solid #c9dce3;border-radius:9px;background:#fff;color:#173b5f;padding:0 10px;font:inherit;font-size:.82rem}
+.admin-quick-tags-controls select{min-width:190px;max-width:260px}.admin-quick-tags-controls input{min-width:180px;max-width:260px}
+.admin-quick-tags-controls .button{height:34px;white-space:nowrap}
+@media(max-width:760px){.admin-quick-tags-controls{min-width:100%;flex-wrap:wrap}.admin-quick-tags-controls select,.admin-quick-tags-controls input{flex:1;max-width:none}}
