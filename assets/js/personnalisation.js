@@ -1,5 +1,5 @@
 (()=>{
-  const p=new URLSearchParams(location.search),theme=p.get('theme')||'',projectId=p.get('projectId')||'',requestedProfile=p.get('profile')||'';let active=Math.max(0,Number(p.get('chapter')||0)),chapters=[],project=null,mediaLibrary=[];const translationContexts=new Map();
+  const p=new URLSearchParams(location.search),projectId=p.get('projectId')||'',requestedProfile=p.get('profile')||'';let theme=p.get('theme')||'',active=Math.max(0,Number(p.get('chapter')||0)),chapters=[],project=null,mediaLibrary=[];const translationContexts=new Map();
   const api=(url,opt={})=>window.StudioAPI.request(url,opt),$=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const currentUser=window.StudioAPI?.user?.()||{};
   const isAdmin=()=>currentUser.role==='admin';
