@@ -15161,3 +15161,13 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .admin-catalog-toolbar .admin-library-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-left:auto}
 .admin-catalog-toolbar .admin-library-actions .button{white-space:nowrap;min-height:39px}
 @media(max-width:860px){.admin-catalog-toolbar{align-items:stretch}.admin-catalog-toolbar .admin-library-actions{margin-left:0;justify-content:flex-start}.admin-catalog-toolbar .admin-catalog-editor-tabs{max-width:100%}}
+
+/* Catalogue global : scores éditables, y compris les décimales */
+.admin-global-copy-scores{margin-top:12px}
+.admin-global-score-row{display:grid;grid-template-columns:minmax(0,1fr) 100px;gap:14px;align-items:center;margin-top:10px;color:#213651}
+.admin-global-score-answer{min-width:0;line-height:1.5}
+.admin-global-score-field{display:block}
+.admin-global-score-field input{box-sizing:border-box;display:block;width:100%;height:40px;padding:8px 11px;border:1px solid #cbdde5;border-radius:10px;background:#fff;color:#173754;font:inherit;font-variant-numeric:tabular-nums;outline:none;transition:border-color .15s,box-shadow .15s}
+.admin-global-score-field input:hover{border-color:#8fb8c5}
+.admin-global-score-field input:focus{border-color:#00838c;box-shadow:0 0 0 3px rgba(0,131,140,.13)}
+@media(max-width:520px){.admin-global-score-row{grid-template-columns:minmax(0,1fr) 84px;gap:8px}}
