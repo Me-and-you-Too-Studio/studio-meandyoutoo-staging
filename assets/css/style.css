@@ -15188,3 +15188,12 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 
 /* Recherche catalogue : prévention des doublons */
 .admin-global-picker-hide-existing{display:flex;align-items:center;gap:9px;margin:12px 0;color:#26475e;font-size:13px;font-weight:600}.admin-global-picker-hide-existing input{accent-color:#007e88;width:16px;height:16px}.admin-global-duplicate-label,.admin-global-similar-label{display:inline-flex;padding:5px 9px;border-radius:18px;font-size:12px;font-weight:700}.admin-global-duplicate-label{background:#e6f2f1;color:#006b72}.admin-global-similar-label{background:#fff2da;color:#916000}.admin-global-duplicate-hint{font-size:12px;color:#657787}.admin-global-picker-actions button:disabled{opacity:.6;cursor:not-allowed}
+
+/* Catalogue admin : échange de situations dans la base */
+.admin-library-swap-box{margin-top:14px;padding:18px;border:1px solid #d8e8eb;border-radius:16px;background:#f8fcfc;display:grid;gap:10px}
+.admin-library-swap-box>strong{color:#173b67;font-size:1rem}
+.admin-library-swap-box>p{margin:0!important;color:#657e8c;font-size:.85rem!important;line-height:1.5}
+.admin-library-swap-select{display:block;width:100%;max-width:100%;min-height:44px;padding:10px 38px 10px 14px;color:#203d55;font:inherit;font-size:.88rem;border:1px solid #cbdfe7;border-radius:12px;background:#fff;box-shadow:0 2px 7px rgba(20,60,82,.035);outline:none}
+.admin-library-swap-select:focus{border-color:#008995;box-shadow:0 0 0 3px rgba(0,137,149,.12)}
+.admin-library-swap-box>.button{justify-self:start;margin-top:2px;white-space:normal}
+@media(max-width:650px){.admin-library-swap-box{padding:13px}.admin-library-swap-box>.button{width:100%}}
