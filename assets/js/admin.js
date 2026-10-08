@@ -2388,24 +2388,38 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const el=selector=>overlay.querySelector(selector);
     const themeSelect=el('[data-ch-import-theme]'),chapterSelect=el('[data-ch-import-chapter]');
     const current=()=>findChapter(chapterSelect.value);
-    const available=()=>currentSituations(current()).filter(si=>si.active!==false&&!si.archived_at&&!si.deleted_at);
+    const sourceSituations=()=>currentSituations(current()).filter(si=>si.active!==false&&!si.archived_at&&!si.deleted_at);
+    let includeLibrarySelection=false;
+    const includeComplementary=()=>includeLibrarySelection;
+    const available=()=>sourceSituations().filter(si=>includeComplementary()||si.is_default!==false);
     const selectedCountries=()=>[...overlay.querySelectorAll('[data-ch-import-country]:checked')].map(x=>x.value);
     const selectedLocales=()=>[...overlay.querySelectorAll('[data-ch-import-locale]:checked')].map(x=>x.value);
     const chosen=()=>[...overlay.querySelectorAll('[data-ch-import-si]:checked')].map(x=>Number(x.value));
     const cleanLoc=v=>String(v||'').trim().toLowerCase().replaceAll('_','-');
     const realText=si=>{
-      // Prefer a genuine reference translation (FR, EN or ES) to legacy technical labels.
+      // The import list is a preview: prioritize the locale chosen by the admin.
+      // Never modify any source content or persist a fallback translation.
       const rows=Array.isArray(si?.translations)?si.translations:[];
-      const primary=cleanLoc(si?.reference_locale);
-      const priority=[primary,'fr','en','es'].filter((v,i,a)=>v&&a.indexOf(v)===i);
+      const ref=cleanLoc(si?.reference_locale);
+      const requested=selectedLocales().map(cleanLoc);
+      const priority=[...requested,'fr',ref,'en','es'].filter((v,i,a)=>v&&a.indexOf(v)===i);
       const findText=locale=>{
-        const candidates=rows.filter(t=>cleanLoc(t.locale)===locale);
-        for(const row of candidates){const obj=libraryContentObject(row);const t=String(obj.content||obj.title||row.content_text||'').trim();if(t&&!libraryIsTechnicalLegacyContent(t))return t;}
+        for(const row of rows.filter(t=>cleanLoc(t.locale)===locale)){
+          const obj=libraryContentObject(row);
+          const text=String(obj.content||obj.title||row.content_text||'').trim();
+          if(text&&!libraryIsTechnicalLegacyContent(text))return text;
+        }
+        // The canonical content field is the reference-language content.
+        if(ref===locale){
+          const text=String(si.content||'').trim();
+          if(text&&!libraryIsTechnicalLegacyContent(text))return text;
+        }
         return '';
       };
-      for(const loc of priority){const text=findText(loc);if(text)return text;}
+      for(const loc of priority){const text=findText(loc);if(text)return {text,locale:loc,fallback:!requested.includes(loc)};}
       const raw=String(si.content||'').trim();
-      return raw&&!libraryIsTechnicalLegacyContent(raw)?raw:(libraryRealContent(si)||'Texte de référence indisponible');
+      if(raw&&!libraryIsTechnicalLegacyContent(raw))return {text:raw,locale:ref||'?',fallback:true};
+      return {text:'Texte de référence indisponible',locale:'',fallback:true};
     };
     const eligible=()=>{
       const countries=selectedCountries();const locales=selectedLocales();
@@ -2422,7 +2436,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     };
     const countryLanguageHints={FR:['fr','en'],DE:['de','en'],ES:['es','en'],UY:['es'],AR:['es'],CL:['es'],MX:['es'],PA:['es'],US:['en','es'],CA:['en','fr'],BE:['fr','nl-be','nl'],CH:['fr','de','it'],BR:['br','pt'],PT:['pt'],IT:['it'],GB:['en'],NL:['nl','en'],AT:['de'],SE:['sv-se','en'],NO:['en'],DK:['en'],JP:['ja'],KR:['ko-kr'],CN:['zh','zf'],TW:['zh','zf'],HK:['zh','en'],PL:['pl'],RO:['ro'],RU:['ru'],TR:['tr'],BG:['bg']};
     const updateValidation=()=>{
-      const all=available(),filtered=eligible(),count=chosen().length;
+      const all=sourceSituations(),filtered=eligible(),count=chosen().length;
+      // Profiles belong to the entire source chapter, regardless of the optional library filter.
       const partial=Boolean(all.length&&count<all.length);
       const w=el('[data-ch-import-warning]');
       w.innerHTML=partial?`<div class="admin-chapter-import-warning"><strong>⚠ Copie partielle : ${count} situation${count>1?'s':''} sur ${all.length} du chapitre source</strong><p>Les profils et leurs seuils seront copiés sans recalcul. Vérifiez et ajustez manuellement les seuils si nécessaire.</p><label><input type="checkbox" data-ch-import-ack> J’ai pris connaissance de ce point de vigilance.</label></div>`:'';
@@ -2432,7 +2447,13 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     };
     const drawSituations=()=>{
       const ch=current(),all=available(),list=eligible(),countries=selectedCountries(),langs=selectedLocales();
-      el('[data-ch-import-situations]').innerHTML=!ch?'':!countries.length||!langs.length?'<div class="admin-chapter-import-group"><p>Choisissez d’abord un périmètre culturel et au moins une langue pour afficher les situations.</p></div>':`<div class="admin-chapter-import-group"><div class="admin-chapter-import-group-head"><strong>Situations éligibles (${list.length} sur ${all.length})</strong><label><input type="checkbox" data-ch-import-all> Tout sélectionner</label></div><div class="admin-chapter-import-situation-list">${list.length?list.map(si=>`<label><input type="checkbox" data-ch-import-si value="${si.id}"><span>${esc(realText(si).slice(0,350))}</span></label>`).join(''):'<p>Aucune situation disponible pour ce choix de pays et langues.</p>'}</div><small>Les textes affichés utilisent la langue de référence disponible (FR, EN ou ES). Chaque copie reprend ses réponses, scores et tags.</small></div>`;
+      el('[data-ch-import-situations]').innerHTML=!ch?'':!countries.length||!langs.length?'<div class="admin-chapter-import-group"><p>Choisissez d’abord un périmètre culturel et au moins une langue pour afficher les situations.</p></div>':`<div class="admin-chapter-import-group"><div class="admin-chapter-import-group-head"><strong>Situations éligibles (${list.length} sur ${all.length} affichées)</strong><label><input type="checkbox" data-ch-import-all> Tout sélectionner</label></div><label class="admin-chapter-import-include-library"><input type="checkbox" data-ch-import-include-library ${includeComplementary()?'checked':''}> Inclure la bibliothèque complémentaire <span class="admin-info-dot" tabindex="0" data-info="Par défaut, seules les situations de la Base du thème sont proposées. Cochez cette option pour rechercher aussi dans la bibliothèque complémentaire du chapitre source. Aucune situation source n’est modifiée.">i</span></label><p class="admin-chapter-import-counts">Base : ${list.filter(si=>si.is_default!==false).length} · Bibliothèque complémentaire : ${includeComplementary()?list.filter(si=>si.is_default===false).length:0}${!includeComplementary()?' (masquée)':''}</p><div class="admin-chapter-import-situation-list">${list.length?list.map(si=>`<label><input type="checkbox" data-ch-import-si value="${si.id}"><span><span class="admin-chapter-import-origin ${si.is_default===false?'is-library':'is-base'}">${si.is_default===false?'Bibliothèque complémentaire':'Base du thème'}</span> ${(()=>{const preview=realText(si);return `${esc(preview.text.slice(0,350))}${preview.fallback?` <small class="admin-import-preview-fallback">(texte de référence ${esc(preview.locale.toUpperCase())}, traduction sélectionnée indisponible)</small>`:""}`;})()}</span></label>`).join(''):'<p>Aucune situation disponible pour ce choix de pays et langues.</p>'}</div><small>Aperçu dans la langue sélectionnée si sa traduction existe ; sinon, texte de référence FR, EN ou ES signalé. Chaque copie reprend ses réponses, scores et tags.</small></div>`;
+      overlay.querySelector('[data-ch-import-include-library]')?.addEventListener('change',e=>{
+        // The checked option is reconstructed when redrawing the results.
+        const checked=e.target.checked;
+        includeLibrarySelection=checked;
+        drawSituations();
+      });
       overlay.querySelector('[data-ch-import-all]')?.addEventListener('change',e=>{overlay.querySelectorAll('[data-ch-import-si]').forEach(x=>x.checked=e.target.checked);updateValidation();});
       overlay.querySelectorAll('[data-ch-import-si]').forEach(x=>x.addEventListener('change',()=>{const boxes=[...overlay.querySelectorAll('[data-ch-import-si]')];const allBox=el('[data-ch-import-all]');if(allBox)allBox.checked=boxes.length>0&&boxes.every(b=>b.checked);updateValidation();}));
       updateValidation();
@@ -2440,7 +2461,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const drawLocales=()=>{
       const ch=current();if(!ch)return;
       const codes=selectedCountries();
-      const all=[...new Set([...available().flatMap(librarySituationLocales),...(ch.profiles||[]).flatMap(p=>(p.translations||[]).map(t=>cleanLoc(t.locale)))])];
+      const all=[...new Set([...sourceSituations().flatMap(librarySituationLocales),...(ch.profiles||[]).flatMap(p=>(p.translations||[]).map(t=>cleanLoc(t.locale)))])];
       const preferred=[...new Set(codes.flatMap(c=>countryLanguageHints[c]||[]))];
       // Source language is also selectable when associated with a selected country's content.
       const related=all.filter(l=>preferred.includes(l));
@@ -2451,19 +2472,19 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       drawSituations();
     };
     const draw=()=>{
-      const ch=current(),list=available();
+      const ch=current(),list=sourceSituations();
       const codes=[...new Set([...(ch?.country_codes||[]),...list.flatMap(si=>si.country_codes||[])].map(x=>String(x).toUpperCase()).filter(Boolean))];
       const countries=codes.length?codes:['FR'];
       el('[data-ch-import-scopes]').innerHTML=!ch?'':`<div class="admin-chapter-import-group"><strong>Périmètres culturels</strong><p>Choisissez les pays avant de sélectionner les situations.</p><div class="admin-chapter-import-options">${countries.map(c=>`<label><input type="checkbox" data-ch-import-country value="${esc(c)}" ${c===(countries.includes('FR')?'FR':countries[0])?'checked':''}> ${esc(libraryCountryLabel(c))}</label>`).join('')}</div><div data-ch-import-locales></div></div>`;
       overlay.querySelectorAll('[data-ch-import-country]').forEach(x=>x.addEventListener('change',drawLocales));
       drawLocales();
     };
-    themeSelect.onchange=()=>{const src=findTheme(themeSelect.value);chapterSelect.disabled=!src;chapterSelect.innerHTML='<option value="">Choisir un chapitre…</option>'+(src?.chapters||[]).map(ch=>`<option value="${ch.id}">${esc(ch.title)}</option>`).join('');draw();};
-    chapterSelect.onchange=draw;
+    themeSelect.onchange=()=>{includeLibrarySelection=false;const src=findTheme(themeSelect.value);chapterSelect.disabled=!src;chapterSelect.innerHTML='<option value="">Choisir un chapitre…</option>'+(src?.chapters||[]).map(ch=>`<option value="${ch.id}">${esc(ch.title)}</option>`).join('');draw();};
+    chapterSelect.onchange=()=>{includeLibrarySelection=false;draw();};
     overlay.querySelectorAll('[data-ch-import-close]').forEach(b=>b.onclick=()=>overlay.remove());
     overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
     el('[data-ch-import-submit]').onclick=async()=>{
-      const list=available(),ids=chosen(),partial=ids.length<list.length,button=el('[data-ch-import-submit]');
+      const list=sourceSituations(),ids=chosen(),partial=ids.length<list.length,button=el('[data-ch-import-submit]');
       if(!ids.length||!selectedCountries().length||!selectedLocales().length||partial&&!el('[data-ch-import-ack]')?.checked)return;
       button.disabled=true;el('[data-ch-import-error]').textContent='';
       try{

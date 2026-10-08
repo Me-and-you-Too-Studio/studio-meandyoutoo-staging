@@ -15232,3 +15232,10 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .admin-library-chapters-detail .admin-library-chapter-body{padding:17px 20px 22px;background:#fff;border-top:1px solid #dfecee;}
 @media(max-width:980px){.admin-library-chapters-detail .admin-library-chapter-head{grid-template-columns:minmax(0,1fr)!important;gap:14px!important;}.admin-library-chapters-detail .admin-library-chapter-actions{justify-content:flex-start!important;padding-left:44px!important;flex-wrap:wrap!important;}}
 @media(max-width:540px){.admin-library-chapters-detail .admin-library-chapter-head{padding:16px!important;}.admin-library-chapters-detail .admin-library-chapter-actions{padding-left:0!important;}.admin-library-chapters-detail .admin-library-chapter-actions>.button{flex:1 1 auto;}}
+
+/* Catalogue admin — optional complementary library in chapter import */
+.admin-chapter-import-include-library{display:flex;align-items:center;gap:9px;margin:12px 0 6px;padding:10px 12px;border:1px solid #d5e4e9;border-radius:10px;background:#f7fbfc;cursor:pointer;font-weight:600;color:#213958;flex-wrap:wrap}
+.admin-chapter-import-include-library input{accent-color:#00818c}
+.admin-chapter-import-counts{margin:6px 0 12px;color:#53677c;font-size:.86rem}
+.admin-chapter-import-origin{display:inline-block;margin-right:7px;margin-bottom:3px;padding:2px 7px;border-radius:999px;font-size:.72rem;font-weight:700;white-space:nowrap;background:#e9f6f0;color:#146948}
+.admin-chapter-import-origin.is-library{background:#edf4fa;color:#275d8b}
