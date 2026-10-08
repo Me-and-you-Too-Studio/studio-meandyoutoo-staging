@@ -15154,3 +15154,10 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .admin-situation-tags [data-remove-quick-tag]:hover{color:#ad2537}
 .admin-quick-tag-status{font-size:.78rem;color:#007a80;min-width:75px}
 .admin-quick-tag-status.is-error{color:#ad2537}
+
+/* 2026-10-08 — Catalogue admin : actions du thème alignées sur les onglets. */
+.admin-catalog-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:18px 0 16px}
+.admin-catalog-toolbar .admin-catalog-editor-tabs{margin:0;flex:0 1 auto}
+.admin-catalog-toolbar .admin-library-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-left:auto}
+.admin-catalog-toolbar .admin-library-actions .button{white-space:nowrap;min-height:39px}
+@media(max-width:860px){.admin-catalog-toolbar{align-items:stretch}.admin-catalog-toolbar .admin-library-actions{margin-left:0;justify-content:flex-start}.admin-catalog-toolbar .admin-catalog-editor-tabs{max-width:100%}}
