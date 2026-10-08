@@ -2461,13 +2461,25 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const drawLocales=()=>{
       const ch=current();if(!ch)return;
       const codes=selectedCountries();
-      const all=[...new Set([...sourceSituations().flatMap(librarySituationLocales),...(ch.profiles||[]).flatMap(p=>(p.translations||[]).map(t=>cleanLoc(t.locale)))])];
-      const preferred=[...new Set(codes.flatMap(c=>countryLanguageHints[c]||[]))];
-      // Source language is also selectable when associated with a selected country's content.
-      const related=all.filter(l=>preferred.includes(l));
-      const options=related.length?related:all.filter(l=>['fr','en','es'].includes(l));
+      // Une langue peut être disponible pour la France sans être une langue nationale
+      // (ex. espagnol pour le patrimoine « Collègue inclusif »).
+      // Ne pas restreindre la sélection aux correspondances théoriques pays → langue.
+      // On retient les langues réellement portées par les situations du périmètre.
+      const scoped=sourceSituations().filter(si=>{
+        const scope=(si.country_codes||[]).map(c=>String(c).toUpperCase());
+        return !scope.length||si.country_scope==='worldwide'||scope.includes('WORLDWIDE')||scope.some(c=>codes.includes(c));
+      });
+      const all=[...new Set(scoped.flatMap(si=>{
+        const reference=cleanLoc(si.reference_locale);
+        const translated=(si.translations||[]).filter(t=>{
+          const country=String(t.country_code||'').trim().toUpperCase();
+          return !country||codes.includes(country);
+        }).map(t=>cleanLoc(t.locale));
+        return [...librarySituationLocales(si),...translated,reference];
+      }).filter(Boolean))];
+      const options=all.sort((a,b)=>a==='fr'?-1:b==='fr'?1:a.localeCompare(b));
       const defaultLocale=options.includes('fr')?'fr':options.includes('en')?'en':options.includes('es')?'es':options[0];
-      el('[data-ch-import-locales]').innerHTML=options.length?`<strong>Langues à reprendre</strong><p>Langues disponibles associées aux pays sélectionnés. Une autre langue pourra être ajoutée à la thématique ensuite.</p><div class="admin-chapter-import-options">${options.map(l=>`<label><input type="checkbox" data-ch-import-locale value="${esc(l)}" ${l===defaultLocale?'checked':''}> ${esc(l.toUpperCase())}</label>`).join('')}</div>`:'<p>Aucune traduction disponible pour les pays sélectionnés.</p>';
+      el('[data-ch-import-locales]').innerHTML=options.length?`<strong>Langues à reprendre</strong><p>Langues présentes dans les situations du périmètre sélectionné, y compris les traductions étrangères (ex. ES pour la France). Seule la langue de référence est cochée par défaut.</p><div class="admin-chapter-import-options">${options.map(l=>`<label><input type="checkbox" data-ch-import-locale value="${esc(l)}" ${l===defaultLocale?'checked':''}> ${esc(l.toUpperCase())}</label>`).join('')}</div>`:'<p>Aucune traduction disponible pour les pays sélectionnés.</p>';
       overlay.querySelectorAll('[data-ch-import-locale]').forEach(x=>x.addEventListener('change',drawSituations));
       drawSituations();
     };
