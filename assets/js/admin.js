@@ -2421,18 +2421,50 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       if(raw&&!libraryIsTechnicalLegacyContent(raw))return {text:raw,locale:ref||'?',fallback:true};
       return {text:'Texte de référence indisponible',locale:'',fallback:true};
     };
-    const eligible=()=>{
-      const countries=selectedCountries();const locales=selectedLocales();
-      if(!countries.length||!locales.length)return [];
+    // Ne jamais déduire une traduction de available_locales : cette liste peut
+    // contenir les variantes historiques sans texte et réponses exploitables.
+    const hasReadableText=value=>{
+      const v=value&&typeof value==='object'?(value.content??value.text??value.title??value.value??''):value;
+      const text=String(v??'').trim();
+      return Boolean(text)&&!libraryIsTechnicalLegacyContent(text);
+    };
+    const translationTextValue=row=>{
+      const obj=libraryContentObject(row);
+      return obj.content??obj.text??obj.title??row?.content_text??(typeof row?.content==='string'?row.content:'');
+    };
+    const matchingTranslation=(entity,locale,codes)=>{
+      const rows=Array.isArray(entity?.translations)?entity.translations:[];
+      const possible=rows.filter(row=>{
+        if(cleanLoc(row.locale)!==locale)return false;
+        if(row.validation_status&&row.validation_status!=='validated')return false;
+        const country=String(row.country_code||'').trim().toUpperCase();
+        return !country||codes.includes(country);
+      });
+      // Variante propre au pays avant traduction générique.
+      possible.sort((a,b)=>Number(Boolean(b.country_code))-Number(Boolean(a.country_code)));
+      return possible.find(row=>hasReadableText(translationTextValue(row)));
+    };
+    const genuinelyTranslated=(si,locale,codes)=>{
+      const ref=cleanLoc(si.reference_locale||'fr');
+      const situationOk=(locale===ref&&hasReadableText(si.content))||Boolean(matchingTranslation(si,locale,codes));
+      if(!situationOk)return false;
+      const answers=Array.isArray(si.answers)?si.answers:[];
+      return answers.length>0&&answers.every(answer=>
+        (locale===ref&&hasReadableText(answer.content))||Boolean(matchingTranslation(answer,locale,codes))
+      );
+    };
+    const scopedSituations=()=>{
+      const codes=selectedCountries();
+      if(!codes.length)return [];
       return available().filter(si=>{
         const scope=(si.country_codes||[]).map(c=>String(c).toUpperCase());
-        const countryOk=!scope.length||si.country_scope==='worldwide'||scope.includes('WORLDWIDE')||scope.some(c=>countries.includes(c));
-        if(!countryOk)return false;
-        const known=librarySituationLocales(si);
-        const ref=cleanLoc(si.reference_locale);
-        // A source can have a different reference language; do not fabricate translations.
-        return locales.some(l=>known.includes(l)||ref===l)||(!known.length&&locales.includes(ref||'fr'));
+        return !scope.length||si.country_scope==='worldwide'||scope.includes('WORLDWIDE')||scope.some(c=>codes.includes(c));
       });
+    };
+    const eligible=()=>{
+      const codes=selectedCountries(),locales=selectedLocales();
+      if(!codes.length||!locales.length)return [];
+      return scopedSituations().filter(si=>locales.some(locale=>genuinelyTranslated(si,cleanLoc(locale),codes)));
     };
     const countryLanguageHints={FR:['fr','en'],DE:['de','en'],ES:['es','en'],UY:['es'],AR:['es'],CL:['es'],MX:['es'],PA:['es'],US:['en','es'],CA:['en','fr'],BE:['fr','nl-be','nl'],CH:['fr','de','it'],BR:['br','pt'],PT:['pt'],IT:['it'],GB:['en'],NL:['nl','en'],AT:['de'],SE:['sv-se','en'],NO:['en'],DK:['en'],JP:['ja'],KR:['ko-kr'],CN:['zh','zf'],TW:['zh','zf'],HK:['zh','en'],PL:['pl'],RO:['ro'],RU:['ru'],TR:['tr'],BG:['bg']};
     const updateValidation=()=>{
@@ -2461,25 +2493,16 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const drawLocales=()=>{
       const ch=current();if(!ch)return;
       const codes=selectedCountries();
-      // Une langue peut être disponible pour la France sans être une langue nationale
-      // (ex. espagnol pour le patrimoine « Collègue inclusif »).
-      // Ne pas restreindre la sélection aux correspondances théoriques pays → langue.
-      // On retient les langues réellement portées par les situations du périmètre.
-      const scoped=sourceSituations().filter(si=>{
-        const scope=(si.country_codes||[]).map(c=>String(c).toUpperCase());
-        return !scope.length||si.country_scope==='worldwide'||scope.includes('WORLDWIDE')||scope.some(c=>codes.includes(c));
-      });
-      const all=[...new Set(scoped.flatMap(si=>{
-        const reference=cleanLoc(si.reference_locale);
-        const translated=(si.translations||[]).filter(t=>{
-          const country=String(t.country_code||'').trim().toUpperCase();
-          return !country||codes.includes(country);
-        }).map(t=>cleanLoc(t.locale));
-        return [...librarySituationLocales(si),...translated,reference];
-      }).filter(Boolean))];
-      const options=all.sort((a,b)=>a==='fr'?-1:b==='fr'?1:a.localeCompare(b));
-      const defaultLocale=options.includes('fr')?'fr':options.includes('en')?'en':options.includes('es')?'es':options[0];
-      el('[data-ch-import-locales]').innerHTML=options.length?`<strong>Langues à reprendre</strong><p>Langues présentes dans les situations du périmètre sélectionné, y compris les traductions étrangères (ex. ES pour la France). Seule la langue de référence est cochée par défaut.</p><div class="admin-chapter-import-options">${options.map(l=>`<label><input type="checkbox" data-ch-import-locale value="${esc(l)}" ${l===defaultLocale?'checked':''}> ${esc(l.toUpperCase())}</label>`).join('')}</div>`:'<p>Aucune traduction disponible pour les pays sélectionnés.</p>';
+      const scoped=scopedSituations();
+      const candidates=[...new Set(scoped.flatMap(si=>[
+        cleanLoc(si.reference_locale||'fr'),
+        ...(Array.isArray(si.translations)?si.translations:[]).map(t=>cleanLoc(t.locale))
+      ]).filter(Boolean))];
+      const coverage=candidates.map(locale=>({locale,count:scoped.filter(si=>genuinelyTranslated(si,locale,codes)).length}))
+        .filter(row=>row.count>0).sort((a,b)=>a.locale==='fr'?-1:b.locale==='fr'?1:a.locale.localeCompare(b.locale));
+      const defaultLocale=coverage.some(row=>row.locale==='fr')?'fr':
+        coverage.some(row=>row.locale==='en')?'en':coverage.some(row=>row.locale==='es')?'es':coverage[0]?.locale;
+      el('[data-ch-import-locales]').innerHTML=coverage.length?`<strong>Langues à reprendre</strong><p>Uniquement les langues dont le texte ET les réponses sont réellement traduits pour au moins une situation de ce périmètre. Une couverture partielle est indiquée.</p><div class="admin-chapter-import-options">${coverage.map(row=>`<label><input type="checkbox" data-ch-import-locale value="${esc(row.locale)}" ${row.locale===defaultLocale?'checked':''}> ${esc(row.locale.toUpperCase())} <small>(${row.count}/${scoped.length})</small></label>`).join('')}</div>`:'<p>Aucune langue avec texte et réponses exploitables pour les pays sélectionnés.</p>';
       overlay.querySelectorAll('[data-ch-import-locale]').forEach(x=>x.addEventListener('change',drawSituations));
       drawSituations();
     };
