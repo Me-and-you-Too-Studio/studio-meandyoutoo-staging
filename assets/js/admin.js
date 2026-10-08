@@ -2289,7 +2289,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function quickTagEditorHtml(si,readonly=false){
     const tags=situationTags(si), all=catalogTagBase().filter(tag=>!tags.some(x=>x.toLocaleLowerCase('fr')===tag.toLocaleLowerCase('fr')));
     if(readonly)return '';
-    return `<div class="admin-quick-tags" data-quick-tags="${si.id}" data-current-tags="${esc(JSON.stringify(tags))}"><div class="admin-quick-tags-label"><strong>Tags</strong><span class="admin-info-dot" tabindex="0" data-info="Choisissez un tag déjà utilisé ailleurs pour garder un vocabulaire cohérent, ou créez-en un nouveau si nécessaire. Les tags servent à rechercher et réutiliser les situations dans le catalogue.">i</span></div><div class="admin-quick-tags-controls"><select data-quick-tag-existing><option value="">+ Tag existant…</option>${all.map(tag=>`<option value="${esc(tag)}">${esc(tag)}</option>`).join('')}</select><input type="text" data-quick-tag-new maxlength="60" placeholder="Ou nouveau tag…"><button type="button" class="button button-secondary button-small" data-quick-tag-add>Ajouter</button></div></div>`;
+    return `<div class="admin-quick-tags" data-quick-tags="${si.id}" data-current-tags="${esc(JSON.stringify(tags))}"><div class="admin-quick-tags-label"><strong>Tags</strong><span class="admin-info-dot" tabindex="0" data-info="Choisissez un tag déjà utilisé ailleurs pour garder un vocabulaire cohérent, ou créez-en un nouveau si nécessaire. Les tags servent à rechercher et réutiliser les situations dans le catalogue.">i</span></div><div class="admin-quick-tags-controls"><select data-quick-tag-existing><option value="">+ Tag existant…</option>${all.map(tag=>`<option value="${esc(tag)}">${esc(tag)}</option>`).join('')}</select><input type="text" data-quick-tag-new maxlength="60" placeholder="+ Créer un tag… (Entrée pour valider)" title="Appuyez sur Entrée pour créer le tag"></div></div>`;
   }
   function globalCatalogSituations(){
     const rows=[];
@@ -2701,7 +2701,7 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
     $$('[data-quick-tags]').forEach(box=>{
       box.onclick=e=>e.stopPropagation();
       box.onkeydown=e=>e.stopPropagation();
-      const select=box.querySelector('[data-quick-tag-existing]'),input=box.querySelector('[data-quick-tag-new]'),add=box.querySelector('[data-quick-tag-add]');
+      const select=box.querySelector('[data-quick-tag-existing]'),input=box.querySelector('[data-quick-tag-new]');
       const row=box.closest('[data-situation-details]'),list=row?.querySelector('[data-situation-tag-list]');
       const normalize=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('fr');
       const current=()=>{try{return JSON.parse(box.dataset.currentTags||'[]');}catch{return [];}};
@@ -2716,7 +2716,7 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
       let busy=false,flashTimer;
       const save=async tags=>{
         if(busy)return;
-        busy=true;add.disabled=true;select.disabled=true;input.disabled=true;status.textContent='Enregistrement…';status.classList.remove('is-error');
+        busy=true;select.disabled=true;input.disabled=true;status.textContent='Enregistrement…';status.classList.remove('is-error');
         try{
           const result=await StudioAPI.request('/api/admin/catalog/situations/'+box.dataset.quickTags,{method:'PATCH',body:JSON.stringify({tags})});
           const saved=Array.isArray(result?.situation?.admin_tags)?result.situation.admin_tags:tags;
@@ -2734,18 +2734,19 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
             if([...dropdown.options].some(o=>o.value===chosen))dropdown.value=chosen;
           });
         }catch(error){status.textContent=error.message||'Erreur lors de l’enregistrement';status.classList.add('is-error');}
-        finally{busy=false;add.disabled=false;select.disabled=false;input.disabled=false;}
+        finally{busy=false;select.disabled=false;input.disabled=false;}
       };
-      const addTag=()=>{
-        const value=String(input.value||select.value||'').trim().replace(/\s+/g,' ');if(!value)return;
+      const addTag=(value)=>{
+        if(busy)return;
+        value=String(value||'').trim().replace(/\s+/g,' ');
+        if(!value)return;
         const tags=current(),existing=catalogTagBase().find(t=>normalize(t)===normalize(value));
         const tag=existing||value;
         if(tags.some(t=>normalize(t)===normalize(tag))){input.value='';select.value='';return;}
         save([...tags,tag]);
       };
-      add.onclick=e=>{e.preventDefault();e.stopPropagation();addTag();};
-      select.onchange=()=>{if(select.value){input.value='';addTag();}};
-      input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addTag();}};
+      select.onchange=()=>{if(select.value)addTag(select.value);};
+      input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addTag(input.value);}};
       list?.addEventListener('click',e=>{
         const button=e.target.closest('[data-remove-quick-tag]');if(!button)return;
         e.preventDefault();e.stopPropagation();
