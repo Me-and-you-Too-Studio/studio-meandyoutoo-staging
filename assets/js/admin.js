@@ -998,7 +998,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const selectedMigrationLocales=new Set(savedMigrationLocales);
       selectedMigrationLocales.add('fr');
       const newCatalogMode=Boolean(themeEntity && !themeEntity.target_entity_id && themeEntity.source_payload?.catalogCreateIfMissing===true);
-      const complementaryLibraryMode=String(metaEntity?.source_payload?.importMode||themeEntity?.source_payload?.importMode||'')==='complementary_library';
+      const complementaryLibraryMode=entities.some(entity=>String(entity?.source_payload?.importMode||'')==='complementary_library');
       const reviewContext={newCatalogMode,clientMode,complementaryLibraryMode,countryLocaleMap:reviewCountryLocaleMap,businessEntities};
 
       const chapterHtml=chapters.map(ch=>{
