@@ -234,7 +234,8 @@
     return Boolean(project&&(
       project.source_type==='legacy_client' ||
       project.legacy_history===true ||
-      project.legacy_source==='meayt-legacy'
+      project.legacy_source==='meayt-legacy' ||
+      project.legacy_source==='cloned_legacy'
     ));
   }
 
@@ -560,7 +561,7 @@
     const changed=editable&&String(originalContent||'')!==String(a.content||'');
     return `<div class="composer-answer ${a.is_best?'is-best':''} ${changed?'is-customized':''}">
       ${editable?`<textarea class="composer-inline-answer" data-answer-input="${esc(a.id)}" data-original-answer="${esc(originalContent||a.content)}" rows="2" aria-label="Modifier cette réponse">${esc(a.content)}</textarea>`:`<span class="composer-answer-text">${esc(a.content)}</span>`}
-      <span class="composer-score">Score ${Number(a.score).toLocaleString('fr-FR')}</span>
+      <span class="composer-score">Score ${Number(a.score).toLocaleString('fr-FR')}</span>${isAdmin?`<small class="composer-tech-id">ID réponse source : ${esc(a.id??'—')}</small>`:''}
       ${a.is_best?`<span class="composer-best">${bestAnswerLabel()}</span>`:''}
       <div data-live-answer-diff="${esc(a.id)}">${changed?reviewDiff(originalContent,submittedContent,a.content,'la réponse Me&YouToo'):''}</div>
     </div>`;
@@ -683,7 +684,7 @@
     const tone=situationTone(s,index,ch);
     return `<article class="composer-situation ${tone} ${locked?'is-locked':''} ${customized?'has-customization':''}" data-situation-card="${esc(s.id)}">
       <div class="composer-situation-head">
-        <div class="composer-situation-tags">${showMethodologyChip?`<span class="composer-lock-chip">🔒 Situation socle — texte non modifiable</span>`:`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${directTranslationEdit?`<span class="composer-customized-tag">🌐 ${esc(localeLabel(translationView.targetLocale))}</span>`:(customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':'')}</div>
+        <div class="composer-situation-tags">${isAdmin?`<span class="composer-position-chip">ID situation Studio : ${esc(s.id)}</span>${s.catalog_situation_id?`<span class="composer-position-chip">ID Catalogue : ${esc(s.catalog_situation_id)}</span>`:''}${s.legacy_payload?.surveyQuestionId?`<span class="composer-position-chip">ID question moteur : ${esc(s.legacy_payload.surveyQuestionId)}</span>`:''}${s.legacy_payload?.legacyId?`<span class="composer-position-chip">ID situation Legacy : ${esc(s.legacy_payload.legacyId)}</span>`:''}`:''}${showMethodologyChip?`<span class="composer-lock-chip">🔒 Situation socle — texte non modifiable</span>`:`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${directTranslationEdit?`<span class="composer-customized-tag">🌐 ${esc(localeLabel(translationView.targetLocale))}</span>`:(customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':'')}</div>
         <div class="composer-situation-head-actions">${isAdmin?`<button type="button" class="button button-secondary button-small" data-reuse-client-situation="${esc(s.id)}" title="Copie indépendante vers la Bibliothèque complémentaire Me&YouToo">＋ Bibliothèque Me&YouToo</button>`:''}<button class="button button-ghost button-small composer-collapse-situation" type="button" data-collapse-situation="${esc(s.id)}" aria-expanded="false">Déplier</button></div>
       </div>
       <div class="composer-situation-body" id="situation-body-${esc(s.id)}" hidden>

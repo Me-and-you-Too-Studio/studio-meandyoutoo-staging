@@ -621,7 +621,6 @@
       );
     if (
       ![
-        "draft",
         "configuration_submitted",
         "review_pending",
         "in_review",
@@ -778,6 +777,7 @@
       '<div class="campaign-project-body">' +
       '<div class="campaign-project-title">🧩 ' +
       esc(campaignName(p)) +
+      (p.legacy_source === "cloned_legacy" || p.legacy_source === "cloned_studio" ? ' <span class="campaign-topic-tag" title="Copie indépendante de campagne">🧬 Copie</span>' : '') +
       "</div>" +
       '<div class="campaign-project-meta">' +
       "Créée le " +
