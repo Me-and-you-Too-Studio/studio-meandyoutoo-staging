@@ -2476,6 +2476,10 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       if((!isWorldwideChapter()&&!codes.length)||!locales.length)return [];
       return scopedSituations().filter(si=>locales.some(locale=>genuinelyTranslated(si,cleanLoc(locale),codes)));
     };
+    // Référentiel exact issu des associations pays/langues du Legacy #453 (master du 14/09/2026).
+    // Ne pas appliquer cette matrice aux autres thématiques.
+    const legacy453CountryLocales={"AR":["en","es"],"AT":["en","de"],"BR":["en","br"],"CA":["en"],"CH":["fr","de","it"],"CL":["en","es"],"CN":["en","zh"],"DE":["en","de"],"DK":["en"],"ES":["es"],"FR":["fr"],"HK":["en","zf"],"JP":["en","ja"],"KR":["en","ko-kr"],"MX":["en","es"],"NO":["en"],"PA":["en","es"],"PT":["br"],"SE":["en"],"TW":["en","zf"],"US":["en"],"UY":["en","es"]};
+    const isLegacy453CountryTheme=()=>{const name=String(findTheme(themeSelect.value)?.title||'').toLocaleLowerCase('fr');return name.includes('collègue inclusif')&&name.includes('contenu par pays');};
     const countryLanguageHints={FR:['fr','en'],DE:['de','en'],ES:['es','en'],UY:['es'],AR:['es'],CL:['es'],MX:['es'],PA:['es'],US:['en','es'],CA:['en','fr'],BE:['fr','nl-be','nl'],CH:['fr','de','it'],BR:['br','pt'],PT:['pt'],IT:['it'],GB:['en'],NL:['nl','en'],AT:['de'],SE:['sv-se','en'],NO:['en'],DK:['en'],JP:['ja'],KR:['ko-kr'],CN:['zh','zf'],TW:['zh','zf'],HK:['zh','en'],PL:['pl'],RO:['ro'],RU:['ru'],TR:['tr'],BG:['bg']};
     const updateValidation=()=>{
       const filtered=eligible(),count=chosen().length;
@@ -2511,13 +2515,13 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       // Match client composition: country controls the allowed diagnostic languages.
       // Generic translations of a situation do not make that language available in every country.
       // With multiple selected countries, propose the union of their allowed languages.
-      const countryAllowed=isWorldwideChapter()?null:new Set(codes.flatMap(code=>countryLanguageHints[code]||[]).map(cleanLoc));
+      const countryAllowed=isWorldwideChapter()?null:new Set(codes.flatMap(code=>isLegacy453CountryTheme()?(legacy453CountryLocales[code]||[]):(countryLanguageHints[code]||[])).map(cleanLoc));
       const coverage=candidates.filter(locale=>!countryAllowed||countryAllowed.has(locale))
         .map(locale=>({locale,count:scoped.filter(si=>genuinelyTranslated(si,locale,codes)).length}))
         .filter(row=>row.count>0).sort((a,b)=>a.locale==='fr'?-1:b.locale==='fr'?1:a.locale.localeCompare(b.locale));
       const defaultLocale=coverage.some(row=>row.locale==='fr')?'fr':
         coverage.some(row=>row.locale==='en')?'en':coverage.some(row=>row.locale==='es')?'es':coverage[0]?.locale;
-      el('[data-ch-import-locales]').innerHTML=coverage.length?`<strong>Langues à reprendre</strong><p>Langues autorisées pour le ou les pays choisis, sous réserve de traductions réellement complètes (situation et réponses). La langue de lecture admin est indépendante. Une couverture partielle est indiquée.</p><div class="admin-chapter-import-options">${coverage.map(row=>`<label><input type="checkbox" data-ch-import-locale value="${esc(row.locale)}" ${row.locale===defaultLocale?'checked':''}> ${esc(row.locale.toUpperCase())} <small>(${row.count}/${scoped.length})</small></label>`).join('')}</div>`:'<p>Aucune langue avec texte et réponses exploitables pour les pays sélectionnés.</p>';
+      el('[data-ch-import-locales]').innerHTML=coverage.length?`<strong>Langues à reprendre</strong><p>Langues autorisées pour le ou les pays choisis et disposant de traductions vérifiées (situation et réponses). La langue de lecture admin est indépendante. Une couverture partielle est indiquée.</p><div class="admin-chapter-import-options">${coverage.map(row=>`<label><input type="checkbox" data-ch-import-locale value="${esc(row.locale)}" ${row.locale===defaultLocale?'checked':''}> ${esc(row.locale.toUpperCase())} <small>(${row.count}/${scoped.length})</small></label>`).join('')}</div>`:'<p>Aucune langue avec texte et réponses exploitables pour les pays sélectionnés.</p>';
       overlay.querySelectorAll('[data-ch-import-locale]').forEach(x=>x.addEventListener('change',drawSituations));
       drawSituations();
     };
