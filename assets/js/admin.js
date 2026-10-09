@@ -2400,7 +2400,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     let includeLibrarySelection=false;
     const includeComplementary=()=>includeLibrarySelection;
     const available=()=>sourceSituations().filter(si=>includeComplementary()||si.is_default!==false);
-    const selectedCountries=()=>[...overlay.querySelectorAll('[data-ch-import-country]:checked')].map(x=>x.value);
+    const isWorldwideChapter=()=>{const ch=current();if(!ch)return false;if(String(ch.country_scope||'').toLowerCase()==='worldwide')return true;const rows=sourceSituations();const national=[...(ch.country_codes||[]),...rows.flatMap(si=>si.country_codes||[])].filter(code=>String(code).toUpperCase()!=='WORLDWIDE');return national.length===0;};
+    const selectedCountries=()=>isWorldwideChapter()?[]:[...overlay.querySelectorAll('[data-ch-import-country]:checked')].map(x=>x.value);
     const selectedLocales=()=>[...overlay.querySelectorAll('[data-ch-import-locale]:checked')].map(x=>x.value);
     const chosen=()=>[...overlay.querySelectorAll('[data-ch-import-si]:checked')].map(x=>Number(x.value));
     const cleanLoc=v=>String(v||'').trim().toLowerCase().replaceAll('_','-');
@@ -2463,6 +2464,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     };
     const scopedSituations=()=>{
       const codes=selectedCountries();
+      if(isWorldwideChapter())return available();
       if(!codes.length)return [];
       return available().filter(si=>{
         const scope=(si.country_codes||[]).map(c=>String(c).toUpperCase());
@@ -2471,7 +2473,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     };
     const eligible=()=>{
       const codes=selectedCountries(),locales=selectedLocales();
-      if(!codes.length||!locales.length)return [];
+      if((!isWorldwideChapter()&&!codes.length)||!locales.length)return [];
       return scopedSituations().filter(si=>locales.some(locale=>genuinelyTranslated(si,cleanLoc(locale),codes)));
     };
     const countryLanguageHints={FR:['fr','en'],DE:['de','en'],ES:['es','en'],UY:['es'],AR:['es'],CL:['es'],MX:['es'],PA:['es'],US:['en','es'],CA:['en','fr'],BE:['fr','nl-be','nl'],CH:['fr','de','it'],BR:['br','pt'],PT:['pt'],IT:['it'],GB:['en'],NL:['nl','en'],AT:['de'],SE:['sv-se','en'],NO:['en'],DK:['en'],JP:['ja'],KR:['ko-kr'],CN:['zh','zf'],TW:['zh','zf'],HK:['zh','en'],PL:['pl'],RO:['ro'],RU:['ru'],TR:['tr'],BG:['bg']};
@@ -2481,13 +2483,13 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       const partial=Boolean(filtered.length&&count<filtered.length);
       const w=el('[data-ch-import-warning]');
       w.innerHTML=partial?`<div class="admin-chapter-import-warning"><strong>⚠ Copie partielle : ${count} situation${count>1?'s':''} sur ${filtered.length} disponibles</strong><p>Les profils et leurs seuils seront copiés sans recalcul. Vérifiez et ajustez manuellement les seuils si nécessaire.</p><label><input type="checkbox" data-ch-import-ack> J’ai pris connaissance de ce point de vigilance.</label></div>`:'';
-      const refresh=()=>{el('[data-ch-import-submit]').disabled=!current()||!count||!selectedCountries().length||!selectedLocales().length||(partial&&!el('[data-ch-import-ack]')?.checked);};
+      const refresh=()=>{el('[data-ch-import-submit]').disabled=!current()||!count||(!isWorldwideChapter()&&!selectedCountries().length)||!selectedLocales().length||(partial&&!el('[data-ch-import-ack]')?.checked);};
       el('[data-ch-import-ack]')?.addEventListener('change',refresh);
       refresh();
     };
     const drawSituations=()=>{
       const ch=current(),all=available(),list=eligible(),countries=selectedCountries(),langs=selectedLocales();
-      el('[data-ch-import-situations]').innerHTML=!ch?'':!countries.length||!langs.length?'<div class="admin-chapter-import-group"><p>Choisissez d’abord un périmètre culturel et au moins une langue pour afficher les situations.</p></div>':`<div class="admin-chapter-import-group"><div class="admin-chapter-import-group-head"><strong>${list.length} situation${list.length>1?'s':''} à choisir</strong><span class="admin-info-dot" tabindex="0" data-info="Ce compteur correspond uniquement aux situations disponibles pour les pays, langues et catégories sélectionnés. Les autres variantes du chapitre source ne sont pas comptées.">i</span><label><input type="checkbox" data-ch-import-all> Tout sélectionner</label></div><label class="admin-chapter-import-include-library"><input type="checkbox" data-ch-import-include-library ${includeComplementary()?'checked':''}> Inclure la bibliothèque complémentaire <span class="admin-info-dot" tabindex="0" data-info="Par défaut, seules les situations de la Base du thème sont proposées. Cochez cette option pour rechercher aussi dans la bibliothèque complémentaire du chapitre source. Aucune situation source n’est modifiée.">i</span></label><p class="admin-chapter-import-counts">${list.filter(si=>si.is_default!==false).length} dans la Base · ${includeComplementary()?list.filter(si=>si.is_default===false).length:0} dans la Bibliothèque complémentaire${!includeComplementary()?' (masquée)':''} · ${esc(countries.join(', '))} · ${esc(langs.map(l=>l.toUpperCase()).join(', '))}</p><div class="admin-chapter-import-situation-list">${list.length?list.map(si=>`<label><input type="checkbox" data-ch-import-si value="${si.id}"><span><span class="admin-chapter-import-origin ${si.is_default===false?'is-library':'is-base'}">${si.is_default===false?'Bibliothèque complémentaire':'Base du thème'}</span> ${(()=>{const preview=realText(si);return `${esc(preview.text.slice(0,350))}${preview.fallback?` <small class="admin-import-preview-fallback">(texte de référence ${esc(preview.locale.toUpperCase())}, traduction sélectionnée indisponible)</small>`:""}`;})()}</span></label>`).join(''):'<p>Aucune situation disponible pour ce choix de pays et langues.</p>'}</div><small>Aperçu dans la langue sélectionnée si sa traduction existe ; sinon, texte de référence FR, EN ou ES signalé. Chaque copie reprend ses réponses, scores et tags.</small></div>`;
+      el('[data-ch-import-situations]').innerHTML=!ch?'':(!isWorldwideChapter()&&!countries.length)||!langs.length?`<div class="admin-chapter-import-group"><p>Choisissez les langues disponibles${isWorldwideChapter()?'':' et un périmètre culturel'} pour afficher les situations.</p></div>`:`<div class="admin-chapter-import-group"><div class="admin-chapter-import-group-head"><strong>${list.length} situation${list.length>1?'s':''} à choisir</strong><span class="admin-info-dot" tabindex="0" data-info="Ce compteur correspond uniquement aux situations disponibles pour les pays, langues et catégories sélectionnés. Les autres variantes du chapitre source ne sont pas comptées.">i</span><label><input type="checkbox" data-ch-import-all> Tout sélectionner</label></div><label class="admin-chapter-import-include-library"><input type="checkbox" data-ch-import-include-library ${includeComplementary()?'checked':''}> Inclure la bibliothèque complémentaire <span class="admin-info-dot" tabindex="0" data-info="Par défaut, seules les situations de la Base du thème sont proposées. Cochez cette option pour rechercher aussi dans la bibliothèque complémentaire du chapitre source. Aucune situation source n’est modifiée.">i</span></label><p class="admin-chapter-import-counts">${list.filter(si=>si.is_default!==false).length} dans la Base · ${includeComplementary()?list.filter(si=>si.is_default===false).length:0} dans la Bibliothèque complémentaire${!includeComplementary()?' (masquée)':''} · ${isWorldwideChapter()?'WORLDWIDE':esc(countries.join(', '))} · ${esc(langs.map(l=>l.toUpperCase()).join(', '))}</p><div class="admin-chapter-import-situation-list">${list.length?list.map(si=>`<label><input type="checkbox" data-ch-import-si value="${si.id}"><span><span class="admin-chapter-import-origin ${si.is_default===false?'is-library':'is-base'}">${si.is_default===false?'Bibliothèque complémentaire':'Base du thème'}</span> ${(()=>{const preview=realText(si);return `${esc(preview.text.slice(0,350))}${preview.fallback?` <small class="admin-import-preview-fallback">(texte de référence ${esc(preview.locale.toUpperCase())}, traduction sélectionnée indisponible)</small>`:""}`;})()}</span></label>`).join(''):'<p>Aucune situation disponible pour ce choix de pays et langues.</p>'}</div><small>Aperçu dans la langue sélectionnée si sa traduction existe ; sinon, texte de référence FR, EN ou ES signalé. Chaque copie reprend ses réponses, scores et tags.</small></div>`;
       overlay.querySelector('[data-ch-import-include-library]')?.addEventListener('change',e=>{
         // The checked option is reconstructed when redrawing the results.
         const checked=e.target.checked;
@@ -2517,8 +2519,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     const draw=()=>{
       const ch=current(),list=sourceSituations();
       const codes=[...new Set([...(ch?.country_codes||[]),...list.flatMap(si=>si.country_codes||[])].map(x=>String(x).toUpperCase()).filter(Boolean))];
-      const countries=codes.length?codes:['FR'];
-      el('[data-ch-import-scopes]').innerHTML=!ch?'':`<div class="admin-chapter-import-group"><strong>Périmètres culturels</strong><p>Choisissez les pays avant de sélectionner les situations.</p><div class="admin-chapter-import-options">${countries.map(c=>`<label><input type="checkbox" data-ch-import-country value="${esc(c)}" ${c===(countries.includes('FR')?'FR':countries[0])?'checked':''}> ${esc(libraryCountryLabel(c))}</label>`).join('')}</div><div data-ch-import-locales></div></div>`;
+      const countries=codes.filter(c=>c!=='WORLDWIDE');
+      const global=isWorldwideChapter();
+      el('[data-ch-import-scopes]').innerHTML=!ch?'':`<div class="admin-chapter-import-group">${global?'<p><strong>Contenu mondial (WORLDWIDE)</strong> <span class="admin-info-dot" tabindex="0" data-info="Ce chapitre est valable dans tous les pays. Les langues sont des traductions, pas des variantes culturelles.">i</span></p>':'<strong>Périmètres culturels</strong><p>Sélectionnez les pays réellement associés aux contenus, puis les langues. Un contenu WORLDWIDE reste applicable partout.</p><div class="admin-chapter-import-options">'+countries.map(c=>`<label><input type="checkbox" data-ch-import-country value="${esc(c)}" ${c===(countries.includes('FR')?'FR':countries[0])?'checked':''}> ${esc(libraryCountryLabel(c))}</label>`).join('')+'</div>'}<div data-ch-import-locales></div></div>`;
       overlay.querySelectorAll('[data-ch-import-country]').forEach(x=>x.addEventListener('change',drawLocales));
       drawLocales();
     };
@@ -2528,7 +2531,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
     el('[data-ch-import-submit]').onclick=async()=>{
       const list=sourceSituations(),filtered=eligible(),ids=chosen(),partial=ids.length<filtered.length,sourceSubset=ids.length<list.length,button=el('[data-ch-import-submit]');
-      if(!ids.length||!selectedCountries().length||!selectedLocales().length||partial&&!el('[data-ch-import-ack]')?.checked)return;
+      if(!ids.length||(!isWorldwideChapter()&&!selectedCountries().length)||!selectedLocales().length||partial&&!el('[data-ch-import-ack]')?.checked)return;
       button.disabled=true;el('[data-ch-import-error]').textContent='';
       try{
         const result=await StudioAPI.request(`/api/admin/catalog/themes/${encodeURIComponent(targetThemeId)}/copy-chapter`,{method:'POST',body:JSON.stringify({sourceChapterId:Number(chapterSelect.value),situationIds:ids,countryCodes:selectedCountries(),locales:selectedLocales(),partialScoringAcknowledged:sourceSubset?(!partial||Boolean(el('[data-ch-import-ack]')?.checked)):false})});
