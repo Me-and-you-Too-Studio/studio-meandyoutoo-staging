@@ -2292,7 +2292,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function quickTagEditorHtml(si,readonly=false){
     const tags=situationTags(si);
     if(readonly)return '';
-    return `<div class="admin-quick-tags" data-quick-tags="${si.id}" data-current-tags="${esc(JSON.stringify(tags))}"><div class="admin-quick-tags-label"><strong>Tags</strong><span class="admin-info-dot" tabindex="0" data-info="Ouvrez la liste pour voir tous les tags, ou tapez quelques lettres pour filtrer. Cochez plusieurs tags successivement. Les pays sont déjà indiqués par le périmètre culturel et ne sont pas des tags.">i</span></div><div class="admin-quick-tags-controls"><div class="admin-tag-multiselect"><input type="search" data-quick-tag-search autocomplete="off" placeholder="Choisir des tags ou rechercher…" aria-label="Chercher des tags existants"><div class="admin-tag-suggestions" data-quick-tag-suggestions hidden></div></div><input type="text" data-quick-tag-new maxlength="60" placeholder="+ Créer un tag… (Entrée)" title="Appuyez sur Entrée pour créer le tag"></div></div>`;
+    return `<div class="admin-quick-tags" data-quick-tags="${si.id}" data-current-tags="${esc(JSON.stringify(tags))}"><div class="admin-quick-tags-label"><strong>Tags</strong><span class="admin-info-dot" tabindex="0" data-info="Cliquez pour voir tous les tags, recherchez ou créez un tag depuis ce même champ. Sélection multiple et enregistrement automatique. Les périmètres pays sont gérés séparément.">i</span></div><div class="admin-quick-tags-controls"><div class="admin-tag-multiselect"><input type="search" data-quick-tag-search autocomplete="off" maxlength="60" placeholder="Rechercher ou ajouter un tag…" aria-label="Rechercher ou créer un tag"><div class="admin-tag-suggestions" data-quick-tag-suggestions hidden></div></div></div></div>`;
   }
   function globalCatalogSituations(){
     const rows=[];
@@ -2964,7 +2964,7 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
     $$('[data-quick-tags]').forEach(box=>{
       box.onclick=e=>e.stopPropagation();
       box.onkeydown=e=>e.stopPropagation();
-      const search=box.querySelector('[data-quick-tag-search]'),suggestions=box.querySelector('[data-quick-tag-suggestions]'),input=box.querySelector('[data-quick-tag-new]');
+      const search=box.querySelector('[data-quick-tag-search]'),suggestions=box.querySelector('[data-quick-tag-suggestions]');
       const row=box.closest('[data-situation-details]'),list=row?.querySelector('[data-situation-tag-list]');
       const normalize=tagNormalized;
       const current=()=>{try{return JSON.parse(box.dataset.currentTags||'[]');}catch{return [];}};
@@ -2977,22 +2977,26 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
       let busy=false,flashTimer;
       const save=async tags=>{
         if(busy)return;
-        busy=true;search.disabled=true;input.disabled=true;status.textContent='Enregistrement…';status.classList.remove('is-error');
+        busy=true;status.textContent='Enregistrement…';status.classList.remove('is-error');
         try{
           const result=await StudioAPI.request('/api/admin/catalog/situations/'+box.dataset.quickTags,{method:'PATCH',body:JSON.stringify({tags})});
           const saved=Array.isArray(result?.situation?.admin_tags)?result.situation.admin_tags:tags;
           box.dataset.currentTags=JSON.stringify(saved);
           const si=findSituation(box.dataset.quickTags);if(si)si.admin_tags=[...saved];
-          sync();input.value='';status.textContent='Enregistré ✓';
+          sync();status.textContent='Enregistré ✓';
           clearTimeout(flashTimer);flashTimer=setTimeout(()=>{if(!busy)status.textContent='';},2200);
         }catch(error){status.textContent=error.message||'Erreur lors de l’enregistrement';status.classList.add('is-error');}
-        finally{busy=false;search.disabled=false;input.disabled=false;renderSuggestions();}
+        finally{busy=false;renderSuggestions();}
       };
       const renderSuggestions=()=>{
         const term=normalize(search.value),used=new Set(current().map(normalize));
         if(suggestions.hidden && document.activeElement!==search)return;
-        const matches=catalogTagBase().filter(t=>!term||normalize(t).includes(term));
-        suggestions.innerHTML=matches.length?matches.map(t=>`<label class="admin-tag-suggestion"><input type="checkbox" data-add-tag="${esc(t)}" ${used.has(normalize(t))?'checked':''} ${busy?'disabled':''}> <span>${esc(t)}</span></label>`).join(''):'<span class="admin-tag-no-results">Aucun tag existant trouvé.</span>';
+        const all=catalogTagBase();
+        const matches=all.filter(t=>!term||normalize(t).includes(term));
+        const exact=all.some(t=>normalize(t)===term)||used.has(term);
+        const canCreate=Boolean(term)&&!exact&&!isRedundantCatalogTag(search.value);
+        const rows=matches.length?matches.map(t=>`<label class="admin-tag-suggestion"><input type="checkbox" data-add-tag="${esc(t)}" ${used.has(normalize(t))?'checked':''} ${busy?'disabled':''}><span>${esc(t)}</span></label>`).join(''):'<span class="admin-tag-no-results">Aucun tag existant trouvé.</span>';
+        suggestions.innerHTML=rows+(canCreate?`<button type="button" class="admin-tag-create-option" data-create-quick-tag="${esc(search.value.trim())}" ${busy?'disabled':''}><span aria-hidden="true">＋</span> Créer « ${esc(search.value.trim())} »</button>`:'');
         suggestions.hidden=false;
         row?.classList.add('is-tag-menu-open');
       };
@@ -3014,10 +3018,21 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
         if(isRedundantCatalogTag(value)){status.textContent='Ce mot-clé correspond au périmètre ou à un tag à nettoyer.';status.classList.add('is-error');return;}
         const tags=current(),existing=catalogTagBase().find(t=>normalize(t)===normalize(value));
         const tag=existing||value;
-        if(tags.some(t=>normalize(t)===normalize(tag))){input.value='';return;}
-        save([...tags,tag]);
+        if(tags.some(t=>normalize(t)===normalize(tag)))return;
+        search.value='';save([...tags,tag]);
       };
-      input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addTag(input.value);}};
+      suggestions.onclick=e=>{
+        const create=e.target.closest('[data-create-quick-tag]');if(!create)return;
+        e.preventDefault();e.stopPropagation();addTag(create.dataset.createQuickTag);
+      };
+      search.addEventListener('keydown',e=>{
+        if(e.key==='Enter'&&search.value.trim()){
+          e.preventDefault();
+          const existing=catalogTagBase().find(t=>normalize(t)===normalize(search.value));
+          if(existing){if(!current().some(t=>normalize(t)===normalize(existing)))addTag(existing);}
+          else addTag(search.value);
+        }
+      });
       list?.addEventListener('click',e=>{
         const button=e.target.closest('[data-remove-quick-tag]');if(!button)return;
         e.preventDefault();e.stopPropagation();

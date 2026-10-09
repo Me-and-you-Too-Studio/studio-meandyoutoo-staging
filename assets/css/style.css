@@ -15265,3 +15265,14 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .admin-library-situation-row.is-tag-menu-open .admin-quick-tags,
 .admin-library-situation-row.is-tag-menu-open .admin-quick-tags-controls{overflow:visible!important}
 .admin-tag-suggestions:not([hidden]){z-index:1010!important;display:block!important;min-width:245px;max-height:280px;overflow-y:auto}
+
+/* Catalogue : recherche, sélection et création dans un seul menu compact */
+.admin-quick-tags-controls{display:flex;align-items:flex-start;justify-content:flex-start!important}
+.admin-tag-multiselect{flex:0 1 390px;max-width:390px;width:100%;min-width:240px}
+.admin-tag-suggestions:not([hidden]){min-width:0!important;width:100%;box-sizing:border-box;padding:7px!important;border-radius:12px!important}
+.admin-tag-suggestion{justify-content:flex-start!important;gap:8px!important;padding:8px 12px!important;line-height:1.4}
+.admin-tag-suggestion input[type=checkbox]{position:static!important;display:inline-block!important;flex:0 0 16px!important;width:16px!important;height:16px!important;margin:0!important;vertical-align:middle}
+.admin-tag-suggestion span{flex:0 1 auto!important;margin:0!important;text-align:left!important}
+.admin-tag-create-option{display:flex;align-items:center;gap:9px;width:100%;margin-top:5px;padding:11px 12px;border:0;border-top:1px solid #dce8ee;background:#f2fafb;border-radius:0 0 8px 8px;color:#086b78;text-align:left;font-size:.86rem;font-weight:700;cursor:pointer}
+.admin-tag-create-option:hover{background:#e2f2f4}
+@media(max-width:760px){.admin-tag-multiselect{max-width:100%;flex-basis:100%;min-width:0}}
