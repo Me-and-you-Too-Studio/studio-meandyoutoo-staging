@@ -15255,3 +15255,13 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 /* Liste complète des tags au focus, filtrage immédiat et sélection multiple */
 .admin-tag-suggestions:not([hidden]){max-height:280px;overscroll-behavior:contain}
 .admin-tag-suggestion:has(input:checked){background:#eaf6f4}
+
+/* Tags Catalogue : les listes flottantes ne doivent jamais être masquées par les cartes suivantes. */
+.admin-library-chapters-detail>.admin-library-chapter-accordion.is-expanded{overflow:visible!important}
+.admin-library-filtered-list{isolation:auto;position:relative}
+.admin-library-situation-row{position:relative;overflow:visible!important}
+.admin-library-situation-row.is-tag-menu-open{z-index:100!important}
+.admin-library-situation-row.is-tag-menu-open>summary{overflow:visible!important}
+.admin-library-situation-row.is-tag-menu-open .admin-quick-tags,
+.admin-library-situation-row.is-tag-menu-open .admin-quick-tags-controls{overflow:visible!important}
+.admin-tag-suggestions:not([hidden]){z-index:1010!important;display:block!important;min-width:245px;max-height:280px;overflow-y:auto}

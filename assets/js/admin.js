@@ -2959,7 +2959,7 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
     });
     document.addEventListener('pointerdown',e=>{
       if(e.target.closest('[data-quick-tags]'))return;
-      document.querySelectorAll('[data-quick-tag-suggestions]:not([hidden])').forEach(el=>el.hidden=true);
+      document.querySelectorAll('[data-quick-tag-suggestions]:not([hidden])').forEach(el=>{el.hidden=true;el.closest('[data-situation-details]')?.classList.remove('is-tag-menu-open');});
     },{once:false});
     $$('[data-quick-tags]').forEach(box=>{
       box.onclick=e=>e.stopPropagation();
@@ -2994,11 +2994,12 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
         const matches=catalogTagBase().filter(t=>!term||normalize(t).includes(term));
         suggestions.innerHTML=matches.length?matches.map(t=>`<label class="admin-tag-suggestion"><input type="checkbox" data-add-tag="${esc(t)}" ${used.has(normalize(t))?'checked':''} ${busy?'disabled':''}> <span>${esc(t)}</span></label>`).join(''):'<span class="admin-tag-no-results">Aucun tag existant trouvé.</span>';
         suggestions.hidden=false;
+        row?.classList.add('is-tag-menu-open');
       };
       search.oninput=renderSuggestions;
       search.onfocus=renderSuggestions;
       search.onclick=renderSuggestions;
-      search.addEventListener('keydown',e=>{if(e.key==='Escape'){suggestions.hidden=true;search.blur();}});
+      search.addEventListener('keydown',e=>{if(e.key==='Escape'){suggestions.hidden=true;row?.classList.remove('is-tag-menu-open');search.blur();}});
       // La liste est générée seulement à l'ouverture : pas de recalcul pour chaque carte.
 
       suggestions.onchange=e=>{
