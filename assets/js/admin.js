@@ -2292,7 +2292,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function quickTagEditorHtml(si,readonly=false){
     const tags=situationTags(si);
     if(readonly)return '';
-    return `<div class="admin-quick-tags" data-quick-tags="${si.id}" data-current-tags="${esc(JSON.stringify(tags))}"><div class="admin-quick-tags-label"><strong>Tags</strong><span class="admin-info-dot" tabindex="0" data-info="Recherchez un tag en tapant trois lettres, puis cochez plusieurs suggestions. Les pays sont déjà indiqués par le périmètre culturel et ne sont pas des tags.">i</span></div><div class="admin-quick-tags-controls"><div class="admin-tag-multiselect"><input type="search" data-quick-tag-search autocomplete="off" placeholder="Rechercher des tags (3 lettres)…" aria-label="Chercher des tags existants"><div class="admin-tag-suggestions" data-quick-tag-suggestions hidden></div></div><input type="text" data-quick-tag-new maxlength="60" placeholder="+ Créer un tag… (Entrée)" title="Appuyez sur Entrée pour créer le tag"></div></div>`;
+    return `<div class="admin-quick-tags" data-quick-tags="${si.id}" data-current-tags="${esc(JSON.stringify(tags))}"><div class="admin-quick-tags-label"><strong>Tags</strong><span class="admin-info-dot" tabindex="0" data-info="Ouvrez la liste pour voir tous les tags, ou tapez quelques lettres pour filtrer. Cochez plusieurs tags successivement. Les pays sont déjà indiqués par le périmètre culturel et ne sont pas des tags.">i</span></div><div class="admin-quick-tags-controls"><div class="admin-tag-multiselect"><input type="search" data-quick-tag-search autocomplete="off" placeholder="Choisir des tags ou rechercher…" aria-label="Chercher des tags existants"><div class="admin-tag-suggestions" data-quick-tag-suggestions hidden></div></div><input type="text" data-quick-tag-new maxlength="60" placeholder="+ Créer un tag… (Entrée)" title="Appuyez sur Entrée pour créer le tag"></div></div>`;
   }
   function globalCatalogSituations(){
     const rows=[];
@@ -2957,6 +2957,10 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
         await refreshLibrary();renderLibraryAdmin();
       }catch(error){showError(error.message);}finally{button.disabled=false;}
     });
+    document.addEventListener('pointerdown',e=>{
+      if(e.target.closest('[data-quick-tags]'))return;
+      document.querySelectorAll('[data-quick-tag-suggestions]:not([hidden])').forEach(el=>el.hidden=true);
+    },{once:false});
     $$('[data-quick-tags]').forEach(box=>{
       box.onclick=e=>e.stopPropagation();
       box.onkeydown=e=>e.stopPropagation();
@@ -2986,13 +2990,17 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
       };
       const renderSuggestions=()=>{
         const term=normalize(search.value),used=new Set(current().map(normalize));
-        if(term.length<3){suggestions.hidden=true;suggestions.innerHTML='';return;}
-        const matches=catalogTagBase().filter(t=>normalize(t).includes(term)).slice(0,35);
+        if(suggestions.hidden && document.activeElement!==search)return;
+        const matches=catalogTagBase().filter(t=>!term||normalize(t).includes(term));
         suggestions.innerHTML=matches.length?matches.map(t=>`<label class="admin-tag-suggestion"><input type="checkbox" data-add-tag="${esc(t)}" ${used.has(normalize(t))?'checked':''} ${busy?'disabled':''}> <span>${esc(t)}</span></label>`).join(''):'<span class="admin-tag-no-results">Aucun tag existant trouvé.</span>';
         suggestions.hidden=false;
       };
       search.oninput=renderSuggestions;
       search.onfocus=renderSuggestions;
+      search.onclick=renderSuggestions;
+      search.addEventListener('keydown',e=>{if(e.key==='Escape'){suggestions.hidden=true;search.blur();}});
+      // La liste est générée seulement à l'ouverture : pas de recalcul pour chaque carte.
+
       suggestions.onchange=e=>{
         const check=e.target.closest('[data-add-tag]');if(!check||busy)return;
         const tag=check.dataset.addTag;

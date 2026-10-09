@@ -15251,3 +15251,7 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .admin-quick-tags{align-items:flex-start;flex-direction:column}
 .admin-quick-tags-controls{width:100%;min-width:0;flex-wrap:wrap}
 @media(max-width:760px){.admin-tag-multiselect{max-width:none;flex-basis:100%}}
+
+/* Liste complète des tags au focus, filtrage immédiat et sélection multiple */
+.admin-tag-suggestions:not([hidden]){max-height:280px;overscroll-behavior:contain}
+.admin-tag-suggestion:has(input:checked){background:#eaf6f4}
