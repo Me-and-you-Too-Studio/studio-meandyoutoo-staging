@@ -2277,19 +2277,22 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     if(filter==='deleted')return deletedSituations(chapter);
     return currentSituations(chapter);
   }
+  const redundantCatalogTags=new Set(['question','canada','southam','france','allemagne','argentine','autriche','bresil','brésil','chili','chine','coree du sud','corée du sud','danemark','espagne','etats-unis','états-unis','hong kong','hong-kong','japon','mexique','norvege','norvège','panama','portugal','suede','suède','suisse','taiwan','taïwan','uruguay','usa','uk','jp','fr','br','de','en','es','ja']);
+  function tagNormalized(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('fr');}
+  function isRedundantCatalogTag(v){return redundantCatalogTags.has(tagNormalized(v));}
   function situationTags(si){return [...new Set((Array.isArray(si?.admin_tags)?si.admin_tags:[]).map(v=>String(v||'').trim()).filter(Boolean))];}
   function catalogTagBase(){
     const map=new Map();
     for(const theme of state.catalogThemes||[])for(const chapter of theme.chapters||[])for(const si of canonicalSituations(chapter)){
-      for(const tag of situationTags(si)){const key=tag.toLocaleLowerCase('fr');if(!map.has(key))map.set(key,tag);}
+      for(const tag of situationTags(si)){const key=tagNormalized(tag);if(!isRedundantCatalogTag(tag)&&!map.has(key))map.set(key,tag);}
     }
     return [...map.values()].sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
   }
-  function situationTagHtml(si,editable=false){const tags=situationTags(si);return `<div class="admin-situation-tags" data-situation-tag-list>${tags.map(tag=>editable?`<span>${esc(tag)} <button type="button" data-remove-quick-tag="${esc(tag)}" aria-label="Retirer le tag ${esc(tag)}" title="Retirer de cette situation">×</button></span>`:`<span>${esc(tag)}</span>`).join('')}</div>`;}
+  function situationTagHtml(si,editable=false){const tags=situationTags(si).filter(t=>!isRedundantCatalogTag(t));return `<div class="admin-situation-tags" data-situation-tag-list>${tags.map(tag=>editable?`<span>${esc(tag)} <button type="button" data-remove-quick-tag="${esc(tag)}" aria-label="Retirer le tag ${esc(tag)}" title="Retirer de cette situation">×</button></span>`:`<span>${esc(tag)}</span>`).join('')}</div>`;}
   function quickTagEditorHtml(si,readonly=false){
     const tags=situationTags(si);
     if(readonly)return '';
-    return `<div class="admin-quick-tags" data-quick-tags="${si.id}" data-current-tags="${esc(JSON.stringify(tags))}"><div class="admin-quick-tags-label"><strong>Tags</strong><span class="admin-info-dot" tabindex="0" data-info="Choisissez un tag déjà utilisé ailleurs pour garder un vocabulaire cohérent, ou créez-en un nouveau si nécessaire. Les tags servent à rechercher et réutiliser les situations dans le catalogue.">i</span></div><div class="admin-quick-tags-controls"><select data-quick-tag-existing><option value="">+ Tag existant…</option></select><input type="text" data-quick-tag-new maxlength="60" placeholder="+ Créer un tag… (Entrée pour valider)" title="Appuyez sur Entrée pour créer le tag"></div></div>`;
+    return `<div class="admin-quick-tags" data-quick-tags="${si.id}" data-current-tags="${esc(JSON.stringify(tags))}"><div class="admin-quick-tags-label"><strong>Tags</strong><span class="admin-info-dot" tabindex="0" data-info="Recherchez un tag en tapant trois lettres, puis cochez plusieurs suggestions. Les pays sont déjà indiqués par le périmètre culturel et ne sont pas des tags.">i</span></div><div class="admin-quick-tags-controls"><div class="admin-tag-multiselect"><input type="search" data-quick-tag-search autocomplete="off" placeholder="Rechercher des tags (3 lettres)…" aria-label="Chercher des tags existants"><div class="admin-tag-suggestions" data-quick-tag-suggestions hidden></div></div><input type="text" data-quick-tag-new maxlength="60" placeholder="+ Créer un tag… (Entrée)" title="Appuyez sur Entrée pour créer le tag"></div></div>`;
   }
   function globalCatalogSituations(){
     const rows=[];
@@ -2381,7 +2384,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       root.innerHTML=`${catalogTaggingPanel()}<div class="admin-library-home-head"><div><h3>Thématiques</h3><p>Entrez dans une thématique pour administrer ses chapitres, situations, réponses, scoring et profils.</p></div><span>${state.catalogThemes.length} thématique${state.catalogThemes.length>1?'s':''}</span></div><div class="admin-library-theme-grid">${state.catalogThemes.map(t=>`<article class="admin-library-theme-card ${t.active?'':'is-inactive'}" data-open-library-theme="${t.id}" tabindex="0" role="button" aria-label="Ouvrir ${esc(t.title)}"><div class="admin-library-theme-card-top"><span class="admin-library-theme-icon">🌼</span><span class="status-pill ${t.active?'is-open':'is-muted'}">${t.active?'Active':'Inactive'}</span></div><h3>${esc(t.title)}</h3><p>${esc(t.description||'Aucune description')}</p>${libraryThemeScopeBadges(t)}<div class="admin-library-theme-stats"><span><strong>${(t.chapters||[]).length}</strong> chapitre${(t.chapters||[]).length>1?'s':''}</span><span><strong>${themeSituationCount(t)}</strong> situation${themeSituationCount(t)>1?'s':''}</span>${archivedSituationCount(t)?`<span><strong>${archivedSituationCount(t)}</strong> archivée${archivedSituationCount(t)>1?'s':''}</span>`:''}${deletedSituationCount(t)?`<span><strong>${deletedSituationCount(t)}</strong> supprimée${deletedSituationCount(t)>1?'s':''}</span>`:''}</div><div class="admin-library-theme-enter">Entrer dans la thématique <span>→</span></div></article>`).join('')}</div>`;
       bindLibraryActions();return;
     }
-    root.innerHTML=`<div class="admin-library-detail-head"><button class="button button-ghost admin-library-back" type="button" data-library-back>← Toutes les thématiques</button><div class="admin-library-detail-title"><div><div class="admin-library-theme-title"><h3>${esc(theme.title)}</h3>${libraryThemeScopeBadges(theme)}<span class="status-pill ${theme.active?'is-open':'is-muted'}">${theme.active?'Active':'Inactive'}</span></div><p>${esc(theme.description||'Aucune description')}</p><div class="admin-library-detail-stats"><span>${(theme.chapters||[]).length} chapitre${(theme.chapters||[]).length>1?'s':''}</span><span>${themeSituationCount(theme)} situations</span>${archivedSituationCount(theme)?`<span>${archivedSituationCount(theme)} archivée${archivedSituationCount(theme)>1?'s':''}</span>`:''}${deletedSituationCount(theme)?`<span>${deletedSituationCount(theme)} supprimée${deletedSituationCount(theme)>1?'s':''}</span>`:''}</div></div></div></div><div class="admin-catalog-toolbar">${editorialTabs()}<div class="admin-library-actions"><button class="button button-secondary button-small" data-edit-theme="${theme.id}">Modifier la thématique</button><button class="button button-secondary button-small" data-archive-theme="${theme.id}">${theme.active?'Désactiver':'Activer'}</button><button class="button button-danger-soft button-small" data-delete-theme="${theme.id}">Supprimer</button><button class="button button-secondary button-small" data-import-chapter="${theme.id}">⧉ Importer un chapitre</button><button class="button button-primary button-small" data-add-chapter="${theme.id}">+ Ajouter un chapitre</button></div></div>${state.libraryEditorialTab==='content'?themeCoveragePanel(theme):''}<div class="admin-catalog-editor-body">${state.libraryEditorialTab==='intro'?introductionEditor(theme,editorialData(theme)):state.libraryEditorialTab==='dsd'?dsdEditor(theme,editorialData(theme)):`${libraryContentZoneTabs(theme)}<div class="admin-library-chapters admin-library-chapters-detail">${(theme.chapters||[]).length?(theme.chapters||[]).map(ch=>chapterAccordion(theme,ch)).join(''):'<div class="admin-library-empty"><strong>Aucun chapitre</strong><p>Ajoutez le premier chapitre de cette thématique.</p></div>'}</div>`}</div>`;
+    root.innerHTML=`<div class="admin-library-detail-head"><button class="button button-ghost admin-library-back" type="button" data-library-back>← Toutes les thématiques</button><div class="admin-library-detail-title"><div><div class="admin-library-theme-title"><h3>${esc(theme.title)}</h3>${libraryThemeScopeBadges(theme)}<span class="status-pill ${theme.active?'is-open':'is-muted'}">${theme.active?'Active':'Inactive'}</span></div><p>${esc(theme.description||'Aucune description')}</p><div class="admin-library-detail-stats"><span>${(theme.chapters||[]).length} chapitre${(theme.chapters||[]).length>1?'s':''}</span><span>${themeSituationCount(theme)} situations</span>${archivedSituationCount(theme)?`<span>${archivedSituationCount(theme)} archivée${archivedSituationCount(theme)>1?'s':''}</span>`:''}${deletedSituationCount(theme)?`<span>${deletedSituationCount(theme)} supprimée${deletedSituationCount(theme)>1?'s':''}</span>`:''}</div></div></div></div><div class="admin-catalog-toolbar">${editorialTabs()}<div class="admin-library-actions"><button class="button button-secondary button-small" data-clean-catalog-tags title="Prévisualiser la suppression des tags génériques et des tags pays, sans modifier les périmètres">Nettoyer tags génériques / pays</button><button class="button button-secondary button-small" data-edit-theme="${theme.id}">Modifier la thématique</button><button class="button button-secondary button-small" data-archive-theme="${theme.id}">${theme.active?'Désactiver':'Activer'}</button><button class="button button-danger-soft button-small" data-delete-theme="${theme.id}">Supprimer</button><button class="button button-secondary button-small" data-import-chapter="${theme.id}">⧉ Importer un chapitre</button><button class="button button-primary button-small" data-add-chapter="${theme.id}">+ Ajouter un chapitre</button></div></div>${state.libraryEditorialTab==='content'?themeCoveragePanel(theme):''}<div class="admin-catalog-editor-body">${state.libraryEditorialTab==='intro'?introductionEditor(theme,editorialData(theme)):state.libraryEditorialTab==='dsd'?dsdEditor(theme,editorialData(theme)):`${libraryContentZoneTabs(theme)}<div class="admin-library-chapters admin-library-chapters-detail">${(theme.chapters||[]).length?(theme.chapters||[]).map(ch=>chapterAccordion(theme,ch)).join(''):'<div class="admin-library-empty"><strong>Aucun chapitre</strong><p>Ajoutez le premier chapitre de cette thématique.</p></div>'}</div>`}</div>`;
     bindLibraryActions();
   }
   // Chapter-import dialog: independent copy of profiles, answers and chosen locale variants.
@@ -2878,6 +2881,19 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
     }
     const dsdForm=$('[data-dsd-editor]');if(dsdForm)dsdForm.onsubmit=async e=>{e.preventDefault();try{const themeId=dsdForm.dataset.themeId,surveyId=dsdForm.dataset.surveyId,locale=dsdForm.dataset.locale,data=editorialData(findTheme(themeId)),original=data?.sociodemoVariants?.bySurvey?.[surveyId]?.[locale];if(!Array.isArray(original))throw new Error('DSD catalogue introuvable');const next=JSON.parse(JSON.stringify(original));dsdForm.querySelectorAll('[data-dsd-path]').forEach(input=>setDeepValue(next,input.dataset.dsdPath,input.value.trim()));await StudioAPI.request(`/api/admin/catalog/themes/${themeId}/dsd/${encodeURIComponent(surveyId)}/${encodeURIComponent(locale)}`,{method:'PUT',body:JSON.stringify({sociodemo:next})});await loadLibraryEditorial(themeId);await StudioModal.alert({eyebrow:'Catalogue Me&YouToo',title:'Données d’analyse enregistrées',message:`La DSD ${locale.toUpperCase()} de la source #${surveyId} a été mise à jour sans créer de nouveau critère.`,type:'success',confirmLabel:'Fermer'});}catch(error){showError(error.message);}};
     $$('[data-edit-theme]').forEach(b=>b.onclick=e=>{e.stopPropagation();openThemeDialog(findTheme(b.dataset.editTheme));});
+    $$('[data-clean-catalog-tags]').forEach(button=>button.onclick=async()=>{
+      try{
+        button.disabled=true;
+        const preview=await StudioAPI.request('/api/admin/catalog/tags/cleanup',{method:'POST',body:JSON.stringify({dryRun:true})});
+        const count=Number(preview.affectedSituations||0),removed=Number(preview.removedTags||0);
+        if(!count){showError('Aucun tag générique ou pays à nettoyer.');return;}
+        const ok=await StudioModal.confirm({eyebrow:'Nettoyage des mots-clés · Catalogue global',title:'Supprimer les tags génériques et les tags pays ?',message:`${removed} tag(s) sur ${count} situation(s) du Catalogue global seront retirés (dont « question » et les noms de pays). Les périmètres culturels, contenus, réponses, scores, traductions et campagnes clients resteront inchangés. Cette suppression des mots-clés est définitive.`,type:'danger',cancelLabel:'Annuler',confirmLabel:'Supprimer ces tags'});
+        if(!ok)return;
+        const result=await StudioAPI.request('/api/admin/catalog/tags/cleanup',{method:'POST',body:JSON.stringify({dryRun:false})});
+        await refreshLibrary();renderLibraryAdmin();
+        showError(`${result.removedTags||0} tags supprimés dans ${result.affectedSituations||0} situations.`);
+      }catch(error){showError(error.message);}finally{button.disabled=false;}
+    });
     $$('[data-archive-theme]').forEach(b=>b.onclick=async()=>{const theme=findTheme(b.dataset.archiveTheme);if(!theme)return;const active=!theme.active;const ok=await StudioModal.confirm({eyebrow:'Catalogue admin',title:active?'Réactiver la thématique ?':'Désactiver cette thématique ?',message:active?'La thématique redevient active.':'La thématique sera inactive pour les nouvelles compositions ; aucune situation ne sera supprimée.',type:'warning',cancelLabel:'Annuler',confirmLabel:active?'Réactiver':'Désactiver'});if(!ok)return;try{await StudioAPI.request('/api/admin/catalog/themes/'+theme.id,{method:'PATCH',body:JSON.stringify({active})});await refreshLibrary();renderLibraryAdmin();}catch(err){showError(err.message);}});
     $$('[data-delete-theme]').forEach(b=>b.onclick=async()=>{const theme=findTheme(b.dataset.deleteTheme);if(!theme)return;const ok=await StudioModal.confirm({eyebrow:'Catalogue admin',title:'Supprimer cette thématique ?',message:'Suppression uniquement si la thématique est vide, non historique et jamais utilisée par une campagne. Retirez ses chapitres au préalable. Les catalogues sources restent inchangés.',type:'danger',cancelLabel:'Conserver',confirmLabel:'Supprimer'});if(!ok)return;try{await StudioAPI.request('/api/admin/catalog/themes/'+theme.id,{method:'DELETE'});state.libraryThemeId=null;await refreshLibrary();renderLibraryAdmin();}catch(err){showError(err.message);}});
     $$('[data-toggle-theme-active]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const theme=findTheme(b.dataset.toggleThemeActive);if(!theme)return;try{b.disabled=true;await StudioAPI.request('/api/admin/catalog/themes/'+theme.id,{method:'PATCH',body:JSON.stringify({active:!Boolean(theme.active)})});await refreshLibrary();}catch(error){b.disabled=false;showError(error.message);}});
@@ -2944,29 +2960,20 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
     $$('[data-quick-tags]').forEach(box=>{
       box.onclick=e=>e.stopPropagation();
       box.onkeydown=e=>e.stopPropagation();
-      const select=box.querySelector('[data-quick-tag-existing]'),input=box.querySelector('[data-quick-tag-new]');
+      const search=box.querySelector('[data-quick-tag-search]'),suggestions=box.querySelector('[data-quick-tag-suggestions]'),input=box.querySelector('[data-quick-tag-new]');
       const row=box.closest('[data-situation-details]'),list=row?.querySelector('[data-situation-tag-list]');
-      const normalize=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('fr');
+      const normalize=tagNormalized;
       const current=()=>{try{return JSON.parse(box.dataset.currentTags||'[]');}catch{return [];}};
       const status=document.createElement('span');status.className='admin-quick-tag-status';status.setAttribute('aria-live','polite');box.appendChild(status);
-      const populateOptions=()=>{
-        const used=new Set(current().map(normalize));
-        const options=catalogTagBase().filter(t=>!used.has(normalize(t)));
-        select.innerHTML='<option value="">+ Tag existant…</option>'+options.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
-      };
-      // Construire le menu seulement à son ouverture, jamais pour toutes les cartes.
-      select.addEventListener('focus',populateOptions);
-      select.addEventListener('pointerdown',()=>{if(select.options.length===1)populateOptions();});
       const sync=()=>{
-        const tags=current();
-        select.innerHTML='<option value="">+ Tag existant…</option>';
+        const tags=current().filter(t=>!isRedundantCatalogTag(t));
         if(list)list.innerHTML=tags.map(t=>`<span>${esc(t)} <button type="button" data-remove-quick-tag="${esc(t)}" aria-label="Retirer le tag ${esc(t)}" title="Retirer de cette situation">×</button></span>`).join('');
-        const form=row?.querySelector('[data-inline-situation-tags]');if(form)form.value=tags.join(', ');
+        const form=row?.querySelector('[data-inline-situation-tags]');if(form)form.value=current().join(', ');
       };
       let busy=false,flashTimer;
       const save=async tags=>{
         if(busy)return;
-        busy=true;select.disabled=true;input.disabled=true;status.textContent='Enregistrement…';status.classList.remove('is-error');
+        busy=true;search.disabled=true;input.disabled=true;status.textContent='Enregistrement…';status.classList.remove('is-error');
         try{
           const result=await StudioAPI.request('/api/admin/catalog/situations/'+box.dataset.quickTags,{method:'PATCH',body:JSON.stringify({tags})});
           const saved=Array.isArray(result?.situation?.admin_tags)?result.situation.admin_tags:tags;
@@ -2974,20 +2981,33 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
           const si=findSituation(box.dataset.quickTags);if(si)si.admin_tags=[...saved];
           sync();input.value='';status.textContent='Enregistré ✓';
           clearTimeout(flashTimer);flashTimer=setTimeout(()=>{if(!busy)status.textContent='';},2200);
-          // Les autres menus seront calculés à leur prochaine ouverture.
         }catch(error){status.textContent=error.message||'Erreur lors de l’enregistrement';status.classList.add('is-error');}
-        finally{busy=false;select.disabled=false;input.disabled=false;}
+        finally{busy=false;search.disabled=false;input.disabled=false;renderSuggestions();}
       };
-      const addTag=(value)=>{
+      const renderSuggestions=()=>{
+        const term=normalize(search.value),used=new Set(current().map(normalize));
+        if(term.length<3){suggestions.hidden=true;suggestions.innerHTML='';return;}
+        const matches=catalogTagBase().filter(t=>normalize(t).includes(term)).slice(0,35);
+        suggestions.innerHTML=matches.length?matches.map(t=>`<label class="admin-tag-suggestion"><input type="checkbox" data-add-tag="${esc(t)}" ${used.has(normalize(t))?'checked':''} ${busy?'disabled':''}> <span>${esc(t)}</span></label>`).join(''):'<span class="admin-tag-no-results">Aucun tag existant trouvé.</span>';
+        suggestions.hidden=false;
+      };
+      search.oninput=renderSuggestions;
+      search.onfocus=renderSuggestions;
+      suggestions.onchange=e=>{
+        const check=e.target.closest('[data-add-tag]');if(!check||busy)return;
+        const tag=check.dataset.addTag;
+        save(check.checked?[...current(),tag]:current().filter(t=>normalize(t)!==normalize(tag)));
+      };
+      const addTag=value=>{
         if(busy)return;
         value=String(value||'').trim().replace(/\s+/g,' ');
         if(!value)return;
+        if(isRedundantCatalogTag(value)){status.textContent='Ce mot-clé correspond au périmètre ou à un tag à nettoyer.';status.classList.add('is-error');return;}
         const tags=current(),existing=catalogTagBase().find(t=>normalize(t)===normalize(value));
         const tag=existing||value;
-        if(tags.some(t=>normalize(t)===normalize(tag))){input.value='';select.value='';return;}
+        if(tags.some(t=>normalize(t)===normalize(tag))){input.value='';return;}
         save([...tags,tag]);
       };
-      select.onchange=()=>{if(select.value)addTag(select.value);};
       input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addTag(input.value);}};
       list?.addEventListener('click',e=>{
         const button=e.target.closest('[data-remove-quick-tag]');if(!button)return;

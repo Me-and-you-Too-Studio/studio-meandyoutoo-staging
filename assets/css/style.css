@@ -15239,3 +15239,15 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .admin-chapter-import-counts{margin:6px 0 12px;color:#53677c;font-size:.86rem}
 .admin-chapter-import-origin{display:inline-block;margin-right:7px;margin-bottom:3px;padding:2px 7px;border-radius:999px;font-size:.72rem;font-weight:700;white-space:nowrap;background:#e9f6f0;color:#146948}
 .admin-chapter-import-origin.is-library{background:#edf4fa;color:#275d8b}
+
+/* Recherche de mots-clés du Catalogue admin */
+.admin-tag-multiselect{position:relative;flex:1 1 250px;min-width:200px;max-width:340px}
+.admin-tag-multiselect>input{width:100%;max-width:100%!important;box-sizing:border-box}
+.admin-tag-suggestions:not([hidden]){position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:60;max-height:230px;overflow-y:auto;background:#fff;border:1px solid #c9dce3;border-radius:10px;box-shadow:0 12px 28px #173b5f24;padding:6px}
+.admin-tag-suggestion{display:flex;align-items:center;gap:9px;padding:8px;border-radius:6px;font-size:.83rem;cursor:pointer;color:#173b5f}
+.admin-tag-suggestion:hover{background:#eef7f9}
+.admin-tag-suggestion input{width:16px;height:16px;flex:none;margin:0}
+.admin-tag-no-results{display:block;padding:10px;font-size:.82rem;color:#68798a}
+.admin-quick-tags{align-items:flex-start;flex-direction:column}
+.admin-quick-tags-controls{width:100%;min-width:0;flex-wrap:wrap}
+@media(max-width:760px){.admin-tag-multiselect{max-width:none;flex-basis:100%}}
