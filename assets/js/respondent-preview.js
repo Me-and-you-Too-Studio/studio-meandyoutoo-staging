@@ -163,6 +163,7 @@ function countryLabel(code){
 const localeNamesFr={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',br:'Portugais Brésil',bg:'Bulgare',ja:'Japonais','ko-kr':'Coréen',ko:'Coréen',zf:'Chinois simplifié',zh:'Chinois traditionnel',nl:'Néerlandais','nl-be':'Néerlandais (Belgique)',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',tr:'Turc',cs:'Tchèque',sk:'Slovaque',id:'Indonésien','id-id':'Indonésien',ar:'Arabe'};
 function localeLabelFr(code){const loc=normalizeLocaleCode(code);return `${loc.toUpperCase()} · ${localeNamesFr[loc]||loc.toUpperCase()}`}
 function resetPreviewProgress(){step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[]}
+function isWorldwideOnlyPreview(){return mode==='catalog'&&previewCountries.length>0&&previewCountries.every(code=>['WORLDWIDE','WW','INT','GLOBAL'].includes(normalizeCountryCode(code)))}
 function contextSelectionState(){
   const countries=previewCountries||[];
   const locales=previewCountry?(previewCountryLocales[previewCountry]||[]):[];
@@ -178,6 +179,13 @@ function contextChooser(){
   const localeOptions=state.locales.map(loc=>`<option value="${esc(loc)}" ${loc===previewLocale?'selected':''}>${esc(localeLabelFr(loc))}</option>`).join('');
   const loading=contextLoading?`<div class="rp-context-loading" role="status">Chargement du parcours correspondant…</div>`:'';
   const error=contextError?`<div class="rp-context-error" role="alert">${esc(contextError)}</div>`:'';
+  if(isWorldwideOnlyPreview())return `<section class="rp-card rp-context-gate" aria-label="Choix de la langue">
+    <div class="rp-kicker">Aperçu répondant</div><h1>Choisissez la langue à prévisualiser</h1>
+    <p class="rp-help">Ce diagnostic international est utilisable dans tous les pays. Sélectionnez simplement la langue pour prévisualiser son contenu.</p>
+    <div class="rp-context-chooser rp-context-chooser-gate"><div class="rp-context-step">
+      <div class="rp-context-step-head"><span>1</span><div><strong>Choisissez la langue</strong><small>${state.locales.length} langues disponibles</small></div></div>
+      <label class="rp-context-select-wrap" for="rp-preview-locale"><span>Langue</span><select id="rp-preview-locale" class="rp-context-select"><option value="">Sélectionner une langue…</option>${localeOptions}</select></label>
+    </div>${loading}${error}</div></section>`;
   return `<section class="rp-card rp-context-gate" aria-label="Choix du parcours répondant">
     <div class="rp-kicker">Aperçu répondant</div>
     <h1>Choisissez le parcours à prévisualiser</h1>
@@ -444,7 +452,7 @@ async function loadPreviewData(preserveStep=false){try{
     previewCountryLocales={};
     variants.forEach(x=>{const cc=normalizeCountryCode(x.countryCode);if(cc)previewCountryLocales[cc]=[...new Set((x.locales||[]).map(normalizeLocaleCode).filter(Boolean))];});
     if(!previewCountries.length){const fallback=normalizeCountryCode((v?.countryCodes||[])[0]||'FR');previewCountries=[fallback];previewCountryLocales[fallback]=(v?.availableLocales||['fr']).map(normalizeLocaleCode).filter(Boolean);}
-    previewCountry='';previewLocale='';availablePreviewLocales=[];contextConfirmed=false;contextLoading=false;contextError='';
+    previewCountry=isWorldwideOnlyPreview()?previewCountries[0]:'';previewLocale='';availablePreviewLocales=[];contextConfirmed=false;contextLoading=false;contextError='';
     norm(await api(`/api/catalog/themes/${encodeURIComponent(theme)}/template?countryCode=${encodeURIComponent(previewCountries[0])}&locale=${encodeURIComponent((previewCountryLocales[previewCountries[0]]||['fr'])[0]||'fr')}`));
   }
   if(!preserveStep)resetPreviewProgress();
