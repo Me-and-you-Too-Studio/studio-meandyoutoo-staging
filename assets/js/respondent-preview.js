@@ -64,7 +64,6 @@ function localizeSocioNode(node,locale){
   return out;
 }
 function normalizeSocio(list){return (Array.isArray(list)?list:[]).filter(Boolean).map(s=>localizeSocioNode(s,previewLocale)).map((s,i)=>normalizeSocioCriterion(s,i,String(i))).filter(Boolean)}
-function fallbackSocio(){return [{key:'gender',label:'Vous êtes :',options:[{label:'Une femme'},{label:'Un homme'},{label:'Non-binaire'},{label:'Autre'}]}]}
 function normalizeProfile(p){return {...p,title:p.title||p.titre||'Profil',summary:clean(p.summary||p.resume||p.phrase||''),content:clean(p.content||p.description||p.desc||''),scoring_min:num(p.scoring_min??p.min,0),scoring_max:num(p.scoring_max??p.max,0),top_score:num(p.top_score,0)}}
 function normalizeAnswer(a,i){return typeof a==='object'?{...a,label:a.text||a.content||a.label||`Réponse ${i+1}`,score:num(a.score,0),display_order:num(a.position??a.display_order??i,i)}:{label:String(a),score:0,display_order:i}}
 function isFivePointScaleAnswers(list){
@@ -132,8 +131,6 @@ function norm(x){
     }));
   }
   d.chapters=d.chapters.filter(c=>c.situations.length);
-  // Un aperçu catalogue doit toujours illustrer l'étape de données d'analyse.
-  if(mode==='catalog'&&!d.socio.length)d.socio=fallbackSocio();
 }
 
 
@@ -182,9 +179,9 @@ function contextChooser(){
   return `<section class="rp-card rp-context-gate" aria-label="Choix du parcours répondant">
     <div class="rp-kicker">Aperçu répondant</div>
     <h1>Choisissez le parcours à prévisualiser</h1>
-    <p class="rp-help">Sélectionnez d’abord le périmètre du répondant, puis la langue réellement diffusée pour ce périmètre. L’introduction et tout le contenu affichés ensuite correspondront à ce choix.</p>
+    <p class="rp-help">${mode==='catalog'&&previewCountries.length===1&&previewCountries[0]==='WORLDWIDE'?'Ce diagnostic est international : choisissez la langue de l’aperçu.':'Sélectionnez d’abord le périmètre du répondant, puis la langue réellement diffusée pour ce périmètre.'} L’introduction, les données d’analyse et les situations correspondront à ce choix.</p>
     <div class="rp-context-chooser rp-context-chooser-gate">
-      <div class="rp-context-step">
+      <div class="rp-context-step" ${mode==='catalog'&&previewCountries.length===1&&previewCountries[0]==='WORLDWIDE'?'hidden':''}>
         <div class="rp-context-step-head"><span>1</span><div><strong>Choisissez le périmètre</strong><small>${previewCountries.length} périmètre${previewCountries.length>1?'s':''} disponible${previewCountries.length>1?'s':''}</small></div></div>
         <label class="rp-context-select-wrap" for="rp-preview-country"><span>Périmètre</span><select id="rp-preview-country" class="rp-context-select"><option value="">Sélectionner un périmètre…</option>${countryOptions}</select></label>
       </div>
@@ -437,11 +434,13 @@ async function loadPreviewData(preserveStep=false){try{
   }else{
     const v=await api(`/api/catalog/themes/${encodeURIComponent(theme)}/variants`);
     const variants=Array.isArray(v?.variants)?v.variants:[];
-    previewCountries=[...new Set(variants.map(x=>normalizeCountryCode(x.countryCode)).filter(Boolean))];
+    previewCountries=[...new Set(variants.map(x=>normalizeCountryCode(x.countryCode||((x.culturalScope==='worldwide')?'WORLDWIDE':''))).filter(Boolean))];
+    const globallyApplicable=variants.length===1&&variants[0]?.culturalScope==='worldwide';
+    if(globallyApplicable)previewCountries=['WORLDWIDE'];
     previewCountryLocales={};
-    variants.forEach(x=>{const cc=normalizeCountryCode(x.countryCode);if(cc)previewCountryLocales[cc]=[...new Set((x.locales||[]).map(normalizeLocaleCode).filter(Boolean))];});
+    variants.forEach(x=>{const cc=normalizeCountryCode(x.countryCode||((x.culturalScope==='worldwide')?'WORLDWIDE':''));if(cc)previewCountryLocales[cc]=[...new Set((x.locales||[]).map(normalizeLocaleCode).filter(Boolean))];});
     if(!previewCountries.length){const fallback=normalizeCountryCode((v?.countryCodes||[])[0]||'FR');previewCountries=[fallback];previewCountryLocales[fallback]=(v?.availableLocales||['fr']).map(normalizeLocaleCode).filter(Boolean);}
-    previewCountry='';previewLocale='';availablePreviewLocales=[];contextConfirmed=false;contextLoading=false;contextError='';
+    previewCountry=globallyApplicable?'WORLDWIDE':'';previewLocale='';availablePreviewLocales=globallyApplicable?(previewCountryLocales.WORLDWIDE||[]):[];contextConfirmed=false;contextLoading=false;contextError='';
     norm(await api(`/api/catalog/themes/${encodeURIComponent(theme)}/template?countryCode=${encodeURIComponent(previewCountries[0])}&locale=${encodeURIComponent((previewCountryLocales[previewCountries[0]]||['fr'])[0]||'fr')}`));
   }
   if(!preserveStep)resetPreviewProgress();
