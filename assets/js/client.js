@@ -923,7 +923,8 @@
       p.id +
       '"><h3>' +
       esc(title) +
-      '</h3>' + (p.legacy_source === 'cloned_legacy' || p.legacy_source === 'cloned_studio' ? '<div class="admin-ad-meta"><strong>🧬 Copie</strong> · campagne indépendante, sans duplication des liens ni des résultats</div>' : '') + '<div class="admin-ad-meta">Base catalogue : <strong>' +
+      (p.legacy_source === 'cloned_legacy' || p.legacy_source === 'cloned_studio' ? ' <span class="campaign-topic-tag" title="Copie indépendante de campagne">🧬 Copie</span>' : '') +
+      '</h3><div class="admin-ad-meta">Base catalogue : <strong>' +
       esc(catalogBase) +
       '</strong></div>' + (p.legacy_history && p.legacy_theme_title ? '<div class="admin-ad-meta">Thématique historique : <strong>' + esc(p.legacy_theme_title) + '</strong></div>' : '') + '<div class="admin-ad-meta">Titre répondants : <strong>' +
       esc(respondent) +
