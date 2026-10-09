@@ -684,7 +684,7 @@
     return `<article class="composer-situation ${tone} ${locked?'is-locked':''} ${customized?'has-customization':''}" data-situation-card="${esc(s.id)}">
       <div class="composer-situation-head">
         <div class="composer-situation-tags">${showMethodologyChip?`<span class="composer-lock-chip">🔒 Situation socle — texte non modifiable</span>`:`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${directTranslationEdit?`<span class="composer-customized-tag">🌐 ${esc(localeLabel(translationView.targetLocale))}</span>`:(customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':'')}</div>
-        <div class="composer-situation-head-actions"><span class="composer-origin">Situation Me&YouToo</span><button class="button button-ghost button-small composer-collapse-situation" type="button" data-collapse-situation="${esc(s.id)}" aria-expanded="false">Déplier</button></div>
+        <div class="composer-situation-head-actions">${isAdmin?`<button type="button" class="button button-secondary button-small" data-reuse-client-situation="${esc(s.id)}" title="Copie indépendante vers la Bibliothèque complémentaire Me&YouToo">＋ Bibliothèque Me&YouToo</button>`:''}<button class="button button-ghost button-small composer-collapse-situation" type="button" data-collapse-situation="${esc(s.id)}" aria-expanded="false">Déplier</button></div>
       </div>
       <div class="composer-situation-body" id="situation-body-${esc(s.id)}" hidden>
       ${linkedLabel?`<div class="composer-linked-chip">🔗 ${esc(linkedLabel)}</div>`:''}
@@ -728,7 +728,31 @@
     const answerChanged=[...card.querySelectorAll('[data-answer-input]')].some(input=>String(input.value||'').trim()!==String(input.dataset.originalAnswer||'').trim());
     warning.hidden=!(hasOtherLocales&&(situationChanged||answerChanged));
   }
+  async function reuseClientSituation(id){
+    const source=findSituation(id);
+    if(!source)return;
+    try{
+      const response=await api('/api/admin/catalog/themes');
+      const themes=Array.isArray(response)?response:(response.themes||[]);
+      const available=themes.filter(t=>t.active!==false&&Array.isArray(t.chapters)&&t.chapters.length);
+      if(!available.length){showMessage('Aucun chapitre du Catalogue disponible.');return;}
+      const overlay=document.createElement('div');overlay.className='translation-overlay';
+      overlay.innerHTML=`<section class="translation-modal" role="dialog" aria-modal="true" style="max-width:680px"><header class="translation-head"><div><small>CAPITALISATION ME&YOUTOO · ADMIN UNIQUEMENT</small><h2>Copier une situation client</h2></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div style="padding:24px;display:grid;gap:16px"><p><strong>Situation source :</strong> ${esc((source.content||'').slice(0,500))}</p><p>La copie sera indépendante, uniquement dans la <strong>Bibliothèque complémentaire</strong>. Textes, réponses et scores proviennent de la campagne client. Les traductions seront marquées à vérifier. Aucun profil ni seuil ne sera importé.</p><label>Thématique de destination<select data-reuse-theme style="display:block;width:100%;margin-top:6px">${available.map(t=>`<option value="${esc(t.id)}">${esc(t.title)}</option>`).join('')}</select></label><label>Chapitre de destination<select data-reuse-chapter style="display:block;width:100%;margin-top:6px"></select></label><label style="display:flex;gap:10px;align-items:start"><input type="checkbox" data-reuse-review> <span>J'ai vérifié les droits de réutilisation, retiré ou identifié les éléments confidentiels et contrôlé que la situation peut rejoindre un catalogue commun.</span></label><small>La copie conserve une traçabilité interne de la campagne d'origine. Après import, relisez son texte, ses réponses, ses scores et ses traductions avant réutilisation.</small></div><footer class="translation-foot"><button type="button" class="button button-ghost" data-reuse-cancel>Annuler</button><button type="button" class="button button-primary" data-reuse-confirm>Copier dans la bibliothèque</button></footer></section>`;
+      document.body.appendChild(overlay);
+      const close=()=>overlay.remove();overlay.querySelector('.translation-close').onclick=close;overlay.querySelector('[data-reuse-cancel]').onclick=close;
+      const theme=overlay.querySelector('[data-reuse-theme]'),chapter=overlay.querySelector('[data-reuse-chapter]');
+      const update=()=>{const found=available.find(t=>String(t.id)===theme.value);chapter.innerHTML=(found?.chapters||[]).map(c=>`<option value="${esc(c.id)}">${esc(c.title)}</option>`).join('');};theme.onchange=update;update();
+      overlay.querySelector('[data-reuse-confirm]').onclick=async()=>{
+        if(!overlay.querySelector('[data-reuse-review]').checked){showMessage('Confirmez la revue confidentialité et droits de réutilisation.');return;}
+        const btn=overlay.querySelector('[data-reuse-confirm]');btn.disabled=true;
+        try{const result=await api(`/api/admin/projects/${projectId}/situations/${id}/copy-to-library`,{method:'POST',body:JSON.stringify({targetChapterId:Number(chapter.value),confidentialityReviewed:true})});close();showMessage(`Copie n°${result.situationId} créée dans la Bibliothèque complémentaire. Contrôlez-la avant de l'utiliser.`, 'success');}
+        catch(error){btn.disabled=false;showMessage(error.message);}
+      };
+    }catch(error){showMessage(error.message);}
+  }
+
   function bindSituations(){
+    if(isAdmin)document.querySelectorAll('[data-reuse-client-situation]').forEach(b=>b.onclick=()=>reuseClientSituation(b.dataset.reuseClientSituation));
     document.querySelectorAll('[data-collapse-situation]').forEach(b=>b.onclick=()=>{const body=$(`situation-body-${b.dataset.collapseSituation}`);if(!body)return;body.hidden=!body.hidden;b.setAttribute('aria-expanded',String(!body.hidden));b.textContent=body.hidden?'Déplier':'Replier';});
     document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{
       const box=$(`answers-${b.dataset.toggle}`),label=b.querySelector('[data-toggle-label]');
