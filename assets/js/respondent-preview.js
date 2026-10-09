@@ -64,6 +64,7 @@ function localizeSocioNode(node,locale){
   return out;
 }
 function normalizeSocio(list){return (Array.isArray(list)?list:[]).filter(Boolean).map(s=>localizeSocioNode(s,previewLocale)).map((s,i)=>normalizeSocioCriterion(s,i,String(i))).filter(Boolean)}
+function fallbackSocio(){return [{key:'gender',label:'Vous êtes :',options:[{label:'Une femme'},{label:'Un homme'},{label:'Non-binaire'},{label:'Autre'}]}]}
 function normalizeProfile(p){return {...p,title:p.title||p.titre||'Profil',summary:clean(p.summary||p.resume||p.phrase||''),content:clean(p.content||p.description||p.desc||''),scoring_min:num(p.scoring_min??p.min,0),scoring_max:num(p.scoring_max??p.max,0),top_score:num(p.top_score,0)}}
 function normalizeAnswer(a,i){return typeof a==='object'?{...a,label:a.text||a.content||a.label||`Réponse ${i+1}`,score:num(a.score,0),display_order:num(a.position??a.display_order??i,i)}:{label:String(a),score:0,display_order:i}}
 function isFivePointScaleAnswers(list){
@@ -85,9 +86,8 @@ function isFivePointScaleAnswers(list){
 }
 function normalizeScaleAnswers(list){
   const rows=(Array.isArray(list)?list:[]).map(normalizeAnswer);
-  const numericScores=rows.map(a=>Number(a.score));
-  const validScores=numericScores.every(Number.isFinite)&&new Set(numericScores).size===rows.length;
-  if(validScores)return rows.sort((a,b)=>Number(a.score)-Number(b.score));
+  // Le score peut être décimal et ne correspond pas au numéro de réponse visible.
+  // Préserver l'ordre métier plutôt que trier par score.
   return rows.sort((a,b)=>Number(a.display_order)-Number(b.display_order));
 }
 function normalizeSituation(s,sidx,cidx){
@@ -131,6 +131,8 @@ function norm(x){
     }));
   }
   d.chapters=d.chapters.filter(c=>c.situations.length);
+  // Un aperçu catalogue doit toujours illustrer l'étape de données d'analyse.
+  if(mode==='catalog'&&!d.socio.length)d.socio=fallbackSocio();
 }
 
 
@@ -179,9 +181,9 @@ function contextChooser(){
   return `<section class="rp-card rp-context-gate" aria-label="Choix du parcours répondant">
     <div class="rp-kicker">Aperçu répondant</div>
     <h1>Choisissez le parcours à prévisualiser</h1>
-    <p class="rp-help">${mode==='catalog'&&previewCountries.length===1&&previewCountries[0]==='WORLDWIDE'?'Ce diagnostic est international : choisissez la langue de l’aperçu.':'Sélectionnez d’abord le périmètre du répondant, puis la langue réellement diffusée pour ce périmètre.'} L’introduction, les données d’analyse et les situations correspondront à ce choix.</p>
+    <p class="rp-help">Sélectionnez d’abord le périmètre du répondant, puis la langue réellement diffusée pour ce périmètre. L’introduction et tout le contenu affichés ensuite correspondront à ce choix.</p>
     <div class="rp-context-chooser rp-context-chooser-gate">
-      <div class="rp-context-step" ${mode==='catalog'&&previewCountries.length===1&&previewCountries[0]==='WORLDWIDE'?'hidden':''}>
+      <div class="rp-context-step">
         <div class="rp-context-step-head"><span>1</span><div><strong>Choisissez le périmètre</strong><small>${previewCountries.length} périmètre${previewCountries.length>1?'s':''} disponible${previewCountries.length>1?'s':''}</small></div></div>
         <label class="rp-context-select-wrap" for="rp-preview-country"><span>Périmètre</span><select id="rp-preview-country" class="rp-context-select"><option value="">Sélectionner un périmètre…</option>${countryOptions}</select></label>
       </div>
@@ -313,9 +315,9 @@ function profileMedia(ch,p){
 }
 function renderScaleAnswers(s,selected){
   const rows=Array.isArray(s?.answers)?s.answers:[];
-  const displayValue=(a,i)=>{const score=Number(a?.score);return Number.isFinite(score)&&score>=1&&score<=5?score:i+1;};
-  const byValue=value=>rows.find((a,i)=>displayValue(a,i)===value);
-  return `<div class="rp-scale"><div class="rp-scale-grid">${rows.map((a,i)=>{const value=displayValue(a,i);return `<button type="button" class="rp-scale-option ${selected===i?'selected':''}" data-i="${i}" aria-label="${esc(`${value} - ${a.label}`)}"><span>${value}</span></button>`;}).join('')}</div><div class="rp-scale-legend"><div class="rp-scale-legend-item rp-scale-legend-1">${esc(byValue(1)?.label||rows[0]?.label||'')}</div><div class="rp-scale-legend-item rp-scale-legend-3">${esc(byValue(3)?.label||rows[2]?.label||'')}</div><div class="rp-scale-legend-item rp-scale-legend-5">${esc(byValue(5)?.label||rows[4]?.label||'')}</div></div></div>`;
+  // 1 à 5 sont des positions de réponse, jamais des valeurs de scoring.
+  // data-i maintient l'association avec le score réel de la réponse sélectionnée.
+  return `<div class="rp-scale" dir="ltr"><div class="rp-scale-grid">${rows.map((a,i)=>`<button type="button" class="rp-scale-option ${selected===i?'selected':''}" data-i="${i}" aria-label="${esc(`${i+1} - ${a.label}`)}"><span>${i+1}</span></button>`).join('')}</div><div class="rp-scale-legend"><div class="rp-scale-legend-item rp-scale-legend-1" dir="auto">${esc(rows[0]?.label||'')}</div><div class="rp-scale-legend-item rp-scale-legend-3" dir="auto">${esc(rows[2]?.label||'')}</div><div class="rp-scale-legend-item rp-scale-legend-5" dir="auto">${esc(rows[4]?.label||'')}</div></div></div>`;
 }
 function question(){
   let ch=d.chapters[ci],s=ch?.situations?.[qi];if(!s){done();return}
@@ -417,7 +419,11 @@ function done(){
   bindFinalInteractions();
   $('#again').onclick=()=>{step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[];norm.lastShuffleSeed=Date.now();if(mode==='project'){contextConfirmed=false;previewCountry='';previewLocale='';availablePreviewLocales=[];}render()}
 }
-function render(){if(!contextConfirmed){root.innerHTML=head('Choix du parcours')+contextChooser();bindContextChooser();return}if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult();else if(step===3)showChapterResult();bindLanguagePicker()}
+function render(){
+  // La langue du contenu gouverne la lecture du texte, sans inverser les contrôles numériques.
+  document.documentElement.lang=previewLocale||'fr';
+  document.documentElement.dir=previewLocale==='ar'?'rtl':'ltr';
+  if(!contextConfirmed){root.innerHTML=head('Choix du parcours')+contextChooser();bindContextChooser();return}if(step<0)intro();else if(step===0)socio();else if(step===1)question();else if(step===2)showChapterResult();else if(step===3)showChapterResult();bindLanguagePicker()}
 async function loadPreviewData(preserveStep=false){try{
   if(mode==='project'&&pid){
     const base=await api(`/api/projects/${pid}/composer?respondentPreview=1`);
@@ -434,13 +440,11 @@ async function loadPreviewData(preserveStep=false){try{
   }else{
     const v=await api(`/api/catalog/themes/${encodeURIComponent(theme)}/variants`);
     const variants=Array.isArray(v?.variants)?v.variants:[];
-    previewCountries=[...new Set(variants.map(x=>normalizeCountryCode(x.countryCode||((x.culturalScope==='worldwide')?'WORLDWIDE':''))).filter(Boolean))];
-    const globallyApplicable=variants.length===1&&variants[0]?.culturalScope==='worldwide';
-    if(globallyApplicable)previewCountries=['WORLDWIDE'];
+    previewCountries=[...new Set(variants.map(x=>normalizeCountryCode(x.countryCode)).filter(Boolean))];
     previewCountryLocales={};
-    variants.forEach(x=>{const cc=normalizeCountryCode(x.countryCode||((x.culturalScope==='worldwide')?'WORLDWIDE':''));if(cc)previewCountryLocales[cc]=[...new Set((x.locales||[]).map(normalizeLocaleCode).filter(Boolean))];});
+    variants.forEach(x=>{const cc=normalizeCountryCode(x.countryCode);if(cc)previewCountryLocales[cc]=[...new Set((x.locales||[]).map(normalizeLocaleCode).filter(Boolean))];});
     if(!previewCountries.length){const fallback=normalizeCountryCode((v?.countryCodes||[])[0]||'FR');previewCountries=[fallback];previewCountryLocales[fallback]=(v?.availableLocales||['fr']).map(normalizeLocaleCode).filter(Boolean);}
-    previewCountry=globallyApplicable?'WORLDWIDE':'';previewLocale='';availablePreviewLocales=globallyApplicable?(previewCountryLocales.WORLDWIDE||[]):[];contextConfirmed=false;contextLoading=false;contextError='';
+    previewCountry='';previewLocale='';availablePreviewLocales=[];contextConfirmed=false;contextLoading=false;contextError='';
     norm(await api(`/api/catalog/themes/${encodeURIComponent(theme)}/template?countryCode=${encodeURIComponent(previewCountries[0])}&locale=${encodeURIComponent((previewCountryLocales[previewCountries[0]]||['fr'])[0]||'fr')}`));
   }
   if(!preserveStep)resetPreviewProgress();
