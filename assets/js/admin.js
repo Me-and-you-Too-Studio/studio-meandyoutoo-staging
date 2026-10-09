@@ -2287,9 +2287,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   }
   function situationTagHtml(si,editable=false){const tags=situationTags(si);return `<div class="admin-situation-tags" data-situation-tag-list>${tags.map(tag=>editable?`<span>${esc(tag)} <button type="button" data-remove-quick-tag="${esc(tag)}" aria-label="Retirer le tag ${esc(tag)}" title="Retirer de cette situation">×</button></span>`:`<span>${esc(tag)}</span>`).join('')}</div>`;}
   function quickTagEditorHtml(si,readonly=false){
-    const tags=situationTags(si), all=catalogTagBase().filter(tag=>!tags.some(x=>x.toLocaleLowerCase('fr')===tag.toLocaleLowerCase('fr')));
+    const tags=situationTags(si);
     if(readonly)return '';
-    return `<div class="admin-quick-tags" data-quick-tags="${si.id}" data-current-tags="${esc(JSON.stringify(tags))}"><div class="admin-quick-tags-label"><strong>Tags</strong><span class="admin-info-dot" tabindex="0" data-info="Choisissez un tag déjà utilisé ailleurs pour garder un vocabulaire cohérent, ou créez-en un nouveau si nécessaire. Les tags servent à rechercher et réutiliser les situations dans le catalogue.">i</span></div><div class="admin-quick-tags-controls"><select data-quick-tag-existing><option value="">+ Tag existant…</option>${all.map(tag=>`<option value="${esc(tag)}">${esc(tag)}</option>`).join('')}</select><input type="text" data-quick-tag-new maxlength="60" placeholder="+ Créer un tag… (Entrée pour valider)" title="Appuyez sur Entrée pour créer le tag"></div></div>`;
+    return `<div class="admin-quick-tags" data-quick-tags="${si.id}" data-current-tags="${esc(JSON.stringify(tags))}"><div class="admin-quick-tags-label"><strong>Tags</strong><span class="admin-info-dot" tabindex="0" data-info="Choisissez un tag déjà utilisé ailleurs pour garder un vocabulaire cohérent, ou créez-en un nouveau si nécessaire. Les tags servent à rechercher et réutiliser les situations dans le catalogue.">i</span></div><div class="admin-quick-tags-controls"><select data-quick-tag-existing><option value="">+ Tag existant…</option></select><input type="text" data-quick-tag-new maxlength="60" placeholder="+ Créer un tag… (Entrée pour valider)" title="Appuyez sur Entrée pour créer le tag"></div></div>`;
   }
   function globalCatalogSituations(){
     const rows=[];
@@ -2949,10 +2949,17 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
       const normalize=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('fr');
       const current=()=>{try{return JSON.parse(box.dataset.currentTags||'[]');}catch{return [];}};
       const status=document.createElement('span');status.className='admin-quick-tag-status';status.setAttribute('aria-live','polite');box.appendChild(status);
-      const sync=()=>{
-        const tags=current(),used=new Set(tags.map(normalize));
+      const populateOptions=()=>{
+        const used=new Set(current().map(normalize));
         const options=catalogTagBase().filter(t=>!used.has(normalize(t)));
         select.innerHTML='<option value="">+ Tag existant…</option>'+options.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
+      };
+      // Construire le menu seulement à son ouverture, jamais pour toutes les cartes.
+      select.addEventListener('focus',populateOptions);
+      select.addEventListener('pointerdown',()=>{if(select.options.length===1)populateOptions();});
+      const sync=()=>{
+        const tags=current();
+        select.innerHTML='<option value="">+ Tag existant…</option>';
         if(list)list.innerHTML=tags.map(t=>`<span>${esc(t)} <button type="button" data-remove-quick-tag="${esc(t)}" aria-label="Retirer le tag ${esc(t)}" title="Retirer de cette situation">×</button></span>`).join('');
         const form=row?.querySelector('[data-inline-situation-tags]');if(form)form.value=tags.join(', ');
       };
@@ -2967,15 +2974,7 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
           const si=findSituation(box.dataset.quickTags);if(si)si.admin_tags=[...saved];
           sync();input.value='';status.textContent='Enregistré ✓';
           clearTimeout(flashTimer);flashTimer=setTimeout(()=>{if(!busy)status.textContent='';},2200);
-          // Synchroniser les menus de toutes les cartes sans reconstruire la page.
-          document.querySelectorAll('[data-quick-tags]').forEach(other=>{
-            if(other===box)return;
-            const dropdown=other.querySelector('[data-quick-tag-existing]');if(!dropdown)return;
-            const chosen=dropdown.value;let assigned=[];try{assigned=JSON.parse(other.dataset.currentTags||'[]');}catch{}
-            const excluded=new Set(assigned.map(normalize));
-            dropdown.innerHTML='<option value="">+ Tag existant…</option>'+catalogTagBase().filter(t=>!excluded.has(normalize(t))).map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
-            if([...dropdown.options].some(o=>o.value===chosen))dropdown.value=chosen;
-          });
+          // Les autres menus seront calculés à leur prochaine ouverture.
         }catch(error){status.textContent=error.message||'Erreur lors de l’enregistrement';status.classList.add('is-error');}
         finally{busy=false;select.disabled=false;input.disabled=false;}
       };
