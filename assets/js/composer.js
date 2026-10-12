@@ -989,6 +989,49 @@
     box.innerHTML='';
   }
 
+  // Titres de chapitres : traductions autonomes de la campagne native.
+  async function openChapterTitleTranslations(chapter){
+    if(!chapter||isLegacyClientCampaign())return;
+    let data;
+    try{data=await api(`/api/projects/${projectId}/chapters/${chapter.id}/title-translations`);}
+    catch(error){showMessage(`Titres de chapitres : ${error.message}`);return;}
+    const working=String(data.workingLocale||state.project?.working_locale||'fr').toLowerCase().replaceAll('_','-');
+    const languages=[...new Set((Array.isArray(state.project?.locales)?state.project.locales:[]).map(loc=>String(loc||'').toLowerCase().replaceAll('_','-')).filter(Boolean))].filter(loc=>loc!==working);
+    const records=Array.isArray(data.translations)?data.translations:[];
+    const getTranslation=loc=>records.filter(t=>String(t.locale||'').toLowerCase().replaceAll('_','-')===loc&&(!t.country_code||String(t.country_code).trim()==='')).sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||'')))[0];
+    const overlay=document.createElement('div');overlay.className='translation-overlay';
+    const canEdit=isAdmin||state.project?.can_edit!==false;
+    overlay.innerHTML=`<section class="translation-modal chapter-title-modal" role="dialog" aria-modal="true" aria-label="Traductions du titre de chapitre"><header class="translation-head"><div><small>COMPOSER · CHAPITRE ${esc(chapter.position??'')}</small><h2>Traductions du titre</h2></div><button class="translation-close" type="button" aria-label="Fermer">×</button></header><div class="chapter-title-modal-content"><p class="chapter-title-info">Les modifications sont enregistrées uniquement dans cette campagne. Le Catalogue Me&YouToo et les autres campagnes restent inchangés.</p><div class="chapter-title-reference"><label for="chapter-reference-title">Titre de référence · ${esc(localeLabel(working))}</label><input id="chapter-reference-title" type="text" maxlength="300" value="${esc(data.referenceTitle||chapter.title)}" ${isAdmin?'':'readonly'}><small>${isAdmin?'Vous seul pouvez modifier le titre de référence.':'Le titre de référence est réservé à l’administrateur Me&YouToo.'}</small>${isAdmin?'<button class="button button-secondary button-small" type="button" data-save-reference>Enregistrer le titre de référence</button>':''}</div><div class="chapter-title-translation-fields">${languages.length?languages.map(loc=>{const t=getTranslation(loc),value=String(t?.content?.title||'');return `<div class="chapter-title-translation-field"><label for="chapter-title-locale-${esc(loc)}">${esc(localeLabel(loc))} (${esc(loc.toUpperCase())})</label><input id="chapter-title-locale-${esc(loc)}" type="text" maxlength="300" data-chapter-title-locale="${esc(loc)}" value="${esc(value)}" placeholder="Traduction à compléter" ${canEdit?'':'readonly'}><small data-chapter-title-status="${esc(loc)}">${t?.validation_status==='client_version'?'Version personnalisée':value?'Traduction Me&YouToo':'Traduction manquante'}</small>${canEdit?`<button class="button button-secondary button-small" type="button" data-save-chapter-locale="${esc(loc)}">Enregistrer ${esc(loc.toUpperCase())}</button>`:''}</div>`}).join(''):'<p>Aucune langue de diffusion supplémentaire n’est active dans cette campagne.</p>'}</div><p class="chapter-title-modal-status" data-chapter-title-feedback role="status" aria-live="polite"></p></div><footer class="translation-foot"><button class="button button-ghost" type="button" data-close-chapter-title>Fermer</button></footer></section>`;
+    document.body.appendChild(overlay);
+    const close=()=>overlay.remove();
+    overlay.querySelector('.translation-close').onclick=close;
+    overlay.querySelector('[data-close-chapter-title]').onclick=close;
+    overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
+    const feedback=overlay.querySelector('[data-chapter-title-feedback]');
+    const setFeedback=(message,failed=false)=>{feedback.textContent=message;feedback.classList.toggle('is-error',failed);};
+    overlay.querySelectorAll('[data-save-chapter-locale]').forEach(button=>button.onclick=async()=>{
+      const loc=button.dataset.saveChapterLocale;
+      const title=overlay.querySelector(`[data-chapter-title-locale="${loc}"]`)?.value?.trim()||'';
+      if(!title){setFeedback('Renseignez une traduction avant de l’enregistrer.',true);return;}
+      button.disabled=true;setFeedback('Enregistrement…');
+      try{
+        await api(`/api/projects/${projectId}/chapters/${chapter.id}/title-translations/${encodeURIComponent(loc)}`,{method:'PATCH',body:JSON.stringify({title})});
+        overlay.querySelector(`[data-chapter-title-status="${loc}"]`).textContent='Version personnalisée';
+        setFeedback(`Traduction ${loc.toUpperCase()} enregistrée uniquement dans cette campagne.`);
+      }catch(error){setFeedback(error.message,true);}finally{button.disabled=false;}
+    });
+    const saveReference=overlay.querySelector('[data-save-reference]');
+    if(saveReference)saveReference.onclick=async()=>{
+      const title=overlay.querySelector('#chapter-reference-title')?.value?.trim()||'';
+      if(!title){setFeedback('Renseignez le titre de référence.',true);return;}
+      saveReference.disabled=true;setFeedback('Enregistrement…');
+      try{
+        await api(`/api/admin/projects/${projectId}/chapters/${chapter.id}/reference-title`,{method:'PATCH',body:JSON.stringify({title})});
+        chapter.title=title;render();setFeedback('Titre de référence enregistré dans cette campagne.');
+      }catch(error){setFeedback(error.message,true);}finally{saveReference.disabled=false;}
+    };
+  }
+
   function render(){
     const ch=state.chapters[state.active];if(!ch)return;
     const stereotypes=isStereotypesChapter(ch),status=chapterCountStatus(ch);
@@ -1014,6 +1057,8 @@
     }
     $('chapter-kicker').textContent=`Chapitre ${state.active+1} · Questions`;
     $('chapter-title').textContent=ch.title;
+    const titleTranslationButton=$('chapter-title-translations-button');
+    if(titleTranslationButton){titleTranslationButton.hidden=isLegacyClientCampaign()||state.project?.can_edit===false&&!isAdmin;titleTranslationButton.onclick=()=>openChapterTitleTranslations(ch);}
     const effectiveChapterLocked=methodologyLocked;
     const campaignReadOnly=Boolean(state.project?.can_edit===false&&!state.project?.review_mode);
     $('chapter-desc').textContent=effectiveChapterLocked
