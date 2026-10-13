@@ -115,7 +115,9 @@ function norm(x){
   };
   if(live?.project){
     const referenceLocale=normalizeLocaleCode(pr.selected_locale||live.project.selected_locale||'fr');
-    const useLiveReferenceText=previewLocale===referenceLocale;
+    // Le parcours projet reel utilise les traductions resolues par l'API.
+    // Le snapshot du Composer ne doit jamais ecraser l'introduction de la langue choisie.
+    const useLiveReferenceText=!liveProjectPreview&&previewLocale===referenceLocale;
     if(useLiveReferenceText&&(live.project.respondent_title||live.project.title))d.title=live.project.respondent_title||live.project.title;
     if(useLiveReferenceText&&(live.project.introduction_html||live.project.intro))d.intro=clean(live.project.introduction_html||live.project.intro);
     if(useLiveReferenceText&&Array.isArray(live.project.sociodemo))d.socio=normalizeSocio(live.project.sociodemo);
