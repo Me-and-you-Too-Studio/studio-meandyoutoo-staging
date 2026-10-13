@@ -12,7 +12,7 @@
   try { CURRENT_USER = JSON.parse(localStorage.getItem('studio_user') || 'null'); } catch (e) {}
   var IS_ADMIN = Boolean(CURRENT_USER && CURRENT_USER.role === 'admin');
   var INTERFACE_MODE = IS_ADMIN && sessionStorage.getItem('studio_interface_mode') !== 'client' ? 'admin' : 'client';
-  var ADMIN_PAGES = ['admin.html','client.html','notifications.html','kit-communication.html','validation.html','campagne-detail.html','composer.html','personnalisation.html','parametrage.html'];
+  var ADMIN_PAGES = ['admin.html','client.html'];
   var DUAL_MODE_PAGES = ['notifications.html','calendrier.html','cockpit-dei.html'];
   var REQUESTED_NOTIFICATION_AUDIENCE = new URLSearchParams(location.search).get('audience');
   if (IS_ADMIN && DUAL_MODE_PAGES.includes(CURRENT) && REQUESTED_NOTIFICATION_AUDIENCE === 'client') {
