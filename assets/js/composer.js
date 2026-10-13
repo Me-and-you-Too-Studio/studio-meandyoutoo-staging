@@ -142,7 +142,7 @@
     locales.push(...(Array.isArray(project?.locales)?project.locales:[]));
     if(project?.selected_locale)locales.push(project.selected_locale);
     if(!isLegacyClientCampaign(project)){
-      if(project?.working_locale)locales.push(project.working_locale);
+      locales.push(project?.working_locale||'fr');
       return normalize(locales);
     }
     locales.push(...(Array.isArray(project?.content_locales)?project.content_locales:[]));
