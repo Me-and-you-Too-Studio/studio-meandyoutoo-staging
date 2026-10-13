@@ -334,11 +334,16 @@
     const country=String(code||'').trim().toUpperCase();if(!country||country===state.country)return;
     try{
       const knownBefore=projectCountryLocales(state.project)[country]||[];
-      const requestedLocale=knownBefore.includes(state.locale)?state.locale:(knownBefore.includes('fr')?'fr':(knownBefore[0]||state.locale||'fr'));
+      const work=String(state.project?.working_locale||'fr').toLowerCase().replaceAll('_','-');
+      const requestedLocale=!isLegacyClientCampaign(state.project)&&state.locale===work
+        ? work
+        : (knownBefore.includes(state.locale)?state.locale:(knownBefore.includes('fr')?'fr':(knownBefore[0]||state.locale||'fr')));
       const data=await api(`/api/projects/${projectId}/composer?countryCode=${encodeURIComponent(country)}&locale=${encodeURIComponent(requestedLocale)}`);
       state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);state.country=data.composer_context?.countryCode||country;
       const allowed=projectCountryLocales(state.project)[state.country]||[];
-      if(allowed.length&&!allowed.includes(state.locale))state.locale=allowed.includes('fr')?'fr':allowed[0];
+      if(allowed.length&&!allowed.includes(state.locale)
+        &&(isLegacyClientCampaign(state.project)||state.locale!==String(state.project?.working_locale||'fr').toLowerCase().replaceAll('_','-')))
+        state.locale=allowed.includes('fr')?'fr':allowed[0];
       state.active=Math.min(state.active,Math.max(0,state.chapters.length-1));
       state.translationContexts.clear();
       history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${state.active}&countryCode=${encodeURIComponent(state.country)}`);
