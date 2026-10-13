@@ -1443,7 +1443,11 @@
           row.classList.toggle("is-selected",input.checked);
           row.querySelector(".legacy-country-locales").hidden=!input.checked;
           localeInputs.forEach(locale=>locale.disabled=!input.checked);
-          if(input.checked&&!localeInputs.some(locale=>locale.checked)&&localeInputs.length){
+          if(input.checked&&input.value==="WORLDWIDE"){
+            // Activer Worldwide doit conserver toutes les langues connues du projet.
+            // Ne jamais ramener par défaut une campagne multilingue à FR seulement.
+            localeInputs.forEach(locale=>{locale.checked=true;});
+          }else if(input.checked&&!localeInputs.some(locale=>locale.checked)&&localeInputs.length){
             const preferred=localeInputs.find(locale=>locale.value==="fr")||localeInputs[0];
             preferred.checked=true;
           }
