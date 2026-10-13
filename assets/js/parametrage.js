@@ -40,7 +40,39 @@
   };
   const ageForLocale=locale=>{const loc=String(locale||'fr').trim().toLowerCase().replaceAll('_','-'),row=AGE_TRANSLATIONS[loc]||AGE_TRANSLATIONS.fr;return{kind:'age',q:row[0],opts:row[1].map(label=>({label,n:0}))};};
   const AGE=ageForLocale('fr');
-  const EXAMPLES=[['Business Unit',['Business Unit 1','Business Unit 2']],['Régions',['Région 1','Région 2']],['Fonction',['Fonction 1','Fonction 2']],['Manager ou collaborateur',['Manager','Collaborateur']]];
+  // Modèles de suggestions : libellés de réponse préremplis uniquement à la création.
+  // Une traduction déjà personnalisée ou issue d'un import historique n'est jamais écrasée.
+  const EXAMPLE_TRANSLATIONS={
+    fr:[['Business Unit',['Business Unit 1','Business Unit 2']],['Régions',['Région 1','Région 2']],['Fonction',['Fonction 1','Fonction 2']],['Manager ou collaborateur',['Manager','Collaborateur']]],
+    en:[['Business unit',['Business unit 1','Business unit 2']],['Regions',['Region 1','Region 2']],['Job function',['Function 1','Function 2']],['Manager or employee',['Manager','Employee']]],
+    es:[['Unidad de negocio',['Unidad de negocio 1','Unidad de negocio 2']],['Regiones',['Región 1','Región 2']],['Función',['Función 1','Función 2']],['Responsable o colaborador',['Responsable','Colaborador']]]
+  };
+  const EXAMPLES=EXAMPLE_TRANSLATIONS.fr;
+  const suggestedCriterion=(index,locale)=>{const rows=EXAMPLE_TRANSLATIONS[normalizeLocale(locale)]||EXAMPLE_TRANSLATIONS.fr,entry=rows[index]||rows[0];return{q:entry[0],opts:entry[1].map(label=>({label,n:0}))};};
+  const GENDER_TRANSLATIONS={
+    fr:['Quel est votre genre ?',['Homme','Femme','Non binaire','Autre']],
+    en:['What is your gender?',['Man','Woman','Non-binary','Other']],
+    es:['¿Cuál es su género?',['Hombre','Mujer','No binario','Otro']]
+  };
+  const genderForLocale=locale=>{const row=GENDER_TRANSLATIONS[normalizeLocale(locale)]||GENDER_TRANSLATIONS.fr;return{kind:'gender',q:row[0],opts:row[1].map(label=>({label,n:0}))};};
+  // Traduit seulement les modèles standard non personnalisés (pas les contenus legacy).
+  function localizeStandardCriteria(items,locale){
+    const loc=normalizeLocale(locale);
+    if(isLegacyClientCampaign()||!['en','es'].includes(loc))return items;
+    const genderSource=GENDER_TRANSLATIONS.fr,genderTarget=GENDER_TRANSLATIONS[loc],ageSource=AGE_TRANSLATIONS.fr,ageTarget=AGE_TRANSLATIONS[loc];
+    return items.map(criterion=>{
+      const c=clone(criterion);
+      if(c.kind==='gender'||['Quel est votre genre ?','Vous êtes :'].includes(String(c.q||'').trim())){
+        c.kind='gender';
+        if([genderSource[0],'Vous êtes :'].includes(c.q))c.q=genderTarget[0];
+        c.opts=(c.opts||[]).map(option=>{const variants=[['Homme','Un homme'],['Femme','Une femme'],['Non binaire','Non-binaire'],['Autre']];const i=variants.findIndex(row=>row.includes(String(option.label||'').trim()));return i>=0?{...option,label:genderTarget[1][i]}:option;});
+      }else if(c.kind==='age'){
+        if(ageSource[0]===c.q)c.q=ageTarget[0];
+        c.opts=(c.opts||[]).map(option=>{const i=ageSource[1].indexOf(option.label);return i>=0?{...option,label:ageTarget[1][i]}:option;});
+      }
+      return c;
+    });
+  }
   const newSubcriterion=()=>({q:'Précisez votre choix',opts:[{label:'Sous-réponse 1',n:0},{label:'Sous-réponse 2',n:0}],subcriteria:[]});
   const rawSubcriteria=option=>Array.isArray(option?.subcriteria)?option.subcriteria:(option?.subcriterion?[option.subcriterion]:[]);
   function normalizeCriterion(item){
@@ -246,7 +278,7 @@
     const editable=!isReadOnly()&&isSocioReferenceLocale();
     const examples=document.querySelector('.socio-examples-visible');
     const addCustom=$('add-socio');
-    if(examples){examples.hidden=!editable;examples.style.display=editable?'':'none';}
+    if(examples){examples.hidden=isReadOnly();examples.style.display=isReadOnly()?'none':'';renderExampleSuggestions();}
     if(addCustom){
       addCustom.hidden=false;
       addCustom.style.display=isReadOnly()?'none':'';
@@ -254,6 +286,14 @@
       addCustom.title=editable?'':'La structure se construit dans la langue de référence.';
       addCustom.classList.toggle('is-translation-redirect',!editable);
     }
+  }
+  function renderExampleSuggestions(){
+    const host=document.querySelector('.socio-examples-visible');if(!host)return;
+    const locale=normalizeLocale(socioContextLocale),rows=EXAMPLE_TRANSLATIONS[locale]||EXAMPLE_TRANSLATIONS.fr;
+    const names={fr:['Âge',...rows.map(row=>row[0])],en:['Age',...rows.map(row=>row[0])],es:['Edad',...rows.map(row=>row[0])]};
+    host.querySelectorAll('[data-example]').forEach(button=>{const index=button.dataset.example==='age'?0:Number(button.dataset.example)+1;button.textContent=`+ ${names[locale]?.[index]||names.fr[index]}`;});
+    const message=host.querySelector('span');
+    if(message)message.textContent=locale==='en'?'Suggested optional questions. They are added with English labels and answers; you can customise them, except for the standardised age bands.':locale==='es'?'Preguntas opcionales sugeridas. Se añaden con preguntas y respuestas en español; puede personalizarlas, excepto los tramos de edad estandarizados.':'Critères facultatifs proposés par Me&YouToo. Les questions et réponses sont préremplies dans chaque langue ; les tranches d’âge restent figées pour le benchmark.';
   }
   function renderStickySocioLanguages(){
     const host=$('socio-dsd-context');if(!host)return;
@@ -269,7 +309,7 @@
   function storeActiveSocio(){if(!socioContextLocale)return;const normalized=normalizedSocio(socio),serialized=JSON.stringify(normalized);if(!socioContextHasStored&&serialized===socioContextBaseline)return;const loc=normalizeLocale(socioContextLocale),ref=socioReference(),before=Array.isArray(socioLanguageVariants?.[loc])?clone(socioLanguageVariants[loc]):[];if(ref.locale&&normalizeLocale(ref.locale)===loc)markSocioTranslationsToReview(loc,socioDiffPaths(before,normalized),before);socioLanguageVariants[loc]=clone(normalized);socioContextHasStored=true;socioContextBaseline=serialized;}
   function storeActiveIntro(){if(!socioContextLocale||!$('intro'))return;const current=String($('intro').value||'').trim();if(!introContextHasStored&&current===introContextBaseline)return;const loc=normalizeLocale(socioContextLocale),ref=introReference(),before=String(introVariants?.[loc]??introResolvedVariants?.[loc]??'').trim();if(ref.locale&&normalizeLocale(ref.locale)===loc&&current!==before)markIntroTranslationsToReview(loc,before);if(current)introVariants[loc]=current;else delete introVariants[loc];introContextHasStored=Boolean(current);introContextBaseline=current;}
   function storeActiveLanguageContent(){storeActiveSocio();storeActiveIntro();}
-  function activateLanguage(locale){socioContextLocale=normalizeLocale(locale);const countries=projectCountries();socioContextCountry=normalizeCountry(project?.selected_country_code)||(countries[0]||'');const exact=socioForLocale(socioContextLocale);socio=normalizeSexismeCriteria(normalizedSocio(exact||(Array.isArray(project?.sociodemo)&&project.sociodemo.length?project.sociodemo:defaultSocio())));socioContextHasStored=Boolean(exact);socioContextBaseline=JSON.stringify(normalizedSocio(socio));const intro=stripHtml(introForLocale(socioContextLocale));if($('intro'))$('intro').value=intro;introContextHasStored=Boolean(introVariants?.[socioContextLocale]);introContextBaseline=String(intro||'').trim();socioOpenRoots.clear();socioOpenBranches.clear();renderIntroReference();}
+  function activateLanguage(locale){socioContextLocale=normalizeLocale(locale);const countries=projectCountries();socioContextCountry=normalizeCountry(project?.selected_country_code)||(countries[0]||'');const exact=socioForLocale(socioContextLocale);socio=normalizeSexismeCriteria(localizeStandardCriteria(normalizedSocio(exact||(Array.isArray(project?.sociodemo)&&project.sociodemo.length?project.sociodemo:defaultSocio())),socioContextLocale));socioContextHasStored=Boolean(exact);socioContextBaseline=JSON.stringify(normalizedSocio(socio));const intro=stripHtml(introForLocale(socioContextLocale));if($('intro'))$('intro').value=intro;introContextHasStored=Boolean(introVariants?.[socioContextLocale]);introContextBaseline=String(intro||'').trim();socioOpenRoots.clear();socioOpenBranches.clear();renderIntroReference();}
   function renderSocioContext(){const introWrap=$('socio-context'),introSelect=$('socio-locale'),introNote=$('socio-context-note'),dsdWrap=$('socio-dsd-context'),dsdSelect=$('socio-dsd-locale'),dsdNote=$('socio-dsd-context-note');if(!introWrap||!introSelect)return;const locales=projectLocales();if(!locales.length){introWrap.hidden=true;if(dsdWrap)dsdWrap.hidden=true;return;}introWrap.hidden=false;if(dsdWrap)dsdWrap.hidden=false;const currentLocale=locales.includes(normalizeLocale(socioContextLocale))?normalizeLocale(socioContextLocale):(locales[0]||'fr');const options=locales.map(loc=>{const c=translationCounts(loc),suffix=[c.todo?`${c.todo} à traduire`:'',c.review?`${c.review} à vérifier`:''].filter(Boolean).join(' · ');return `<option value="${esc(loc)}">${esc(localeLabel(loc))} (${esc(loc.toUpperCase())})${suffix?` · ${suffix}`:''}</option>`}).join('');introSelect.innerHTML=options;introSelect.value=currentLocale;if(dsdSelect){dsdSelect.innerHTML=options;dsdSelect.value=currentLocale;}socioContextLocale=currentLocale;if(introNote)introNote.textContent='Modifiez la langue sélectionnée en gardant la langue de référence Me&YouToo visible ci-dessous.';if(dsdNote)dsdNote.textContent='Les données proposées viennent du référentiel Me&YouToo dans la langue sélectionnée.';syncSocioStructureControls();renderStickySocioLanguages();const changeLocale=nextLocale=>{storeActiveLanguageContent();scheduleAutosave(0);activateLanguage(nextLocale);renderSocioContext();renderSocio();};introSelect.onchange=()=>changeLocale(introSelect.value);if(dsdSelect)dsdSelect.onchange=()=>changeLocale(dsdSelect.value);}
   const normalizeResultResources=value=>(Array.isArray(value)?value:[]).map((item,i)=>{const title=String(item?.title||item?.titre||item?.label||item?.text||'').trim(),url=String(item?.url||item?.href||item?.link||'').trim(),documentId=String(item?.documentId??item?.document_id??'').trim(),legacyFilename=String(item?.legacyFilename||item?.legacy_filename||'').trim(),filename=String(item?.filename||legacyFilename||'').trim(),type=String(item?.type||'').trim().toLowerCase()||(documentId?'document':legacyFilename&&!url?'legacy_document':'link');return{title,type,url,documentId,filename,legacyFilename}}).filter(item=>item.title||item.url||item.documentId||item.legacyFilename);
   const validHttpUrl=value=>{try{const u=new URL(String(value||'').trim());return u.protocol==='http:'||u.protocol==='https:'}catch(_){return false}};
@@ -386,6 +426,12 @@
   function normalizeSexismeCriteria(items,locale=socioContextLocale){
     const loc=normalizeLocale(locale),todos=new Set(translationTodoPaths(loc)),keepCriterion=(c,i)=>!isBlankAutoCriterion(c)||todos.has(`q:${criterionKey(c,i)}`)||[...todos].some(path=>path.startsWith(`o:${criterionKey(c,i)}:`));
     if(!genderRequiredTheme())return items.filter(keepCriterion);
+    if(!isLegacyClientCampaign()&&['en','es'].includes(loc)){
+      const localized=localizeStandardCriteria(items.filter(keepCriterion),loc);
+      const gender=localized.find(c=>c.kind==='gender'||/^(what is your gender\?|¿cuál es su género\?|quel est votre genre \?)/i.test(c.q||''));
+      if(gender){gender.kind='gender';return [gender,...localized.filter(c=>c!==gender)];}
+      return [genderForLocale(loc),...localized];
+    }
     let cleaned=items.filter(keepCriterion);
     cleaned=cleaned.filter(c=>c.kind==='age'||String(c.q||'').trim()==='Votre âge'||!/(?:âge|\bage\b)/i.test(String(c.q||'')));
     let gender=cleaned.find(c=>c.kind==='gender'||/genre/i.test(c.q||''));const genderWasExisting=Boolean(gender);
@@ -551,7 +597,7 @@
     const active=normalizeLocale(socioContextLocale),snapshot=clone(socio);
     for(const loc of projectLocales()){
       const n=normalizeLocale(loc);if(n===active)continue;
-      if(!Array.isArray(socioLanguageVariants[n])||!socioLanguageVariants[n].length)socioLanguageVariants[n]=clone(snapshot);
+      if(!Array.isArray(socioLanguageVariants[n])||!socioLanguageVariants[n].length)socioLanguageVariants[n]=localizeStandardCriteria(clone(snapshot),n);
     }
   }
   function translationTodoPaths(locale){const st=reviewState(),loc=normalizeLocale(locale);return Array.isArray(st.todo[loc])?st.todo[loc]:[];}
@@ -738,7 +784,36 @@
   $('intro').addEventListener('input',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave();}});
   $('launch-date').addEventListener('change',()=>{if(!isReadOnly()){syncCloseMin();updateNextState();scheduleAutosave(0);}});
   $('close-date').addEventListener('change',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave(0);}});
-  document.querySelectorAll('[data-example]').forEach(b=>b.onclick=()=>{if(isReadOnly())return;const k=b.dataset.example;if(k==='age'){storeActiveSocio();for(const loc of projectLocales()){const n=normalizeLocale(loc),items=Array.isArray(socioLanguageVariants[n])?clone(socioLanguageVariants[n]):[];if(!items.some(c=>c.kind==='age')){items.push(ageForLocale(n));socioLanguageVariants[n]=items;}}if(!socio.some(c=>c.kind==='age'))socio.push(ageForLocale(socioContextLocale));socioContextHasStored=true;socioContextBaseline=JSON.stringify(normalizedSocio(socio));}else{ensureAllLocaleSocioVariants();const e=EXAMPLES[+k],criterion={q:e[0],opts:e[1].map(label=>({label,n:0}))},index=socio.length;socio.push(criterion);propagateRootCriterionAdd(criterion,index);renderSocioContext();}renderSocio();scheduleAutosave(0);});
+  document.querySelectorAll('[data-example]').forEach(b=>b.onclick=()=>{
+    if(isReadOnly())return;
+    const key=b.dataset.example,requestedLocale=normalizeLocale(socioContextLocale),refLoc=normalizeLocale(socioReference().locale)||requestedLocale;
+    // La structure est créée une fois dans la langue de référence et les labels
+    // correspondants sont remplis dans les langues disponibles du projet.
+    storeActiveLanguageContent();
+    if(requestedLocale!==refLoc)activateLanguage(refLoc);
+    ensureAllLocaleSocioVariants();
+    const index=key==='age'?-1:Number(key);
+    if(key==='age'&&socio.some(c=>c.kind==='age')){
+      if(requestedLocale!==refLoc)activateLanguage(requestedLocale);
+      renderSocioContext();renderSocio();return;
+    }
+    const criterion=key==='age'?ageForLocale(refLoc):suggestedCriterion(index,refLoc);
+    const rootIndex=socio.length;
+    socio.push(criterion);
+    for(const loc of projectLocales()){
+      const n=normalizeLocale(loc);
+      if(n===refLoc)continue;
+      const items=Array.isArray(socioLanguageVariants[n])?socioLanguageVariants[n]:(socioLanguageVariants[n]=[]);
+      if(!isLegacyClientCampaign())socioLanguageVariants[n]=localizeStandardCriteria(items,n);
+      const target=socioLanguageVariants[n];
+      const translated=key==='age'?ageForLocale(n):suggestedCriterion(index,n);
+      target.splice(rootIndex,0,translated);
+    }
+    socioContextHasStored=true;
+    storeActiveSocio();
+    if(requestedLocale!==refLoc)activateLanguage(requestedLocale);
+    renderSocioContext();renderSocio();scheduleAutosave(0);
+  });
   $('add-result-resource').onclick=()=>openResourceModal();
   $('result-preview-toggle').onclick=()=>{const button=$('result-preview-toggle'),body=$('result-resources-preview'),open=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',String(!open));body.hidden=open;button.querySelector('span').textContent=open?'⌄':'⌃';};
   window.StudioParametragePreviewSnapshot=()=>{storeActiveLanguageContent();return {project:{theme:project?.theme_title||'',title:$('respondent-title')?.value.trim()||project?.respondent_title||baseTitle||'Autodiagnostic',intro:$('intro')?.value.trim()||'',socio:socio,result_buttons:resultResources.filter(resourceComplete)},respondent_context:{countryCode:socioContextCountry,locale:socioContextLocale}};};
