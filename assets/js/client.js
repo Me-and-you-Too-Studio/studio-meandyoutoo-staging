@@ -1448,8 +1448,9 @@
             // Ne jamais ramener par défaut une campagne multilingue à FR seulement.
             localeInputs.forEach(locale=>{locale.checked=true;});
           }else if(input.checked&&!localeInputs.some(locale=>locale.checked)&&localeInputs.length){
-            const preferred=localeInputs.find(locale=>locale.value==="fr")||localeInputs[0];
-            preferred.checked=true;
+            // Un pays nouvellement sélectionné conserve les langues connues du projet.
+            // FR ne doit jamais être cochée automatiquement si d'autres langues existent.
+            localeInputs.forEach(locale=>{locale.checked=true;});
           }
         };
       });
