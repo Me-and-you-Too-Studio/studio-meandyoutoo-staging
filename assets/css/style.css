@@ -15284,3 +15284,9 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 @media(max-width:680px){.reuse-client-body{padding:18px}.reuse-client-head{padding:20px}.reuse-client-footer{padding:15px 18px}}
 
 .admin-library-answer-number .admin-catalog-answer-id{display:block;background:transparent;padding:2px 0 0;font-size:.65rem;line-height:1.2;color:#436579;font-weight:700;white-space:nowrap}
+
+/* Composer : affordance explicite et traductions communes */
+.composer-country-tab-with-locales .composer-country-action{display:block;margin-top:9px;padding-top:8px;border-top:1px solid #dbe6ea;color:#087c87;font-weight:800;font-size:.8rem}
+.composer-country-tab-with-locales:hover{border-color:#078b93;box-shadow:0 5px 15px rgba(7,139,147,.15);transform:translateY(-2px)}
+.composer-country-tab-with-locales.is-active .composer-country-action{color:#075f66}
+.composer-shared-translation-note{margin:10px 24px 0;padding:11px 15px;background:#eef7f9;border:1px solid #c9e2e6;border-radius:10px;font-size:.86rem;line-height:1.5;color:#23405c}
