@@ -132,7 +132,7 @@
   function campaignCountryLabel(code){
     const key=String(code||"").trim().toUpperCase();
     if(campaignCountryNamesByNumericCode[key])return campaignCountryNamesByNumericCode[key];
-    if(["WW","WORLDWIDE","INT","GLOBAL"].includes(key))return "International";
+    if(["WW","WORLDWIDE","INT","GLOBAL"].includes(key))return "International / Worldwide";
     if(key==="ASIA")return "Asie";
     try{return new Intl.DisplayNames(["fr"],{type:"region"}).of(key)||key;}catch(_){return key;}
   }
@@ -156,8 +156,8 @@
     const selectedCountries=new Set(campaignCountries(p));
     const map=p?.country_locales&&typeof p.country_locales==="object"?p.country_locales:{};
     const availableLocales=[...new Set([...campaignLocales(p),...Object.values(map).flatMap(v=>Array.isArray(v)?v:[])].map(v=>String(v||"").trim().toLowerCase().replaceAll("_","-")).filter(Boolean))];
-    return Object.entries(campaignCountryNamesByNumericCode)
-      .sort((a,b)=>a[1].localeCompare(b[1],"fr"))
+    return [["WORLDWIDE","🌍 International / Worldwide"],...Object.entries(campaignCountryNamesByNumericCode)
+      .sort((a,b)=>a[1].localeCompare(b[1],"fr"))]
       .map(([code,label])=>{
         const checked=selectedCountries.has(code);
         const configured=[...new Set((Array.isArray(map[code])?map[code]:(checked?campaignLocales(p):[])).map(v=>String(v||"").trim().toLowerCase().replaceAll("_","-")).filter(Boolean))];
@@ -1412,7 +1412,7 @@
       '<h2>' + esc(p.campaign_name || p.title || "Campagne") + '</h2>' +
       '<p>Pour une campagne historique, les dates sont initialisées à partir du pack de passations du client. Vous pouvez les modifier ici si la campagne suit un calendrier différent.</p>' +
       (p.legacy_history===true
-        ? '<section class="legacy-scope-management"><div class="legacy-scope-head"><div><strong>Périmètre historique</strong><p>Sélectionnez tous les pays réellement couverts par cette campagne historique, puis les langues diffusées dans chacun d’eux.</p></div><span class="info-dot" title="Cette correction modifie uniquement le rattachement pays/langues du projet. Les situations, réponses, scores, profils et traductions restent inchangés.">i</span></div><div id="admin-management-legacy-scopes" class="legacy-country-choices">'+legacyScopeChoicesHtml(p)+'</div><small class="hint">Vous pouvez sélectionner plusieurs pays. Chaque pays sélectionné doit conserver au moins une langue. Cette correction ne supprime aucune traduction du contenu historique.</small></section>'
+        ? '<section class="legacy-scope-management"><div class="legacy-scope-head"><div><strong>Périmètre historique</strong><p>Choisissez « International / Worldwide » pour un diagnostic sans distinction de pays, ou sélectionnez les pays concernés. Précisez ensuite les langues diffusées.</p></div><span class="info-dot" title="Cette correction modifie uniquement le rattachement pays/langues du projet. Les situations, réponses, scores, profils et traductions restent inchangés.">i</span></div><div id="admin-management-legacy-scopes" class="legacy-country-choices">'+legacyScopeChoicesHtml(p)+'</div><small class="hint">« International / Worldwide » est exclusif des pays individuels. Chaque périmètre sélectionné doit avoir au moins une langue. Aucune traduction historique n’est supprimée.</small></section>'
         : '') +
       '<div class="admin-form-grid">' +
       '<label class="field" style="grid-column:1/-1"><span>Base catalogue de référence</span><select id="admin-management-theme">' + catalogThemeOptions(p.theme_id) + '</select><small class="hint">Pour un import historique non relié, vous pouvez choisir ici la base catalogue correspondante. Cela ne remplace ni ne modifie le contenu historique importé.</small></label>' +
@@ -1430,6 +1430,14 @@
     if(legacyScopeRoot){
       legacyScopeRoot.querySelectorAll("[data-legacy-country]").forEach(input=>{
         input.onchange=()=>{
+          // Worldwide est un périmètre transversal, pas un pays supplémentaire.
+          if(input.checked){
+            const worldwide=input.value==="WORLDWIDE";
+            legacyScopeRoot.querySelectorAll("[data-legacy-country]").forEach(other=>{
+              if(other===input || (other.value==="WORLDWIDE")===worldwide)return;
+              if(other.checked){other.checked=false;other.dispatchEvent(new Event("change"));}
+            });
+          }
           const row=input.closest("[data-legacy-country-row]");
           const localeInputs=[...row.querySelectorAll("[data-legacy-scope-locale]")];
           row.classList.toggle("is-selected",input.checked);
