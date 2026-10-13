@@ -141,6 +141,10 @@
     const locales=[];
     locales.push(...(Array.isArray(project?.locales)?project.locales:[]));
     if(project?.selected_locale)locales.push(project.selected_locale);
+    if(!isLegacyClientCampaign(project)){
+      if(project?.working_locale)locales.push(project.working_locale);
+      return normalize(locales);
+    }
     locales.push(...(Array.isArray(project?.content_locales)?project.content_locales:[]));
     const intro=project?.introduction_variants_resolved&&typeof project.introduction_variants_resolved==='object'&&!Array.isArray(project.introduction_variants_resolved)?project.introduction_variants_resolved:{};
     locales.push(...Object.keys(intro));
@@ -171,11 +175,11 @@
       const contextual=normalize(context[key]);
       // Un AD mono-périmètre peut être multilingue : dans ce cas, toutes les
       // langues réellement disponibles appartiennent à ce même périmètre.
-      if(countries.length===1){
+      if(countries.length===1&&isLegacyClientCampaign(project)){
         out[key]=normalize([...explicit,...contextual,...global]);
       }else{
         const resolved=explicit.length?explicit:contextual;
-        out[key]=resolved;
+        out[key]=resolved.length?resolved:(countries.length===1?global:[]);
       }
     });
     return out;
