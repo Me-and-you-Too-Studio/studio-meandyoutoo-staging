@@ -250,7 +250,10 @@
       }
       function compatibleCountries(){
         var selected=selectedCaps(),all=variants.map(function(v){return v.countryCode;}).filter(Boolean);
-        return all.filter(function(code){return selected.every(function(c){return c.worldwide||!(c.countryCodes||[]).length||(c.countryCodes||[]).includes(code);});});
+        return all.filter(function(code){
+          return selected.every(function(c){return c.worldwide||!(c.countryCodes||[]).length||(c.countryCodes||[]).includes(code);})
+            &&localesForSelectedCountry(code).length>0;
+        });
       }
       function renderCountries(){
         var previous=[].slice.call(countriesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});

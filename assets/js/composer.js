@@ -379,11 +379,13 @@
 
     // Réinjecte systématiquement les périmètres déjà présents dans la campagne.
     // Cela évite de perdre le bouton/modal sur les imports historiques.
-    currentCountries.forEach(code=>{
-      const stored=normalizeLocales(storedByCountry?.[code]);
-      const fallback=stored.length?stored:currentLocales;
-      rawCountryOptions.push({code,locales:fallback,supported:true,isCurrent:true});
-    });
+    if(isLegacyClientCampaign(state.project)){
+      currentCountries.forEach(code=>{
+        const stored=normalizeLocales(storedByCountry?.[code]);
+        const fallback=stored.length?stored:currentLocales;
+        rawCountryOptions.push({code,locales:fallback,supported:true,isCurrent:true});
+      });
+    }
 
     const countryOptionGroups=new Map();
     rawCountryOptions.forEach(item=>{
