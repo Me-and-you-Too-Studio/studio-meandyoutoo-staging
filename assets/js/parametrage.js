@@ -41,6 +41,12 @@
   const ageForLocale=locale=>{const loc=String(locale||'fr').trim().toLowerCase().replaceAll('_','-'),row=AGE_TRANSLATIONS[loc]||AGE_TRANSLATIONS.fr;return{kind:'age',q:row[0],opts:row[1].map(label=>({label,n:0}))};};
   const AGE=ageForLocale('fr');
   const EXAMPLES=[['Business Unit',['Business Unit 1','Business Unit 2']],['Régions',['Région 1','Région 2']],['Fonction',['Fonction 1','Fonction 2']],['Manager ou collaborateur',['Manager','Collaborateur']]];
+  const EXAMPLE_TRANSLATIONS={
+    en:[['Business unit',['Business unit 1','Business unit 2']],['Regions',['Region 1','Region 2']],['Job function',['Function 1','Function 2']],['Manager or employee',['Manager','Employee']]],
+    es:[['Unidad de negocio',['Unidad de negocio 1','Unidad de negocio 2']],['Regiones',['Región 1','Región 2']],['Función',['Función 1','Función 2']],['Responsable o colaborador',['Responsable','Colaborador']]]
+  };
+  const GENDER_TRANSLATIONS={fr:['Quel est votre genre ?',['Homme','Femme','Non binaire','Autre']],en:['What is your gender?',['Man','Woman','Non-binary','Other']],es:['¿Cuál es su género?',['Hombre','Mujer','No binario','Otro']]};
+  const genderForLocale=locale=>{const row=GENDER_TRANSLATIONS[normalizeLocale(locale)]||GENDER_TRANSLATIONS.fr;return{kind:'gender',q:row[0],opts:row[1].map(label=>({label,n:0}))};};
   const newSubcriterion=()=>({q:'Précisez votre choix',opts:[{label:'Sous-réponse 1',n:0},{label:'Sous-réponse 2',n:0}],subcriteria:[]});
   const rawSubcriteria=option=>Array.isArray(option?.subcriteria)?option.subcriteria:(option?.subcriterion?[option.subcriterion]:[]);
   function normalizeCriterion(item){
@@ -246,7 +252,7 @@
     const editable=!isReadOnly()&&isSocioReferenceLocale();
     const examples=document.querySelector('.socio-examples-visible');
     const addCustom=$('add-socio');
-    if(examples){examples.hidden=!editable;examples.style.display=editable?'':'none';}
+    if(examples){examples.hidden=isReadOnly();examples.style.display=isReadOnly()?'none':'';examples.title=editable?'':'La structure est créée depuis la langue de référence ; les versions EN et ES sont préparées automatiquement.';}
     if(addCustom){
       addCustom.hidden=false;
       addCustom.style.display=isReadOnly()?'none':'';
@@ -385,13 +391,22 @@
 
   function normalizeSexismeCriteria(items,locale=socioContextLocale){
     const loc=normalizeLocale(locale),todos=new Set(translationTodoPaths(loc)),keepCriterion=(c,i)=>!isBlankAutoCriterion(c)||todos.has(`q:${criterionKey(c,i)}`)||[...todos].some(path=>path.startsWith(`o:${criterionKey(c,i)}:`));
-    if(!genderRequiredTheme())return items.filter(keepCriterion);
     let cleaned=items.filter(keepCriterion);
-    cleaned=cleaned.filter(c=>c.kind==='age'||String(c.q||'').trim()==='Votre âge'||!/(?:âge|\bage\b)/i.test(String(c.q||'')));
-    let gender=cleaned.find(c=>c.kind==='gender'||/genre/i.test(c.q||''));const genderWasExisting=Boolean(gender);
-    if(!gender){gender=clone(defaultSocio()[0]);cleaned.unshift(gender);}else{gender.kind='gender';gender.q='Quel est votre genre ?';const existing=Array.isArray(gender.opts)?gender.opts:[];const count=label=>Number(existing.find(o=>String(o.label||'').trim().toLocaleLowerCase('fr-FR')===label.toLocaleLowerCase('fr-FR'))?.n)||0;const labels=['Homme','Femme'];if(!genderWasExisting||existing.some(o=>/^(non[ -]?binaire)$/i.test(String(o.label||'').trim())))labels.push('Non binaire');if(!genderWasExisting||existing.some(o=>/^autre$/i.test(String(o.label||'').trim())))labels.push('Autre');gender.opts=labels.map(label=>({label,n:count(label)}));}
-    const age=cleaned.find(c=>c.kind==='age'||String(c.q||'').trim()==='Votre âge');if(age){const existing=Array.isArray(age.opts)?age.opts:[];const count=label=>Number(existing.find(o=>String(o.label||'').trim()===label)?.n)||0;age.kind='age';age.q='Votre âge';age.opts=AGE.opts.map(o=>({label:o.label,n:count(o.label)}));}
-    cleaned=cleaned.filter(c=>c!==gender);return [gender,...cleaned];
+    if(!genderRequiredTheme())return cleaned;
+    // Ne pas réécrire les traductions EN/ES par des intitulés français à chaque navigation.
+    const genderLabels=GENDER_TRANSLATIONS[loc]||GENDER_TRANSLATIONS.fr;
+    let gender=cleaned.find(c=>c.kind==='gender'||/^(quel est votre genre|what is your gender|¿cuál es su género)/i.test(String(c.q||'')));
+    if(!gender){gender=genderForLocale(loc);cleaned.unshift(gender);}
+    else{
+      gender.kind='gender';
+      const labels=genderLabels[1],existing=Array.isArray(gender.opts)?gender.opts:[];
+      const matched=(label,index)=>existing.find(o=>String(o.label||'').trim().toLowerCase()===label.toLowerCase())||existing[index];
+      const allowOptional=(index)=>index<2||existing.some(o=>[...Object.values(GENDER_TRANSLATIONS)].some(row=>row[1][index]?.toLowerCase()===String(o.label||'').trim().toLowerCase()));
+      gender.q=genderLabels[0];gender.opts=labels.filter((_,i)=>allowOptional(i)).map(label=>({label,n:Number(matched(label,labels.indexOf(label))?.n)||0}));
+    }
+    const age=cleaned.find(c=>c.kind==='age'||Object.values(AGE_TRANSLATIONS).some(row=>row[0].toLowerCase()===String(c.q||'').trim().toLowerCase()));
+    if(age){const standard=ageForLocale(loc);age.kind='age';age.q=standard.q;const old=Array.isArray(age.opts)?age.opts:[];age.opts=standard.opts.map((o,i)=>({label:o.label,n:Number(old[i]?.n)||0}));}
+    return [gender,...cleaned.filter(c=>c!==gender)];
   }
   function show(message){const alert=$('param-alert');alert.hidden=false;alert.textContent=message;alert.scrollIntoView({behavior:'smooth',block:'center'});}
   function optionState(value){const n=Number(value)||0;if(!n)return{cls:'empty',hint:'Effectif à renseigner'};if(n<8)return{cls:'danger',hint:'🚨 Groupe trop petit : moins de 8'};if(n<10)return{cls:'warning',hint:'⚠️ Groupe fragile : entre 8 et 9'};return{cls:'success',hint:'✓ Groupe exploitable'};}
@@ -449,7 +464,7 @@
     const ro=isReadOnly(),structureEditable=!ro&&normalizeLocale(socioReference().locale)===normalizeLocale(socioContextLocale);
     const toolbar=`<div class="socio-tree-toolbar"><div><strong>Données socio-démographiques</strong><span>Repliez les critères et ouvrez uniquement la branche que vous souhaitez modifier.</span></div><div class="socio-tree-toolbar-actions"><button type="button" class="button button-ghost button-small" data-socio-collapse-all>Tout replier</button><button type="button" class="button button-secondary button-small" data-socio-expand-all>Tout déplier</button></div></div>`;
     $('socio-list').innerHTML=toolbar+socio.map((criterion,i)=>{
-      const path=String(i),isGender=genderRequiredTheme()&&criterion.kind==='gender',isAge=criterion.kind==='age'||String(criterion.q||'').trim()==='Votre âge',locked=isGender||isAge||ro,isOpen=socioOpenRoots.has(path),stats=criterionStats(criterion),translationMode=Boolean(referenceCriterionFor(criterion,i)),criterionStructureEditable=structureEditable&&!translationMode;
+      const path=String(i),isGender=genderRequiredTheme()&&criterion.kind==='gender',isAge=criterion.kind==='age'||Object.values(AGE_TRANSLATIONS).some(row=>row[0]===String(criterion.q||'').trim()),locked=isGender||isAge||ro,isOpen=socioOpenRoots.has(path),stats=criterionStats(criterion),translationMode=Boolean(referenceCriterionFor(criterion,i)),criterionStructureEditable=structureEditable&&!translationMode;
       const optionsHtml=criterion.opts.map((option,j)=>{
         const optionPath=`${path}|${j}`;
         if(locked){
@@ -462,7 +477,7 @@
         return `<div class="socio-option-block">${answerRow(option,optionPath,criterionStructureEditable&&criterion.opts.length>2)}${children}${criterionStructureEditable?`<button class="socio-add-sub" type="button" data-tree-child-add="${optionPath}">+ Ajouter un sous-critère pour cette réponse</button>`:''}</div>`;
       }).join('');
       const lockText=ro?'Campagne en lecture seule.':isGender?'Obligatoire · réponses standardisées. Homme et Femme sont obligatoires ; Non binaire et Autre peuvent être supprimés.':isAge?'Tranches d’âge standardisées pour permettre la comparaison avec le benchmark global Me&YouToo. Elles ne peuvent être ni modifiées, ni ajoutées, ni supprimées.':'';
-      const headerAction=ro?'<span class="socio-required-badge">🔒 Lecture seule</span>':isGender?`<span class="socio-required-badge">Obligatoire</span>`:criterionStructureEditable?`<button class="button button-danger-soft" type="button" data-socio-remove="${i}" ${socio.length<=1?'disabled':''}>Supprimer le critère</button>`:'';
+      const headerAction=ro?'<span class="socio-required-badge">🔒 Lecture seule</span>':isGender?`<span class="socio-required-badge">Obligatoire</span>`:isAge&&structureEditable?`<button class="button button-danger-soft" type="button" data-socio-remove="${i}">Retirer la DSD Âge</button>`:criterionStructureEditable?`<button class="button button-danger-soft" type="button" data-socio-remove="${i}" ${socio.length<=1?'disabled':''}>Supprimer le critère</button>`:'';
       const branchBadge=stats.nested?`<span class="socio-tree-badge">${stats.nested} sous-question${stats.nested>1?'s':''} · profondeur ${stats.maxDepth}</span>`:'';
       return `<article class="socio-card socio-card-foldable ${isOpen?'is-open':'is-collapsed'} ${locked?'socio-card-locked':''} ${isGender?'socio-card-gender':''} ${isAge?'socio-card-age':''}" ${ro?'style="background:var(--royal-blue-tint)"':''}>
         <div class="socio-card-fold-head">
@@ -700,8 +715,8 @@
         return true;
       }catch(error){
         const message=String(error?.message||'').trim();
-        if(/intitulé|réponse|critère|socio|date de clôture/i.test(message)){autosaveStatus('Saisie en cours — enregistrement dès que le bloc est complet','pending');settleAutosaveFields('pending');}
-        else{autosaveStatus('⚠ Enregistrement automatique interrompu','error');settleAutosaveFields('error');}
+        if(/intitulé|réponse|critère|socio|date de clôture/i.test(message)){autosaveStatus(`⚠ Non enregistré : ${message||'données incomplètes'}`,'error');settleAutosaveFields('error');}
+        else{autosaveStatus(`⚠ Non enregistré : ${message||'erreur de connexion'}`,'error');settleAutosaveFields('error');}
         return false;
       }finally{autosaveInFlight=null;}
     })();
@@ -739,7 +754,7 @@
   $('intro').addEventListener('input',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave();}});
   $('launch-date').addEventListener('change',()=>{if(!isReadOnly()){syncCloseMin();updateNextState();scheduleAutosave(0);}});
   $('close-date').addEventListener('change',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave(0);}});
-  document.querySelectorAll('[data-example]').forEach(b=>b.onclick=()=>{if(isReadOnly())return;const k=b.dataset.example;if(k==='age'){storeActiveSocio();for(const loc of projectLocales()){const n=normalizeLocale(loc),items=Array.isArray(socioLanguageVariants[n])?clone(socioLanguageVariants[n]):[];if(!items.some(c=>c.kind==='age')){items.push(ageForLocale(n));socioLanguageVariants[n]=items;}}if(!socio.some(c=>c.kind==='age'))socio.push(ageForLocale(socioContextLocale));socioContextHasStored=true;socioContextBaseline=JSON.stringify(normalizedSocio(socio));}else{ensureAllLocaleSocioVariants();const e=EXAMPLES[+k],criterion={q:e[0],opts:e[1].map(label=>({label,n:0}))},index=socio.length;socio.push(criterion);propagateRootCriterionAdd(criterion,index);renderSocioContext();}renderSocio();scheduleAutosave(0);});
+  document.querySelectorAll('[data-example]').forEach(b=>b.onclick=async()=>{if(isReadOnly())return;if(!isSocioReferenceLocale()){const ref=socioReference().locale;if(!ref)return;storeActiveLanguageContent();activateLanguage(ref);renderSocioContext();renderSocio();}const k=b.dataset.example;if(k==='age'){storeActiveSocio();for(const loc of projectLocales()){const n=normalizeLocale(loc),items=Array.isArray(socioLanguageVariants[n])?clone(socioLanguageVariants[n]):[];if(!items.some(c=>c.kind==='age')){items.push(ageForLocale(n));socioLanguageVariants[n]=items;}}if(!socio.some(c=>c.kind==='age'))socio.push(ageForLocale(socioContextLocale));socioContextHasStored=true;socioContextBaseline=JSON.stringify(normalizedSocio(socio));}else{ensureAllLocaleSocioVariants();const e=EXAMPLES[+k],criterion={q:e[0],opts:e[1].map(label=>({label,n:0}))},index=socio.length;socio.push(criterion);propagateRootCriterionAdd(criterion,index);for(const loc of projectLocales()){const translated=EXAMPLE_TRANSLATIONS[normalizeLocale(loc)]?.[+k];if(!translated||normalizeLocale(loc)===normalizeLocale(socioContextLocale))continue;const items=socioLanguageVariants[normalizeLocale(loc)];if(Array.isArray(items)&&items[index]){items[index].q=translated[0];items[index].opts=translated[1].map(label=>({label,n:0}));}}renderSocioContext();}renderSocio();scheduleAutosave(0);});
   $('add-result-resource').onclick=()=>openResourceModal();
   $('result-preview-toggle').onclick=()=>{const button=$('result-preview-toggle'),body=$('result-resources-preview'),open=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',String(!open));body.hidden=open;button.querySelector('span').textContent=open?'⌄':'⌃';};
   window.StudioParametragePreviewSnapshot=()=>{storeActiveLanguageContent();return {project:{theme:project?.theme_title||'',title:$('respondent-title')?.value.trim()||project?.respondent_title||baseTitle||'Autodiagnostic',intro:$('intro')?.value.trim()||'',socio:socio,result_buttons:resultResources.filter(resourceComplete)},respondent_context:{countryCode:socioContextCountry,locale:socioContextLocale}};};
@@ -747,11 +762,12 @@
   $('nb-respondents').oninput=()=>{if(isReadOnly())return;updateVigilance();renderQuota();scheduleAutosave();};
   $('close-packs').onclick=()=>{const panel=$('inline-packs');panel.hidden=true;const toggle=$('toggle-packs');if(toggle)toggle.textContent='Voir les packs disponibles';};window.addEventListener('studio:pack-requested',loadQuota);bindPackToggle();
   ['campaign-name','respondent-title'].forEach(id=>$(id)?.addEventListener('input',()=>scheduleAutosave()));
+  window.addEventListener('beforeunload',event=>{if(!autosaveEnabled||isReadOnly())return;if(autosaveTimer||autosaveInFlight||autosaveFingerprint(autosavePayload())!==lastSavedFingerprint){event.preventDefault();event.returnValue='';}});
   $('param-next-top')?.addEventListener('click',()=>$('settings-form')?.requestSubmit());
   $('settings-form').addEventListener('submit',async event=>{
     event.preventDefault();
     if(isReadOnly()){location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;return;}
-    await flushAutosave();
+    if(!await flushAutosave()){show('Enregistrement impossible : les modifications ne sont pas sauvegardées. Corrigez le message d’erreur avant de continuer.');return;}
     const readiness=settingsReadiness();if(!readiness.introChanged||!readiness.launchFilled||!readiness.closeFilled||!readiness.diffusionReady){await showReadinessModal();return;}
     storeActiveLanguageContent();const campaignName=$('campaign-name').value.trim(),respondentTitle=$('respondent-title').value.trim(),primaryLocale=normalizeLocale(project?.selected_locale||(Array.isArray(project?.locales)&&project.locales[0])||'fr'),introductionHtml=socioContextLocale===primaryLocale?readiness.intro:String(project?.introduction_html||readiness.intro),launchDate=readiness.launch,closeDate=readiness.close;const rawRespondents=$('nb-respondents').value.trim(),nbRespondents=rawRespondents?Number(rawRespondents):null;
     if(!respondentTitle)return show('Le titre visible est obligatoire.');if(!isLegacyClientCampaign()&&!project?.review_mode&&launchDate<iso(5))return show('La date de lancement doit être au minimum à J+5.');if(closeDate<=launchDate)return show('La date de clôture doit être postérieure à la date de lancement.');if(!socio.length)return show('Au moins une donnée d’analyse doit être présente.');if(invalidSocio())return show('Chaque donnée et chaque sous-critère doivent avoir un intitulé et au moins deux réponses renseignées.');const incompleteResource=resultResources.find(r=>!resourceComplete(r));if(incompleteResource)return show(incompleteResource.type==='legacy_document'?`Le PDF historique « ${incompleteResource.legacyFilename} » doit être rattaché avant de pouvoir être utilisé.`:'Chaque ressource doit avoir un texte et soit une URL valide, soit un fichier PDF.');const resultButtons=resultResources.filter(resourceComplete);
