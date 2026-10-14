@@ -60,13 +60,13 @@
     tr:'Turc',cs:'Tchèque',sk:'Slovaque',id:'Indonésien'
   };
   const countryNames={
-    EU:'Europe',AR:'Argentine',AT:'Autriche',BR:'Brésil',CA:'Canada',CH:'Suisse',CL:'Chili',CN:'Chine',DE:'Allemagne',DK:'Danemark',
+    WORLDWIDE:'International · adaptations possibles',EU:'Europe',AR:'Argentine',AT:'Autriche',BR:'Brésil',CA:'Canada',CH:'Suisse',CL:'Chili',CN:'Chine',DE:'Allemagne',DK:'Danemark',
     ES:'Espagne',FR:'France',HK:'Hong Kong',JP:'Japon',KR:'Corée du Sud',MX:'Mexique',NO:'Norvège',PA:'Panama',PT:'Portugal',
     SE:'Suède',TW:'Taïwan',US:'États-Unis',UY:'Uruguay',BE:'Belgique',GB:'Royaume-Uni',IT:'Italie',NL:'Pays-Bas',PL:'Pologne',
     RO:'Roumanie',RU:'Russie',TR:'Turquie',BG:'Bulgarie',AU:'Australie',IN:'Inde',SG:'Singapour'
   };
   const scopeNames={
-    worldwide:'International / Worldwide',international:'International / Worldwide',global:'International / Worldwide',
+    worldwide:'International · adaptations possibles',international:'International · adaptations possibles',global:'International · adaptations possibles',
     europe:'Europe',asia:'Asie',asie:'Asie','north-america':'Amérique du Nord','south-america':'Amérique du Sud',
     africa:'Afrique',middleeast:'Moyen-Orient','middle-east':'Moyen-Orient',oceania:'Océanie'
   };
@@ -261,6 +261,7 @@
       </summary>
       <div class="topic-expanded">
         ${diagnosticLine}
+        ${sc.some(x=>['worldwide','international','global'].includes(norm(x)))||co.includes('WORLDWIDE')?`<details class="topic-detail-block"><summary><strong>ⓘ Usage international</strong></summary><p>Ce catalogue propose des contenus pour un usage international. Certaines versions sont adaptées au contexte local et peuvent différer selon la langue. Vérifiez que la situation et les réponses conviennent aux pays concernés, notamment lorsqu’elles évoquent un dispositif administratif ou juridique.</p><p>Le pays détermine le contexte de la situation. La langue détermine la langue dans laquelle elle est présentée.</p></details>`:''}
         ${tags.length?`<div class="topic-business-tags" aria-label="Tags métier"><strong class="topic-business-tags-label">Tags</strong>${tags.map(tag=>`<span>${esc(tag)}</span>`).join('')}</div>`:''}
         <div class="topic-expanded-grid">
           <div class="topic-detail-block"><strong>Périmètres disponibles</strong><div class="topic-chip-list">${chips(perimeterItems,perimeterFormatter,4)}</div></div>
