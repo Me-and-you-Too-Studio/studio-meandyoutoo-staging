@@ -2689,11 +2689,19 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     // un champ "Traduction FR/EN" pour cette même langue.
     return scoped.filter(row=>String(row.locale||'').trim().toLowerCase().replaceAll('_','-')!==reference);
   }
+  function missingSituationLanguageEditors(entity){
+    if(entity?._linked||entity?._placement_id)return '';
+    const theme=state.catalogThemes.find(t=>(t.chapters||[]).some(ch=>(ch.situations||[]).some(si=>String(si.id)===String(entity.id))));
+    const reference=libraryReferenceLocale(entity),rows=entity.translations||[];
+    const languages=[...new Set(theme?.available_locales||[])].filter(locale=>locale!==reference&&!rows.some(row=>row.locale===locale&&!row.country_code));
+    return languages.map(locale=>`<details class="admin-library-localization-row" data-new-situation-language="${esc(locale)}" data-language-situation="${entity.id}"><summary><strong>Version ${esc(libraryLocaleLabel(locale))} · À renseigner</strong><span>Situation et réponses</span></summary><div class="admin-library-localization-copy"><p>Renseignez la situation et toutes ses réponses. Les scores et l’ordre des réponses restent identiques.</p><label><b>Situation · ${esc(libraryLocaleLabel(locale))}</b><textarea data-new-language-content rows="5"></textarea></label>${(entity.answers||[]).map((answer,index)=>`<label><b>Réponse ${index+1}</b><small>${esc(answer.content||'')}</small><textarea data-new-language-answer="${answer.id}" rows="3"></textarea></label>`).join('')}<p data-new-language-status role="status"></p><button class="button button-primary button-small" type="button" data-save-new-situation-language>Enregistrer cette version</button></div></details>`).join('');
+  }
   function libraryLocalizationDetails(entity,entityType,countryCodes=[]){
     const filtered=libraryFilteredTranslations(entity,countryCodes);
     const generic=filtered.filter(t=>!t.country_code);
     const variants=filtered.filter(t=>Boolean(t.country_code));
-    if(!generic.length&&!variants.length){const reference=libraryReferenceLocale(entity);return `<p class="admin-library-localization-empty">Langue de référence : <strong>${libraryLocaleLabel(reference)}</strong>. Aucune autre traduction n’est disponible pour ce contenu.</p>`;}
+    const missing=entityType==='situation'?missingSituationLanguageEditors(entity):'';
+    if(!generic.length&&!variants.length){if(missing)return missing;const reference=libraryReferenceLocale(entity);return `<p class="admin-library-localization-empty">Langue de référence : <strong>${libraryLocaleLabel(reference)}</strong>. Aucune autre traduction n’est disponible pour ce contenu.</p>`;}
     const rowHtml=(row,isVariant=false)=>{
       const c=libraryContentObject(row),locale=libraryLocaleLabel(row.locale),country=row.country_code?` · ${esc(row.country_code)}`:'';
       let body='';
@@ -2701,7 +2709,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       else body=`<label><b>Texte</b><textarea data-translation-field="content" rows="5">${esc(c.content||c.title||'')}</textarea></label>`;
       return `<details class="admin-library-localization-row ${isVariant?'is-cultural':''}" data-library-translation-row="${row.id}"><summary><strong>${isVariant?'Adaptation culturelle et légale':'Version'} ${locale}${country}</strong><span>${isVariant?'Version spécifique au périmètre':'Traduction ou adaptation'}</span></summary><div class="admin-library-localization-copy">${body}<div class="admin-library-localization-actions"><button type="button" class="button button-primary button-small" data-save-library-translation="${row.id}">Enregistrer cette version</button></div></div></details>`;
     };
-    return `${generic.map(r=>rowHtml(r,false)).join('')}${variants.map(r=>rowHtml(r,true)).join('')}`;
+    return `${generic.map(r=>rowHtml(r,false)).join('')}${variants.map(r=>rowHtml(r,true)).join('')}${missing}`;
   }
   function linkedSituationLocaleEditor(si){
     if(!(si?._linked||si?._placement_id))return '';
@@ -2908,6 +2916,15 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     dialog.showModal();input.focus();
   }
   function bindLibraryActions(){
+    $$('[data-save-new-situation-language]').forEach(button=>button.onclick=async()=>{
+      const row=button.closest('[data-new-situation-language]'),status=row.querySelector('[data-new-language-status]');
+      const content=row.querySelector('[data-new-language-content]').value.trim();
+      const answers=[...row.querySelectorAll('[data-new-language-answer]')].map(field=>({id:field.dataset.newLanguageAnswer,content:field.value.trim()}));
+      if(!content||answers.some(answer=>!answer.content)){status.textContent='Renseignez la situation et toutes les réponses.';return;}
+      button.disabled=true;status.textContent='Enregistrement…';
+      try{await StudioAPI.request(`/api/admin/catalog/situations/${row.dataset.languageSituation}/translations/${encodeURIComponent(row.dataset.newSituationLanguage)}`,{method:'PUT',body:JSON.stringify({content,answers})});await refreshLibrary();}
+      catch(error){status.textContent=error.message;button.disabled=false;}
+    });
     $$('[data-rename-catalog-chapter]').forEach(button=>button.onclick=event=>{event.stopPropagation();openCatalogTitleDialog('chapter',button.dataset.renameCatalogChapter);});
     $$('[data-rename-catalog-profile]').forEach(button=>button.onclick=event=>{event.stopPropagation();openCatalogTitleDialog('profile',button.dataset.renameCatalogProfile,button.dataset.renameChapter);});
     const countryFilter=$('[data-library-country-filter]');
