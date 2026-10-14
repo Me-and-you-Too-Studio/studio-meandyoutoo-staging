@@ -3150,7 +3150,37 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
       body:JSON.stringify({videos})
     });
   }
-  async function refreshLibrary(){state.catalogLoaded=false;await loadLibraryAdmin();}
+  // Conserver le contexte pour toutes les mutations du catalogue.
+  async function refreshLibrary(){
+    const root=$('#admin-library');
+    const opened=root?[...root.querySelectorAll('details[open]')].map(node=>{
+      for(const key of ['data-situation-details','data-library-translation-row'])if(node.hasAttribute(key))return {key,value:node.getAttribute(key)};
+      return null;
+    }).filter(Boolean):[];
+    const scrolls=[];
+    for(let node=root?.parentElement;node;node=node.parentElement)scrolls.push({node,top:node.scrollTop,left:node.scrollLeft});
+    const windowX=window.scrollX,windowY=window.scrollY;
+    const chapters=root?[...root.querySelectorAll('[data-library-chapter]')]:[];
+    const anchor=chapters.find(node=>node.getBoundingClientRect().bottom>0);
+    const anchorId=anchor?.dataset.libraryChapter,anchorTop=anchor?.getBoundingClientRect().top;
+    state.catalogLoaded=false;await loadLibraryAdmin();
+    // Les appelants peuvent refaire le rendu après le chargement : restaurer
+    // au frame suivant, une fois ce rendu terminé.
+    requestAnimationFrame(()=>{
+      const current=$('#admin-library');if(!current)return;
+      for(const item of opened)for(const node of current.querySelectorAll('details'))if(node.getAttribute(item.key)===item.value)node.open=true;
+      scrolls.forEach(({node,top,left})=>{if(node.isConnected){node.scrollTop=top;node.scrollLeft=left;}});
+      window.scrollTo({left:windowX,top:windowY,behavior:'instant'});
+      // Si une création/suppression a changé la hauteur au-dessus du chapitre,
+      // compenser ce décalage dans le conteneur de défilement réel.
+      const target=[...current.querySelectorAll('[data-library-chapter]')].find(node=>node.dataset.libraryChapter===anchorId);
+      if(target&&Number.isFinite(anchorTop)){
+        const delta=target.getBoundingClientRect().top-anchorTop;
+        const container=scrolls.find(({node})=>node!==document.body&&node!==document.documentElement&&node.scrollHeight>node.clientHeight&&/auto|scroll/.test(getComputedStyle(node).overflowY));
+        if(container)container.node.scrollTop+=delta;else window.scrollBy({top:delta,left:0,behavior:'instant'});
+      }
+    });
+  }
   function addContact(){const i=contactsRoot.children.length+1,card=document.createElement('article');card.className='admin-contact-card';card.innerHTML=`<div class="admin-contact-head"><strong>Personne ${i}</strong><button type="button" class="admin-contact-remove">Supprimer</button></div><div class="admin-contact-grid"><label>Prénom<input data-contact="firstName" required></label><label>Nom<input data-contact="lastName" required></label><label>Fonction<input data-contact="jobTitle" required></label><label>Téléphone <span class="hint">(facultatif)</span><input data-contact="phone" type="tel"></label><label>Email professionnel<input data-contact="email" type="email" required></label></div><p class="admin-invitation-note">✉️ Cette personne recevra un lien personnel.</p>`;card.querySelector('button').onclick=()=>card.remove();contactsRoot.appendChild(card);}
   const selectedSectors=()=>[$('#org-sector').value].filter(Boolean),contactsPayload=()=>$$('.admin-contact-card').map(card=>{const value=n=>card.querySelector(`[data-contact="${n}"]`).value.trim();return{firstName:value('firstName'),lastName:value('lastName'),jobTitle:value('jobTitle'),phone:value('phone'),email:value('email')};}),selectedQuota=()=>$('#org-credit-pack').value==='custom'?Math.max(0,Number($('#org-quota').value)||0):Number($('#org-credit-pack').value)||0,selectedRemaining=()=>Math.max(0,Number($('#org-remaining').value)||0);
   let orgRemainingManuallyEdited=false;
