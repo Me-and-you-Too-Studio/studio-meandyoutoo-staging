@@ -2699,7 +2699,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     return missingSituationLanguages(entity).map(locale=>`<details class="admin-library-localization-row" data-new-situation-language="${esc(locale)}" data-language-situation="${entity.id}"><summary><strong>Version ${esc(libraryLocaleLabel(locale))} · À renseigner</strong><span>Traduction ou adaptation</span></summary><div class="admin-library-localization-copy"><label><b>Texte</b><textarea data-new-language-content rows="5"></textarea></label><p>Renseignez aussi les réponses dans « Voir les langues disponibles », sous chaque réponse. Le score affiché est commun à toutes les langues.</p><p data-new-language-status role="status"></p><button class="button button-primary button-small" type="button" data-save-new-situation-language>Enregistrer la situation et les réponses dans cette langue</button></div></details>`).join('');
   }
   function missingAnswerLanguageEditors(situation,answer){
-    return missingSituationLanguages(situation).map(locale=>`<details class="admin-library-localization-row"><summary><strong>Version ${esc(libraryLocaleLabel(locale))} · À renseigner</strong><span>Traduction ou adaptation</span></summary><div class="admin-library-localization-copy"><label><b>Texte · Score : ${esc(String(answer.score??'—'))}</b><textarea data-new-language-answer="${answer.id}" data-new-answer-locale="${esc(locale)}" rows="5"></textarea></label><p>Cette traduction sera enregistrée avec la version ${esc(libraryLocaleLabel(locale))} de la situation.</p></div></details>`).join('');
+    return missingSituationLanguages(situation).map(locale=>`<details class="admin-library-localization-row"><summary><strong>Version ${esc(libraryLocaleLabel(locale))} · À renseigner</strong><span>Traduction ou adaptation</span></summary><div class="admin-library-localization-copy"><label><b>Texte · Score : ${esc(String(answer.score??'—'))}</b><textarea data-new-language-answer="${answer.id}" data-new-answer-locale="${esc(locale)}" rows="5"></textarea></label><p>« Enregistrer la situation » enregistre aussi cette traduction. Renseignez la situation et toutes les réponses dans cette langue.</p></div></details>`).join('');
   }
   function libraryLocalizationDetails(entity,entityType,countryCodes=[]){
     const filtered=libraryFilteredTranslations(entity,countryCodes);
@@ -2919,6 +2919,22 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       catch(error){feedback.textContent=error.message;}finally{save.disabled=false;language.disabled=false;}
     };
     dialog.showModal();input.focus();
+  }
+  function collectPendingSituationLanguages(form){
+    return [...form.querySelectorAll('[data-new-situation-language]')].map(row=>{
+      const locale=row.dataset.newSituationLanguage;
+      const content=row.querySelector('[data-new-language-content]').value.trim();
+      const answers=[...form.querySelectorAll('[data-new-language-answer]')].filter(field=>field.dataset.newAnswerLocale===locale).map(field=>({id:field.dataset.newLanguageAnswer,content:field.value.trim()}));
+      return {locale,content,answers};
+    }).filter(version=>version.content||version.answers.some(answer=>answer.content));
+  }
+  function validatePendingSituationLanguages(versions){
+    for(const version of versions){
+      if(!version.content||!version.answers.length||version.answers.some(answer=>!answer.content))throw new Error(`Version ${libraryLocaleLabel(version.locale)} : renseignez le texte de la situation et toutes les réponses. Vos saisies sont conservées à l’écran.`);
+    }
+  }
+  async function savePendingSituationLanguages(id,versions){
+    for(const {locale,content,answers} of versions)await StudioAPI.request(`/api/admin/catalog/situations/${id}/translations/${encodeURIComponent(locale)}`,{method:'PUT',body:JSON.stringify({content,answers})});
   }
   function bindLibraryActions(){
     $$('[data-save-new-situation-language]').forEach(button=>button.onclick=async()=>{
@@ -3143,6 +3159,10 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
         const original=findSituation(form.dataset.situationInlineForm);
         const previous=(original?.answers||[]).map(x=>({content:String(x.content||'').trim(),score:Number(x.score),isBest:Boolean(x.is_best??x.isBest)}));
         if(JSON.stringify(previous)===JSON.stringify(payload.answers))delete payload.answers;
+        const pendingLanguages=collectPendingSituationLanguages(form);
+        validatePendingSituationLanguages(pendingLanguages);
+        if(pendingLanguages.length&&payload.answers)throw new Error('Enregistrez d’abord les modifications des réponses de référence, puis leurs traductions. Vos saisies sont conservées à l’écran.');
+        await savePendingSituationLanguages(form.dataset.situationInlineForm,pendingLanguages);
         await StudioAPI.request('/api/admin/catalog/situations/'+form.dataset.situationInlineForm,{method:'PATCH',body:JSON.stringify(payload)});
       }const chapterId=String(form.dataset.chapterId);state.libraryExpandedChapters.add(chapterId);await refreshLibrary();renderLibraryAdmin();restoreSituationPosition(position);}catch(error){if(saveStatus)saveStatus.textContent='Échec : '+error.message;showError(error.message);}finally{delete form.dataset.saving;form.querySelectorAll('[type="submit"]').forEach(button=>button.disabled=false);}};});
     $$('[data-unlink-situation-placement]').forEach(b=>b.onclick=async()=>{if(!await StudioModal.confirm({eyebrow:'Catalogue Me&YouToo',title:'Retirer cette situation de cet autodiagnostic ?',message:'La situation source restera disponible dans le Catalogue Me&YouToo. Seul ce rattachement sera retiré.',type:'warning',cancelLabel:'Conserver',confirmLabel:'Retirer'}))return;try{await StudioAPI.request('/api/admin/catalog/situation-placements/'+b.dataset.unlinkSituationPlacement,{method:'DELETE'});await refreshLibrary();renderLibraryAdmin();}catch(error){showError(error.message);}});
