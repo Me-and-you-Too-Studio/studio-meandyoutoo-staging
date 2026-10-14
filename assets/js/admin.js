@@ -2858,7 +2858,30 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   function minimumAnswersForList(list){return list.closest('[data-new-situation-form]')?3:2;}
   function addInlineAnswer(list){const wrap=document.createElement('div');wrap.innerHTML=answerInlineRow({},list.children.length);const row=wrap.firstElementChild;row.querySelector('[data-remove-inline-answer]').onclick=()=>{if(list.children.length>minimumAnswersForList(list)){row.remove();renumberInlineAnswers(list);}};list.appendChild(row);renumberInlineAnswers(list);}
   function collectSituationForm(form){const answers=[...form.querySelectorAll('.admin-library-answer-row')].map(row=>({content:row.querySelector('[data-answer-content]')?.value.trim()||'',score:Number(row.querySelector('[data-answer-score]')?.value),isBest:Boolean(row.querySelector('[data-answer-best]')?.checked)}));const placement=form.querySelector('[data-situation-placement]:checked')?.value||'library';const tags=String(form.querySelector('[data-inline-situation-tags]')?.value||'').split(',').map(v=>v.trim()).filter(Boolean);return{content:form.querySelector('[data-inline-situation-content]')?.value.trim()||'',isDefault:placement==='base',placement,tags,answers};}
+  function captureSituationPosition(form){
+    const scrolls=[];for(let node=form.parentElement;node;node=node.parentElement){if(node.scrollHeight>node.clientHeight||node.scrollWidth>node.clientWidth)scrolls.push({node,top:node.scrollTop,left:node.scrollLeft});}
+    return {id:form.dataset.situationInlineForm,chapterId:form.dataset.chapterId,windowX:window.scrollX,windowY:window.scrollY,scrolls,
+      openIds:$$('[data-situation-details][open]').map(node=>node.dataset.situationDetails)};
+  }
+  function restoreSituationPosition(position){
+    for(const node of $$('[data-situation-details]'))if(position.openIds.includes(node.dataset.situationDetails))node.open=true;
+    const form=$$('[data-situation-inline-form]').find(node=>node.dataset.situationInlineForm===position.id&&node.dataset.chapterId===position.chapterId);
+    if(form){form.closest('details').open=true;const status=form.querySelector('[data-situation-save-status]');if(status)status.textContent='Situation enregistrée';}
+    requestAnimationFrame(()=>{
+      position.scrolls.forEach(({node,top,left})=>{if(node.isConnected){node.scrollTop=top;node.scrollLeft=left;}});
+      window.scrollTo({left:position.windowX,top:position.windowY,behavior:'instant'});
+    });
+  }
   function bindInlineForm(form){
+    if(form.dataset.situationInlineForm&&!form.querySelector('[data-save-near-text]')){
+      const field=form.querySelector('[data-inline-situation-content]')?.closest('label');
+      if(field){
+        const actions=document.createElement('div');actions.className='admin-library-inline-actions';
+        actions.innerHTML='<span data-situation-save-status role="status" aria-live="polite">Cliquez sur Enregistrer pour appliquer vos modifications.</span><button class="button button-primary" type="submit" data-save-near-text>Enregistrer la situation</button>';
+        field.after(actions);
+        form.addEventListener('input',()=>{actions.querySelector('[data-situation-save-status]').textContent='Modifications non enregistrées';});
+      }
+    }
     form.querySelectorAll('[data-remove-inline-answer]').forEach(b=>b.onclick=()=>{const list=b.closest('[data-inline-answer-list]');if(list.children.length>minimumAnswersForList(list)){b.closest('.admin-library-answer-row').remove();renumberInlineAnswers(list);}});
     const add=form.querySelector('[data-add-inline-answer]');if(add)add.onclick=()=>addInlineAnswer(form.querySelector('[data-inline-answer-list]'));
   }
@@ -3093,12 +3116,12 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
       try{button.disabled=true;await StudioAPI.request('/api/admin/catalog/situations/swap-placement',{method:'POST',body:JSON.stringify({baseSituationId:Number(button.dataset.swapBaseSituation),librarySituationId:Number(targetId)})});const chapterId=String(form.dataset.chapterId);await refreshLibrary();state.libraryExpandedChapters.add(chapterId);renderLibraryAdmin();}
       catch(error){button.disabled=false;showError(error.message);}
     });
-    $$('[data-situation-inline-form]').forEach(form=>{bindInlineForm(form);const cancel=form.querySelector('[data-cancel-inline]');if(cancel)cancel.onclick=()=>{const d=form.closest('details');if(d)d.open=false;};form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;try{const payload=collectSituationForm(form);if(form.dataset.placementId){const activeLocales=[...form.querySelectorAll('[data-linked-active-locale]:checked')].map(el=>el.value);if(!activeLocales.length){showError('Choisissez au moins une langue pour cette situation.');return;}await StudioAPI.request('/api/admin/catalog/situation-placements/'+form.dataset.placementId,{method:'PATCH',body:JSON.stringify({placement:payload.placement,activeLocales})});}else {
+    $$('[data-situation-inline-form]').forEach(form=>{bindInlineForm(form);const cancel=form.querySelector('[data-cancel-inline]');if(cancel)cancel.onclick=()=>{const d=form.closest('details');if(d)d.open=false;};form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;if(form.dataset.saving==='true')return;const position=captureSituationPosition(form);form.dataset.saving='true';form.querySelectorAll('[type="submit"]').forEach(button=>button.disabled=true);const saveStatus=form.querySelector('[data-situation-save-status]');if(saveStatus)saveStatus.textContent='Enregistrement…';try{const payload=collectSituationForm(form);if(form.dataset.placementId){const activeLocales=[...form.querySelectorAll('[data-linked-active-locale]:checked')].map(el=>el.value);if(!activeLocales.length){if(saveStatus)saveStatus.textContent='Choisissez au moins une langue.';showError('Choisissez au moins une langue pour cette situation.');return;}await StudioAPI.request('/api/admin/catalog/situation-placements/'+form.dataset.placementId,{method:'PATCH',body:JSON.stringify({placement:payload.placement,activeLocales})});}else {
         const original=findSituation(form.dataset.situationInlineForm);
         const previous=(original?.answers||[]).map(x=>({content:String(x.content||'').trim(),score:Number(x.score),isBest:Boolean(x.is_best??x.isBest)}));
         if(JSON.stringify(previous)===JSON.stringify(payload.answers))delete payload.answers;
         await StudioAPI.request('/api/admin/catalog/situations/'+form.dataset.situationInlineForm,{method:'PATCH',body:JSON.stringify(payload)});
-      }const chapterId=String(form.dataset.chapterId);await refreshLibrary();state.libraryExpandedChapters.add(chapterId);renderLibraryAdmin();}catch(error){showError(error.message);}};});
+      }const chapterId=String(form.dataset.chapterId);state.libraryExpandedChapters.add(chapterId);await refreshLibrary();renderLibraryAdmin();restoreSituationPosition(position);}catch(error){if(saveStatus)saveStatus.textContent='Échec : '+error.message;showError(error.message);}finally{delete form.dataset.saving;form.querySelectorAll('[type="submit"]').forEach(button=>button.disabled=false);}};});
     $$('[data-unlink-situation-placement]').forEach(b=>b.onclick=async()=>{if(!await StudioModal.confirm({eyebrow:'Catalogue Me&YouToo',title:'Retirer cette situation de cet autodiagnostic ?',message:'La situation source restera disponible dans le Catalogue Me&YouToo. Seul ce rattachement sera retiré.',type:'warning',cancelLabel:'Conserver',confirmLabel:'Retirer'}))return;try{await StudioAPI.request('/api/admin/catalog/situation-placements/'+b.dataset.unlinkSituationPlacement,{method:'DELETE'});await refreshLibrary();renderLibraryAdmin();}catch(error){showError(error.message);}});
     $$('[data-archive-situation]').forEach(b=>b.onclick=async e=>{e.preventDefault();e.stopPropagation();const si=findSituation(b.dataset.archiveSituation);if(!await StudioModal.confirm({eyebrow:'Catalogue Me&YouToo',title:'Archiver cette situation ?',message:`« ${si?.content||'Cette situation'} »\n\nElle ne sera plus proposée dans les nouvelles campagnes. Les campagnes existantes ne seront pas modifiées.`,type:'warning',cancelLabel:'Conserver',confirmLabel:'Archiver'}))return;try{await StudioAPI.request('/api/admin/catalog/situations/'+b.dataset.archiveSituation+'/archive',{method:'POST'});await refreshLibrary();renderLibraryAdmin();}catch(error){showError(error.message);}});
     $$('[data-restore-situation]').forEach(b=>b.onclick=async e=>{e.preventDefault();e.stopPropagation();try{await StudioAPI.request('/api/admin/catalog/situations/'+b.dataset.restoreSituation+'/restore',{method:'POST'});await refreshLibrary();renderLibraryAdmin();}catch(error){showError(error.message);}});
