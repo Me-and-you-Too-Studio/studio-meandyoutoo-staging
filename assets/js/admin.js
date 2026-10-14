@@ -2277,7 +2277,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     if(filter==='deleted')return deletedSituations(chapter);
     return currentSituations(chapter);
   }
-  const redundantCatalogTags=new Set(['question','canada','southam','france','allemagne','argentine','autriche','bresil','brésil','chili','chine','coree du sud','corée du sud','danemark','espagne','etats-unis','états-unis','hong kong','hong-kong','japon','mexique','norvege','norvège','panama','portugal','suede','suède','suisse','taiwan','taïwan','uruguay','usa','uk','jp','fr','br','de','en','es','ja']);
+  const redundantCatalogTags=new Set(['canada','southam','france','allemagne','argentine','autriche','bresil','brésil','chili','chine','coree du sud','corée du sud','danemark','espagne','etats-unis','états-unis','hong kong','hong-kong','japon','mexique','norvege','norvège','panama','portugal','suede','suède','suisse','taiwan','taïwan','uruguay','usa','uk','jp','fr','br','de','en','es','ja']);
   function tagNormalized(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('fr');}
   function isRedundantCatalogTag(v){return redundantCatalogTags.has(tagNormalized(v));}
   function situationTags(si){return [...new Set((Array.isArray(si?.admin_tags)?si.admin_tags:[]).map(v=>String(v||'').trim()).filter(Boolean))];}
