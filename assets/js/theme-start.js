@@ -122,14 +122,33 @@
     }catch(error){console.warn('[MEAYT] Disponibilités de la thématique non chargées',error);}
   }
 
-  async function loadReadOnlyCatalog(){
+  var catalogVariantCache=new Map();
+  async function renderCatalogCountryFilter(slug,countryCode,locale,generation){
+    if(!catalogVariantCache.has(slug))catalogVariantCache.set(slug,window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(slug)+'/variants').catch(function(error){catalogVariantCache.delete(slug);throw error;}));
+    var payload=await catalogVariantCache.get(slug),variants=payload.variants||[];
+    if(generation!==catalogBrowseGeneration)return;
+    var card=document.querySelector('.table-card');
+    var block=document.getElementById('catalog-country-filter');
+    if(variants.length<2&&!countryCode)return;
+    if(!block){block=document.createElement('div');block.id='catalog-country-filter';block.className='section-desc';block.style.cssText='padding:18px;display:flex;gap:16px;flex-wrap:wrap;align-items:center';card.prepend(block);}
+    var sorted=variants.slice().sort(function(a,b){return String(a.scopeLabel||a.countryCode).localeCompare(String(b.scopeLabel||b.countryCode),'fr');});
+    var locales=[...new Set(payload.availableLocales||variants.flatMap(function(v){return v.locales||[];}))];
+    block.innerHTML='<label>Périmètre pays <select data-catalog-country><option value="">Tous les périmètres</option>'+sorted.map(function(v){return '<option value="'+esc(v.countryCode)+'" '+(v.countryCode===countryCode?'selected':'')+'>'+esc(v.scopeLabel||v.countryCode)+'</option>';}).join('')+'</select></label><label>Langue du texte <select data-catalog-locale>'+locales.map(function(l){return '<option value="'+esc(l)+'" '+(l===locale?'selected':'')+'>'+esc(localeFullLabel(l))+'</option>';}).join('')+'</select></label><details><summary>ⓘ Pays et langue</summary><p>Le pays correspond au contexte culturel ou juridique de la situation. La langue correspond à la langue du texte. Ce filtre concerne uniquement la consultation ; les périmètres de la campagne seront choisis à sa création. Si une traduction manque, le texte de référence peut être affiché.</p></details><span data-catalog-filter-count role="status"></span>';
+    var country=block.querySelector('[data-catalog-country]'),language=block.querySelector('[data-catalog-locale]');
+    if(!locales.includes(locale)){var option=document.createElement('option');option.value=locale;option.textContent=localeFullLabel(locale);option.selected=true;language.prepend(option);}
+    function reload(){block.querySelector('[data-catalog-filter-count]').textContent='Chargement…';var table=card.querySelector('tbody');if(table)table.innerHTML='<tr><td colspan="4">Chargement du périmètre…</td></tr>';loadReadOnlyCatalog(country.value,language.value);}
+    country.onchange=reload;language.onchange=reload;
+  }
+  var catalogBrowseGeneration=0;
+  async function loadReadOnlyCatalog(countryCode='',locale='fr'){
+    var generation=++catalogBrowseGeneration;
     var startButton=document.querySelector('.hero-panel [data-start-theme]');
     var themeSlug=(startButton&&startButton.dataset.startTheme)||existingTheme;
     var table=document.querySelector('.table-card .data-table');
     if(!themeSlug||!table)return;
     try{
       async function resolveThemeSlug(slug){
-        try{return {slug:slug,data:await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(slug)+'/template?countryCode=FR&locale=fr')};}
+        try{return {slug:slug,data:await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(slug)+'/template?'+new URLSearchParams({countryCode:countryCode,locale:locale,...(!countryCode?{catalogBrowse:'all'}:{})}).toString())};}
         catch(firstError){
           if(!/introuvable|404/i.test(String(firstError&&firstError.message||'')))throw firstError;
           var listing=await window.StudioAPI.request('/api/catalog/themes');
@@ -137,14 +156,23 @@
           var wanted=aliases[slug]||[slug.replace(/[-_]/g,' ')];
           var found=(listing.themes||[]).find(function(theme){var hay=(String(theme.slug||'')+' '+String(theme.title||'')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');return wanted.some(function(label){return hay.includes(String(label).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''));});});
           if(!found)throw firstError;
-          return {slug:found.slug,data:await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(found.slug)+'/template?countryCode=FR&locale=fr')};
+          return {slug:found.slug,data:await window.StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(found.slug)+'/template?'+new URLSearchParams({countryCode:countryCode,locale:locale,...(!countryCode?{catalogBrowse:'all'}:{})}).toString())};
         }
       }
       var resolved=await resolveThemeSlug(themeSlug),data=resolved.data;
+      if(generation!==catalogBrowseGeneration)return;
       themeSlug=resolved.slug;
+      await renderCatalogCountryFilter(themeSlug,countryCode,locale,generation);
+      if(generation!==catalogBrowseGeneration)return;
       if(startButton){startButton.dataset.startTheme=themeSlug;startButton.href='composer.html?theme='+encodeURIComponent(themeSlug);}
       renderThemeAvailability(themeSlug);
       var chapters=Array.isArray(data.chapters)?data.chapters:[];
+      // Le serveur inclut les contenus communs pour la création ; la consultation
+      // par pays ne conserve que les rattachements explicites (ou du chapitre).
+      if(countryCode)chapters=chapters.map(function(ch){return {...ch,situations:(ch.situations||[]).filter(function(si){var own=si.country_codes||[],codes=own.length?own:(ch.country_codes||[]);return countryCode==='WORLDWIDE'?(!codes.length&&ch.country_scope==='worldwide')||codes.includes('WORLDWIDE'):codes.includes(countryCode);})};});
+      var counter=document.querySelector('[data-catalog-filter-count]');
+      if(counter){var total=chapters.reduce(function(n,ch){return n+(ch.situations||[]).length;},0);counter.textContent=total+' situation'+(total>1?'s':'');}
+
       table.querySelector('thead').innerHTML='<tr><th>Chapitre du catalogue</th><th>Situations de référence</th><th>Usage</th><th>Action</th></tr>';
       var groupCounts={};
       chapters.forEach(function(ch){if(ch.choice_group)groupCounts[ch.choice_group]=(groupCounts[ch.choice_group]||0)+1;});
@@ -182,6 +210,7 @@
       }
       renderThemeVideos(chapters);
     }catch(error){
+      if(generation!==catalogBrowseGeneration)return;
       var section=document.querySelector('.table-card');
       if(section){var alert=document.createElement('p');alert.className='composer-alert';alert.textContent='Impossible de charger le détail des situations : '+error.message;section.appendChild(alert);}
     }
