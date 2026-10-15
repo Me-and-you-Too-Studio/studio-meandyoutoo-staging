@@ -394,21 +394,62 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
   function settingsReviewBlock(reference,submitted,current){
     if(!isAdminReview())return '';
     if(submitted==null)return '<div class="composer-diff">Version transmise indisponible pour cet élément ; aucune comparaison supposée.</div>';
-    const block=(before,after,label,admin=false)=>`<div class="composer-diff${admin?' is-admin-correction':''}"><div class="composer-diff-label">${esc(label)}</div><div class="composer-diff-text" style="white-space:pre-wrap">${reviewWordDiff(before,after)}</div></div>`;
-    let html=reference==null?block(submitted,submitted,'Version transmise par le client'):String(reference)===String(submitted)?block(submitted,submitted,'Version transmise · identique au référentiel'):block(reference,submitted,'Adaptations transmises par le client · rouge : retiré / vert : ajouté');
+    const block=(before,after,label,admin=false)=>{
+      const diff=reviewWordDiff(before,after),hasRemovals=diff.includes('<del>'),afterHtml=diff.replace(/<del>[\s\S]*?<\/del>/g,''),beforeHtml=diff.replace(/<ins>[\s\S]*?<\/ins>/g,'');
+      return `<div class="composer-diff${admin?' is-admin-correction':''}"><div class="composer-diff-label">${esc(label)}</div><div class="composer-diff-text" style="white-space:pre-wrap">${afterHtml||'—'}</div>${hasRemovals?`<details class="admin-review-removed"><summary>Voir les passages supprimés du texte précédent</summary><div class="composer-diff-text" style="white-space:pre-wrap">${beforeHtml}</div></details>`:''}</div>`;
+    };
+    let html=reference==null?block(submitted,submitted,'Version transmise par le client'):String(reference)===String(submitted)?block(submitted,submitted,'Version transmise · identique au référentiel'):block(reference,submitted,'Version transmise par le client · ajouts en vert');
     if(String(submitted)!==String(current))html+=block(submitted,current,'Votre correction Me&YouToo · version de travail privée',true);
     return html;
   }
   function reviewLocaleValue(map,locale){const key=Object.keys(map||{}).find(k=>normalizeLocale(k)===normalizeLocale(locale));return key===undefined?undefined:map[key];}
+  function submittedIntroForReview(locale){
+    const saved=submittedSettings();
+    const text=reviewLocaleValue(saved?.introduction_variants,locale)??reviewLocaleValue(saved?.introduction_variants_resolved,locale)??(normalizeLocale(locale)===normalizeLocale(saved?.selected_locale||project.working_locale||project.selected_locale||'fr')?saved?.introduction_html:undefined);
+    return text==null?null:stripHtml(text);
+  }
+  function reviewIntroComparison(locale,current){
+    const reference=reviewLocaleValue(introReferenceVariants,locale);
+    return settingsReviewBlock(reference==null?null:stripHtml(reference),submittedIntroForReview(locale),current);
+  }
+  function saveReviewPeerIntro(locale,value){
+    if(!isAdminReview()||projectLocales().length!==2||normalizeLocale(locale)===normalizeLocale(socioContextLocale))return;
+    const loc=normalizeLocale(locale),before=introForLocale(loc),ref=introReference();
+    if(normalizeLocale(ref.locale)===loc&&String(value)!==String(before))markIntroTranslationsToReview(loc,before);
+    // Keep an explicitly empty translation empty; never replace it with a fallback.
+    introVariants[loc]=String(value);
+    updateNextState();scheduleAutosave();
+  }
+  function reviewPrimaryIntroForSave(primary,current,fallback=''){
+    if(normalizeLocale(socioContextLocale)===normalizeLocale(primary))return current;
+    if(isAdminReview()&&projectLocales().length===2&&Object.hasOwn(introVariants,primary))return String(introVariants[primary]??'');
+    return String(project?.introduction_html||fallback);
+  }
+  function renderReviewIntroPair(){
+    const input=$('intro'),container=input?.closest?.('.parameter-intro-compare');if(!container)return;
+    const locales=projectLocales(),peerLocale=locales.length===2?locales.find(loc=>normalizeLocale(loc)!==normalizeLocale(socioContextLocale)):'';
+    container.classList.add('is-admin-review-intros');container.classList.toggle('is-review-bilingual',Boolean(peerLocale));input.rows=6;
+    let peer=$('admin-review-intro-peer');
+    if(!peerLocale){peer?.remove();return;}
+    if(!peer){peer=document.createElement('div');peer.id='admin-review-intro-peer';peer.className='field parameter-intro-edit';container.appendChild(peer);}
+    if(peer.dataset.locale!==peerLocale){
+      peer.dataset.locale=peerLocale;
+      peer.innerHTML=`<label for="admin-review-intro-peer-input">Introduction · ${esc(localeLabel(peerLocale))} · votre version de travail <span class="req">*</span></label><textarea id="admin-review-intro-peer-input" rows="6" required></textarea><div id="admin-review-intro-peer-comparison"></div>`;
+      $('admin-review-intro-peer-input').addEventListener('input',event=>saveReviewPeerIntro(peerLocale,event.target.value));
+    }
+    const peerInput=$('admin-review-intro-peer-input');
+    if(document.activeElement!==peerInput)peerInput.value=stripHtml(introForLocale(peerLocale));
+    $('admin-review-intro-peer-comparison').innerHTML=reviewIntroComparison(peerLocale,peerInput.value);
+  }
   function renderSettingsReview(){
     if(!isAdminReview())return;
+    renderReviewIntroPair();
     const saved=submittedSettings();
     for(const [id,key,ref] of [['campaign-name','campaign_name',project.base_title],['respondent-title','respondent_title',project.respondent_title_default],['launch-date','launch_date',null],['close-date','close_date',null],['intro','introduction_html',reviewLocaleValue(introReferenceVariants,socioContextLocale)]]){
       const input=$(id);if(!input)continue;
       let before=saved?.[key],reference=ref;
       if(id==='intro'){
-        before=reviewLocaleValue(saved?.introduction_variants,socioContextLocale)??reviewLocaleValue(saved?.introduction_variants_resolved,socioContextLocale)??(normalizeLocale(socioContextLocale)===normalizeLocale(saved?.selected_locale||project.working_locale||project.selected_locale||'fr')?saved?.introduction_html:undefined);
-        before=before==null?null:stripHtml(before);reference=ref==null?null:stripHtml(ref);
+        before=submittedIntroForReview(socioContextLocale);reference=ref==null?null:stripHtml(ref);
       }else if(id.endsWith('-date'))before=before==null?null:String(before).slice(0,10);
       let host=$(`admin-review-${id}`);if(!host){host=document.createElement('div');host.id=`admin-review-${id}`;input.after(host);}
       host.innerHTML=settingsReviewBlock(reference,before,input.value);
@@ -1001,7 +1042,7 @@ function incompleteSocioLocale(items,reference=[]){
     storeActiveLanguageContent();
     const primaryLocale=normalizeLocale(project?.selected_locale||(Array.isArray(project?.locales)&&project.locales[0])||'fr');
     const currentIntro=String($('intro')?.value||'').trim();
-    const introductionHtml=socioContextLocale===primaryLocale?currentIntro:String(project?.introduction_html||'');
+    const introductionHtml=reviewPrimaryIntroForSave(primaryLocale,currentIntro);
     const rawRespondents=String($('nb-respondents')?.value||'').trim();
     return {
       campaignName:String($('campaign-name')?.value||'').trim(),
@@ -1200,7 +1241,7 @@ function incompleteSocioLocale(items,reference=[]){
     const missing=missingSettings();if(missing.length){await showMissingSettings(missing);return;}
     if(!await flushAutosave()){const pending=missingSettings();await showMissingSettings(pending.length?pending:[{id:'param-autosave-status',title:'Enregistrement à vérifier',message:lastAutosaveError||'Vos dernières modifications ne sont pas encore enregistrées. Vérifiez le message d’enregistrement avant de poursuivre.'}]);return;}
     const readiness=settingsReadiness();
-    storeActiveLanguageContent();const campaignName=$('campaign-name').value.trim(),respondentTitle=$('respondent-title').value.trim(),primaryLocale=normalizeLocale(project?.selected_locale||(Array.isArray(project?.locales)&&project.locales[0])||'fr'),introductionHtml=socioContextLocale===primaryLocale?readiness.intro:String(project?.introduction_html||readiness.intro),launchDate=readiness.launch,closeDate=readiness.close;const rawRespondents=$('nb-respondents').value.trim(),nbRespondents=rawRespondents?Number(rawRespondents):null;
+    storeActiveLanguageContent();const campaignName=$('campaign-name').value.trim(),respondentTitle=$('respondent-title').value.trim(),primaryLocale=normalizeLocale(project?.selected_locale||(Array.isArray(project?.locales)&&project.locales[0])||'fr'),introductionHtml=reviewPrimaryIntroForSave(primaryLocale,readiness.intro,readiness.intro),launchDate=readiness.launch,closeDate=readiness.close;const rawRespondents=$('nb-respondents').value.trim(),nbRespondents=rawRespondents?Number(rawRespondents):null;
     if(!respondentTitle)return show('Le titre visible est obligatoire.');if(!isLegacyClientCampaign()&&!project?.review_mode&&launchDate<iso(5))return show('La date de lancement doit être au minimum à J+5.');if(closeDate<=launchDate)return show('La date de clôture doit être postérieure à la date de lancement.');if(!socio.length)return show('Au moins une donnée d’analyse doit être présente.');if(invalidSocio())return show('Chaque donnée et chaque sous-critère doivent avoir un intitulé et au moins deux réponses renseignées.');const incompleteResource=resultResources.find(r=>!resourceComplete(r));if(incompleteResource)return show(incompleteResource.type==='legacy_document'?`Le PDF historique « ${incompleteResource.legacyFilename} » doit être rattaché avant de pouvoir être utilisé.`:'Chaque ressource doit avoir un texte et soit une URL valide, soit un fichier PDF.');const resultButtons=resultResources.filter(resourceComplete);
     try{await api(`/api/projects/${projectId}/settings`,{method:'PATCH',body:JSON.stringify({campaignName,respondentTitle,introductionHtml:isLegacyClientCampaign()?project.introduction_html:introductionHtml,introductionVariants:isLegacyClientCampaign()?project.introduction_variants:activeLanguageVariants(introVariants),launchDate,closeDate,nbRespondents,sociodemo:isAdminLegacySocio()?undefined:(Array.isArray(project?.sociodemo)?project.sociodemo:socio),sociodemoLanguageVariants:isAdminLegacySocio()?undefined:(isLegacyClientCampaign()?project.sociodemo_language_variants:activeLanguageVariants(socioLanguageVariants)),translationReviewState:isLegacyClientCampaign()?project.translation_review_state:reviewState(),communicationShareUrl:readiness.shareUrl||null,resultButtons})});location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;}catch(error){if(error.code==='DIFFUSION_URL_TAKEN'){$('diffusion-slug')?.setCustomValidity(error.message);await showMissingSettings([{id:'diffusion-slug',title:'Adresse de diffusion à modifier',message:error.message}]);}else if(error.code==='SOCIODEMO_TRANSLATIONS_INCOMPLETE'){const missing=incompleteSociodemo();await showMissingSettings(missing.length?missing:[{id:'socio-list',title:'Données d’analyse à compléter',message:error.message}]);}else if(error.code==='INTRODUCTIONS_INCOMPLETE'){const missing=missingSettings().filter(item=>item.id==='intro');await showMissingSettings(missing.length?missing:[{id:'intro',title:'Introductions à personnaliser',message:error.message}]);}else await showMissingSettings([{id:'param-autosave-status',title:'Enregistrement à vérifier',message:error.message||'Impossible d’enregistrer la campagne pour le moment.'}]);}
   });load();
