@@ -861,7 +861,21 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
   }
   async function flushAutosave(){clearTimeout(autosaveTimer);autosaveTimer=null;return autosaveNow();}
   function updateNextState(){const buttons=[$('param-next'),$('param-next-top')].filter(Boolean);if(!buttons.length)return;if(isReadOnly()){buttons.forEach(button=>{button.classList.remove('is-disabled');button.setAttribute('aria-disabled','false');button.dataset.ready='true';button.title='';button.textContent='Revoir la transmission →';});return;}const state=settingsReadiness(),ready=state.introChanged&&state.launchFilled&&state.closeFilled&&state.diffusionReady;buttons.forEach(button=>{button.classList.toggle('is-disabled',!ready);button.setAttribute('aria-disabled',String(!ready));button.dataset.ready=ready?'true':'false';button.title=ready?'':!state.introChanged?'Adaptez l’introduction avant de poursuivre.':!state.diffusionReady?'Choisissez le slug de l’adresse de diffusion.':'Renseignez les deux dates avant de poursuivre.';});}
-  async function showReadinessModal(){const state=settingsReadiness(),missing=[];if(!state.introChanged)missing.push('adapter l’introduction Me&YouToo à votre organisation');if(!state.diffusionReady)missing.push('choisir le slug de l’adresse de diffusion');if(!state.launchFilled)missing.push('renseigner la date de lancement');if(!state.closeFilled)missing.push('renseigner la date de clôture');await window.StudioModal.alert({eyebrow:'Paramétrage incomplet',title:'Complétez les éléments obligatoires',message:`Avant de passer à l’étape suivante, vous devez ${missing.join(', puis ')}.`,type:'info',confirmLabel:'J’ai compris'});}
+  function focusMissingSetting(){
+    const state=settingsReadiness(),missing=[
+      [!state.introChanged,'intro','Adaptez l’introduction Me&YouToo à votre organisation.'],
+      [!state.diffusionReady,'diffusion-slug','Complétez le slug de l’adresse de diffusion.'],
+      [!state.launchFilled,'launch-date','Renseignez la date de lancement.'],
+      [!state.closeFilled,'close-date','Renseignez la date de clôture.']
+    ].find(([needed])=>needed);
+    if(!missing)return;
+    const [,id,message]=missing,field=$(id);
+    show(message);
+    if(!field)return;
+    for(let parent=field.parentElement;parent;parent=parent.parentElement){if(parent.tagName==='DETAILS')parent.open=true;}
+    field.focus({preventScroll:true});
+    field.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'center'});
+  }
   function applyReadOnlyUI(){
     const alert=$('param-alert');alert.hidden=false;alert.dataset.tone='success';alert.innerHTML='<strong>🔒 Paramétrage en lecture seule.</strong> Cette campagne a déjà été transmise. <button class="button button-secondary button-small" type="button" data-content-adjustment="settings">Demander un ajustement</button>';
     document.querySelectorAll('#settings-form input,#settings-form textarea,#settings-form select').forEach(el=>{el.readOnly=true;el.setAttribute('aria-readonly','true');el.style.background='var(--surface-soft)';el.style.pointerEvents='none';});
@@ -928,7 +942,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
     event.preventDefault();
     if(isReadOnly()){location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;return;}
     if(!await flushAutosave())return show('Les dernières modifications ne sont pas enregistrées. Corrigez l’erreur avant de poursuivre.');
-    const readiness=settingsReadiness();if(!readiness.introChanged||!readiness.launchFilled||!readiness.closeFilled||!readiness.diffusionReady){await showReadinessModal();return;}
+    const readiness=settingsReadiness();if(!readiness.introChanged||!readiness.launchFilled||!readiness.closeFilled||!readiness.diffusionReady){focusMissingSetting();return;}
     storeActiveLanguageContent();const campaignName=$('campaign-name').value.trim(),respondentTitle=$('respondent-title').value.trim(),primaryLocale=normalizeLocale(project?.selected_locale||(Array.isArray(project?.locales)&&project.locales[0])||'fr'),introductionHtml=socioContextLocale===primaryLocale?readiness.intro:String(project?.introduction_html||readiness.intro),launchDate=readiness.launch,closeDate=readiness.close;const rawRespondents=$('nb-respondents').value.trim(),nbRespondents=rawRespondents?Number(rawRespondents):null;
     if(!respondentTitle)return show('Le titre visible est obligatoire.');if(!isLegacyClientCampaign()&&!project?.review_mode&&launchDate<iso(5))return show('La date de lancement doit être au minimum à J+5.');if(closeDate<=launchDate)return show('La date de clôture doit être postérieure à la date de lancement.');if(!socio.length)return show('Au moins une donnée d’analyse doit être présente.');if(invalidSocio())return show('Chaque donnée et chaque sous-critère doivent avoir un intitulé et au moins deux réponses renseignées.');const incompleteResource=resultResources.find(r=>!resourceComplete(r));if(incompleteResource)return show(incompleteResource.type==='legacy_document'?`Le PDF historique « ${incompleteResource.legacyFilename} » doit être rattaché avant de pouvoir être utilisé.`:'Chaque ressource doit avoir un texte et soit une URL valide, soit un fichier PDF.');const resultButtons=resultResources.filter(resourceComplete);
     try{await api(`/api/projects/${projectId}/settings`,{method:'PATCH',body:JSON.stringify({campaignName,respondentTitle,introductionHtml:isLegacyClientCampaign()?project.introduction_html:introductionHtml,introductionVariants:isLegacyClientCampaign()?project.introduction_variants:introVariants,launchDate,closeDate,nbRespondents,sociodemo:isAdminLegacySocio()?undefined:(Array.isArray(project?.sociodemo)?project.sociodemo:socio),sociodemoLanguageVariants:isAdminLegacySocio()?undefined:(isLegacyClientCampaign()?project.sociodemo_language_variants:socioLanguageVariants),translationReviewState:isLegacyClientCampaign()?project.translation_review_state:reviewState(),communicationShareUrl:readiness.shareUrl||null,resultButtons})});location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;}catch(error){show(error.message);}
