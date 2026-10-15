@@ -132,7 +132,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
       return c;
     });
   }
-  const newSubcriterion=()=>({q:'Précisez votre choix',opts:[{label:'Sous-réponse 1',n:0},{label:'Sous-réponse 2',n:0}],subcriteria:[]});
+  const newSubcriterion=()=>({q:'',opts:[{label:'',n:0},{label:'',n:0}],subcriteria:[]});
   const rawSubcriteria=option=>Array.isArray(option?.subcriteria)?option.subcriteria:(option?.subcriterion?[option.subcriterion]:[]);
   function normalizeCriterion(item){
     if(isLegacyClientCampaign()){
@@ -517,17 +517,15 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
 
   const socioOpenRoots=new Set();
   const socioOpenBranches=new Set();
-  let socioOpenInitialized=false;
   function criterionStats(criterion){
     let nested=0,maxDepth=1;
     const walk=(c,depth)=>{maxDepth=Math.max(maxDepth,depth);(c?.opts||[]).forEach(o=>(o.subcriteria||[]).forEach(child=>{nested++;walk(child,depth+1);}));};
     walk(criterion,1);
     return{responses:(criterion?.opts||[]).length,nested,maxDepth};
   }
-  function initSocioOpenState(){
-    if(socioOpenInitialized)return;
-    socioOpenInitialized=true;
-    socio.forEach((criterion,i)=>{const stats=criterionStats(criterion);if(!stats.nested)socioOpenRoots.add(String(i));});
+  function openSocioPath(path){
+    const parts=String(path).split('.');socioOpenRoots.add(parts[0]);
+    for(let length=3;length<=parts.length;length+=2)socioOpenBranches.add(parts.slice(0,length).join('.'));
   }
   function getCriterionByPath(path){
     const parts=String(path).split('.').map(Number);let criterion=socio[parts[0]];
@@ -536,7 +534,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
   }
   function getOptionByPath(path){const [criterionPath,index]=String(path).split('|');return getCriterionByPath(criterionPath)?.opts?.[Number(index)];}
   function criterionParentInfo(path){const parts=String(path).split('.').map(Number);if(parts.length<3)return null;const childIndex=parts.pop(),optionIndex=parts.pop(),parentPath=parts.join('.');return{parentPath,optionIndex,childIndex};}
-  const answerRow=(option,optionPath,removable,locked=false)=>{const state=optionState(option.n),ro=isSocioReadOnly();return`<div class="socio-option-unit ${locked?'locked-option':''}"><div class="socio-option"><div class="socio-answer-field ${locked?'locked-field':''}"><span>${locked?'Réponse figée':'Réponse'}</span><input data-tree-label="${optionPath}" value="${esc(option.label)}" aria-label="Réponse possible" ${ro||locked?'readonly tabindex="-1"':''}></div><div class="socio-count-field ${state.cls}"><span>Effectif estimé</span><input data-tree-n="${optionPath}" type="number" min="0" placeholder="Ex. 25" value="${Number(option.n)||''}" aria-label="Effectif estimé" ${ro||locked?'readonly tabindex="-1"':''}></div>${ro||locked?'<span class="socio-option-spacer" aria-hidden="true"></span>':`<button type="button" class="socio-option-remove" data-tree-option-remove="${optionPath}" ${removable?'':'disabled'}>×</button>`}</div><div class="socio-option-hint ${state.cls}">${state.hint}</div></div>`;};
+  const answerRow=(option,optionPath,removable,locked=false)=>{const state=optionState(option.n),ro=isSocioReadOnly();return`<div class="socio-option-unit ${locked?'locked-option':''}"><div class="socio-option"><div class="socio-answer-field ${locked?'locked-field':''}"><span>${locked?'Réponse figée':'Réponse'}</span><input data-tree-label="${optionPath}" value="${esc(option.label)}" placeholder="Saisissez une réponse" aria-label="Réponse possible" ${ro||locked?'readonly tabindex="-1"':''}></div><div class="socio-count-field ${state.cls}"><span>Effectif estimé</span><input data-tree-n="${optionPath}" type="number" min="0" placeholder="Ex. 25" value="${Number(option.n)||''}" aria-label="Effectif estimé" ${ro||locked?'readonly tabindex="-1"':''}></div>${ro||locked?'<span class="socio-option-spacer" aria-hidden="true"></span>':`<button type="button" class="socio-option-remove" data-tree-option-remove="${optionPath}" ${removable?'':'disabled'}>×</button>`}</div><div class="socio-option-hint ${state.cls}">${state.hint}</div></div>`;};
   function renderNestedCriterion(criterion,path,level,conditionLabel){
     const ro=isSocioReadOnly(),stats=criterionStats(criterion),isOpen=socioOpenBranches.has(path),structureEditable=!ro&&isSocioReferenceLocale(),legacyVariantCleanup=!isLegacyClientCampaign()&&canAdminCleanLegacyVariant();
     const options=(criterion.opts||[]).map((option,j)=>{
@@ -555,7 +553,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
         ${structureEditable?`<button type="button" class="socio-sub-remove" data-tree-criterion-remove="${path}">Retirer</button>`:legacyVariantCleanup?`<button type="button" class="socio-sub-remove socio-sub-remove-variant" data-tree-criterion-remove-variant="${path}">Retirer de cette langue</button>`:''}
       </div>
       <div class="socio-sub-body" ${isOpen?'':'hidden'}>
-        <div class="field"><label>Question complémentaire</label><input data-tree-q="${path}" value="${esc(criterion.q)}" ${ro?'readonly tabindex="-1"':''}></div>
+        <div class="field"><label>Question complémentaire</label><input data-tree-q="${path}" value="${esc(criterion.q)}" placeholder="Saisissez votre question" ${ro?'readonly tabindex="-1"':''}></div>
         <div class="socio-selection-mode"><span>Mode de réponse</span>${structureEditable?`<button type="button" class="button button-small ${criterion.multiple?'button-primary':'button-secondary'}" data-tree-multiple="${path}" aria-pressed="${criterion.multiple?'true':'false'}">${criterion.multiple?'✓ Plusieurs réponses possibles':'Une seule réponse'}</button>`:`<span class="status-pill">${criterion.multiple?'Plusieurs réponses possibles':'Une seule réponse'}</span>`}</div>
         <div class="socio-sub-options">${options}</div>
         ${structureEditable?`<button class="button button-ghost" type="button" data-tree-option-add="${path}">+ Ajouter une sous-réponse</button>`:''}
@@ -563,7 +561,6 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
     </div>`;
   }
   function renderSocio(){
-    initSocioOpenState();
     const ro=isSocioReadOnly(),structureEditable=!ro&&isSocioReferenceLocale();
     const toolbar=`<div class="socio-tree-toolbar"><div><strong>Données socio-démographiques</strong><span>${isLegacyClientCampaign()?(isAdminLegacySocio()?'Édition Me&YouToo : les modifications sont enregistrées uniquement dans la langue sélectionnée. Les autres langues restent inchangées.':'Consultez les questions et réponses de la campagne dans la langue sélectionnée.'):'Repliez les critères et ouvrez uniquement la branche que vous souhaitez modifier.'}</span></div><div class="socio-tree-toolbar-actions"><button type="button" class="button button-ghost button-small" data-socio-collapse-all>Tout replier</button><button type="button" class="button button-secondary button-small" data-socio-expand-all>Tout déplier</button></div></div>`;
     $('socio-list').innerHTML=toolbar+socio.map((criterion,i)=>{
@@ -598,7 +595,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
           <div class="socio-translation-compare ${referenceCriterionFor(criterion,i)?'has-reference':''}">
             ${renderSocioReference(criterion,i)}
             <div class="socio-current-editor"><div class="socio-current-head"><strong>Version répondant · ${esc(localeLabel(socioContextLocale))}</strong><span class="status-pill">${esc(String(socioContextLocale).toUpperCase())}</span></div>${translationMode&&!ro?'<div class="socio-translation-structure-note">La structure se modifie dans la langue de référence. Ici, vous traduisez uniquement les libellés existants.</div>':''}
-              <div class="socio-card-head"><span class="socio-number socio-number-spacer" aria-hidden="true"></span><div class="field socio-question"><label>Question posée aux répondants ${locked?'<span class="socio-lock-badge">🔒 Figé</span>':''}${isAge?'<span class="socio-age-info" title="Les tranches d’âge sont standardisées afin de permettre la comparaison de vos résultats avec le benchmark global Me&YouToo." aria-label="Information benchmark âge">i</span>':''}</label><input data-tree-q="${path}" value="${esc(criterion.q)}" ${locked?'readonly tabindex="-1"':''}>${locked?`<span class="socio-lock-help">${lockText}</span>`:''}</div><span></span></div>
+              <div class="socio-card-head"><span class="socio-number socio-number-spacer" aria-hidden="true"></span><div class="field socio-question"><label>Question posée aux répondants ${locked?'<span class="socio-lock-badge">🔒 Figé</span>':''}${isAge?'<span class="socio-age-info" title="Les tranches d’âge sont standardisées afin de permettre la comparaison de vos résultats avec le benchmark global Me&YouToo." aria-label="Information benchmark âge">i</span>':''}</label><input data-tree-q="${path}" value="${esc(criterion.q)}" placeholder="Saisissez votre question" ${locked?'readonly tabindex="-1"':''}>${locked?`<span class="socio-lock-help">${lockText}</span>`:''}</div><span></span></div>
               ${!locked?`<div class="socio-selection-mode"><span>Mode de réponse</span>${criterionStructureEditable?`<button type="button" class="button button-small ${criterion.multiple?'button-primary':'button-secondary'}" data-tree-multiple="${path}" aria-pressed="${criterion.multiple?'true':'false'}">${criterion.multiple?'✓ Plusieurs réponses possibles':'Une seule réponse'}</button>`:`<span class="status-pill">${criterion.multiple?'Plusieurs réponses possibles':'Une seule réponse'}</span>`}</div>`:''}
               <div class="socio-options">${optionsHtml}</div>${!locked&&criterionStructureEditable?`<button class="button button-ghost" type="button" data-tree-option-add="${path}">+ Ajouter une réponse</button>`:''}
             </div>
@@ -759,8 +756,8 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
     document.querySelectorAll('[data-tree-multiple]').forEach(el=>el.onclick=()=>{if(isSocioReadOnly()||!isSocioReferenceLocale())return;ensureAllLocaleSocioVariants();const path=el.dataset.treeMultiple,criterion=getCriterionByPath(path);if(!criterion)return;criterion.multiple=!criterion.multiple;propagateCriterionMultiple(path,criterion.multiple);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-socio-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const index=+el.dataset.socioRemove;if(isGenderCriterion(socio[index])&&genderRequiredTheme())return;propagateRootCriterionRemove(index);socio.splice(index,1);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-tree-option-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const [criterionPath,index]=el.dataset.treeOptionRemove.split('|'),criterion=getCriterionByPath(criterionPath);if(isGenderCriterion(criterion)&&!optionalGenderAnswer(criterion?.opts?.[Number(index)]))return;propagateOptionRemove(criterionPath,index);criterion?.opts?.splice(Number(index),1);renderSocio();scheduleAutosave(0);});
-    document.querySelectorAll('[data-tree-option-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const criterionPath=el.dataset.treeOptionAdd,criterion=getCriterionByPath(criterionPath),option={label:criterionPath.includes('.')?'Nouvelle sous-réponse':'Nouvelle réponse',n:0,subcriteria:[]};criterion?.opts?.push(option);propagateOptionAdd(criterionPath,option);renderSocio();scheduleAutosave(0);});
-    document.querySelectorAll('[data-tree-child-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const optionPath=el.dataset.treeChildAdd,option=getOptionByPath(optionPath);if(!option)return;const child=newSubcriterion();option.subcriteria=Array.isArray(option.subcriteria)?option.subcriteria:[];option.subcriteria.push(child);propagateChildAdd(optionPath,child);renderSocio();scheduleAutosave(0);});
+    document.querySelectorAll('[data-tree-option-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const criterionPath=el.dataset.treeOptionAdd,criterion=getCriterionByPath(criterionPath),option={label:'',n:0,subcriteria:[]};criterion?.opts?.push(option);propagateOptionAdd(criterionPath,option);renderSocio();scheduleAutosave(0);});
+    document.querySelectorAll('[data-tree-child-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const optionPath=el.dataset.treeChildAdd,option=getOptionByPath(optionPath);if(!option)return;const child=newSubcriterion();option.subcriteria=Array.isArray(option.subcriteria)?option.subcriteria:[];option.subcriteria.push(child);propagateChildAdd(optionPath,child);const [parent,answerIndex]=optionPath.split('|');openSocioPath(`${parent}.${answerIndex}.${option.subcriteria.length-1}`);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-review-clear]').forEach(el=>el.onclick=()=>clearCriterionReview(socioContextLocale,socio[Number(el.dataset.reviewClear)],Number(el.dataset.reviewClear)));
     document.querySelectorAll('[data-tree-criterion-remove-variant]').forEach(el=>el.onclick=async()=>{
       if(!canAdminCleanLegacyVariant())return;
@@ -783,6 +780,10 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
   async function loadQuota(){try{const data=await api(`/api/projects/${projectId}/quota`);quota=data.organization||null;}catch(error){quota=null;}renderQuota();}
   function updateVigilance(){const total=Number($('nb-respondents').value)||0,allOptions=allSocioOptions(),counts=allOptions.map(o=>Number(o.n)||0).filter(n=>n>0),min=counts.length?Math.min(...counts):0,missing=allOptions.filter(o=>!Number(o.n)).length,subcount=countSubcriteria();let level='Faible',cls='low',text='Les groupes estimés sont suffisamment larges.';if(!total||!counts.length){level='À compléter';cls='';text='Renseignez les effectifs estimés par option.';}if(total&&total<8){level='Élevé';cls='high';text='Le nombre total de répondants est insuffisant pour une analyse collective.';}else if((min&&min<8)||socio.length>=4){level='Élevé';cls='high';text='Des groupes sont trop petits ou les croisements sont trop nombreux.';}else if((min&&min<10)||socio.length>=3||subcount){level='Modéré';cls='medium';text='Certains croisements devront être interprétés avec prudence.';}$('anonymity-level').textContent=level;$('anonymity-level').className='anonymity-level '+cls;$('anonymity-summary-text').textContent=text;$('anonymity-metrics').innerHTML=`<span class="anonymity-metric">${socio.length} critère(s)</span><span class="anonymity-metric">${subcount} sous-critère(s)</span><span class="anonymity-metric">Plus petit groupe : ${min||'—'}</span><span class="anonymity-metric">${missing} effectif(s) manquant(s)</span>`;const live=$('anon-alert');if(total&&total<8){live.hidden=false;live.className='anonymity-live-alert danger';live.innerHTML='<strong>🚨 Attention : moins de 8 répondants sont prévus au total.</strong><span>Le volume est insuffisant pour restituer des résultats collectifs fiables et anonymes.</span>';}else if(min&&min<8){live.hidden=false;live.className='anonymity-live-alert danger';live.innerHTML='<strong>🚨 Attention : au moins un groupe compte moins de 8 répondants.</strong>';}else if(min&&min<10){live.hidden=false;live.className='anonymity-live-alert warning';live.innerHTML='<strong>⚠️ Vigilance : au moins un groupe compte seulement 8 ou 9 répondants.</strong>';}else{live.hidden=true;live.innerHTML='';}}
   const normalizeIntro=value=>String(value||'').replace(/<br\s*\/?>/gi,' ').replace(/<\/p>/gi,' ').replace(/<\/li>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;|&#160;/gi,' ').replace(/&amp;/gi,'&').replace(/&quot;|&#34;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/\s+/g,' ').trim();
+function unfilledSocioText(value,question=false){
+  const text=String(value??'').trim();
+  return !text||(question?/^Nouvelle donnée(?: personnalisée)?$/i.test(text):/^(?:(?:Sous[- ]?)?réponse\s*\d+|Nouvelle (?:sous[- ]?)?réponse)$/i.test(text));
+}
 function incompleteSocioLocale(items,reference=[]){
   const options=c=>Array.isArray(c?.opts)?c.opts:Array.isArray(c?.options)?c.options:[];
   const children=o=>Array.isArray(o?.subcriteria)?o.subcriteria:o?.subcriterion?[o.subcriterion]:[];
@@ -796,12 +797,12 @@ function incompleteSocioLocale(items,reference=[]){
       if(++count>1000)return issue(parent,'question','La structure des données d’analyse est trop volumineuse.');
       const c=rows[i],ref=refs[i],path=parent?`${parent}.${i}`:String(i);
       const q=String(c?.q??c?.question??c?.label??'').trim();
-      if(!q||q.length>500)return issue(path,'question','Renseignez la question dans cette langue.');
+      if(unfilledSocioText(q,true)||q.length>500)return issue(path,'question','Renseignez la question dans cette langue.');
       const opts=options(c),refOpts=options(ref);
       if(opts.length<2||opts.length>50)return issue(path,'options','Chaque question doit comporter entre deux et cinquante réponses.');
       for(let j=0;j<Math.max(opts.length,refOpts.length);j++){
         const option=opts[j],refOption=refOpts[j];
-        if(!String(option?.label??'').trim()||String(option?.label??'').length>250)return issue(`${path}|${j}`,'answer','Renseignez cette réponse dans cette langue.');
+        if(unfilledSocioText(option?.label)||String(option?.label??'').length>250)return issue(`${path}|${j}`,'answer','Renseignez cette réponse dans cette langue.');
         const nested=walk(children(option),children(refOption),`${path}.${j}`,depth+1);if(nested)return nested;
       }
       if(ref&&opts.length!==refOpts.length)return issue(path,'options','Les mêmes réponses doivent être présentes dans toutes les langues actives.');
@@ -978,7 +979,7 @@ function incompleteSocioLocale(items,reference=[]){
     }
     if(item.locale&&normalizeLocale(item.locale)!==normalizeLocale(socioContextLocale)){storeActiveLanguageContent();activateLanguage(item.locale);renderSocioContext();renderSocio();updateNextState();scheduleAutosave(0);}
     if(Number.isInteger(item.resourceIndex)){openResourceModal(item.resourceIndex);return;}
-    if(item.socio){document.querySelector('[data-socio-expand-all]')?.click();}
+    if(item.socio){const path=item.selector?.match(/data-tree-(?:q|label|option-add)="([0-9.]+)/)?.[1];if(path){openSocioPath(path);renderSocio();}}
     let field=$(item.id);
     if(item.socio)field=field?.querySelector(item.selector)||field?.querySelector('input:not([readonly]),button');
     if(!field)return;
@@ -1025,7 +1026,7 @@ function incompleteSocioLocale(items,reference=[]){
   function syncCloseMin(){const d=$('launch-date').value;if(!d)return;const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+1);const min=x.toISOString().slice(0,10);$('close-date').min=min;if(!isReadOnly()&&$('close-date').value&&$('close-date').value<min)$('close-date').value='';}
   function invalidCriterion(c){return !String(c?.q||'').trim()||!Array.isArray(c?.opts)||c.opts.length<2||c.opts.some(o=>!String(o?.label||'').trim()||(o.subcriteria||[]).some(invalidCriterion));}
   function invalidSocio(){return socio.some(invalidCriterion);}
-  $('add-socio').onclick=async()=>{if(isSocioReadOnly())return;const addCriterion=()=>{ensureAllLocaleSocioVariants();const criterion={q:'Nouvelle donnée personnalisée',opts:[{label:'Réponse 1',n:0},{label:'Réponse 2',n:0}]},index=socio.length;socio.push(criterion);propagateRootCriterionAdd(criterion,index);renderSocioContext();renderSocio();scheduleAutosave(0);setTimeout(()=>document.querySelector(`[data-socio-root-toggle="${index}"]`)?.scrollIntoView({behavior:'smooth',block:'center'}),80);};if(isSocioReferenceLocale())return addCriterion();const ref=socioReference(),refLoc=normalizeLocale(ref.locale);if(!refLoc)return;const ok=await window.StudioModal.confirm({eyebrow:'Données d’analyse multilingues',title:'La structure se construit dans la langue de référence',message:`Pour garantir les mêmes critères, réponses et sous-critères dans toutes les langues, ajoutez la donnée depuis ${localeLabel(refLoc)} (${refLoc.toUpperCase()}). Elle sera ensuite disponible dans toutes les langues du projet pour être traduite.`,type:'info',cancelLabel:'Rester ici',confirmLabel:`Passer en ${localeLabel(refLoc)} et ajouter`});if(!ok)return;storeActiveLanguageContent();activateLanguage(refLoc);renderSocioContext();renderSocio();addCriterion();};
+  $('add-socio').onclick=async()=>{if(isSocioReadOnly())return;const addCriterion=()=>{ensureAllLocaleSocioVariants();const criterion={q:'',opts:[{label:'',n:0},{label:'',n:0}]},index=socio.length;socio.push(criterion);markNewTranslationPaths(socioContextLocale,pathsForCriterion(criterion,index),socioContextLocale,socio);propagateRootCriterionAdd(criterion,index);openSocioPath(String(index));renderSocioContext();renderSocio();scheduleAutosave(0);setTimeout(()=>{const field=document.querySelector(`input[data-tree-q="${index}"]`);field?.focus({preventScroll:true});field?.scrollIntoView({behavior:'smooth',block:'center'});},80);};if(isSocioReferenceLocale())return addCriterion();const ref=socioReference(),refLoc=normalizeLocale(ref.locale);if(!refLoc)return;const ok=await window.StudioModal.confirm({eyebrow:'Données d’analyse multilingues',title:'La structure se construit dans la langue de référence',message:`Pour garantir les mêmes critères, réponses et sous-critères dans toutes les langues, ajoutez la donnée depuis ${localeLabel(refLoc)} (${refLoc.toUpperCase()}). Elle sera ensuite disponible dans toutes les langues du projet pour être traduite.`,type:'info',cancelLabel:'Rester ici',confirmLabel:`Passer en ${localeLabel(refLoc)} et ajouter`});if(!ok)return;storeActiveLanguageContent();activateLanguage(refLoc);renderSocioContext();renderSocio();addCriterion();};
   $('add-socio-top').onclick=()=>$('add-socio').click();
   $('intro').addEventListener('input',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave();}});
   $('launch-date').addEventListener('change',()=>{if(!isReadOnly()){syncCloseMin();updateNextState();scheduleAutosave(0);}});
