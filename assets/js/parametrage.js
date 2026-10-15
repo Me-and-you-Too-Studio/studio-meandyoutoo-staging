@@ -474,7 +474,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
   function storeActiveIntro(){if(isLegacyClientCampaign()||!socioContextLocale||!$('intro'))return;const current=String($('intro').value||'').trim();if(!introContextHasStored&&current===introContextBaseline)return;const loc=normalizeLocale(socioContextLocale),ref=introReference(),before=String(introVariants?.[loc]??introResolvedVariants?.[loc]??'').trim();if(ref.locale&&normalizeLocale(ref.locale)===loc&&current!==before)markIntroTranslationsToReview(loc,before);if(current)introVariants[loc]=current;else delete introVariants[loc];introContextHasStored=Boolean(current);introContextBaseline=current;}
   function storeActiveLanguageContent(){storeActiveSocio();storeActiveIntro();}
   function activateLanguage(locale){socioContextLocale=normalizeLocale(locale);const countries=projectCountries();socioContextCountry=normalizeCountry(project?.selected_country_code)||(countries[0]||'');const exact=socioForLocale(socioContextLocale);socio=normalizeSexismeCriteria(localizeStandardCriteria(normalizedSocio(exact||(isLegacyClientCampaign()?(normalizeLocale(project?.selected_locale)===socioContextLocale&&Array.isArray(project?.sociodemo)?project.sociodemo:[]):(Array.isArray(project?.sociodemo)&&project.sociodemo.length?project.sociodemo:defaultSocio()))),socioContextLocale));socioContextHasStored=Boolean(exact);socioContextBaseline=JSON.stringify(normalizedSocio(socio));const intro=stripHtml(introForLocale(socioContextLocale));if($('intro'))$('intro').value=intro;introContextHasStored=Boolean(introVariants?.[socioContextLocale]);introContextBaseline=String(intro||'').trim();socioOpenRoots.clear();socioOpenBranches.clear();renderIntroReference();}
-  function renderSocioContext(){const introWrap=$('socio-context'),introSelect=$('socio-locale'),introNote=$('socio-context-note'),dsdWrap=$('socio-dsd-context'),dsdSelect=$('socio-dsd-locale'),dsdNote=$('socio-dsd-context-note');if(!introWrap||!introSelect)return;const originNote=$('intro-origin-note');if(originNote&&isLegacyClientCampaign())originNote.textContent='L’introduction ci-dessous est celle de votre campagne, dans la langue sélectionnée.';const locales=projectLocales();if(!locales.length){introWrap.hidden=true;if(dsdWrap)dsdWrap.hidden=true;return;}const hideLanguageControls=currentUser.role!=='admin'&&locales.length===1&&projectCountries().length<=1;introWrap.hidden=hideLanguageControls;introWrap.style.display=hideLanguageControls?'none':'';if(dsdWrap){dsdWrap.hidden=hideLanguageControls;dsdWrap.style.display=hideLanguageControls?'none':'';}const currentLocale=locales.includes(normalizeLocale(socioContextLocale))?normalizeLocale(socioContextLocale):(locales[0]||'fr');const options=locales.map(loc=>{const c=translationCounts(loc),suffix=[c.todo?`${c.todo} à traduire`:'',c.review?`${c.review} à vérifier`:''].filter(Boolean).join(' · ');return `<option value="${esc(loc)}">${esc(localeLabel(loc))} (${esc(loc.toUpperCase())})${suffix?` · ${suffix}`:''}</option>`}).join('');introSelect.innerHTML=options;introSelect.value=currentLocale;if(dsdSelect){dsdSelect.innerHTML=options;dsdSelect.value=currentLocale;}socioContextLocale=currentLocale;if(introNote)introNote.textContent=isLegacyClientCampaign()?'Consultez l’introduction dans les langues actives de votre campagne.':'Modifiez la langue sélectionnée en gardant la langue de référence Me&YouToo visible ci-dessous.';if(dsdNote)dsdNote.textContent=isLegacyClientCampaign()?'Consultez les données d’analyse de votre campagne dans la langue sélectionnée.':'Les données proposées viennent du référentiel Me&YouToo dans la langue sélectionnée.';syncSocioStructureControls();renderStickySocioLanguages();const changeLocale=nextLocale=>{storeActiveLanguageContent();scheduleAutosave(0);activateLanguage(nextLocale);renderSocioContext();renderSocio();};introSelect.onchange=()=>changeLocale(introSelect.value);if(dsdSelect)dsdSelect.onchange=()=>changeLocale(dsdSelect.value);}
+  function renderSocioContext(){const introWrap=$('socio-context'),introSelect=$('socio-locale'),introNote=$('socio-context-note'),dsdWrap=$('socio-dsd-context'),dsdSelect=$('socio-dsd-locale'),dsdNote=$('socio-dsd-context-note');if(!introWrap||!introSelect)return;const originNote=$('intro-origin-note');if(originNote&&isLegacyClientCampaign())originNote.textContent='L’introduction ci-dessous est celle de votre campagne, dans la langue sélectionnée.';const locales=projectLocales();if(!locales.length){introWrap.hidden=true;if(dsdWrap)dsdWrap.hidden=true;return;}const hideLanguageControls=currentUser.role!=='admin'&&locales.length===1&&projectCountries().length<=1;introWrap.hidden=hideLanguageControls;introWrap.style.display=hideLanguageControls?'none':'';if(dsdWrap){dsdWrap.hidden=hideLanguageControls;dsdWrap.style.display=hideLanguageControls?'none':'';}const currentLocale=locales.includes(normalizeLocale(socioContextLocale))?normalizeLocale(socioContextLocale):(locales[0]||'fr');const options=locales.map(loc=>{const c=translationCounts(loc),suffix=[c.todo?`${c.todo} à traduire`:'',c.review?`${c.review} à vérifier`:''].filter(Boolean).join(' · ');return `<option value="${esc(loc)}">${esc(localeLabel(loc))} (${esc(loc.toUpperCase())})${suffix?` · ${suffix}`:''}</option>`}).join('');introSelect.innerHTML=options;introSelect.value=currentLocale;if(dsdSelect){dsdSelect.innerHTML=options;dsdSelect.value=currentLocale;}socioContextLocale=currentLocale;if(introNote)introNote.textContent=isLegacyClientCampaign()?'Consultez l’introduction dans les langues actives de votre campagne.':'Modifiez la langue sélectionnée en gardant la langue de référence Me&YouToo visible ci-dessous.';if(dsdNote)dsdNote.textContent=isAdminLegacySocio()?`Les ajouts de critères, sous-critères et réponses sont créés dans les ${locales.length} langues actives de cette campagne. Les traductions se modifient séparément.`:isLegacyClientCampaign()?'Consultez les données d’analyse de votre campagne dans la langue sélectionnée.':'Tout ajout crée la même structure dans les langues actives de cette campagne ; les traductions sont à compléter séparément.';syncSocioStructureControls();renderStickySocioLanguages();const changeLocale=nextLocale=>{storeActiveLanguageContent();scheduleAutosave(0);activateLanguage(nextLocale);renderSocioContext();renderSocio();};introSelect.onchange=()=>changeLocale(introSelect.value);if(dsdSelect)dsdSelect.onchange=()=>changeLocale(dsdSelect.value);}
   const normalizeResultResources=value=>(Array.isArray(value)?value:[]).map((item,i)=>{const title=String(item?.title||item?.titre||item?.label||item?.text||'').trim(),url=String(item?.url||item?.href||item?.link||'').trim(),documentId=String(item?.documentId??item?.document_id??'').trim(),legacyFilename=String(item?.legacyFilename||item?.legacy_filename||'').trim(),filename=String(item?.filename||legacyFilename||'').trim(),type=String(item?.type||'').trim().toLowerCase()||(documentId?'document':legacyFilename&&!url?'legacy_document':'link');return{title,type,url,documentId,filename,legacyFilename}}).filter(item=>item.title||item.url||item.documentId||item.legacyFilename);
   const validHttpUrl=value=>{try{const u=new URL(String(value||'').trim());return u.protocol==='http:'||u.protocol==='https:'}catch(_){return false}};
   const resourceDocumentById=id=>resourceLibrary.find(doc=>String(doc.id)===String(id));
@@ -876,25 +876,96 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
       if(multiple)targetCriterion.multiple=true;else delete targetCriterion.multiple;
     }
   }
-  function isOrange382ReferenceAnswer(){return isAdminLegacySocio()&&isOrange382Project(project)&&normalizeLocale(socioContextLocale)==='en';}
-  function addOrange382ReferenceAnswer(criterionPath){
-    const criterion=getCriterionByPath(criterionPath);if(!criterion||!Array.isArray(criterion.opts))throw new Error('Question de référence introuvable. Rechargez la campagne.');
-    const reference=clone(socio),targets=[];
-    for(const locale of projectLocales()){
-      const loc=normalizeLocale(locale);if(loc==='en')continue;
-      const target=resolveCriterionPathInTarget(reference,socioLanguageVariants[loc],criterionPath)?.criterion;
-      if(!target||!Array.isArray(target.opts))throw new Error(`La question correspondante n’a pas été retrouvée en ${localeLabel(loc)}. Aucun ajout n’a été effectué. La structure de cette langue doit être vérifiée.`);
-      if(target.opts.length>=50)throw new Error(`Cette question contient déjà cinquante réponses en ${localeLabel(loc)}. Aucun ajout n’a été effectué.`);
-      targets.push(target);
+  function newSharedSocioId(){return `studio-dsd-${window.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`}`;}
+  function sharedSocioNode(node,kind,sourceLocale,following=false){
+    const result=clone(node);
+    if(!stableSourceId(result))result.source_id=newSharedSocioId();
+    if(isLegacyClientCampaign()){
+      result.studio_dsd_reference_locale=sourceLocale;
+      if(following)result.studio_dsd_reference_fields=[kind==='criterion'?'q':'label'];
     }
-    if(criterion.opts.length>=50)throw new Error('Cette question contient déjà cinquante réponses. Aucun ajout n’a été effectué.');
-    // Cet identifiant commun permet de retrouver la nouvelle réponse même si
-    // d’anciens ajouts propres à une langue ont des positions différentes.
-    const identifier=`studio-orange382-${window.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
-    const option={source_id:identifier,label:'',n:0,subcriteria:[]};
-    criterion.opts.push(option);
-    for(const target of targets)target.opts.push(clone(option));
+    if(kind==='criterion')result.opts=(result.opts||[]).map(answer=>sharedSocioNode(answer,'option',sourceLocale,following));
+    else result.subcriteria=(result.subcriteria||[]).map(child=>sharedSocioNode(child,'criterion',sourceLocale,following));
+    return result;
   }
+  function socioAddPlans(){
+    if(isSocioReadOnly()||!isSocioReferenceLocale())throw new Error('La structure se modifie dans la langue de référence autorisée.');
+    const sourceLocale=normalizeLocale(socioContextLocale),locales=[...new Set(projectLocales().map(normalizeLocale).filter(Boolean))];
+    if(!locales.includes(sourceLocale))throw new Error('Cette langue ne fait pas partie du périmètre de la campagne.');
+    return locales.map(locale=>{
+      const active=locale===sourceLocale;let rows=active?socio:socioLanguageVariants[locale];
+      if(!Array.isArray(rows))throw new Error(`Les données ${localeLabel(locale)} manquent. Rechargez la campagne avant de recommencer. Aucun ajout n’a été effectué.`);
+      return {locale,rows,active};
+    });
+  }
+  function countSocioNodes(rows){let count=0;for(const criterion of rows||[]){count++;for(const option of criterion.opts||[])count+=countSocioNodes(option.subcriteria||[]);}return count;}
+  function translatedSocioAddCopy(source,template){
+    const result=clone(source);
+    if(!template||result.opts.length!==(template.opts||[]).length)throw new Error('La suggestion n’a pas la même structure dans toutes les langues. Aucun ajout n’a été effectué.');
+    result.q=String(template.q||'');
+    result.opts.forEach((option,index)=>{option.label=String(template.opts[index].label||'');});
+    return result;
+  }
+  function multilingualSocioAdd(kind,path='',template=null,translatedTemplate=null){
+    const plans=socioAddPlans(),reference=clone(socio),sourceLocale=normalizeLocale(socioContextLocale);
+    const [criterionPath,optionIndex]=String(path).split('|');
+    const parent=kind==='root'?null:getCriterionByPath(criterionPath);
+    if(kind!=='root'&&!parent)throw new Error('Question parente introuvable. Aucun ajout n’a été effectué.');
+    const sourceOption=kind==='child'?parent.opts?.[Number(optionIndex)]:null;
+    if(kind==='child'&&!sourceOption)throw new Error('Réponse parente introuvable. Aucun ajout n’a été effectué.');
+    if(kind==='child'&&(String(criterionPath).split('.').length+1)/2+1>12)throw new Error('La structure ne peut pas dépasser douze niveaux.');
+    // Resolve every destination and check all limits before changing any language.
+    for(const plan of plans){
+      if(kind==='root'){
+        if(plan.rows.length>=20)throw new Error(`Vingt critères sont déjà présents en ${localeLabel(plan.locale)}. Aucun ajout n’a été effectué.`);
+        plan.destination=plan.rows;
+      }else{
+        const target=plan.active?parent:resolveCriterionPathInTarget(reference,plan.rows,criterionPath)?.criterion;
+        if(!target)throw new Error(`La question correspondante manque en ${localeLabel(plan.locale)}. Aucun ajout n’a été effectué.`);
+        if(kind==='option'){
+          if(!Array.isArray(target.opts)||target.opts.length>=50)throw new Error(`La question est absente ou contient déjà cinquante réponses en ${localeLabel(plan.locale)}. Aucun ajout n’a été effectué.`);
+          plan.destination=target.opts;
+        }else{
+          const index=plan.active?Number(optionIndex):matchingIndexByKey(sourceOption,target.opts,Number(optionIndex),optionStructureKey);
+          const option=target.opts?.[index];
+          if(!option)throw new Error(`La réponse parente manque en ${localeLabel(plan.locale)}. Aucun ajout n’a été effectué.`);
+          plan.parentOption=option;plan.destination=Array.isArray(option.subcriteria)?option.subcriteria:[];
+        }
+      }
+      if(kind!=='option'&&countSocioNodes(plan.rows)>=1000)throw new Error(`La limite de sous-critères est atteinte en ${localeLabel(plan.locale)}. Aucun ajout n’a été effectué.`);
+    }
+    const item=sharedSocioNode(template||(kind==='option'?{label:'',n:0,subcriteria:[]}:newSubcriterion()),kind==='option'?'option':'criterion',sourceLocale);
+    const copies=plans.map(plan=>plan.active?item:translatedTemplate?translatedSocioAddCopy(item,translatedTemplate(plan.locale)):isLegacyClientCampaign()?sharedSocioNode(item,kind==='option'?'option':'criterion',sourceLocale,true):kind==='option'?{...clone(item),label:''}:blankCriterion(item));
+    for(let i=0;i<plans.length;i++){
+      const plan=plans[i];if(plan.parentOption)plan.parentOption.subcriteria=plan.destination;
+      plan.destination.push(copies[i]);if(!plan.active)socioLanguageVariants[plan.locale]=plan.rows;
+    }
+    if(!isLegacyClientCampaign()&&kind==='root'&&!String(item.q||'').trim()){
+      const index=socio.length-1,paths=pathsForCriterion(item,index);
+      for(const plan of plans)markNewTranslationPaths(plan.locale,paths,sourceLocale,socio);
+    }
+    return item;
+  }
+  function syncAddedSocioText(item,field,value){
+    if(!isAdminLegacySocio())return;
+    const id=String(item?.source_id||''),compatibility=id.startsWith('studio-orange382-')&&isOrange382Project(project);
+    const sourceLocale=normalizeLocale(item?.studio_dsd_reference_locale||(compatibility?'en':''));
+    if(!sourceLocale||(!id.startsWith('studio-dsd-')&&!compatibility))return;
+    const marker=compatibility?'studio_orange382_reference_fields':'studio_dsd_reference_fields';
+    if(normalizeLocale(socioContextLocale)!==sourceLocale){
+      if(Array.isArray(item[marker]))item[marker]=item[marker].filter(key=>key!==field);
+      return;
+    }
+    const visit=rows=>{for(const criterion of rows||[]){
+      if(field==='q'&&String(criterion.source_id)===id&&criterion[marker]?.includes(field))criterion[field]=value;
+      for(const answer of criterion.opts||[]){
+        if(field==='label'&&String(answer.source_id)===id&&answer[marker]?.includes(field))answer[field]=value;
+        visit(answer.subcriteria||[]);
+      }
+    }};
+    for(const locale of projectLocales()){const loc=normalizeLocale(locale);if(loc!==sourceLocale)visit(socioLanguageVariants[loc]);}
+  }
+  async function showSocioAddError(error){await window.StudioModal.alert({title:'Ajout multilingue impossible',message:error.message,type:'error',confirmLabel:'Fermer'});}
   function propagateOptionAdd(criterionPath,option){if(isLegacyClientCampaign())return;
     const sourceLocale=normalizeLocale(socioContextLocale),sourceSnapshot=clone(socio),rootIndex=Number(String(criterionPath).split('.')[0]);
     for(const loc of projectLocales()){
@@ -912,14 +983,14 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
     document.querySelector('[data-socio-collapse-all]')?.addEventListener('click',()=>{socioOpenRoots.clear();socioOpenBranches.clear();renderSocio();});
     document.querySelector('[data-socio-expand-all]')?.addEventListener('click',()=>{socioOpenRoots.clear();socioOpenBranches.clear();socio.forEach((c,i)=>{const root=String(i);socioOpenRoots.add(root);const visit=(criterion,path)=>{(criterion.opts||[]).forEach((o,j)=>(o.subcriteria||[]).forEach((child,k)=>{const childPath=`${path}.${j}.${k}`;socioOpenBranches.add(childPath);visit(child,childPath);}));};visit(c,root);});renderSocio();});
     if(isSocioReadOnly())return;
-    document.querySelectorAll('[data-tree-q]').forEach(el=>el.oninput=()=>{const criterion=getCriterionByPath(el.dataset.treeQ);if(criterion){criterion.q=el.value;const root=Number(String(el.dataset.treeQ).split('.')[0]),key=criterionKey(socio[root],root),path=`q:${key}`;if(String(el.value||'').trim())clearTranslationTodoPath(socioContextLocale,path);scheduleAutosave();renderSocioContext();}});
-    document.querySelectorAll('[data-tree-label]').forEach(el=>el.oninput=()=>{const option=getOptionByPath(el.dataset.treeLabel);if(option){option.label=el.value;const root=Number(String(el.dataset.treeLabel).split('.')[0]),key=criterionKey(socio[root],root),idx=Number(String(el.dataset.treeLabel).split('|').pop()),ref=socioReference().items?.[root],optKey=String(ref?.opts?.[idx]?.source_id??`i${idx}`),path=`o:${key}:${optKey}`;if(String(el.value||'').trim())clearTranslationTodoPath(socioContextLocale,path);scheduleAutosave();renderSocioContext();}});
+    document.querySelectorAll('[data-tree-q]').forEach(el=>el.oninput=()=>{const criterion=getCriterionByPath(el.dataset.treeQ);if(criterion){syncAddedSocioText(criterion,'q',el.value);criterion.q=el.value;const root=Number(String(el.dataset.treeQ).split('.')[0]),key=criterionKey(socio[root],root),path=`q:${key}`;if(String(el.value||'').trim())clearTranslationTodoPath(socioContextLocale,path);scheduleAutosave();renderSocioContext();}});
+    document.querySelectorAll('[data-tree-label]').forEach(el=>el.oninput=()=>{const option=getOptionByPath(el.dataset.treeLabel);if(option){syncAddedSocioText(option,'label',el.value);option.label=el.value;const root=Number(String(el.dataset.treeLabel).split('.')[0]),key=criterionKey(socio[root],root),idx=Number(String(el.dataset.treeLabel).split('|').pop()),ref=socioReference().items?.[root],optKey=String(ref?.opts?.[idx]?.source_id??`i${idx}`),path=`o:${key}:${optKey}`;if(String(el.value||'').trim())clearTranslationTodoPath(socioContextLocale,path);scheduleAutosave();renderSocioContext();}});
     document.querySelectorAll('[data-tree-n]').forEach(el=>el.oninput=()=>{const option=getOptionByPath(el.dataset.treeN);if(option){option.n=Number(el.value)||0;updateOptionVisual(el);scheduleAutosave();}});
     document.querySelectorAll('[data-tree-multiple]').forEach(el=>el.onclick=()=>{if(isSocioReadOnly()||!isSocioReferenceLocale())return;ensureAllLocaleSocioVariants();const path=el.dataset.treeMultiple,criterion=getCriterionByPath(path);if(!criterion)return;criterion.multiple=!criterion.multiple;propagateCriterionMultiple(path,criterion.multiple);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-socio-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const index=+el.dataset.socioRemove;if(isGenderCriterion(socio[index])&&genderRequiredTheme())return;const alerts=captureSocioAlertPaths();propagateRootCriterionRemove(index);socio.splice(index,1);rebaseSocioAlerts(alerts);if(alerts)storeActiveSocio(true);renderSocioContext();renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-tree-option-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const [criterionPath,index]=el.dataset.treeOptionRemove.split('|'),criterion=getCriterionByPath(criterionPath);if(isGenderCriterion(criterion)&&!optionalGenderAnswer(criterion?.opts?.[Number(index)]))return;const alerts=captureSocioAlertPaths();propagateOptionRemove(criterionPath,index);criterion?.opts?.splice(Number(index),1);rebaseSocioAlerts(alerts);if(alerts)storeActiveSocio(true);renderSocioContext();renderSocio();scheduleAutosave(0);});
-    document.querySelectorAll('[data-tree-option-add]').forEach(el=>el.onclick=async()=>{const criterionPath=el.dataset.treeOptionAdd;if(isOrange382ReferenceAnswer()){try{addOrange382ReferenceAnswer(criterionPath);renderSocio();scheduleAutosave(0);}catch(error){await window.StudioModal.alert({title:'Ajout multilingue impossible',message:error.message,type:'error',confirmLabel:'Fermer'});}return;}ensureAllLocaleSocioVariants();const criterion=getCriterionByPath(criterionPath),option={label:'',n:0,subcriteria:[]};criterion?.opts?.push(option);propagateOptionAdd(criterionPath,option);renderSocio();scheduleAutosave(0);});
-    document.querySelectorAll('[data-tree-child-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const optionPath=el.dataset.treeChildAdd,option=getOptionByPath(optionPath);if(!option)return;const child=newSubcriterion();option.subcriteria=Array.isArray(option.subcriteria)?option.subcriteria:[];option.subcriteria.push(child);propagateChildAdd(optionPath,child);const [parent,answerIndex]=optionPath.split('|');openSocioPath(`${parent}.${answerIndex}.${option.subcriteria.length-1}`);renderSocio();scheduleAutosave(0);});
+    document.querySelectorAll('[data-tree-option-add]').forEach(el=>el.onclick=async()=>{try{multilingualSocioAdd('option',el.dataset.treeOptionAdd);renderSocio();scheduleAutosave(0);}catch(error){await showSocioAddError(error);}});
+    document.querySelectorAll('[data-tree-child-add]').forEach(el=>el.onclick=async()=>{try{const optionPath=el.dataset.treeChildAdd;multilingualSocioAdd('child',optionPath);const [parent,index]=optionPath.split('|'),option=getOptionByPath(optionPath);openSocioPath(`${parent}.${index}.${option.subcriteria.length-1}`);renderSocio();scheduleAutosave(0);}catch(error){await showSocioAddError(error);}});
     document.querySelectorAll('[data-review-clear]').forEach(el=>el.onclick=()=>clearCriterionReview(socioContextLocale,socio[Number(el.dataset.reviewClear)],Number(el.dataset.reviewClear)));
     document.querySelectorAll('[data-tree-criterion-remove-variant]').forEach(el=>el.onclick=async()=>{
       if(!canAdminCleanLegacyVariant())return;
@@ -1189,7 +1260,7 @@ function incompleteSocioLocale(items,reference=[]){
   function syncCloseMin(){const d=$('launch-date').value;if(!d)return;const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+1);const min=x.toISOString().slice(0,10);$('close-date').min=min;if(!isReadOnly()&&$('close-date').value&&$('close-date').value<min)$('close-date').value='';}
   function invalidCriterion(c){return !String(c?.q||'').trim()||!Array.isArray(c?.opts)||c.opts.length<2||c.opts.some(o=>!String(o?.label||'').trim()||(o.subcriteria||[]).some(invalidCriterion));}
   function invalidSocio(){return socio.some(invalidCriterion);}
-  $('add-socio').onclick=async()=>{if(isSocioReadOnly())return;const addCriterion=()=>{ensureAllLocaleSocioVariants();const criterion={q:'',opts:[{label:'',n:0},{label:'',n:0}]},index=socio.length;socio.push(criterion);markNewTranslationPaths(socioContextLocale,pathsForCriterion(criterion,index),socioContextLocale,socio);propagateRootCriterionAdd(criterion,index);openSocioPath(String(index));renderSocioContext();renderSocio();scheduleAutosave(0);setTimeout(()=>{const field=document.querySelector(`input[data-tree-q="${index}"]`);field?.focus({preventScroll:true});field?.scrollIntoView({behavior:'smooth',block:'center'});},80);};if(isSocioReferenceLocale())return addCriterion();const ref=socioReference(),refLoc=normalizeLocale(ref.locale);if(!refLoc)return;const ok=await window.StudioModal.confirm({eyebrow:'Données d’analyse multilingues',title:'La structure se construit dans la langue de référence',message:`Pour garantir les mêmes critères, réponses et sous-critères dans toutes les langues, ajoutez la donnée depuis ${localeLabel(refLoc)} (${refLoc.toUpperCase()}). Elle sera ensuite disponible dans toutes les langues du projet pour être traduite.`,type:'info',cancelLabel:'Rester ici',confirmLabel:`Passer en ${localeLabel(refLoc)} et ajouter`});if(!ok)return;storeActiveLanguageContent();activateLanguage(refLoc);renderSocioContext();renderSocio();addCriterion();};
+  $('add-socio').onclick=async()=>{if(isSocioReadOnly())return;const addCriterion=()=>{try{const index=socio.length;multilingualSocioAdd('root');openSocioPath(String(index));renderSocioContext();renderSocio();scheduleAutosave(0);setTimeout(()=>{const field=document.querySelector(`input[data-tree-q="${index}"]`);field?.focus({preventScroll:true});field?.scrollIntoView({behavior:'smooth',block:'center'});},80);}catch(error){return showSocioAddError(error);}};if(isSocioReferenceLocale())return addCriterion();const ref=socioReference(),refLoc=normalizeLocale(ref.locale);if(!refLoc)return;const ok=await window.StudioModal.confirm({eyebrow:'Données d’analyse multilingues',title:'La structure se construit dans la langue de référence',message:`Pour garantir les mêmes critères, réponses et sous-critères dans toutes les langues, ajoutez la donnée depuis ${localeLabel(refLoc)} (${refLoc.toUpperCase()}). Elle sera ensuite disponible dans toutes les langues du projet pour être traduite.`,type:'info',cancelLabel:'Rester ici',confirmLabel:`Passer en ${localeLabel(refLoc)} et ajouter`});if(!ok)return;storeActiveLanguageContent();activateLanguage(refLoc);renderSocioContext();renderSocio();addCriterion();};
   $('add-socio-top').onclick=()=>$('add-socio').click();
   $('intro').addEventListener('input',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave();}});
   $('launch-date').addEventListener('change',()=>{if(!isReadOnly()){syncCloseMin();updateNextState();scheduleAutosave(0);}});
@@ -1208,17 +1279,8 @@ function incompleteSocioLocale(items,reference=[]){
       renderSocioContext();renderSocio();return;
     }
     const criterion=key==='age'?ageForLocale(refLoc):suggestedCriterion(index,refLoc);
-    const rootIndex=socio.length;
-    socio.push(criterion);
-    for(const loc of projectLocales()){
-      const n=normalizeLocale(loc);
-      if(n===refLoc)continue;
-      const items=Array.isArray(socioLanguageVariants[n])?socioLanguageVariants[n]:(socioLanguageVariants[n]=[]);
-      if(!isLegacyClientCampaign())socioLanguageVariants[n]=localizeStandardCriteria(items,n);
-      const target=socioLanguageVariants[n];
-      const translated=key==='age'?ageForLocale(n):suggestedCriterion(index,n);
-      target.splice(rootIndex,0,translated);
-    }
+    try{multilingualSocioAdd('root','',criterion,loc=>key==='age'?ageForLocale(loc):suggestedCriterion(index,loc));}
+    catch(error){if(requestedLocale!==refLoc)activateLanguage(requestedLocale);renderSocioContext();renderSocio();showSocioAddError(error);return;}
     socioContextHasStored=true;
     insertingTranslatedSuggestion=true;
     try{storeActiveSocio();}finally{insertingTranslatedSuggestion=false;}
