@@ -124,8 +124,8 @@
         if(topActions&&!document.querySelector('[data-rp="top"]')){
           const preview=makeButton('top');
           preview.classList.add('rp-trigger','rp-trigger-topbar');
-          const firstAction=topActions.querySelector('a,button');
-          if(firstAction)topActions.insertBefore(preview,firstAction);else topActions.appendChild(preview);
+          const nextAction=topActions.querySelector('#param-next-top');
+          if(nextAction)topActions.insertBefore(preview,nextAction);else topActions.appendChild(preview);
         }
       }else if(pageName==='composer.html'||pageName==='personnalisation.html'){
         const anchor=pageName==='personnalisation.html'

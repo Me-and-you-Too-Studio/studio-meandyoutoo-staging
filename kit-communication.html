@@ -7,6 +7,9 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
 <link rel="stylesheet" href="assets/css/style.css?v=20260904-admin-context-1">
+<style>
+[data-kit-tab]:disabled,[data-process-tab]:disabled{opacity:.45;cursor:not-allowed}
+</style>
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -32,7 +35,7 @@
       <div class="studio-process-step is-done"><span>3</span><strong>Paramétrer</strong><small>Dates et critères</small></div>
       <div class="studio-process-step is-done"><span>4</span><strong>Transmettre</strong><small>Configuration figée</small></div>
       <button class="studio-process-step is-current" type="button" data-process-tab="graphics"><span>5</span><strong>Éléments graphiques</strong><small>Logo, charte, consignes</small></button>
-      <button class="studio-process-step" type="button" data-process-tab="delivery"><span>6</span><strong>Kit livré</strong><small>Liens, visuels et vidéo</small></button>
+      <button class="studio-process-step" type="button" data-process-tab="delivery" disabled aria-disabled="true"><span>6</span><strong>Kit livré</strong><small>Liens, visuels et vidéo</small></button>
     </div>
   </section>
 
@@ -42,7 +45,7 @@
       <button class="kit-workspace-tab is-active" type="button" role="tab" aria-selected="true" data-kit-tab="graphics" id="graphics-tab-label">Vos éléments graphiques</button>
       <button class="kit-workspace-tab" type="button" role="tab" aria-selected="false" data-kit-tab="messages">Messages + plan de relance</button>
       <button class="kit-workspace-tab" type="button" role="tab" aria-selected="false" data-kit-tab="diffusion">Liens de diffusion + QR code</button>
-      <button class="kit-workspace-tab" type="button" role="tab" aria-selected="false" data-kit-tab="delivery">Livraison Me&YouToo</button>
+      <button class="kit-workspace-tab" type="button" role="tab" aria-selected="false" data-kit-tab="delivery" disabled aria-disabled="true">Livraison Me&YouToo</button>
     </div>
     <div class="kit-workspace-body">
       <div class="kit-tab-panel is-active" data-kit-panel="graphics"><section class="card kit-block brand-request" id="brandAssetsBlock">
@@ -123,7 +126,7 @@
       <button class="button button-danger" id="kit-delete-confirm" type="button">Supprimer</button>
     </div>
   </div>
-<script src="assets/js/api.js?v=20260713-2"></script><script src="assets/js/app.js?v=20260904-permissions-3"></script><script src="assets/js/project-context.js?v=20260929-project-identity-1"></script><script src="assets/js/kit-communication.js?v=20260904-client-access-1"></script>
+<script src="assets/js/api.js?v=20260713-2"></script><script src="assets/js/app.js?v=20260904-permissions-3"></script><script src="assets/js/project-context.js?v=20260929-project-identity-1"></script><script src="assets/js/kit-communication.js?v=20261015-delivery-availability-1"></script>
 </div>
 
 </body></html>

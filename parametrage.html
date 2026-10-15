@@ -27,6 +27,15 @@
 .field-autosave-indicator[data-state="pending"]{background:#eef3f8;color:#526578;}
 .field-autosave-indicator[data-state="error"]{background:#fff0ef;color:#b42318;}
 </style>
+<style id="parameter-header-actions-style">
+.parameter-topbar{display:grid;grid-template-columns:minmax(0,1fr);align-items:start}
+.parameter-topbar .lead{max-width:900px}
+.parameter-topbar #param-autosave-status{display:inline-flex;margin-top:6px}
+.parameter-topbar>.parameter-top-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch;margin:0;padding-top:18px;border-top:1px solid var(--line);width:100%}
+.parameter-topbar>.parameter-top-actions>.button{display:flex;min-width:0;align-items:center;justify-content:center;min-height:48px;margin:0;white-space:normal;text-align:center}
+.parameter-topbar>.parameter-top-actions>#param-client-folder{grid-column:1/-1}
+@media(max-width:600px){.parameter-topbar>.parameter-top-actions{grid-template-columns:minmax(0,1fr)}.parameter-topbar>.parameter-top-actions>.button{width:100%}}
+</style>
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -42,15 +51,15 @@
 <aside class="sidebar" id="sidebar-root">
 </aside>
 <main class="main" id="contenu">
-<div class="topbar compact-topbar">
+<div class="topbar compact-topbar parameter-topbar">
 <div>
 <p class="eyebrow" id="param-theme">Sexisme</p>
 <h1 class="page-title">Paramétrer la campagne</h1>
 <div class="step-time-badge"><span aria-hidden="true">⏱</span> Temps moyen : 5 minutes</div>
 <p class="lead">Définissez le nom de la campagne, les dates, l’introduction et les données d’analyse demandées aux répondants.</p>
+<span id="param-autosave-status" class="meta" data-tone="saved" role="status" aria-live="polite">Enregistrement automatique</span>
 </div>
-<div class="top-actions" style="align-items:center;flex-wrap:wrap">
-<span id="param-autosave-status" class="meta" data-tone="saved">Enregistrement automatique</span>
+<div class="top-actions parameter-top-actions" role="group" aria-label="Actions de la campagne">
 <a class="button button-secondary" id="param-content-top" href="#">← Contenu</a>
 <button class="button button-primary" id="param-next-top" type="button">Continuer vers la transmission →</button>
 <a class="button button-secondary" id="param-client-folder" href="#" hidden style="display:none">← Retour au dossier client</a>
@@ -252,5 +261,5 @@
 <script src="assets/js/parametrage.js?v=20261015-dsd-all-additions-1">
 </script>
 <script src="assets/js/pack-requests.js?v=20260822-1"></script>
-<script src="assets/js/preview-launcher.js?v=20261005-top-actions-1"></script></body>
+<script src="assets/js/preview-launcher.js?v=20261015-parameter-actions-1"></script></body>
 </html>
