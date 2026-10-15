@@ -52,6 +52,26 @@
   function currentDiffusionUrl(){const raw=String($('diffusion-slug')?.value||'').trim(),slug=slugify(raw);if(!slug)return diffusionExistingUrl&&!diffusionDirty?diffusionExistingUrl:'';if(diffusionExistingUrl&&!diffusionDirty)return diffusionExistingUrl;return `${DIFFUSION_BASE_URL}${encodeURIComponent(diffusionCustomerSlug)}/${encodeURIComponent(slug)}`;}
   function renderDiffusionAddress(){const input=$('diffusion-slug'),prefix=$('diffusion-url-prefix'),preview=$('diffusion-url-preview'),open=$('diffusion-url-open'),note=$('diffusion-url-note');if(!input||!prefix||!preview)return;prefix.textContent=`${DIFFUSION_BASE_URL}${diffusionCustomerSlug||'client'}/`;const url=currentDiffusionUrl();preview.textContent=url||'Adresse en attente du slug de campagne.';preview.classList.toggle('is-legacy',Boolean(diffusionExistingUrl&&!diffusionDirty));if(open){open.hidden=!url;open.href=url||'#';}if(note){if(isLegacyClientCampaign()&&diffusionExistingUrl&&!diffusionDirty)note.textContent=currentUser.role==='admin'?'URL historique reprise telle quelle. Vous pouvez modifier le slug si cette adresse doit être corrigée.':'URL historique reprise telle quelle depuis la campagne existante.';else note.textContent='Le nom du client constitue automatiquement la première partie de l’adresse. Saisissez uniquement le slug souhaité pour cette campagne.';}}
   const iso=d=>{const x=new Date();x.setDate(x.getDate()+d);return x.toISOString().slice(0,10);};
+function genderText(value){return String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();}
+function genderAnswerKind(label){
+  const text=genderText(label);
+  const groups={
+    male:['homme','un homme','man','a man','male','masculin','hombre','un hombre','homem','um homem','masculino','mann','mannlich','uomo','maschio','mannelijk','mężczyzna','mezczyzna','barbat','muž','muz','erkek','мужчина','мъж','男性','남성','رجل','ذكر'],
+    female:['femme','une femme','woman','a woman','female','feminin','mujer','una mujer','mulher','uma mulher','feminino','frau','weiblich','donna','femmina','vrouw','vrouwelijk','kobieta','femeie','žena','zena','kadin','женщина','жена','女性','여성','امرأة','انثى'],
+    nonbinary:['non binaire','nonbinaire','non binary','nonbinary','no binario','nao binario','nao binaria','nicht binar','nichtbinar','non binario','niet binair','nie binarny','niebinarna','nebinarny','nebinare','ne binar','nebinarní','небинарный','небинарен','非二元','논바이너리','غير ثنائي'],
+    other:['autre','other','others','otro','otra','outro','outra','altro','altra','andere','anderes','sonstiges','anders','andere identiteit','inne','inny','altul','alta','ine','iny','diğer','diger','другое','друг','その他','其他','其它','기타','اخر','أخرى']
+  };
+  return Object.keys(groups).find(key=>groups[key].some(value=>genderText(value)===text))||'';
+}
+function genderOptions(criterion){return Array.isArray(criterion?.opts)?criterion.opts:Array.isArray(criterion?.options)?criterion.options:[];}
+function isGenderCriterion(criterion){
+  if(['gender','genre','sex','sexe'].includes(genderText(criterion?.kind||criterion?.key)))return true;
+  const kinds=genderOptions(criterion).map(o=>genderAnswerKind(o.label));
+  return kinds.includes('male')&&kinds.includes('female');
+}
+function optionalGenderAnswer(option){return ['nonbinary','other'].includes(genderAnswerKind(option?.label));}
+function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].includes(String(slug||'').toLowerCase());}
+
   const genderRequiredTheme=()=>['sexisme','mixite','allie-mixite'].includes(String(theme||'').toLowerCase());
   const defaultSocio=()=>genderRequiredTheme()?[{kind:'gender',q:'Quel est votre genre ?',opts:[{label:'Homme',n:0},{label:'Femme',n:0},{label:'Non binaire',n:0},{label:'Autre',n:0}]}]:[];
   const normalizeLocale=value=>String(value||'fr').trim().toLowerCase().replaceAll('_','-')||'fr';
@@ -468,6 +488,7 @@
   function normalizeSexismeCriteria(items,locale=socioContextLocale){
     if(isLegacyClientCampaign())return items;
     const loc=normalizeLocale(locale),todos=new Set(translationTodoPaths(loc)),keepCriterion=(c,i)=>!isBlankAutoCriterion(c)||todos.has(`q:${criterionKey(c,i)}`)||[...todos].some(path=>path.startsWith(`o:${criterionKey(c,i)}:`));
+    const importedGender=items.find(isGenderCriterion);if(importedGender)importedGender.kind='gender';
     if(!genderRequiredTheme())return items.filter(keepCriterion);
     if(!isLegacyClientCampaign()&&['en','es'].includes(loc)){
       const localized=localizeStandardCriteria(items.filter(keepCriterion),loc);
@@ -477,8 +498,8 @@
     }
     let cleaned=items.filter(keepCriterion);
     cleaned=cleaned.filter(c=>c.kind==='age'||String(c.q||'').trim()==='Votre âge'||!/(?:âge|\bage\b)/i.test(String(c.q||'')));
-    let gender=cleaned.find(c=>c.kind==='gender'||/genre/i.test(c.q||''));const genderWasExisting=Boolean(gender);
-    if(!gender){gender=clone(defaultSocio()[0]);cleaned.unshift(gender);}else{gender.kind='gender';gender.q='Quel est votre genre ?';const existing=Array.isArray(gender.opts)?gender.opts:[];const count=label=>Number(existing.find(o=>String(o.label||'').trim().toLocaleLowerCase('fr-FR')===label.toLocaleLowerCase('fr-FR'))?.n)||0;const labels=['Homme','Femme'];if(!genderWasExisting||existing.some(o=>/^(non[ -]?binaire)$/i.test(String(o.label||'').trim())))labels.push('Non binaire');if(!genderWasExisting||existing.some(o=>/^autre$/i.test(String(o.label||'').trim())))labels.push('Autre');gender.opts=labels.map(label=>({label,n:count(label)}));}
+    let gender=cleaned.find(isGenderCriterion);
+    if(!gender){gender=clone(defaultSocio()[0]);cleaned.unshift(gender);}else gender.kind='gender';
     const age=cleaned.find(c=>c.kind==='age'||String(c.q||'').trim()==='Votre âge');if(age){const existing=Array.isArray(age.opts)?age.opts:[];const count=label=>Number(existing.find(o=>String(o.label||'').trim()===label)?.n)||0;age.kind='age';age.q='Votre âge';age.opts=AGE.opts.map(o=>({label:o.label,n:count(o.label)}));}
     cleaned=cleaned.filter(c=>c!==gender);return [gender,...cleaned];
   }
@@ -538,11 +559,11 @@
     const ro=isSocioReadOnly(),structureEditable=!ro&&isSocioReferenceLocale();
     const toolbar=`<div class="socio-tree-toolbar"><div><strong>Données socio-démographiques</strong><span>${isLegacyClientCampaign()?(isAdminLegacySocio()?'Édition Me&YouToo : les modifications sont enregistrées uniquement dans la langue sélectionnée. Les autres langues restent inchangées.':'Consultez les questions et réponses de la campagne dans la langue sélectionnée.'):'Repliez les critères et ouvrez uniquement la branche que vous souhaitez modifier.'}</span></div><div class="socio-tree-toolbar-actions"><button type="button" class="button button-ghost button-small" data-socio-collapse-all>Tout replier</button><button type="button" class="button button-secondary button-small" data-socio-expand-all>Tout déplier</button></div></div>`;
     $('socio-list').innerHTML=toolbar+socio.map((criterion,i)=>{
-      const path=String(i),isGender=!isAdminLegacySocio()&&genderRequiredTheme()&&criterion.kind==='gender',isAge=!isAdminLegacySocio()&&(criterion.kind==='age'||String(criterion.q||'').trim()==='Votre âge'),locked=isGender||isAge||ro,isOpen=socioOpenRoots.has(path),stats=criterionStats(criterion),translationMode=Boolean(referenceCriterionFor(criterion,i)),criterionStructureEditable=structureEditable&&!translationMode;
+      const path=String(i),isGender=isGenderCriterion(criterion),isAge=!isAdminLegacySocio()&&(criterion.kind==='age'||String(criterion.q||'').trim()==='Votre âge'),locked=isGender||isAge||ro,isOpen=socioOpenRoots.has(path),stats=criterionStats(criterion),translationMode=Boolean(referenceCriterionFor(criterion,i)),criterionStructureEditable=structureEditable&&!translationMode;
       const optionsHtml=criterion.opts.map((option,j)=>{
         const optionPath=`${path}|${j}`;
         if(locked){
-          const state=optionState(option.n),genderRequired=isGender&&(option.label==='Homme'||option.label==='Femme'),canRemove=!ro&&isGender&&!genderRequired;
+          const state=optionState(option.n),canRemove=!ro&&isGender&&optionalGenderAnswer(option);
           const removeControl=canRemove?`<button type="button" class="socio-option-remove socio-option-remove-visible" data-tree-option-remove="${optionPath}" aria-label="Supprimer ${esc(option.label)}" title="Supprimer cette réponse facultative">×</button>`:`<span class="socio-option-spacer" aria-hidden="true"></span>`;
           const children=(option.subcriteria||[]).map((child,k)=>renderNestedCriterion(child,`${path}.${j}.${k}`,2,option.label)).join('');
           return `<div class="socio-option-block"><div class="socio-option-unit locked-option"><div class="socio-option"><div class="socio-answer-field locked-field"><span>Réponse figée</span><input value="${esc(option.label)}" readonly tabindex="-1" aria-label="Réponse non modifiable"></div><div class="socio-count-field ${state.cls}"><span>Effectif estimé</span><input data-tree-n="${optionPath}" type="number" min="0" value="${Number(option.n)||''}" readonly tabindex="-1"></div>${removeControl}</div><div class="socio-option-hint ${state.cls}">${state.hint}</div></div>${children}</div>`;
@@ -550,8 +571,8 @@
         const children=(option.subcriteria||[]).map((child,k)=>renderNestedCriterion(child,`${path}.${j}.${k}`,2,option.label)).join('');
         return `<div class="socio-option-block">${answerRow(option,optionPath,criterionStructureEditable&&criterion.opts.length>2)}${children}${criterionStructureEditable?`<button class="socio-add-sub" type="button" data-tree-child-add="${optionPath}">+ Ajouter un sous-critère pour cette réponse</button>`:''}</div>`;
       }).join('');
-      const lockText=ro?'Campagne en lecture seule.':isGender?'Obligatoire · réponses standardisées. Homme et Femme sont obligatoires ; Non binaire et Autre peuvent être supprimés.':isAge?'Tranches d’âge standardisées pour permettre la comparaison avec le benchmark global Me&YouToo. Elles ne peuvent être ni modifiées, ni ajoutées, ni supprimées.':'';
-      const headerAction=isGender?`<span class="socio-required-badge">${ro?'🔒 ':''}Genre · Obligatoire</span>`:ro?'<span class="socio-required-badge">🔒 Lecture seule</span>':criterionStructureEditable?`<button class="button button-danger-soft" type="button" data-socio-remove="${i}" ${socio.length<=1?'disabled':''}>Supprimer le critère</button>`:'';
+      const lockText=ro?'Campagne en lecture seule.':isGender?'Critère figé · seuls les choix Non binaire et Autre peuvent être retirés. Les autres réponses et le libellé restent inchangés.':isAge?'Tranches d’âge standardisées pour permettre la comparaison avec le benchmark global Me&YouToo. Elles ne peuvent être ni modifiées, ni ajoutées, ni supprimées.':'';
+      const headerAction=isGender?`<span class="socio-required-badge">${ro?'🔒 ':''}Genre · ${genderRequiredTheme()?'Obligatoire':'Figé'}</span>`:ro?'<span class="socio-required-badge">🔒 Lecture seule</span>':criterionStructureEditable?`<button class="button button-danger-soft" type="button" data-socio-remove="${i}" ${socio.length<=1?'disabled':''}>Supprimer le critère</button>`:'';
       const referenceLocale=normalizeLocale(socioReference().locale),otherLanguage=!ro&&!structureEditable&&Boolean(referenceLocale)&&referenceLocale!==normalizeLocale(socioContextLocale);
       const structureRedirect=otherLanguage?`<div class="socio-translation-structure-note" role="note">🔒 Cette donnée est commune à toutes les langues. Pour la retirer du diagnostic ou modifier sa structure, ouvrez sa version ${esc(localeLabel(referenceLocale))} (${esc(referenceLocale.toUpperCase())}). ${isAge?'Les tranches d’âge restent non modifiables pour le benchmark.':''}<button type="button" class="button button-secondary button-small socio-open-reference-criterion" data-socio-open-reference="${i}">← Gérer cette DSD en ${esc(localeLabel(referenceLocale))}</button></div>`:'';
       const branchBadge=stats.nested?`<span class="socio-tree-badge">${stats.nested} sous-question${stats.nested>1?'s':''} · profondeur ${stats.maxDepth}</span>`:'';
@@ -729,7 +750,7 @@
     document.querySelectorAll('[data-tree-n]').forEach(el=>el.oninput=()=>{const option=getOptionByPath(el.dataset.treeN);if(option){option.n=Number(el.value)||0;updateOptionVisual(el);scheduleAutosave();}});
     document.querySelectorAll('[data-tree-multiple]').forEach(el=>el.onclick=()=>{if(isSocioReadOnly()||!isSocioReferenceLocale())return;ensureAllLocaleSocioVariants();const path=el.dataset.treeMultiple,criterion=getCriterionByPath(path);if(!criterion)return;criterion.multiple=!criterion.multiple;propagateCriterionMultiple(path,criterion.multiple);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-socio-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const index=+el.dataset.socioRemove;propagateRootCriterionRemove(index);socio.splice(index,1);renderSocio();scheduleAutosave(0);});
-    document.querySelectorAll('[data-tree-option-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const [criterionPath,index]=el.dataset.treeOptionRemove.split('|'),criterion=getCriterionByPath(criterionPath);propagateOptionRemove(criterionPath,index);criterion?.opts?.splice(Number(index),1);renderSocio();scheduleAutosave(0);});
+    document.querySelectorAll('[data-tree-option-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const [criterionPath,index]=el.dataset.treeOptionRemove.split('|'),criterion=getCriterionByPath(criterionPath);if(isGenderCriterion(criterion)&&!optionalGenderAnswer(criterion?.opts?.[Number(index)]))return;propagateOptionRemove(criterionPath,index);criterion?.opts?.splice(Number(index),1);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-tree-option-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const criterionPath=el.dataset.treeOptionAdd,criterion=getCriterionByPath(criterionPath),option={label:criterionPath.includes('.')?'Nouvelle sous-réponse':'Nouvelle réponse',n:0,subcriteria:[]};criterion?.opts?.push(option);propagateOptionAdd(criterionPath,option);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-tree-child-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const optionPath=el.dataset.treeChildAdd,option=getOptionByPath(optionPath);if(!option)return;const child=newSubcriterion();option.subcriteria=Array.isArray(option.subcriteria)?option.subcriteria:[];option.subcriteria.push(child);propagateChildAdd(optionPath,child);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-review-clear]').forEach(el=>el.onclick=()=>clearCriterionReview(socioContextLocale,socio[Number(el.dataset.reviewClear)],Number(el.dataset.reviewClear)));
