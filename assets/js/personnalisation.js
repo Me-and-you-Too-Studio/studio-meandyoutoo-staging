@@ -6,7 +6,7 @@
   const isReadOnly=()=>Boolean(project&&project.can_edit===false);
   const isLegacyClientCampaign=()=>Boolean(project&&(project.source_type==='legacy_client'||project.legacy_history===true||project.legacy_source==='meayt-legacy'));
   const colorRank=color=>{const c=String(color||'').toLowerCase();if(c.includes('ff847')||c.includes('ff84')||c.includes('b423')||c.includes('red'))return 0;if(c.includes('ffc')||c.includes('yellow'))return 1;if(c.includes('77cd')||c.includes('green'))return 2;return 3;};
-  const q=chapter=>`?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}&chapter=${chapter}`;
+  const q=chapter=>`?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}&chapter=${chapter}${p.get('countryCode')?`&countryCode=${encodeURIComponent(p.get('countryCode'))}`:''}`;
   const canonical=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   const localeNames={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',br:'Portugais Brésil',ja:'Japonais','ko-kr':'Coréen',zf:'Chinois simplifié',zh:'Chinois traditionnel',bg:'Bulgare',nl:'Néerlandais','nl-be':'Néerlandais Belgique',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',tr:'Turc',cs:'Tchèque',sk:'Slovaque',id:'Indonésien'};
   const localeLabel=loc=>`${localeNames[String(loc).toLowerCase()]||String(loc).toUpperCase()} (${String(loc).toUpperCase()})`;
@@ -37,7 +37,7 @@
   const isMethodologyLocked=ch=>Boolean(isStereotypes(ch)&&!isAdmin());
   const isAggression=ch=>canonical(ch?.slug||ch?.title).includes('agression sexuelle');
   const isHostile=ch=>theme==='sexisme'&&canonical(ch?.slug||ch?.title).includes('sexisme hostile');
-  const rules=ch=>isLegacyClientCampaign()?{min:null,max:null}:isStereotypes(ch)?{min:null,max:null}:{min:isAggression(ch)||isHostile(ch)?4:5,max:8};
+  const rules=ch=>{if(isLegacyClientCampaign())return {min:null,max:null};if(ch?.composition_rules)return ch.composition_rules;throw new Error('Règles de composition indisponibles : vérifiez la mise à jour de l’API.');};
   const status=ch=>{const r=rules(ch),count=(ch?.situations||[]).length;return {rules:r,count,valid:(r.min==null||count>=r.min)&&(r.max==null||count<=r.max)};};
   function firstInvalidIndex(limit=chapters.length-1){for(let i=0;i<=Math.min(limit,chapters.length-1);i++)if(!status(chapters[i]).valid)return i;return -1;}
   async function incompleteModal(index,title){
@@ -91,7 +91,7 @@
     catch(e){if(button){button.disabled=false;button.textContent='Associer la vidéo';}await window.StudioModal.alert({title:'Vidéo non associée',message:e.message,type:'error'});}
   }
   async function reloadComposerMedia(){
-    const d=await api(`/api/projects/${projectId}/composer`);project=d.project;chapters=d.chapters||[];active=Math.min(active,Math.max(0,chapters.length-1));render();
+    const d=await api(`/api/projects/${projectId}/composer${p.get('countryCode')?`?countryCode=${encodeURIComponent(p.get('countryCode'))}`:''}`);project=d.project;chapters=d.chapters||[];active=Math.min(active,Math.max(0,chapters.length-1));render();
   }
 
   function renderNav(){
@@ -146,9 +146,9 @@
     await Promise.all([...byProfile].map(([id,values])=>api(`/api/projects/${projectId}/profiles/${id}`,{method:'PATCH',body:JSON.stringify(values)})));
   }
   async function load(){try{
-    if(!theme&&projectId){const d=await api(`/api/projects/${projectId}/composer`);project=d.project;theme=project?.theme_slug||'';chapters=d.chapters||[];}else{
+    if(!theme&&projectId){const d=await api(`/api/projects/${projectId}/composer${p.get('countryCode')?`?countryCode=${encodeURIComponent(p.get('countryCode'))}`:''}`);project=d.project;theme=project?.theme_slug||'';chapters=d.chapters||[];}else{
       if(!projectId){if(!theme)throw new Error('Thématique manquante.');location.replace(`theme-${encodeURIComponent(theme)}.html?theme=${encodeURIComponent(theme)}`);return;}
-      const d=await api(`/api/projects/${projectId}/composer`);project=d.project;chapters=d.chapters||[];
+      const d=await api(`/api/projects/${projectId}/composer${p.get('countryCode')?`?countryCode=${encodeURIComponent(p.get('countryCode'))}`:''}`);project=d.project;chapters=d.chapters||[];
     }
     active=Math.min(active,Math.max(0,chapters.length-1));if(chapters.some(ch=>(ch.profiles||[]).length!==3))throw new Error('Le référentiel doit contenir exactement 3 profils par partie.');
     if(project?.can_manage_project_media){try{const media=await api('/api/admin/media-library');mediaLibrary=media.videos||[];}catch(_){mediaLibrary=[];}}

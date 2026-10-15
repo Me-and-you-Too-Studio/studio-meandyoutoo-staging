@@ -542,7 +542,8 @@
     // les contraintes Studio de minimum/maximum par chapitre ne s'appliquent jamais.
     if(isLegacyClientCampaign())return {min:null,max:null};
     if(isStereotypesChapter(ch))return {min:null,max:null};
-    return {min:isAggressionChapter(ch)||isHostileChapter(ch)?4:5,max:8};
+    if(ch?.composition_rules)return ch.composition_rules;
+    throw new Error('Règles de composition indisponibles : vérifiez la mise à jour de l’API.');
   }
   function chapterCountStatus(ch=state.chapters[state.active]){
     const rules=chapterSituationRules(ch),count=ch?.situations?.length||0;
@@ -1101,7 +1102,7 @@
       :campaignReadOnly
         ?`${status.count} situation${status.count>1?'s':''} dans cette campagne historique · consultation en lecture seule.`
       :status.rules.min!=null
-        ?`${status.count} situation${status.count>1?'s':''} retenue${status.count>1?'s':''} · ${status.rules.min} minimum et ${status.rules.max} maximum dans ce chapitre.`
+        ?`${status.count} situation${status.count>1?'s':''} retenue${status.count>1?'s':''} · ${status.rules.min} minimum (base du catalogue) et ${status.rules.max} maximum dans ce chapitre.`
         :`${status.count} situations retenues · consultez les réponses et scores avant de modifier votre sélection.`;
 
     renderChapterChoice(ch);
