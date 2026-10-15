@@ -29,13 +29,28 @@
   const addDays=(value,days)=>{if(!value)return null;const d=new Date(String(value).slice(0,10)+'T12:00:00');if(Number.isNaN(d.getTime()))return null;d.setDate(d.getDate()+days);return d;};
   const dateObjFr=d=>d?d.toLocaleDateString('fr-FR'):'—';
   function copyText(value){if(!value)return;navigator.clipboard.writeText(value).then(()=>show('Copié dans le presse-papiers.','success')).catch(()=>show('Impossible de copier automatiquement.'));}
+  function kitValidated(){return ['ready_to_publish','scheduled','published','active','closed','completed'].includes(project?.status);}
+  function diffusionAvailable(){return isAdminDeliveryMode||(kitValidated()&&Boolean(communication.linksUpdatedAt||communication.links_updated_at));}
+  function kitTabLocked(name){return !isAdminDeliveryMode&&((name==='delivery'&&!kitValidated())||(name==='diffusion'&&!diffusionAvailable()));}
+  function renderKitAvailability(){
+    document.querySelectorAll('[data-kit-tab],[data-process-tab]').forEach(button=>{
+      const locked=kitTabLocked(button.dataset.kitTab||button.dataset.processTab);
+      button.disabled=locked;button.setAttribute('aria-disabled',String(locked));
+      button.style.opacity=locked?'0.45':'';button.style.cursor=locked?'not-allowed':'';
+      button.title=locked?'Disponible après validation et préparation par Me&YouToo.':'';
+    });
+    let note=$('kit-preparation-note');
+    if(!note){note=document.createElement('p');note.id='kit-preparation-note';note.className='kit-client-waiting';document.querySelector('[data-kit-tab]')?.parentElement.after(note);}
+    note.hidden=isAdminDeliveryMode||(kitValidated()&&diffusionAvailable());
+    note.textContent='Transmettez vos éléments graphiques. Me&YouToo doit vérifier votre configuration et préparer la campagne dans le moteur. Les liens, le QR code et les livrables seront accessibles après validation et préparation par notre équipe.';
+  }
   function renderLinks(){
-    const share=String(communication.shareUrl||communication.share_url||''),results=String(communication.resultsUrl||communication.results_url||'');
+    const available=diffusionAvailable(),share=available?String(communication.shareUrl||communication.share_url||''):'',results=available?String(communication.resultsUrl||communication.results_url||''):'';
     const set=(value,textId,copyId,openId)=>{$(textId).textContent=value||'En préparation par Me&YouToo';$(copyId).disabled=!value;const open=$(openId);open.href=value||'#';open.setAttribute('aria-disabled',String(!value));open.classList.toggle('is-disabled',!value);};
     set(share,'share-url','share-copy','share-open');set(results,'results-url','results-copy','results-open');
     if(communication.resultsRestricted){$('results-url').textContent='Accès non autorisé pour votre compte';$('results-copy').disabled=true;$('results-open').setAttribute('aria-disabled','true');$('results-open').classList.add('is-disabled');}
     if(isAdminDeliveryMode){$('share-url-admin').value=share;$('results-url-admin').value=results;}$('links-admin-box').hidden=!isAdminDeliveryMode;if($('links-client-waiting'))$('links-client-waiting').hidden=isAdminDeliveryMode||Boolean(share||results);
-    const qrUrl=share?`https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=12&data=${encodeURIComponent(share)}&v=${encodeURIComponent(String(communication.linksUpdatedAt||communication.links_updated_at||Date.now()))}`:'';$('qr-ready').hidden=!qrUrl;$('qr-empty').hidden=Boolean(qrUrl);if(qrUrl){$('qr-image').src=qrUrl;$('qr-download').href=qrUrl;}
+    const qrUrl=share?`https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=12&data=${encodeURIComponent(share)}&v=${encodeURIComponent(String(communication.linksUpdatedAt||communication.links_updated_at||Date.now()))}`:'';$('qr-ready').hidden=!qrUrl;$('qr-empty').hidden=Boolean(qrUrl);if(qrUrl){$('qr-image').src=qrUrl;$('qr-download').href=qrUrl;}else{$('qr-image').removeAttribute('src');$('qr-download').removeAttribute('href');}
   }
   function renderTimeline(){
     const launch=project?.launch_date,close=project?.close_date,launchObj=addDays(launch,0),closeObj=addDays(close,0);
@@ -53,7 +68,7 @@
     rows.push(['Après',dateObjFr(addDays(close,1)),'Restitution','Remerciez les participants et partagez les premiers enseignements.']);
     $('campaign-timeline').innerHTML=rows.map(r=>`<div class="time-row"><div class="time-day">${r[0]}</div><div><div class="time-txt">${r[2]} <small>· ${r[1]}</small></div><div class="time-sub">${r[3]}</div></div></div>`).join('');
   }
-  function templates(){const name=project?.campaign_name||project?.respondent_title||project?.title||'notre campagne';const share=String(communication.shareUrl||communication.share_url||'').trim();const link=share||'[LIEN DE CAMPAGNE À VENIR]';const close=formatLongDate(project?.close_date),launch=formatLongDate(project?.launch_date);return {
+  function templates(){const name=project?.campaign_name||project?.respondent_title||project?.title||'notre campagne';const share=diffusionAvailable()?String(communication.shareUrl||communication.share_url||'').trim():'';const link=share||'[LIEN DE CAMPAGNE À VENIR]';const close=formatLongDate(project?.close_date),launch=formatLongDate(project?.launch_date);return {
     launch:{title:'Email lancement',meta:'À adresser aux collaborateurs concernés',body:`Objet : Notre campagne « ${name} » débute aujourd’hui\n\nBonjour,\n\nNous lançons aujourd’hui avec Me&YouToo la campagne « ${name} ».\n\nCette campagne vous propose de vous positionner sur des situations concrètes du quotidien professionnel. Elle ne dure que quelques minutes et vos réponses restent anonymes.\n\nAccédez à la campagne : ${link}\n\nLa campagne est ouverte jusqu’au ${close}.\n\nMerci par avance pour votre participation.`},
     managers:{title:'Email managers',meta:'À adresser aux managers pour relayer la campagne',body:`Objet : Merci de relayer — campagne « ${name} »\n\nBonjour,\n\nLa campagne « ${name} » sera ouverte du ${launch} au ${close}.\n\nMerci de relayer ce message auprès de vos équipes et de les encourager à participer. La participation est anonyme et prend quelques minutes.\n\nLien à partager : ${link}\n\nMerci pour votre soutien.`},
     reminder:{title:'Relance',meta:'À envoyer à mi-parcours',body:`Objet : Avez-vous déjà participé à « ${name} » ?\n\nBonjour,\n\nNotre campagne « ${name} » est toujours ouverte.\n\nSi ce n’est pas encore fait, prenez quelques minutes pour participer : ${link}\n\nClôture : ${close}.\n\nMerci pour votre participation !`},
@@ -66,21 +81,23 @@
 
 
   function activateKitTab(name){
+    if(!['graphics','messages','diffusion','delivery'].includes(name)||kitTabLocked(name))name='graphics';
     document.querySelectorAll('[data-kit-tab]').forEach(b=>{const on=b.dataset.kitTab===name;b.classList.toggle('is-active',on);b.setAttribute('aria-selected',String(on));});
     document.querySelectorAll('[data-kit-panel]').forEach(p=>{const on=p.dataset.kitPanel===name;p.hidden=!on;p.classList.toggle('is-active',on);});
     document.querySelectorAll('[data-process-tab]').forEach(b=>b.classList.toggle('is-current',b.dataset.processTab===name));
     try{sessionStorage.setItem('studio_kit_tab_'+projectId,name);}catch(e){}
   }
   function recommendedKitTab(){
+    if(!isAdminDeliveryMode&&!kitValidated())return'graphics';
     const hasClientAssets=document.querySelectorAll('#client-assets .kit-file-row').length>0;
     const hasDelivery=document.querySelectorAll('#delivery-assets .kit-file-row').length>0||Boolean(communication.videoDownloadUrl||communication.video_download_url);
     if(hasDelivery)return'delivery';
-    if(communication.shareUrl||communication.share_url)return'diffusion';
+    if(diffusionAvailable()&&(communication.shareUrl||communication.share_url))return'diffusion';
     if(hasClientAssets)return'messages';
     return'graphics';
   }
 
-  async function refreshAssets(){const data=await api(`/api/projects/${projectId}/communication-assets`);communication=data.communication||{};renderAssets(data.assets||[]);renderVideo();renderLinks();renderTemplate();}
+  async function refreshAssets(){const data=await api(`/api/projects/${projectId}/communication-assets`);communication=data.communication||{};renderAssets(data.assets||[]);renderVideo();renderLinks();renderTemplate();renderKitAvailability();}
   async function uploadBatch(files,kind,comment){
     for(let i=0;i<files.length;i++){const file=files[i],notify=i===files.length-1;await api(`/api/projects/${projectId}/communication-assets`,{method:'POST',body:JSON.stringify({filename:file.name,mimeType:file.type,sizeBytes:file.size,contentBase64:await fileToBase64(file),comment,kind,notify})});}
   }
@@ -103,14 +120,14 @@
       $('client-assets-title').textContent='Vos éléments graphiques';
       $('client-assets-desc').textContent='Vous gardez ici la trace des fichiers transmis pour cette campagne.';
     }
-    renderAssets(assetsData.assets||[]);renderVideo();renderLinks();renderTimeline();renderTemplate();let saved='';try{saved=sessionStorage.getItem('studio_kit_tab_'+projectId)||'';}catch(e){}const requestedTab=p.get('tab');activateKitTab(['graphics','messages','diffusion','delivery'].includes(requestedTab)?requestedTab:(saved||recommendedKitTab()));}catch(e){show(e.message);}}
+    renderAssets(assetsData.assets||[]);renderVideo();renderLinks();renderTimeline();renderTemplate();renderKitAvailability();let saved='';try{saved=sessionStorage.getItem('studio_kit_tab_'+projectId)||'';}catch(e){}const requestedTab=p.get('tab');activateKitTab(!isAdminDeliveryMode&&!kitValidated()?'graphics':(['graphics','messages','diffusion','delivery'].includes(requestedTab)?requestedTab:(saved||recommendedKitTab())));}catch(e){show(e.message);}}
   bindDrop('brand-drop-zone','brand-input',brandFiles,'brand-selected','brand');bindDrop('delivery-drop-zone','delivery-input',deliveryFiles,'delivery-selected','delivery');
   $('brand-upload-button').onclick=async()=>{const files=pendingFiles(brandFiles,'brand-input');if(!files.length){show('Sélectionnez ou glissez-déposez au moins un fichier.');return;}const b=$('brand-upload-button');b.disabled=true;b.textContent='Envoi…';try{await uploadBatch(files,'client_brand',$('brand-comment').value.trim());brandFiles=[];$('brand-input').value='';renderSelected(brandFiles,'brand-selected','brand');$('brand-comment').value='';await refreshAssets();show('Vos éléments ont bien été transmis à Me&YouToo. Une notification a été envoyée à l’équipe Me&YouToo.','success');}catch(e){show(e.message);}finally{b.disabled=false;b.textContent='Envoyer à Me&YouToo';}};
   $('delivery-upload-button').onclick=async()=>{const files=pendingFiles(deliveryFiles,'delivery-input');if(!files.length){show('Ajoutez au moins un livrable.');return;}const b=$('delivery-upload-button');b.disabled=true;b.textContent='Mise à disposition…';try{await uploadBatch(files,'meayt_delivery',$('delivery-comment').value.trim());deliveryFiles=[];$('delivery-input').value='';renderSelected(deliveryFiles,'delivery-selected','delivery');$('delivery-comment').value='';await refreshAssets();show('Les ressources sont disponibles. Le client a été averti par mail et dans ses notifications Studio.','success');}catch(e){show(e.message);}finally{b.disabled=false;b.textContent='Mettre à disposition et notifier le client';}};
   $('video-save').onclick=async()=>{const url=$('video-url').value.trim(),description=$('video-description').value.trim();if(url&&!/^https:\/\//i.test(url)){show('Le lien vidéo doit commencer par https://');return;}try{const data=await api(`/api/projects/${projectId}/communication-video`,{method:'PATCH',body:JSON.stringify({videoDownloadUrl:url,videoDescription:description,notify:true})});communication=data.communication||{};renderVideo();show('Le lien vidéo est enregistré et le client a été averti par mail.','success');}catch(e){show(e.message);}};
   $('video-clear').onclick=async()=>{try{const data=await api(`/api/projects/${projectId}/communication-video`,{method:'PATCH',body:JSON.stringify({videoDownloadUrl:'',videoDescription:'',notify:false})});communication=data.communication||{};renderVideo();show('Le lien vidéo a été retiré.','success');}catch(e){show(e.message);}};
-  $('share-copy').onclick=()=>copyText(String(communication.shareUrl||communication.share_url||''));
-  $('results-copy').onclick=()=>copyText(String(communication.resultsUrl||communication.results_url||''));
+  $('share-copy').onclick=()=>diffusionAvailable()&&copyText(String(communication.shareUrl||communication.share_url||''));
+  $('results-copy').onclick=()=>diffusionAvailable()&&copyText(String(communication.resultsUrl||communication.results_url||''));
   $('share-open').addEventListener('click',e=>{if(e.currentTarget.getAttribute('aria-disabled')==='true')e.preventDefault();});
   $('results-open').addEventListener('click',e=>{if(e.currentTarget.getAttribute('aria-disabled')==='true')e.preventDefault();});
   document.querySelectorAll('.comm-tab').forEach(b=>b.onclick=()=>renderTemplate(b.dataset.template));
