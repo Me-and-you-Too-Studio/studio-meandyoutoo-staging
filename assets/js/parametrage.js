@@ -348,12 +348,11 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
   function syncSocioStructureControls(){
     const readOnly=isSocioReadOnly(),editable=!readOnly&&isSocioReferenceLocale();
     const examples=document.querySelector('.socio-examples-visible');
-    const addCustom=$('add-socio');
     if(examples){examples.hidden=readOnly;examples.style.display=readOnly?'none':'';renderExampleSuggestions();}
-    if(addCustom){
+    for(const addCustom of [$('add-socio'),$('add-socio-top')].filter(Boolean)){
       addCustom.hidden=false;
       addCustom.style.display=readOnly?'none':'';
-      addCustom.textContent=editable?'+ Ajouter un critère personnalisé':'+ Ajouter une donnée d’analyse';
+      addCustom.textContent='+ Ajouter une donnée personnalisée';
       addCustom.title=editable?'':'La structure se construit dans la langue de référence.';
       addCustom.classList.toggle('is-translation-redirect',!editable);
     }
@@ -1011,7 +1010,7 @@ function incompleteSocioLocale(items,reference=[]){
   function applyReadOnlyUI(){
     const alert=$('param-alert');alert.hidden=false;alert.dataset.tone='success';alert.innerHTML='<strong>🔒 Paramétrage en lecture seule.</strong> Cette campagne a déjà été transmise. <button class="button button-secondary button-small" type="button" data-content-adjustment="settings">Demander un ajustement</button>';
     document.querySelectorAll('#settings-form input,#settings-form textarea,#settings-form select').forEach(el=>{el.readOnly=true;el.setAttribute('aria-readonly','true');el.style.background='var(--surface-soft)';el.style.pointerEvents='none';});
-    const readOnlyHidden='[data-example],#add-socio,[data-socio-remove],[data-tree-option-remove],[data-tree-option-add],[data-tree-child-add],[data-tree-criterion-remove]'+(currentUser.role==='admin'?'':',#add-result-resource');
+    const readOnlyHidden='[data-example],#add-socio,#add-socio-top,[data-socio-remove],[data-tree-option-remove],[data-tree-option-add],[data-tree-child-add],[data-tree-criterion-remove]'+(currentUser.role==='admin'?'':',#add-result-resource');
     document.querySelectorAll(readOnlyHidden).forEach(el=>{el.style.display='none';});
     if(currentUser.role==='admin'){$('add-result-resource').style.display='';$('add-result-resource').disabled=resultResources.length>=10;}
     document.querySelectorAll('.socio-card').forEach(el=>el.style.background='var(--royal-blue-tint)');
@@ -1027,6 +1026,7 @@ function incompleteSocioLocale(items,reference=[]){
   function invalidCriterion(c){return !String(c?.q||'').trim()||!Array.isArray(c?.opts)||c.opts.length<2||c.opts.some(o=>!String(o?.label||'').trim()||(o.subcriteria||[]).some(invalidCriterion));}
   function invalidSocio(){return socio.some(invalidCriterion);}
   $('add-socio').onclick=async()=>{if(isSocioReadOnly())return;const addCriterion=()=>{ensureAllLocaleSocioVariants();const criterion={q:'Nouvelle donnée personnalisée',opts:[{label:'Réponse 1',n:0},{label:'Réponse 2',n:0}]},index=socio.length;socio.push(criterion);propagateRootCriterionAdd(criterion,index);renderSocioContext();renderSocio();scheduleAutosave(0);setTimeout(()=>document.querySelector(`[data-socio-root-toggle="${index}"]`)?.scrollIntoView({behavior:'smooth',block:'center'}),80);};if(isSocioReferenceLocale())return addCriterion();const ref=socioReference(),refLoc=normalizeLocale(ref.locale);if(!refLoc)return;const ok=await window.StudioModal.confirm({eyebrow:'Données d’analyse multilingues',title:'La structure se construit dans la langue de référence',message:`Pour garantir les mêmes critères, réponses et sous-critères dans toutes les langues, ajoutez la donnée depuis ${localeLabel(refLoc)} (${refLoc.toUpperCase()}). Elle sera ensuite disponible dans toutes les langues du projet pour être traduite.`,type:'info',cancelLabel:'Rester ici',confirmLabel:`Passer en ${localeLabel(refLoc)} et ajouter`});if(!ok)return;storeActiveLanguageContent();activateLanguage(refLoc);renderSocioContext();renderSocio();addCriterion();};
+  $('add-socio-top').onclick=()=>$('add-socio').click();
   $('intro').addEventListener('input',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave();}});
   $('launch-date').addEventListener('change',()=>{if(!isReadOnly()){syncCloseMin();updateNextState();scheduleAutosave(0);}});
   $('close-date').addEventListener('change',()=>{if(!isReadOnly()){updateNextState();scheduleAutosave(0);}});
