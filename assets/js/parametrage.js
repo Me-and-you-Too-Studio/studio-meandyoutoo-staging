@@ -562,7 +562,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
   }
   function renderSocio(){
     const ro=isSocioReadOnly(),structureEditable=!ro&&isSocioReferenceLocale();
-    const toolbar=`<div class="socio-tree-toolbar"><div><strong>Données socio-démographiques</strong><span>${isLegacyClientCampaign()?(isAdminLegacySocio()?'Édition Me&YouToo : les modifications sont enregistrées uniquement dans la langue sélectionnée. Les autres langues restent inchangées.':'Consultez les questions et réponses de la campagne dans la langue sélectionnée.'):'Repliez les critères et ouvrez uniquement la branche que vous souhaitez modifier.'}</span></div><div class="socio-tree-toolbar-actions"><button type="button" class="button button-ghost button-small" data-socio-collapse-all>Tout replier</button><button type="button" class="button button-secondary button-small" data-socio-expand-all>Tout déplier</button></div></div>`;
+    const toolbar=`<div class="socio-tree-toolbar"><div><strong>Données socio-démographiques</strong><span>${isLegacyClientCampaign()?(isAdminLegacySocio()?(isOrange382Project(project)?'Édition Me&YouToo : les réponses ajoutées depuis l’anglais sont créées dans toutes les langues actives. Complétez ensuite leur libellé dans chaque langue. Les autres modifications restent propres à la langue sélectionnée.':'Édition Me&YouToo : les modifications sont enregistrées uniquement dans la langue sélectionnée. Les autres langues restent inchangées.'):'Consultez les questions et réponses de la campagne dans la langue sélectionnée.'):'Repliez les critères et ouvrez uniquement la branche que vous souhaitez modifier.'}</span></div><div class="socio-tree-toolbar-actions"><button type="button" class="button button-ghost button-small" data-socio-collapse-all>Tout replier</button><button type="button" class="button button-secondary button-small" data-socio-expand-all>Tout déplier</button></div></div>`;
     $('socio-list').innerHTML=toolbar+socio.map((criterion,i)=>{
       const path=String(i),isGender=isGenderCriterion(criterion),isAge=!isAdminLegacySocio()&&(criterion.kind==='age'||String(criterion.q||'').trim()==='Votre âge'),locked=isGender||isAge||ro,isOpen=socioOpenRoots.has(path),stats=criterionStats(criterion),translationMode=Boolean(referenceCriterionFor(criterion,i)),criterionStructureEditable=structureEditable&&!translationMode;
       const optionsHtml=criterion.opts.map((option,j)=>{
@@ -781,6 +781,25 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
       if(multiple)targetCriterion.multiple=true;else delete targetCriterion.multiple;
     }
   }
+  function isOrange382ReferenceAnswer(){return isAdminLegacySocio()&&isOrange382Project(project)&&normalizeLocale(socioContextLocale)==='en';}
+  function addOrange382ReferenceAnswer(criterionPath){
+    const criterion=getCriterionByPath(criterionPath);if(!criterion||!Array.isArray(criterion.opts))throw new Error('Question de référence introuvable. Rechargez la campagne.');
+    const reference=clone(socio),targets=[];
+    for(const locale of projectLocales()){
+      const loc=normalizeLocale(locale);if(loc==='en')continue;
+      const target=resolveCriterionPathInTarget(reference,socioLanguageVariants[loc],criterionPath)?.criterion;
+      if(!target||!Array.isArray(target.opts))throw new Error(`La question correspondante n’a pas été retrouvée en ${localeLabel(loc)}. Aucun ajout n’a été effectué. La structure de cette langue doit être vérifiée.`);
+      if(target.opts.length>=50)throw new Error(`Cette question contient déjà cinquante réponses en ${localeLabel(loc)}. Aucun ajout n’a été effectué.`);
+      targets.push(target);
+    }
+    if(criterion.opts.length>=50)throw new Error('Cette question contient déjà cinquante réponses. Aucun ajout n’a été effectué.');
+    // Cet identifiant commun permet de retrouver la nouvelle réponse même si
+    // d’anciens ajouts propres à une langue ont des positions différentes.
+    const identifier=`studio-orange382-${window.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+    const option={source_id:identifier,label:'',n:0,subcriteria:[]};
+    criterion.opts.push(option);
+    for(const target of targets)target.opts.push(clone(option));
+  }
   function propagateOptionAdd(criterionPath,option){if(isLegacyClientCampaign())return;
     const sourceLocale=normalizeLocale(socioContextLocale),sourceSnapshot=clone(socio),rootIndex=Number(String(criterionPath).split('.')[0]);
     for(const loc of projectLocales()){
@@ -804,7 +823,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
     document.querySelectorAll('[data-tree-multiple]').forEach(el=>el.onclick=()=>{if(isSocioReadOnly()||!isSocioReferenceLocale())return;ensureAllLocaleSocioVariants();const path=el.dataset.treeMultiple,criterion=getCriterionByPath(path);if(!criterion)return;criterion.multiple=!criterion.multiple;propagateCriterionMultiple(path,criterion.multiple);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-socio-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const index=+el.dataset.socioRemove;if(isGenderCriterion(socio[index])&&genderRequiredTheme())return;const alerts=captureSocioAlertPaths();propagateRootCriterionRemove(index);socio.splice(index,1);rebaseSocioAlerts(alerts);if(alerts)storeActiveSocio(true);renderSocioContext();renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-tree-option-remove]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const [criterionPath,index]=el.dataset.treeOptionRemove.split('|'),criterion=getCriterionByPath(criterionPath);if(isGenderCriterion(criterion)&&!optionalGenderAnswer(criterion?.opts?.[Number(index)]))return;const alerts=captureSocioAlertPaths();propagateOptionRemove(criterionPath,index);criterion?.opts?.splice(Number(index),1);rebaseSocioAlerts(alerts);if(alerts)storeActiveSocio(true);renderSocioContext();renderSocio();scheduleAutosave(0);});
-    document.querySelectorAll('[data-tree-option-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const criterionPath=el.dataset.treeOptionAdd,criterion=getCriterionByPath(criterionPath),option={label:'',n:0,subcriteria:[]};criterion?.opts?.push(option);propagateOptionAdd(criterionPath,option);renderSocio();scheduleAutosave(0);});
+    document.querySelectorAll('[data-tree-option-add]').forEach(el=>el.onclick=async()=>{const criterionPath=el.dataset.treeOptionAdd;if(isOrange382ReferenceAnswer()){try{addOrange382ReferenceAnswer(criterionPath);renderSocio();scheduleAutosave(0);}catch(error){await window.StudioModal.alert({title:'Ajout multilingue impossible',message:error.message,type:'error',confirmLabel:'Fermer'});}return;}ensureAllLocaleSocioVariants();const criterion=getCriterionByPath(criterionPath),option={label:'',n:0,subcriteria:[]};criterion?.opts?.push(option);propagateOptionAdd(criterionPath,option);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-tree-child-add]').forEach(el=>el.onclick=()=>{ensureAllLocaleSocioVariants();const optionPath=el.dataset.treeChildAdd,option=getOptionByPath(optionPath);if(!option)return;const child=newSubcriterion();option.subcriteria=Array.isArray(option.subcriteria)?option.subcriteria:[];option.subcriteria.push(child);propagateChildAdd(optionPath,child);const [parent,answerIndex]=optionPath.split('|');openSocioPath(`${parent}.${answerIndex}.${option.subcriteria.length-1}`);renderSocio();scheduleAutosave(0);});
     document.querySelectorAll('[data-review-clear]').forEach(el=>el.onclick=()=>clearCriterionReview(socioContextLocale,socio[Number(el.dataset.reviewClear)],Number(el.dataset.reviewClear)));
     document.querySelectorAll('[data-tree-criterion-remove-variant]').forEach(el=>el.onclick=async()=>{
