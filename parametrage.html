@@ -77,11 +77,12 @@
 <label for="diffusion-slug">Adresse de diffusion <span class="field-help"><button class="field-help-button" type="button" aria-label="Comment est construite l’adresse de diffusion ?">?</button><span class="field-help-content" role="tooltip">L’adresse répondant est composée de l’adresse Me&YouToo, de l’identifiant du client puis du slug de la campagne. Pour une campagne historique, l’adresse déjà importée est conservée.</span></span></label>
 <div class="diffusion-url-builder">
   <span class="diffusion-url-prefix" id="diffusion-url-prefix">https://selfdiag-mayt.meandyoutoo.app/…/</span>
-  <input id="diffusion-slug" class="diffusion-slug-input" autocomplete="off" spellcheck="false" placeholder="slug-de-la-campagne" aria-describedby="diffusion-url-note">
+  <input id="diffusion-slug" class="diffusion-slug-input" autocomplete="off" spellcheck="false" placeholder="slug-de-la-campagne" aria-describedby="diffusion-url-note diffusion-url-status">
 </div>
 <div class="diffusion-url-preview-row">
   <span class="diffusion-url-preview" id="diffusion-url-preview">Adresse en attente du slug de campagne.</span>
 </div>
+<p class="slug-preview-note" id="diffusion-url-status">Votre lien est en préparation et n’est pas encore effectif.</p>
 <span class="slug-preview-note" id="diffusion-url-note">Le nom du client constitue automatiquement la première partie de l’adresse. Saisissez uniquement le slug souhaité pour cette campagne.</span>
 </div>
 </fieldset>
