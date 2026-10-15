@@ -784,6 +784,60 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
   async function loadQuota(){try{const data=await api(`/api/projects/${projectId}/quota`);quota=data.organization||null;}catch(error){quota=null;}renderQuota();}
   function updateVigilance(){const total=Number($('nb-respondents').value)||0,allOptions=allSocioOptions(),counts=allOptions.map(o=>Number(o.n)||0).filter(n=>n>0),min=counts.length?Math.min(...counts):0,missing=allOptions.filter(o=>!Number(o.n)).length,subcount=countSubcriteria();let level='Faible',cls='low',text='Les groupes estimés sont suffisamment larges.';if(!total||!counts.length){level='À compléter';cls='';text='Renseignez les effectifs estimés par option.';}if(total&&total<8){level='Élevé';cls='high';text='Le nombre total de répondants est insuffisant pour une analyse collective.';}else if((min&&min<8)||socio.length>=4){level='Élevé';cls='high';text='Des groupes sont trop petits ou les croisements sont trop nombreux.';}else if((min&&min<10)||socio.length>=3||subcount){level='Modéré';cls='medium';text='Certains croisements devront être interprétés avec prudence.';}$('anonymity-level').textContent=level;$('anonymity-level').className='anonymity-level '+cls;$('anonymity-summary-text').textContent=text;$('anonymity-metrics').innerHTML=`<span class="anonymity-metric">${socio.length} critère(s)</span><span class="anonymity-metric">${subcount} sous-critère(s)</span><span class="anonymity-metric">Plus petit groupe : ${min||'—'}</span><span class="anonymity-metric">${missing} effectif(s) manquant(s)</span>`;const live=$('anon-alert');if(total&&total<8){live.hidden=false;live.className='anonymity-live-alert danger';live.innerHTML='<strong>🚨 Attention : moins de 8 répondants sont prévus au total.</strong><span>Le volume est insuffisant pour restituer des résultats collectifs fiables et anonymes.</span>';}else if(min&&min<8){live.hidden=false;live.className='anonymity-live-alert danger';live.innerHTML='<strong>🚨 Attention : au moins un groupe compte moins de 8 répondants.</strong>';}else if(min&&min<10){live.hidden=false;live.className='anonymity-live-alert warning';live.innerHTML='<strong>⚠️ Vigilance : au moins un groupe compte seulement 8 ou 9 répondants.</strong>';}else{live.hidden=true;live.innerHTML='';}}
   const normalizeIntro=value=>String(value||'').replace(/<br\s*\/?>/gi,' ').replace(/<\/p>/gi,' ').replace(/<\/li>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;|&#160;/gi,' ').replace(/&amp;/gi,'&').replace(/&quot;|&#34;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/\s+/g,' ').trim();
+function incompleteSocioLocale(items,reference=[]){
+  const options=c=>Array.isArray(c?.opts)?c.opts:Array.isArray(c?.options)?c.options:[];
+  const children=o=>Array.isArray(o?.subcriteria)?o.subcriteria:o?.subcriterion?[o.subcriterion]:[];
+  const issue=(path,field,message)=>({path,field,message});
+  let count=0;
+  const walk=(rows,refs,parent='',depth=1)=>{
+    if(depth>12)return issue(parent,'question','La structure dépasse douze niveaux.');
+    if(!Array.isArray(rows))rows=[];
+    if(!rows.length&&!refs.length)return parent?'':issue('','add','Ajoutez au moins une donnée d’analyse.');
+    for(let i=0;i<Math.max(rows.length,refs.length);i++){
+      if(++count>1000)return issue(parent,'question','La structure des données d’analyse est trop volumineuse.');
+      const c=rows[i],ref=refs[i],path=parent?`${parent}.${i}`:String(i);
+      const q=String(c?.q??c?.question??c?.label??'').trim();
+      if(!q||q.length>500)return issue(path,'question','Renseignez la question dans cette langue.');
+      const opts=options(c),refOpts=options(ref);
+      if(opts.length<2||opts.length>50)return issue(path,'options','Chaque question doit comporter entre deux et cinquante réponses.');
+      for(let j=0;j<Math.max(opts.length,refOpts.length);j++){
+        const option=opts[j],refOption=refOpts[j];
+        if(!String(option?.label??'').trim()||String(option?.label??'').length>250)return issue(`${path}|${j}`,'answer','Renseignez cette réponse dans cette langue.');
+        const nested=walk(children(option),children(refOption),`${path}.${j}`,depth+1);if(nested)return nested;
+      }
+      if(ref&&opts.length!==refOpts.length)return issue(path,'options','Les mêmes réponses doivent être présentes dans toutes les langues actives.');
+      if(!ref&&refs.length)return issue(path,'question','Les mêmes questions doivent être présentes dans toutes les langues actives.');
+    }
+    if(depth>1&&rows.length!==refs.length)return issue(parent.slice(0,parent.lastIndexOf('.')),'question','Les mêmes sous-questions doivent être présentes dans toutes les langues actives.');
+    return null;
+  };
+  if(Array.isArray(items)&&items.length>20)return issue('','add','Les données d’analyse sont limitées à vingt critères.');
+  return walk(items,reference);
+}
+  function incompleteSociodemo(){
+    if(isLegacyClientCampaign())return [];
+    const ref=socioReference(),current=normalizeLocale(socioContextLocale),reference=normalizeLocale(ref.locale)===current?socio:ref.items||[];
+    return projectLocales().flatMap(locale=>{
+      const loc=normalizeLocale(locale),rows=loc===current?socio:socioForLocale(loc),issue=incompleteSocioLocale(rows,reference);
+      if(!issue)return [];
+      const selector=issue.field==='question'?`input[data-tree-q="${issue.path}"]`:issue.field==='answer'?`input[data-tree-label="${issue.path}"]`:`button[data-tree-option-add="${issue.path}"]`;
+      return [{id:issue.field==='add'?'add-socio':'socio-list',title:`Donnée d’analyse à compléter · ${localeLabel(loc)} (${loc.toUpperCase()})`,message:issue.message,locale:loc,socio:issue.field!=='add',selector,prepareSocio:true}];
+    });
+  }
+  // Une langue peut manquer une branche entière dans un ancien brouillon.
+  // Créer uniquement ses champs vides permet de guider vers la traduction manquante.
+  function fillMissingSocioStructure(rows,reference){
+    const target=clone(Array.isArray(rows)?rows:[]);
+    reference.forEach((ref,i)=>{
+      if(!target[i]){target[i]=blankCriterion(ref);return;}
+      target[i].opts=Array.isArray(target[i].opts)?target[i].opts:[];
+      (ref.opts||[]).forEach((option,j)=>{
+        if(!target[i].opts[j])target[i].opts[j]={...clone(option),label:'',subcriteria:(option.subcriteria||[]).map(blankCriterion)};
+        else target[i].opts[j].subcriteria=fillMissingSocioStructure(target[i].opts[j].subcriteria,option.subcriteria||[]);
+      });
+    });
+    return target;
+  }
   function incompleteIntroductions(){
     if(isLegacyClientCampaign()){const text=$('intro').value;return text.trim()&&normalizeIntro(text)!==normalizeIntro(referenceIntro)?[]:[socioContextLocale];}
     return projectLocales().filter(locale=>{
@@ -881,7 +935,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
     autosaveTimer=setTimeout(()=>{autosaveTimer=null;autosaveNow();},delay);
   }
   async function flushAutosave(){clearTimeout(autosaveTimer);autosaveTimer=null;return autosaveNow();}
-  function updateNextState(){const buttons=[$('param-next'),$('param-next-top')].filter(Boolean);if(!buttons.length)return;if(isReadOnly()){buttons.forEach(button=>{button.classList.remove('is-disabled');button.setAttribute('aria-disabled','false');button.dataset.ready='true';button.title='';button.textContent='Revoir la transmission →';});return;}const state=settingsReadiness(),ready=state.introChanged&&state.launchFilled&&state.closeFilled&&state.diffusionReady;buttons.forEach(button=>{button.classList.toggle('is-disabled',!ready);button.setAttribute('aria-disabled',String(!ready));button.dataset.ready=ready?'true':'false';button.title=ready?'':!state.introChanged?'Adaptez l’introduction avant de poursuivre.':!state.diffusionReady?'Choisissez le slug de l’adresse de diffusion.':'Renseignez les deux dates avant de poursuivre.';});}
+  function updateNextState(){const buttons=[$('param-next'),$('param-next-top')].filter(Boolean);if(!buttons.length)return;if(isReadOnly()){buttons.forEach(button=>{button.classList.remove('is-disabled');button.setAttribute('aria-disabled','false');button.dataset.ready='true';button.title='';button.textContent='Revoir la transmission →';});return;}const state=settingsReadiness(),ready=state.introChanged&&state.launchFilled&&state.closeFilled&&state.diffusionReady&&!incompleteSociodemo().length;buttons.forEach(button=>{button.classList.toggle('is-disabled',!ready);button.setAttribute('aria-disabled',String(!ready));button.dataset.ready=ready?'true':'false';button.title=ready?'':!state.introChanged?'Personnalisez l’introduction dans chaque langue active.':incompleteSociodemo().length?'Complétez les données d’analyse dans chaque langue active.':!state.diffusionReady?'Choisissez le slug de l’adresse de diffusion.':'Renseignez les deux dates avant de poursuivre.';});}
   function incompleteSocioSelector(criterion,path){
     if(!String(criterion?.q||'').trim())return `input[data-tree-q="${path}"]`;
     if(!Array.isArray(criterion.opts)||criterion.opts.length<2)return `button[data-tree-option-add="${path}"]`;
@@ -908,12 +962,21 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
       const label=({'diffusion-slug':'Adresse de diffusion','launch-date':'Date de lancement','close-date':'Date de clôture','nb-respondents':'Nombre de répondants estimé'})[field.id]||field.labels?.[0]?.textContent?.replace(/\s+/g,' ').trim()||'Champ à compléter';
       add(field.id,label,field.validationMessage||'Vérifiez la valeur de ce champ.');
     }
+    if(!isLegacyClientCampaign())items.push(...incompleteSociodemo());
+    else {
     if(!socio.length)add('add-socio','Données d’analyse','Ajoutez au moins une donnée d’analyse avant de transmettre la campagne.');
     else if(invalidSocio())add('socio-list','Donnée d’analyse à compléter','Chaque question et sous-question doit avoir un intitulé et au moins deux réponses renseignées.',{socio:true,selector:incompleteSocioSelector(socio.find(invalidCriterion),String(socio.findIndex(invalidCriterion)))});
+    }
     resultResources.forEach((resource,index)=>{if(!resourceComplete(resource))add('resource-'+index,'Ressource à compléter',resource.type==='legacy_document'?`Rattachez le PDF « ${resource.legacyFilename||resource.title||'Document historique'} » avant de poursuivre.`:'Renseignez le titre de la ressource, puis une adresse web valide ou un fichier PDF.',{resourceIndex:index});});
     return items;
   }
   function focusSetting(item){
+    if(item.prepareSocio){
+      storeActiveLanguageContent();const reference=socioReference();
+      socioLanguageVariants[normalizeLocale(item.locale)]=fillMissingSocioStructure(socioForLocale(item.locale),reference.items||[]);
+      socioLanguageVariants[normalizeLocale(item.locale)].forEach((criterion,index)=>{if(isBlankAutoCriterion(criterion))markNewTranslationPaths(item.locale,pathsForCriterion(criterion,index),reference.locale,reference.items);});
+      activateLanguage(item.locale);renderSocioContext();renderSocio();updateNextState();scheduleAutosave(0);
+    }
     if(item.locale&&normalizeLocale(item.locale)!==normalizeLocale(socioContextLocale)){storeActiveLanguageContent();activateLanguage(item.locale);renderSocioContext();renderSocio();updateNextState();scheduleAutosave(0);}
     if(Number.isInteger(item.resourceIndex)){openResourceModal(item.resourceIndex);return;}
     if(item.socio){document.querySelector('[data-socio-expand-all]')?.click();}
@@ -1016,6 +1079,6 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
     const readiness=settingsReadiness();
     storeActiveLanguageContent();const campaignName=$('campaign-name').value.trim(),respondentTitle=$('respondent-title').value.trim(),primaryLocale=normalizeLocale(project?.selected_locale||(Array.isArray(project?.locales)&&project.locales[0])||'fr'),introductionHtml=socioContextLocale===primaryLocale?readiness.intro:String(project?.introduction_html||readiness.intro),launchDate=readiness.launch,closeDate=readiness.close;const rawRespondents=$('nb-respondents').value.trim(),nbRespondents=rawRespondents?Number(rawRespondents):null;
     if(!respondentTitle)return show('Le titre visible est obligatoire.');if(!isLegacyClientCampaign()&&!project?.review_mode&&launchDate<iso(5))return show('La date de lancement doit être au minimum à J+5.');if(closeDate<=launchDate)return show('La date de clôture doit être postérieure à la date de lancement.');if(!socio.length)return show('Au moins une donnée d’analyse doit être présente.');if(invalidSocio())return show('Chaque donnée et chaque sous-critère doivent avoir un intitulé et au moins deux réponses renseignées.');const incompleteResource=resultResources.find(r=>!resourceComplete(r));if(incompleteResource)return show(incompleteResource.type==='legacy_document'?`Le PDF historique « ${incompleteResource.legacyFilename} » doit être rattaché avant de pouvoir être utilisé.`:'Chaque ressource doit avoir un texte et soit une URL valide, soit un fichier PDF.');const resultButtons=resultResources.filter(resourceComplete);
-    try{await api(`/api/projects/${projectId}/settings`,{method:'PATCH',body:JSON.stringify({campaignName,respondentTitle,introductionHtml:isLegacyClientCampaign()?project.introduction_html:introductionHtml,introductionVariants:isLegacyClientCampaign()?project.introduction_variants:activeLanguageVariants(introVariants),launchDate,closeDate,nbRespondents,sociodemo:isAdminLegacySocio()?undefined:(Array.isArray(project?.sociodemo)?project.sociodemo:socio),sociodemoLanguageVariants:isAdminLegacySocio()?undefined:(isLegacyClientCampaign()?project.sociodemo_language_variants:activeLanguageVariants(socioLanguageVariants)),translationReviewState:isLegacyClientCampaign()?project.translation_review_state:reviewState(),communicationShareUrl:readiness.shareUrl||null,resultButtons})});location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;}catch(error){if(error.code==='DIFFUSION_URL_TAKEN'){$('diffusion-slug')?.setCustomValidity(error.message);await showMissingSettings([{id:'diffusion-slug',title:'Adresse de diffusion à modifier',message:error.message}]);}else if(error.code==='INTRODUCTIONS_INCOMPLETE'){const missing=missingSettings().filter(item=>item.id==='intro');await showMissingSettings(missing.length?missing:[{id:'intro',title:'Introductions à personnaliser',message:error.message}]);}else await showMissingSettings([{id:'param-autosave-status',title:'Enregistrement à vérifier',message:error.message||'Impossible d’enregistrer la campagne pour le moment.'}]);}
+    try{await api(`/api/projects/${projectId}/settings`,{method:'PATCH',body:JSON.stringify({campaignName,respondentTitle,introductionHtml:isLegacyClientCampaign()?project.introduction_html:introductionHtml,introductionVariants:isLegacyClientCampaign()?project.introduction_variants:activeLanguageVariants(introVariants),launchDate,closeDate,nbRespondents,sociodemo:isAdminLegacySocio()?undefined:(Array.isArray(project?.sociodemo)?project.sociodemo:socio),sociodemoLanguageVariants:isAdminLegacySocio()?undefined:(isLegacyClientCampaign()?project.sociodemo_language_variants:activeLanguageVariants(socioLanguageVariants)),translationReviewState:isLegacyClientCampaign()?project.translation_review_state:reviewState(),communicationShareUrl:readiness.shareUrl||null,resultButtons})});location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;}catch(error){if(error.code==='DIFFUSION_URL_TAKEN'){$('diffusion-slug')?.setCustomValidity(error.message);await showMissingSettings([{id:'diffusion-slug',title:'Adresse de diffusion à modifier',message:error.message}]);}else if(error.code==='SOCIODEMO_TRANSLATIONS_INCOMPLETE'){const missing=incompleteSociodemo();await showMissingSettings(missing.length?missing:[{id:'socio-list',title:'Données d’analyse à compléter',message:error.message}]);}else if(error.code==='INTRODUCTIONS_INCOMPLETE'){const missing=missingSettings().filter(item=>item.id==='intro');await showMissingSettings(missing.length?missing:[{id:'intro',title:'Introductions à personnaliser',message:error.message}]);}else await showMissingSettings([{id:'param-autosave-status',title:'Enregistrement à vérifier',message:error.message||'Impossible d’enregistrer la campagne pour le moment.'}]);}
   });load();
 })();
