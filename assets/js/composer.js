@@ -580,7 +580,7 @@
       ${editable?`<textarea class="composer-inline-answer" data-answer-input="${esc(a.id)}" data-original-answer="${esc(originalContent||a.content)}" rows="2" aria-label="Modifier cette réponse">${esc(a.content)}</textarea>`:`<span class="composer-answer-text">${esc(a.content)}</span>`}
       <span class="composer-score">Score ${Number(a.score).toLocaleString('fr-FR')}</span>${isAdmin?`<small class="composer-tech-id">ID réponse source : ${esc(a.id??'—')}</small>`:''}
       ${a.is_best?`<span class="composer-best">${bestAnswerLabel()}</span>`:''}
-      <div data-live-answer-diff="${esc(a.id)}">${changed?reviewDiff(originalContent,submittedContent,a.content,'la réponse Me&YouToo'):''}</div>
+      <div data-live-answer-diff="${esc(a.id)}">${editable&&(changed||state.project?.review_mode)?reviewDiff(originalContent,submittedContent,a.content,'la réponse Me&YouToo'):''}</div>
     </div>`;
   }
 
@@ -846,7 +846,7 @@
     const situationDiff=card.querySelector('[data-live-situation-diff]');
     const situationInput=card.querySelector('[data-situation-input]');
     const situationChanged=situationOriginal!==String(situationText||'');
-    const submitted=submittedSituation(s.id);if(situationDiff)situationDiff.innerHTML=situationChanged?reviewDiff(situationOriginal,submitted?.content,situationText,'la situation Me&YouToo'):'';
+    const submitted=submittedSituation(s.id);if(situationDiff)situationDiff.innerHTML=(situationChanged||state.project?.review_mode)?reviewDiff(situationOriginal,submitted?.content,situationText,'la situation Me&YouToo'):'';
     if(situationInput)situationInput.classList.toggle('is-customized',situationChanged);
 
     let anyChanged=situationChanged;
@@ -860,7 +860,7 @@
       anyChanged=anyChanged||changed;
       input.closest('.composer-answer')?.classList.toggle('is-customized',changed);
       const diff=card.querySelector(`[data-live-answer-diff="${CSS.escape(String(item.id))}"]`);
-      const sent=(submitted?.answers||[]).find(answer=>String(answer.id)===String(item.id));if(diff)diff.innerHTML=changed?reviewDiff(original,sent?.content??null,item.content,'la réponse Me&YouToo'):'';
+      const sent=(submitted?.answers||[]).find(answer=>String(answer.id)===String(item.id));if(diff)diff.innerHTML=(changed||state.project?.review_mode)?reviewDiff(original,sent?.content??null,item.content,'la réponse Me&YouToo'):'';
     });
     card.classList.toggle('has-customization',anyChanged);
     return anyChanged;

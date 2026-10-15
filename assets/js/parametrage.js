@@ -375,7 +375,60 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
   }
   function referenceCriterionFor(criterion,index){if(isLegacyClientCampaign())return null;const ref=socioReference();if(!ref.items?.length||normalizeLocale(ref.locale)===normalizeLocale(socioContextLocale))return null;let match=null;if(criterion?.source_id!==undefined)match=ref.items.find(c=>String(c?.source_id??'')===String(criterion.source_id));if(!match)match=ref.items[index]||null;return match?{locale:ref.locale,criterion:match}:null;}
   function renderSocioReference(criterion,index){if(isLegacyClientCampaign())return'';const ref=referenceCriterionFor(criterion,index);if(!ref)return'';const st=reviewState(),loc=normalizeLocale(socioContextLocale),key=criterionKey(ref.criterion,index),status=socioTranslationStatus(loc),rows=status.reviewPaths,todos=status.todoPaths,qPath=`q:${key}`,qTodo=todos.includes(qPath),qNeeds=!qTodo&&rows.includes(qPath),qBase=st.baselines.socio?.[loc]?.[qPath]?.text;const opts=(ref.criterion.opts||[]).map((o,j)=>{const optionKey=String(o?.source_id??`i${j}`),path=`o:${key}:${optionKey}`,todo=todos.includes(path),needs=!todo&&rows.includes(path),base=st.baselines.socio?.[loc]?.[path]?.text,label=esc(o.label);return `<li class="${needs?'has-translation-diff':''} ${todo?'is-translation-todo':''}">${label}</li>`;}).join('');const needs=rows.some(x=>(x===qPath||x.startsWith(`o:${key}:`))&&!todos.includes(x)),todo=todos.some(x=>x===qPath||x.startsWith(`o:${key}:`)),question=esc(ref.criterion.q||'');return `<aside class="socio-reference-panel">${todo?`<div class="translation-review-alert translation-todo-alert"><strong>Traduction à renseigner</strong><span>Cette donnée a été ajoutée en ${esc(localeLabel(ref.locale))}. Traduisez la question et les réponses en ${esc(localeLabel(loc))}.</span></div>`:needs?`<div class="translation-review-alert"><strong>Traduction à vérifier</strong><span>Vérifiez votre traduction à partir de la référence ci-dessous.</span><button type="button" data-review-clear="${index}">Marquer comme vérifié</button></div>`:''}<div class="socio-reference-head"><strong>Référence projet · ${esc(localeLabel(ref.locale))}</strong><span class="status-pill">${esc(String(ref.locale).toUpperCase())}</span></div><div class="socio-reference-question ${qNeeds?'has-translation-diff':''} ${qTodo?'is-translation-todo':''}">${question}</div><div class="socio-reference-label">Réponses de référence</div><ol>${opts}</ol><small>${todo?'Renseignez les champs à droite. Le statut disparaît automatiquement lorsque la traduction est complète.':'La référence actuelle est affichée ci-dessus. Vérifiez la traduction à droite après une modification de la référence.'}</small></aside>`;}
-  function renderIntroReference(){const panel=$('intro-reference-panel'),text=$('intro-reference-text'),title=$('intro-reference-title'),badge=$('intro-reference-badge'),editTitle=$('intro-edit-title');if(!panel||!text)return;if(isLegacyClientCampaign()&&$('intro'))$('intro').readOnly=true;const ref=introReference(),current=normalizeLocale(socioContextLocale);if(editTitle)editTitle.textContent=`Introduction · ${localeLabel(current)} (${current.toUpperCase()})`;if(!ref.text||normalizeLocale(ref.locale)===current){panel.hidden=true;return;}panel.hidden=false;if(title)title.textContent=`Référence projet · ${localeLabel(ref.locale)}`;if(badge)badge.textContent=String(ref.locale).toUpperCase();const head=panel.querySelector('.parameter-reference-head');let editRef=panel.querySelector('[data-edit-intro-reference]');if(currentUser.role==='admin'&&!isLegacyClientCampaign()&&head){if(!editRef){editRef=document.createElement('button');editRef.type='button';editRef.className='button button-secondary button-small';editRef.dataset.editIntroReference='1';editRef.style.marginLeft='auto';head.appendChild(editRef);}editRef.textContent=`Modifier ${localeLabel(ref.locale)}`;editRef.hidden=false;editRef.onclick=()=>{storeActiveLanguageContent();activateLanguage(ref.locale);renderSocioContext();renderSocio();scheduleAutosave(0);setTimeout(()=>$('intro')?.focus(),0);};}else if(editRef)editRef.hidden=true;const st=reviewState(),needs=!isLegacyClientCampaign()&&Boolean(st.intro[current]),baseline=st.baselines.intro?.[current]?.text,currentText=stripHtml(ref.text);text.textContent=currentText;const alert=$('intro-review-alert'),clear=$('intro-review-clear');if(alert)alert.hidden=!needs;if(clear)clear.onclick=()=>{delete st.intro[current];delete st.baselines.intro[current];scheduleAutosave(0);renderSocioContext();renderIntroReference();};}
+  const isAdminReview=()=>currentUser.role==='admin'&&project?.review_mode&&!isLegacyClientCampaign();
+  function submittedSettings(){return project?.review_submitted_settings||project?.review_snapshot?.project||null;}
+  function reviewWordDiff(original,current){
+    if(String(original??'')===String(current??''))return esc(current??'');
+    const a=String(original||'').split(/(\s+|[.,;:!?'"()«»–—-])/).filter(Boolean),b=String(current||'').split(/(\s+|[.,;:!?'"()«»–—-])/).filter(Boolean);
+    if(a.length*b.length>1000000)return `<del>${esc(original)}</del> <ins>${esc(current)}</ins>`;
+    const n=a.length,m=b.length,dp=Array.from({length:n+1},()=>Array(m+1).fill(0));
+    for(let i=n-1;i>=0;i--)for(let k=m-1;k>=0;k--)dp[i][k]=a[i]===b[k]?dp[i+1][k+1]+1:Math.max(dp[i+1][k],dp[i][k+1]);
+    let i=0,k=0,out='';
+    while(i<n||k<m){
+      if(i<n&&k<m&&a[i]===b[k]){out+=esc(a[i]);i++;k++;}
+      else if(k<m&&(i===n||dp[i][k+1]>=dp[i+1]?.[k])){out+=`<ins>${esc(b[k])}</ins>`;k++;}
+      else if(i<n){out+=`<del>${esc(a[i])}</del>`;i++;}
+    }
+    return out;
+  }
+  function settingsReviewBlock(reference,submitted,current){
+    if(!isAdminReview())return '';
+    if(submitted==null)return '<div class="composer-diff">Version transmise indisponible pour cet élément ; aucune comparaison supposée.</div>';
+    const block=(before,after,label,admin=false)=>`<div class="composer-diff${admin?' is-admin-correction':''}"><div class="composer-diff-label">${esc(label)}</div><div class="composer-diff-text" style="white-space:pre-wrap">${reviewWordDiff(before,after)}</div></div>`;
+    let html=reference==null?block(submitted,submitted,'Version transmise par le client'):String(reference)===String(submitted)?block(submitted,submitted,'Version transmise · identique au référentiel'):block(reference,submitted,'Adaptations transmises par le client · rouge : retiré / vert : ajouté');
+    if(String(submitted)!==String(current))html+=block(submitted,current,'Votre correction Me&YouToo · version de travail privée',true);
+    return html;
+  }
+  function reviewLocaleValue(map,locale){const key=Object.keys(map||{}).find(k=>normalizeLocale(k)===normalizeLocale(locale));return key===undefined?undefined:map[key];}
+  function renderSettingsReview(){
+    if(!isAdminReview())return;
+    const saved=submittedSettings();
+    for(const [id,key,ref] of [['campaign-name','campaign_name',project.base_title],['respondent-title','respondent_title',project.respondent_title_default],['launch-date','launch_date',null],['close-date','close_date',null],['intro','introduction_html',reviewLocaleValue(introReferenceVariants,socioContextLocale)]]){
+      const input=$(id);if(!input)continue;
+      let before=saved?.[key],reference=ref;
+      if(id==='intro'){
+        before=reviewLocaleValue(saved?.introduction_variants,socioContextLocale)??reviewLocaleValue(saved?.introduction_variants_resolved,socioContextLocale)??(normalizeLocale(socioContextLocale)===normalizeLocale(saved?.selected_locale||project.working_locale||project.selected_locale||'fr')?saved?.introduction_html:undefined);
+        before=before==null?null:stripHtml(before);reference=ref==null?null:stripHtml(ref);
+      }else if(id.endsWith('-date'))before=before==null?null:String(before).slice(0,10);
+      let host=$(`admin-review-${id}`);if(!host){host=document.createElement('div');host.id=`admin-review-${id}`;input.after(host);}
+      host.innerHTML=settingsReviewBlock(reference,before,input.value);
+    }
+    document.querySelectorAll('[data-admin-socio-review]').forEach(host=>{host.innerHTML=renderSocioAdminReview(Number(host.dataset.adminSocioReview));});
+  }
+  function socioReviewText(criterion){
+    if(!criterion)return 'Donnée absente';
+    return [criterion.q||'',...(criterion.opts||[]).flatMap(option=>[option.label||'',...(option.subcriteria||[]).map(socioReviewText)])].join('\n');
+  }
+  function renderSocioAdminReview(index){
+    if(!isAdminReview())return '';
+    const saved=submittedSettings(),loc=socioContextLocale,items=reviewLocaleValue(saved?.sociodemo_language_variants,loc)??reviewLocaleValue(saved?.sociodemo_language_variants_resolved,loc)??(normalizeLocale(loc)===normalizeLocale(saved?.selected_locale||project.working_locale||project.selected_locale||'fr')?saved?.sociodemo:null);
+    if(!items)return settingsReviewBlock(null,null,'');
+    const current=socio[index],find=list=>current?.source_id!=null?list?.find(c=>String(c.source_id)===String(current.source_id)):list?.find(c=>(current.kind&&c.kind===current.kind)||c.q===current.q);
+    const client=find(items),refs=reviewLocaleValue(project.theme_sociodemo_variants,loc),reference=Array.isArray(refs)?find(refs):null;
+    if(!client&&current?.source_id==null)return settingsReviewBlock(null,null,'');
+    return settingsReviewBlock(reference?socioReviewText(reference):null,socioReviewText(client),socioReviewText(current));
+  }
+  function renderIntroReference(){renderSettingsReview();if(isAdminReview()){$('intro-reference-panel').hidden=true;const label=$('intro-edit-title');if(label)label.textContent=`Introduction · ${localeLabel(socioContextLocale)} · votre version de travail`;return;}const panel=$('intro-reference-panel'),text=$('intro-reference-text'),title=$('intro-reference-title'),badge=$('intro-reference-badge'),editTitle=$('intro-edit-title');if(!panel||!text)return;if(isLegacyClientCampaign()&&$('intro'))$('intro').readOnly=true;const ref=introReference(),current=normalizeLocale(socioContextLocale);if(editTitle)editTitle.textContent=`Introduction · ${localeLabel(current)} (${current.toUpperCase()})`;if(!ref.text||normalizeLocale(ref.locale)===current){panel.hidden=true;return;}panel.hidden=false;if(title)title.textContent=`Référence projet · ${localeLabel(ref.locale)}`;if(badge)badge.textContent=String(ref.locale).toUpperCase();const head=panel.querySelector('.parameter-reference-head');let editRef=panel.querySelector('[data-edit-intro-reference]');if(currentUser.role==='admin'&&!isLegacyClientCampaign()&&head){if(!editRef){editRef=document.createElement('button');editRef.type='button';editRef.className='button button-secondary button-small';editRef.dataset.editIntroReference='1';editRef.style.marginLeft='auto';head.appendChild(editRef);}editRef.textContent=`Modifier ${localeLabel(ref.locale)}`;editRef.hidden=false;editRef.onclick=()=>{storeActiveLanguageContent();activateLanguage(ref.locale);renderSocioContext();renderSocio();scheduleAutosave(0);setTimeout(()=>$('intro')?.focus(),0);};}else if(editRef)editRef.hidden=true;const st=reviewState(),needs=!isLegacyClientCampaign()&&Boolean(st.intro[current]),baseline=st.baselines.intro?.[current]?.text,currentText=stripHtml(ref.text);text.textContent=currentText;const alert=$('intro-review-alert'),clear=$('intro-review-clear');if(alert)alert.hidden=!needs;if(clear)clear.onclick=()=>{delete st.intro[current];delete st.baselines.intro[current];scheduleAutosave(0);renderSocioContext();renderIntroReference();};}
   function storeActiveSocio(skipReview=false){if(isSocioReadOnly()||!socioContextLocale)return;const normalized=normalizedSocio(socio),serialized=JSON.stringify(normalized);if(!socioContextHasStored&&serialized===socioContextBaseline)return;const loc=normalizeLocale(socioContextLocale),ref=socioReference(),before=Array.isArray(socioLanguageVariants?.[loc])?clone(socioLanguageVariants[loc]):[];if(!skipReview&&!isLegacyClientCampaign()&&!insertingTranslatedSuggestion&&ref.locale&&normalizeLocale(ref.locale)===loc)markSocioTranslationsToReview(loc,socioDiffPaths(before,normalized),before);socioLanguageVariants[loc]=clone(normalized);socioContextHasStored=true;socioContextBaseline=serialized;}
   function storeActiveIntro(){if(isLegacyClientCampaign()||!socioContextLocale||!$('intro'))return;const current=String($('intro').value||'').trim();if(!introContextHasStored&&current===introContextBaseline)return;const loc=normalizeLocale(socioContextLocale),ref=introReference(),before=String(introVariants?.[loc]??introResolvedVariants?.[loc]??'').trim();if(ref.locale&&normalizeLocale(ref.locale)===loc&&current!==before)markIntroTranslationsToReview(loc,before);if(current)introVariants[loc]=current;else delete introVariants[loc];introContextHasStored=Boolean(current);introContextBaseline=current;}
   function storeActiveLanguageContent(){storeActiveSocio();storeActiveIntro();}
@@ -592,6 +645,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
         </div>
         <div class="socio-card-fold-body" ${isOpen?'':'hidden'}>
           ${structureRedirect}
+          ${isAdminReview()?`<div data-admin-socio-review="${i}">${renderSocioAdminReview(i)}</div>`:''}
           <div class="socio-translation-compare ${referenceCriterionFor(criterion,i)?'has-reference':''}">
             ${renderSocioReference(criterion,i)}
             <div class="socio-current-editor"><div class="socio-current-head"><strong>Version répondant · ${esc(localeLabel(socioContextLocale))}</strong><span class="status-pill">${esc(String(socioContextLocale).toUpperCase())}</span></div>${translationMode&&!ro?'<div class="socio-translation-structure-note">La structure se modifie dans la langue de référence. Ici, vous traduisez uniquement les libellés existants.</div>':''}
@@ -997,6 +1051,7 @@ function incompleteSocioLocale(items,reference=[]){
     return ok;
   }
   function scheduleAutosave(delay=700){
+    renderSettingsReview();
     if(!autosaveEnabled||isReadOnly())return;
     clearTimeout(autosaveTimer);markAutosaveActiveField();autosaveStatus('Modifications en cours…','saving');
     autosaveTimer=setTimeout(()=>{autosaveTimer=null;autosaveNow();},delay);
