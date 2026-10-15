@@ -1094,7 +1094,14 @@
     $('chapter-kicker').textContent=`Chapitre ${state.active+1} · Questions`;
     $('chapter-title').textContent=ch.title;
     const titleTranslationButton=$('chapter-title-translations-button');
-    if(titleTranslationButton){titleTranslationButton.hidden=isLegacyClientCampaign()||state.project?.can_edit===false&&!isAdmin;titleTranslationButton.onclick=()=>openChapterTitleTranslations(ch);}
+    if(titleTranslationButton){
+      const countries=campaignCountries(),locales=projectContentLocales();
+      const clientFranceFrenchOnly=!isAdmin&&countries.length===1&&['FR','250'].includes(countries[0])&&locales.length===1&&locales[0]==='fr';
+      titleTranslationButton.hidden=isLegacyClientCampaign()||state.project?.can_edit===false&&!isAdmin||clientFranceFrenchOnly;
+      titleTranslationButton.onclick=()=>openChapterTitleTranslations(ch);
+      const entry=titleTranslationButton.closest('.chapter-title-translation-entry');
+      if(entry){entry.hidden=titleTranslationButton.hidden;entry.style.display=entry.hidden?'none':'';}
+    }
     const effectiveChapterLocked=methodologyLocked;
     const campaignReadOnly=Boolean(state.project?.can_edit===false&&!state.project?.review_mode);
     $('chapter-desc').textContent=effectiveChapterLocked
