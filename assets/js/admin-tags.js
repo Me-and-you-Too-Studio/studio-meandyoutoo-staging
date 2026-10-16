@@ -3,7 +3,8 @@
   const $ = s => document.querySelector(s);
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const norm = v => String(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('fr');
-  let tags = [], busy = false;
+  let tags = [], busy = false, pendingSaves = 0;
+  let saveQueue = Promise.resolve();
   const dialog = $('#tag-edit-dialog');
   function error(message) { $('#tag-manager-status').textContent = message; }
   function render() {
@@ -15,11 +16,11 @@
     $('#tag-manager-count').textContent = `${rows.length} tag(s) affiché(s) sur ${tags.length}`;
     $('#tag-manager-rows').innerHTML = rows.length ? rows.map(t => {
       const index = tags.indexOf(t);
-      return `<tr><td><strong>${esc(t.tag)}</strong>${variants.get(norm(t.tag)) > 1 ? '<small class="tag-variant">Variante à vérifier</small>' : ''}</td><td>${t.count}</td><td>${t.themes.map(x => esc(x.title)).join(' · ')}</td><td><div class="tag-row-actions"><button type="button" class="button button-secondary button-small" data-tag-action="rename" data-tag-index="${index}">Renommer</button><button type="button" class="button button-secondary button-small" data-tag-action="merge" data-tag-index="${index}">Fusionner</button><button type="button" class="button button-danger-soft button-small" data-tag-action="delete" data-tag-index="${index}">Supprimer</button></div></td></tr>`;
+      return `<tr><td><input class="tag-name-input" data-tag-name="${index}" value="${esc(t.tag)}" maxlength="60" aria-label="Modifier le tag ${esc(t.tag)}"><small class="tag-save-state" data-tag-save-state="${index}" role="status"></small>${variants.get(norm(t.tag)) > 1 ? '<small class="tag-variant">Variante à vérifier</small>' : ''}</td><td>${t.count}</td><td>${t.themes.map(x => esc(x.title)).join(' · ')}</td><td><div class="tag-row-actions"><button type="button" class="button button-secondary button-small" data-tag-action="merge" data-tag-index="${index}">Fusionner</button><button type="button" class="button button-danger-soft button-small" data-tag-action="delete" data-tag-index="${index}">Supprimer</button></div></td></tr>`;
     }).join('') : '<tr><td colspan="4">Aucun tag ne correspond à votre recherche.</td></tr>';
   }
   async function load() {
-    if (busy) return;
+    if (busy || pendingSaves) return;
     error('Chargement des tags…');
     try {
       const data = await StudioAPI.request('/api/admin/catalog/tags');
@@ -36,10 +37,51 @@
   $('#tag-manager-theme').addEventListener('change',render);
   $('#tag-manager-duplicates').addEventListener('change',render);
   $('#tag-manager-refresh').onclick = load;
+  function filterLock(locked) {
+    ['#tag-manager-search','#tag-manager-theme','#tag-manager-duplicates','#tag-manager-refresh'].forEach(s => $(s).disabled = locked);
+  }
+  function saveName(input) {
+    const index = Number(input.dataset.tagName), item = tags[index];
+    if (!item || input.disabled) return;
+    const target = input.value.trim().normalize('NFC');
+    if (target === item.tag) { input.value = item.tag; return; }
+    const status = $(`[data-tag-save-state="${index}"]`);
+    if (!target || target.length > 60 || /[\u0000-\u001f,]/.test(target)) {
+      input.setAttribute('aria-invalid','true'); status.textContent = 'Non enregistré : saisissez un libellé de 1 à 60 caractères, sans virgule.'; return;
+    }
+    input.disabled = true; pendingSaves++; filterLock(true);
+    status.textContent = 'Enregistrement…'; input.removeAttribute('aria-invalid');
+    saveQueue = saveQueue.then(async () => {
+      try {
+        const payload = {source:item.tag, target, action:'rename'};
+        const preview = await StudioAPI.request('/api/admin/catalog/tags/change',{method:'POST',body:JSON.stringify({...payload,dryRun:true})});
+        await StudioAPI.request('/api/admin/catalog/tags/change',{method:'POST',body:JSON.stringify({...payload,dryRun:false,fingerprint:preview.fingerprint})});
+        item.tag = target; input.value = target; input.setAttribute('aria-label',`Modifier le tag ${target}`);
+        status.textContent = `Enregistré · ${preview.count} situation(s)`;
+        document.dispatchEvent(new Event('studio-catalog-tags-changed'));
+      } catch (err) {
+        input.setAttribute('aria-invalid','true'); status.textContent = `Non enregistré : ${err.message}`;
+      } finally { input.disabled = false; pendingSaves--; if (!pendingSaves) filterLock(false); }
+    });
+  }
+  $('#tag-manager-rows').addEventListener('focusout',e => {
+    if (e.target.matches('[data-tag-name]')) saveName(e.target);
+  });
+  $('#tag-manager-rows').addEventListener('keydown',e => {
+    const input = e.target;
+    if (!input.matches('[data-tag-name]')) return;
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') {
+      e.preventDefault(); input.value = tags[Number(input.dataset.tagName)].tag;
+      input.removeAttribute('aria-invalid'); $(`[data-tag-save-state="${input.dataset.tagName}"]`).textContent = ''; input.blur();
+    }
+  });
   let selection;
-  $('#tag-manager-rows').onclick = e => {
+  $('#tag-manager-rows').onclick = async e => {
     const button = e.target.closest('[data-tag-action]');
     if (!button || busy) return;
+    await saveQueue;
+    if (busy) return;
     const tag = tags[Number(button.dataset.tagIndex)];
     selection = {source:tag.tag, action:button.dataset.tagAction};
     const deleting = selection.action === 'delete', merging = selection.action === 'merge';
