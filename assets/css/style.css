@@ -15408,3 +15408,6 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
     width: 100%;
   }
 }
+
+/* Catalogue admin: complementary library visible before opening a theme. */
+.admin-library-theme-card .admin-library-complement-status{display:flex;align-items:center;gap:8px;align-self:flex-start;margin:0 0 12px;padding:9px 11px;border:1px solid #c5e4df;border-radius:10px;background:#edf8f5;color:#22665c;font-size:13px;line-height:1.45;font-weight:600}.admin-library-theme-card .admin-library-complement-status.is-empty{background:#f6f8fa;border-color:#e1e7ed;color:#637b8d}.admin-library-complement-status .admin-info-dot{flex-shrink:0}.admin-library-complement-status .admin-info-dot[data-info]::after{left:auto;right:-8px;transform:translateY(6px)}.admin-library-complement-status .admin-info-dot[data-info]:hover::after,.admin-library-complement-status .admin-info-dot[data-info]:focus-visible::after{transform:translateY(0)}
