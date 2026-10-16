@@ -77,7 +77,80 @@
     }
   });
   const usageDialog = $('#tag-usage-dialog');
-  let usageRequest = 0;
+  let usageRequest = 0, usageTag = '';
+  let usageSituations = new Map();
+  const info = (label,text) => `<span class="admin-info-dot" tabindex="0" role="note" aria-label="${esc(label)}" data-info="${esc(text)}">i</span>`;
+  function usageEditor(si) {
+    if (si.permanently_removed) return '';
+    const id = String(si.id), current = si.admin_tags || [];
+    return `<div class="tag-usage-editor" data-usage-editor="${esc(id)}"><div class="tag-usage-editor-label"><strong>Tags de cette situation</strong>${info('Portée du retrait d’un tag','La croix retire uniquement le tag de cette situation du catalogue et de ses éventuelles réutilisations. Les autres situations gardent ce tag. La suppression globale se fait dans la liste générale des tags.')}</div><div class="tag-usage-chips">${usageChips(si)}</div><label class="tag-usage-add-label" for="usage-add-${esc(id)}">Ajouter un tag ${info('Ajouter ou créer un tag','Recherchez un tag existant ou créez un nouveau mot-clé. Sélectionnez une suggestion ou appuyez sur Entrée. L’ajout est enregistré automatiquement sur cette situation. Aucun texte, réponse ou score n’est modifié.')}</label><input id="usage-add-${esc(id)}" type="search" data-usage-search autocomplete="off" maxlength="60" placeholder="Rechercher ou créer un tag…" aria-label="Rechercher ou créer un tag pour cette situation"><div class="tag-usage-suggestions" data-usage-suggestions hidden></div><p class="tag-usage-save-status" data-usage-save-status role="status"></p></div>`;
+  }
+  function usageChips(si) {
+    return (si.admin_tags || []).map((tag,index) => `<span class="tag-usage-chip">${esc(tag)}<button type="button" data-usage-remove="${index}" aria-label="Retirer ${esc(tag)} de cette situation">×</button></span>`).join('') || '<span class="hint">Aucun tag sur cette situation.</span>';
+  }
+  function suggestUsage(editor) {
+    const si = usageSituations.get(editor.dataset.usageEditor);
+    if (!si || si.saving) return;
+    const value = editor.querySelector('[data-usage-search]').value.trim(), key = norm(value);
+    const used = new Set((si.admin_tags || []).map(norm));
+    const all = tags.filter(t => !used.has(norm(t.tag)) && norm(t.tag).includes(key));
+    const matches = all.slice(0,12);
+    const exists = tags.some(t => norm(t.tag) === key);
+    const canCreate = value && !exists && !used.has(key);
+    const list = editor.querySelector('[data-usage-suggestions]');
+    list.innerHTML = matches.map(t => `<button type="button" data-usage-add-tag="${esc(t.tag)}">${esc(t.tag)}</button>`).join('') +
+      (canCreate ? `<button type="button" class="tag-usage-create" data-usage-add-tag="${esc(value)}">+ Créer et ajouter « ${esc(value)} »</button>` : '') +
+      (used.has(key) ? '<span>Ce tag est déjà présent sur cette situation.</span>' : '') +
+      (!matches.length && !canCreate && !used.has(key) ? '<span>Aucun tag à proposer.</span>' : '') +
+      (all.length > 12 ? '<small>Précisez votre recherche pour voir les autres tags.</small>' : '');
+    list.hidden = false;
+  }
+  async function changeUsage(editor,action,tag) {
+    const si = usageSituations.get(editor.dataset.usageEditor);
+    if (!si || si.saving) return;
+    si.saving = true;
+    const request = usageRequest, status = editor.querySelector('[data-usage-save-status]');
+    status.textContent = 'Enregistrement…'; status.classList.remove('is-error');
+    editor.querySelector('[data-usage-suggestions]').hidden = true;
+    editor.querySelectorAll('button,input').forEach(el => el.disabled = true);
+    try {
+      const result = await StudioAPI.request('/api/admin/catalog/tags/situations/'+encodeURIComponent(si.id),{method:'POST',body:JSON.stringify({action,tag})});
+      si.admin_tags = result.tags;
+      if (request === usageRequest) {
+        editor.querySelector('.tag-usage-chips').innerHTML = usageChips(si);
+        editor.querySelector('[data-usage-search]').value = '';
+        status.textContent = `Enregistré${si.admin_tags.includes(usageTag) ? '' : ' · Le tag consulté a été retiré de cette situation.'}`;
+        const remaining = [...usageSituations.values()].filter(s => (s.admin_tags || []).includes(usageTag)).length;
+        $('#tag-usage-membership').textContent = `${remaining} situation(s) de cette liste portent encore « ${usageTag} ». Les situations restent affichées pour poursuivre vos corrections.`;
+      }
+      document.dispatchEvent(new Event('studio-catalog-tags-changed'));
+      await load();
+    } catch (err) { if (request === usageRequest) { status.textContent = 'Non enregistré : '+err.message; status.classList.add('is-error'); } }
+    finally { si.saving = false; editor.querySelectorAll('button,input').forEach(el => el.disabled = false); }
+  }
+  $('#tag-usage-list').addEventListener('input',e => { if (e.target.matches('[data-usage-search]')) suggestUsage(e.target.closest('[data-usage-editor]')); });
+  $('#tag-usage-list').addEventListener('focusin',e => { if (e.target.matches('[data-usage-search]')) suggestUsage(e.target.closest('[data-usage-editor]')); });
+  $('#tag-usage-list').addEventListener('keydown',e => {
+    if (!e.target.matches('[data-usage-search]')) return;
+    const editor = e.target.closest('[data-usage-editor]');
+    if (e.key === 'Escape') { editor.querySelector('[data-usage-suggestions]').hidden = true; e.stopPropagation(); e.preventDefault(); }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const value = e.target.value.trim(); if (!value) return;
+      const known = tags.find(t => norm(t.tag) === norm(value));
+      changeUsage(editor,'add',known ? known.tag : value);
+    }
+  });
+  $('#tag-usage-list').addEventListener('click',e => {
+    const editor = e.target.closest('[data-usage-editor]'); if (!editor) return;
+    const remove = e.target.closest('[data-usage-remove]'), add = e.target.closest('[data-usage-add-tag]');
+    const si = usageSituations.get(editor.dataset.usageEditor);
+    if (remove) changeUsage(editor,'remove',si.admin_tags[Number(remove.dataset.usageRemove)]);
+    if (add) changeUsage(editor,'add',add.dataset.usageAddTag);
+  });
+  document.addEventListener('pointerdown',e => {
+    usageDialog.querySelectorAll('[data-usage-suggestions]').forEach(list => { if (!e.target.closest('[data-usage-editor]') || !list.closest('[data-usage-editor]').contains(e.target)) list.hidden = true; });
+  });
   $('#tag-usage-close').onclick = () => { usageRequest++; usageDialog.close(); };
   usageDialog.addEventListener('cancel',() => { usageRequest++; });
   async function showUsage(index) {
@@ -85,6 +158,7 @@
     const tag = tags[index];
     if (!tag || busy) return;
     const request = ++usageRequest;
+    usageTag = tag.tag; usageSituations = new Map();
     $('#tag-usage-title').textContent = `Situations associées à « ${tag.tag} »`;
     $('#tag-usage-list').innerHTML = '<p role="status">Chargement des situations…</p>';
     usageDialog.showModal();
@@ -92,12 +166,13 @@
       const data = await StudioAPI.request('/api/admin/catalog/tags/situations?tag='+encodeURIComponent(tag.tag));
       if (request !== usageRequest) return;
       const situations = data.situations || [];
-      $('#tag-usage-list').innerHTML = `<p class="hint">${situations.length} situation(s). Chaque lien ouvre un nouvel onglet directement sur la situation dépliée.</p>` +
+      usageSituations = new Map(situations.map(si => [String(si.id),si]));
+      $('#tag-usage-list').innerHTML = `<p class="hint">${situations.length} situation(s). Chaque lien ouvre un nouvel onglet directement sur la situation dépliée.</p><div class="admin-library-note"><strong>Enregistrement automatique ${info('Portée des modifications','Chaque ajout ou retrait est enregistré immédiatement sur la situation concernée, y compris ses réutilisations dans le catalogue. Retirer ici ne supprime pas le tag des autres situations.')}</strong><span>Ajoutez et retirez les tags directement ci-dessous. La croix concerne la situation affichée ; « Supprimer » dans la gestion générale retire le tag partout.</span></div><p class="hint" id="tag-usage-membership"></p>` +
         (situations.length ? situations.map(si => {
           const params = new URLSearchParams({tab:'library',themeId:String(si.theme_id),chapterId:String(si.chapter_id),situationId:String(si.id)});
           const state = si.deleted_at?'Corbeille':si.archived_at?'Archivée':si.is_default?'Base du thème':'Bibliothèque complémentaire';
           const access = si.permanently_removed ? '<p class="hint">Situation retirée définitivement du catalogue : ouverture indisponible.</p>' : `<a class="button button-secondary" href="admin.html?${esc(params.toString())}" target="_blank" rel="noopener noreferrer">Ouvrir la situation ↗</a>`;
-          return `<article class="tag-usage-item"><div class="tag-usage-meta"><strong>${esc(si.theme_title)}</strong><span>${esc(si.chapter_title)} · ${state}</span></div><p class="tag-usage-content">${esc(si.content)}</p>${access}</article>`;
+          return `<article class="tag-usage-item"><div class="tag-usage-meta"><strong>${esc(si.theme_title)}</strong><span>${esc(si.chapter_title)} · ${state}</span></div><p class="tag-usage-content">${esc(si.content)}</p>${usageEditor(si)}${access}</article>`;
         }).join('') : '<p>Ce tag n’est plus associé à une situation. Actualisez la liste des tags.</p>');
     } catch (err) { if (request === usageRequest) $('#tag-usage-list').innerHTML = `<p role="alert">${esc(err.message)}</p>`; }
   }
