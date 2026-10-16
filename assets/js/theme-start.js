@@ -106,6 +106,7 @@
       var variants=Array.isArray(payload.variants)?payload.variants:[];
       if(!variants.length)return;
       var scopes=[],locales=[];
+      ((payload.theme&&payload.theme.content_scope_policy&&payload.theme.content_scope_policy.informationalScopeCodes)||[]).forEach(function(code){scopes.push(code==='FR'?'France':code==='EUROPE'?'Europe':code);});
       variants.forEach(function(v){
         var label=v.scopeLabel||v.countryLabel||v.countryCode||v.culturalScope||'';
         if(label&&!scopes.includes(label))scopes.push(label);
@@ -129,12 +130,19 @@
     if(generation!==catalogBrowseGeneration)return;
     var card=document.querySelector('.table-card');
     var block=document.getElementById('catalog-country-filter');
-    if(variants.length<2&&!countryCode)return;
+    var sharedScope=payload.theme&&payload.theme.content_scope_policy;
+    if(variants.length<2&&!countryCode&&!sharedScope)return;
     if(!block){block=document.createElement('div');block.id='catalog-country-filter';block.className='section-desc';block.style.cssText='padding:18px;display:flex;gap:16px;flex-wrap:wrap;align-items:center';card.prepend(block);}
     var sorted=variants.slice().sort(function(a,b){return String(a.scopeLabel||a.countryCode).localeCompare(String(b.scopeLabel||b.countryCode),'fr');});
     var locales=[...new Set(payload.availableLocales||variants.flatMap(function(v){return v.locales||[];}))];
     block.innerHTML='<label>Périmètre pays <select data-catalog-country><option value="">Tous les périmètres</option>'+sorted.map(function(v){return '<option value="'+esc(v.countryCode)+'" '+(v.countryCode===countryCode?'selected':'')+'>'+esc(v.scopeLabel||v.countryCode)+'</option>';}).join('')+'</select></label><label>Langue du texte <select data-catalog-locale>'+locales.map(function(l){return '<option value="'+esc(l)+'" '+(l===locale?'selected':'')+'>'+esc(localeFullLabel(l))+'</option>';}).join('')+'</select></label><details><summary>ⓘ Pays et langue</summary><p>Le pays correspond au contexte culturel ou juridique de la situation. La langue correspond à la langue du texte. Ce filtre concerne uniquement la consultation ; les périmètres de la campagne seront choisis à sa création. Si une traduction manque, le texte de référence peut être affiché.</p></details><span data-catalog-filter-count role="status"></span>';
     var country=block.querySelector('[data-catalog-country]'),language=block.querySelector('[data-catalog-locale]');
+    if(sharedScope){
+      country.closest('label').hidden=true;
+      country.closest('label').style.display='none';
+      country.value=sharedScope.referenceCountryCode;
+      block.querySelector('details p').textContent='France et Europe sont des indications culturelles pour les mêmes situations. Le contenu de référence France est utilisé ; choisissez séparément la langue du texte.';
+    }
     if(!locales.includes(locale)){var option=document.createElement('option');option.value=locale;option.textContent=localeFullLabel(locale);option.selected=true;language.prepend(option);}
     function reload(){block.querySelector('[data-catalog-filter-count]').textContent='Chargement…';var table=card.querySelector('tbody');if(table)table.innerHTML='<tr><td colspan="4">Chargement du périmètre…</td></tr>';loadReadOnlyCatalog(country.value,language.value);}
     country.onchange=reload;language.onchange=reload;
@@ -169,7 +177,7 @@
       var chapters=Array.isArray(data.chapters)?data.chapters:[];
       // Le serveur inclut les contenus communs pour la création ; la consultation
       // par pays ne conserve que les rattachements explicites (ou du chapitre).
-      if(countryCode)chapters=chapters.map(function(ch){return {...ch,situations:(ch.situations||[]).filter(function(si){var own=si.country_codes||[],codes=own.length?own:(ch.country_codes||[]);return countryCode==='WORLDWIDE'?(!codes.length&&ch.country_scope==='worldwide')||codes.includes('WORLDWIDE'):codes.includes(countryCode);})};});
+      if(countryCode&&!data.theme?.content_scope_policy)chapters=chapters.map(function(ch){return {...ch,situations:(ch.situations||[]).filter(function(si){var own=si.country_codes||[],codes=own.length?own:(ch.country_codes||[]);return countryCode==='WORLDWIDE'?(!codes.length&&ch.country_scope==='worldwide')||codes.includes('WORLDWIDE'):codes.includes(countryCode);})};});
       var counter=document.querySelector('[data-catalog-filter-count]');
       if(counter){var total=chapters.reduce(function(n,ch){return n+(ch.situations||[]).length;},0);counter.textContent=total+' situation'+(total>1?'s':'');}
 
@@ -230,6 +238,7 @@
     return new Promise(function(resolve){
       var variants=Array.isArray(options.variants)?options.variants:[];
       var caps=Array.isArray(options.chapterCapabilities)?options.chapterCapabilities:[];
+      var sharedScope=options.theme&&options.theme.content_scope_policy;
       var groups=options.choiceGroups||{};
       var dialog=document.createElement('dialog');dialog.className='studio-modal version-picker-dialog';
       var groupKeys=Object.keys(groups);
@@ -238,6 +247,13 @@
       var scopeFieldLabel=isLegalScope?'Périmètres culturels et légaux':'Périmètres de la campagne';
       dialog.innerHTML='<form method="dialog" class="studio-modal-shell version-picker-shell"><header class="version-picker-header"><div class="studio-modal-copy"><p class="eyebrow">Configuration du diagnostic</p><h2>Choisissez votre parcours, vos périmètres et vos langues</h2><p class="studio-modal-message">Les périmètres et langues proposés s’adaptent aux chapitres que vous retenez.</p><div class="version-picker-explainer"><strong>À savoir</strong><span><b>Contenu international · adaptations possibles</b> : certaines versions sont adaptées au contexte local et peuvent différer selon la langue.</span><span><b>Contenu adapté au périmètre</b> : certaines situations sont adaptées au contexte culturel ou local choisi.</span><span>Vérifiez que la situation et les réponses conviennent aux pays concernés, notamment lorsqu’elles évoquent un dispositif administratif ou juridique.</span><small>Le pays détermine le contexte de la situation. La langue détermine la langue du texte. Les choix proposés suivent les disponibilités configurées dans le catalogue.</small></div></div></header><div class="version-picker-scroll" data-version-picker-scroll><div data-choice-groups></div><div class="version-picker-section"><h3>'+esc(scopeFieldLabel)+'</h3><p class="version-picker-help" data-country-help>Sélection obligatoire : choisissez au moins un périmètre.</p><div data-country-checks class="version-check-grid"></div></div><div class="version-picker-section"><h3>Langues par périmètre</h3><p class="version-picker-help" data-locale-help>Sélection obligatoire : choisissez d’abord un périmètre, puis ajoutez au moins une langue pour chaque pays.</p><div data-locale-checks class="version-check-grid"></div></div></div><footer class="studio-modal-actions version-picker-actions"><button type="button" class="button button-secondary" data-cancel>Annuler</button><button type="button" class="button button-primary" data-confirm disabled aria-disabled="true">Continuer vers la composition</button></footer></form>';
 
+      if(sharedScope){
+        dialog.querySelector('h2').textContent='Choisissez les langues de votre campagne';
+        dialog.querySelector('.studio-modal-message').textContent='Les mêmes situations sont proposées pour les contextes culturels France et Europe.';
+        dialog.querySelectorAll('.version-picker-section h3')[0].textContent='Contexte culturel du contenu';
+        dialog.querySelectorAll('.version-picker-section h3')[1].textContent='Langues de la campagne';
+        dialog.querySelector('.version-picker-explainer').innerHTML='<strong>Contenu commun · France / Europe</strong><span>Ces tags indiquent le contexte culturel des mêmes situations. Le contenu de référence France est sélectionné automatiquement.</span><small>La langue du texte est indépendante du contexte culturel : choisissez ci-dessous les langues de votre campagne.</small>';
+      }
       document.body.appendChild(dialog);
       var groupsRoot=dialog.querySelector('[data-choice-groups]'),countriesRoot=dialog.querySelector('[data-country-checks]'),localesRoot=dialog.querySelector('[data-locale-checks]'),confirmButton=dialog.querySelector('[data-confirm]'),countryHelp=dialog.querySelector('[data-country-help]'),localeHelp=dialog.querySelector('[data-locale-help]');
       var selectedLocalesByCountry={};
@@ -267,7 +283,7 @@
         var countries=[].slice.call(countriesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
         var uncovered=countries.filter(function(code){return !(selectedLocalesByCountry[code]||[]).length;});
         var totalLocales=[...new Set(countries.flatMap(function(code){return selectedLocalesByCountry[code]||[];}))];
-        if(countryHelp)countryHelp.textContent=countries.length?'Périmètre(s) sélectionné(s).':'Sélection obligatoire : choisissez au moins un périmètre.';
+        if(countryHelp)countryHelp.textContent=sharedScope?'Contenu de référence France sélectionné · indications culturelles : France / Europe.':countries.length?'Périmètre(s) sélectionné(s).':'Sélection obligatoire : choisissez au moins un périmètre.';
         if(localeHelp){
           if(!countries.length)localeHelp.textContent='Sélection obligatoire : choisissez d’abord un périmètre, puis au moins une langue compatible.';
           else if(uncovered.length)localeHelp.textContent='Ajoutez au moins une langue pour : '+uncovered.map(countryLabel).join(' · ')+'.';
@@ -287,7 +303,7 @@
       function renderCountries(){
         var previous=[].slice.call(countriesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
         var allowed=compatibleCountries();
-        countriesRoot.innerHTML=allowed.length?allowed.map(function(code){var v=variants.find(function(x){return x.countryCode===code;});return '<label class="version-check"><input type="checkbox" value="'+esc(code)+'" '+(previous.includes(code)?'checked':'')+'><span>'+esc(v?v.scopeLabel:code)+'</span></label>';}).join(''):'<div class="version-empty">Aucun périmètre n’est compatible avec ce choix de chapitres.</div>';
+        countriesRoot.innerHTML=allowed.length?allowed.map(function(code){var v=variants.find(function(x){return x.countryCode===code;});return '<label class="version-check"><input type="checkbox" value="'+esc(code)+'" '+(previous.includes(code)||(sharedScope&&code===sharedScope.referenceCountryCode)?'checked':'')+' '+(sharedScope?'disabled':'')+'><span>'+esc(v?v.scopeLabel:code)+'</span></label>';}).join(''):'<div class="version-empty">Aucun périmètre n’est compatible avec ce choix de chapitres.</div>';
         countriesRoot.querySelectorAll('input').forEach(function(i){i.onchange=renderLocales;});
         renderLocales();
       }
@@ -309,7 +325,7 @@
           var allowed=localesForSelectedCountry(code);
           var chosen=selectedLocalesByCountry[code]||[];
           return '<div class="version-country-languages" data-country-language-block="'+esc(code)+'">'+
-            '<div class="version-country-languages-head"><strong>'+esc(countryLabel(code))+'</strong><small>Ajoutez uniquement les langues à utiliser pour ce pays.</small></div>'+
+            '<div class="version-country-languages-head"><strong>'+esc(countryLabel(code))+'</strong><small>'+(sharedScope?'Choisissez les langues du texte pour votre campagne.':'Ajoutez uniquement les langues à utiliser pour ce pays.')+'</small></div>'+
             '<div class="version-check-grid">'+(allowed.length?allowed.map(function(locale){
               var checked=chosen.includes(locale);
               return '<label class="version-check version-check-locale '+(checked?'is-selected':'')+'"><input type="checkbox" data-country-locale="'+esc(code)+'" value="'+esc(locale)+'" '+(checked?'checked':'')+'><span><b aria-hidden="true">'+(checked?'✓':'+')+'</b> '+esc(localeFullLabel(locale))+'</span></label>';

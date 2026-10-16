@@ -2384,11 +2384,20 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     return String(si?.country_scope||ch?.country_scope||'').toLowerCase()==='worldwide'?['WORLDWIDE']:[];
   }
   function libraryMatchesCountry(ch,si){
+    const theme=findTheme(state.libraryThemeId);
+    if(theme?.content_scope_policy)return true;
     return !state.libraryCountryFilter||librarySituationCountries(ch,si).includes(state.libraryCountryFilter);
   }
   function libraryCountryFilterHtml(theme){
+    if(theme.content_scope_policy){
+      state.libraryCountryFilter='';
+      const zone=state.libraryContentZone==='library'?'library':'base';
+      const count=(theme.chapters||[]).reduce((n,ch)=>n+currentSituations(ch).filter(si=>zone==='base'?Boolean(si.is_default):!si.is_default).length,0);
+      return `<div class="admin-library-situation-filters"><strong>Contenu commun · France / Europe</strong><span class="admin-info-dot" tabindex="0" data-info="France et Europe sont des indications culturelles pour les mêmes situations. La source de contenu est France ; la langue du texte se choisit séparément. Aucun filtre pays n’est nécessaire pour ce thème.">i</span><span role="status">${count} situation${count>1?'s':''} · ${zone==='base'?'Base du thème':'Bibliothèque complémentaire'}</span></div>`;
+    }
     const rows=(theme.chapters||[]).flatMap(ch=>canonicalSituations(ch).map(si=>({ch,si})));
     const codes=[...new Set(rows.flatMap(({ch,si})=>librarySituationCountries(ch,si)))].sort((a,b)=>libraryCountryLabel(a).localeCompare(libraryCountryLabel(b),'fr'));
+    if(state.libraryCountryFilter&&!codes.includes(state.libraryCountryFilter))state.libraryCountryFilter='';
     if(codes.length<2&&!state.libraryCountryFilter)return '';
     const zone=state.libraryContentZone==='library'?'library':'base';
     const count=rows.filter(({ch,si})=>!si.archived_at&&!si.deleted_at&&(zone==='base'?Boolean(si.is_default):!si.is_default)&&libraryMatchesCountry(ch,si)).length;
