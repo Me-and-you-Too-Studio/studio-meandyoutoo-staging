@@ -425,6 +425,6 @@
     });
   });
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadReadOnlyCatalog);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){loadReadOnlyCatalog();},{once:true});
   else loadReadOnlyCatalog();
 })();
