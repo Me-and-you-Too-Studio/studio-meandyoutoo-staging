@@ -16,7 +16,7 @@
     $('#tag-manager-count').textContent = `${rows.length} tag(s) affiché(s) sur ${tags.length}`;
     $('#tag-manager-rows').innerHTML = rows.length ? rows.map(t => {
       const index = tags.indexOf(t);
-      return `<tr><td><input class="tag-name-input" data-tag-name="${index}" value="${esc(t.tag)}" maxlength="60" aria-label="Modifier le tag ${esc(t.tag)}"><small class="tag-save-state" data-tag-save-state="${index}" role="status"></small>${variants.get(norm(t.tag)) > 1 ? '<small class="tag-variant">Variante à vérifier</small>' : ''}</td><td>${t.count}</td><td>${t.themes.map(x => esc(x.title)).join(' · ')}</td><td><div class="tag-row-actions"><button type="button" class="button button-secondary button-small" data-tag-action="merge" data-tag-index="${index}">Fusionner</button><button type="button" class="button button-danger-soft button-small" data-tag-action="delete" data-tag-index="${index}">Supprimer</button></div></td></tr>`;
+      return `<tr><td><input class="tag-name-input" data-tag-name="${index}" value="${esc(t.tag)}" maxlength="60" aria-label="Modifier le tag ${esc(t.tag)}"><small class="tag-save-state" data-tag-save-state="${index}" role="status"></small>${variants.get(norm(t.tag)) > 1 ? '<small class="tag-variant">Variante à vérifier</small>' : ''}</td><td><button type="button" class="tag-usage-button" data-tag-usage="${index}" aria-label="Voir les ${t.count} situations du tag ${esc(t.tag)}">${t.count}<span aria-hidden="true"> ↗</span></button></td><td>${t.themes.map(x => esc(x.title)).join(' · ')}</td><td><div class="tag-row-actions"><button type="button" class="button button-secondary button-small" data-tag-action="merge" data-tag-index="${index}">Fusionner</button><button type="button" class="button button-danger-soft button-small" data-tag-action="delete" data-tag-index="${index}">Supprimer</button></div></td></tr>`;
     }).join('') : '<tr><td colspan="4">Aucun tag ne correspond à votre recherche.</td></tr>';
   }
   async function load() {
@@ -76,8 +76,35 @@
       input.removeAttribute('aria-invalid'); $(`[data-tag-save-state="${input.dataset.tagName}"]`).textContent = ''; input.blur();
     }
   });
+  const usageDialog = $('#tag-usage-dialog');
+  let usageRequest = 0;
+  $('#tag-usage-close').onclick = () => { usageRequest++; usageDialog.close(); };
+  usageDialog.addEventListener('cancel',() => { usageRequest++; });
+  async function showUsage(index) {
+    await saveQueue;
+    const tag = tags[index];
+    if (!tag || busy) return;
+    const request = ++usageRequest;
+    $('#tag-usage-title').textContent = `Situations associées à « ${tag.tag} »`;
+    $('#tag-usage-list').innerHTML = '<p role="status">Chargement des situations…</p>';
+    usageDialog.showModal();
+    try {
+      const data = await StudioAPI.request('/api/admin/catalog/tags/situations?tag='+encodeURIComponent(tag.tag));
+      if (request !== usageRequest) return;
+      const situations = data.situations || [];
+      $('#tag-usage-list').innerHTML = `<p class="hint">${situations.length} situation(s). Chaque lien ouvre un nouvel onglet directement sur la situation dépliée.</p>` +
+        (situations.length ? situations.map(si => {
+          const params = new URLSearchParams({tab:'library',themeId:String(si.theme_id),chapterId:String(si.chapter_id),situationId:String(si.id)});
+          const state = si.deleted_at?'Corbeille':si.archived_at?'Archivée':si.is_default?'Base du thème':'Bibliothèque complémentaire';
+          const access = si.permanently_removed ? '<p class="hint">Situation retirée définitivement du catalogue : ouverture indisponible.</p>' : `<a class="button button-secondary" href="admin.html?${esc(params.toString())}" target="_blank" rel="noopener noreferrer">Ouvrir la situation ↗</a>`;
+          return `<article class="tag-usage-item"><div class="tag-usage-meta"><strong>${esc(si.theme_title)}</strong><span>${esc(si.chapter_title)} · ${state}</span></div><p class="tag-usage-content">${esc(si.content)}</p>${access}</article>`;
+        }).join('') : '<p>Ce tag n’est plus associé à une situation. Actualisez la liste des tags.</p>');
+    } catch (err) { if (request === usageRequest) $('#tag-usage-list').innerHTML = `<p role="alert">${esc(err.message)}</p>`; }
+  }
   let selection;
   $('#tag-manager-rows').onclick = async e => {
+    const usage = e.target.closest('[data-tag-usage]');
+    if (usage) { await showUsage(Number(usage.dataset.tagUsage)); return; }
     const button = e.target.closest('[data-tag-action]');
     if (!button || busy) return;
     await saveQueue;
