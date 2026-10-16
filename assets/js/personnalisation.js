@@ -14,6 +14,11 @@
   const countryLabel=code=>countryNames[String(code||'').toUpperCase()]||String(code||'').toUpperCase();
   const infoDot=text=>`<span class="profile-info-wrap"><button class="profile-info-dot" type="button" aria-label="Information" title="${esc(text)}">i</button><span class="profile-info-bubble" role="tooltip">${esc(text)}</span></span>`;
   const profileFieldChanged=(value,original)=>original!==undefined&&original!==null&&String(value??'')!==String(original??'');
+  function separatedDiffHtml(original,current){
+    const diff=wordDiffHtml(original,current);
+    const after=diff.replace(/<del>[\s\S]*?<\/del>/g,''),before=diff.replace(/<ins>[\s\S]*?<\/ins>/g,'');
+    return `${after||'—'}${diff.includes('<del>')?`<details class="admin-review-removed"><summary>Voir les passages supprimés du texte précédent</summary><div class="composer-diff-text" style="white-space:pre-wrap">${before}</div></details>`:''}`;
+  }
   function wordDiffHtml(original,current){
     const a=String(original||'').split(/(\s+|[.,;:!?\'"()«»–—-])/).filter(Boolean),b=String(current||'').split(/(\s+|[.,;:!?\'"()«»–—-])/).filter(Boolean);
     const n=a.length,m=b.length,dp=Array.from({length:n+1},()=>Array(m+1).fill(0));
@@ -30,12 +35,12 @@
   function profileReviewDiff(original,current,id,key){
     if(!isAdmin()||!project?.review_mode)return profileDiffBlock(original,current);
     const saved=submittedProfile(id);if(!saved)return '<div class="composer-diff">Version transmise indisponible pour ce profil.</div>';
-    const block=(before,after,label,admin=false)=>String(before??'')===String(after??'')?'':`<div class="composer-diff${admin?' is-admin-correction':''}"><div class="composer-diff-label">${esc(label)}</div><div class="composer-diff-text">${wordDiffHtml(before,after)}</div></div>`;
+    const block=(before,after,label,admin=false)=>String(before??'')===String(after??'')?'':`<div class="composer-diff${admin?' is-admin-correction':''}"><div class="composer-diff-label">${esc(label)}</div><div class="composer-diff-text">${separatedDiffHtml(before,after)}</div></div>`;
     return block(original,saved[key],'Adaptations transmises par le client')+block(saved[key],current,'Votre correction Me&YouToo · version de travail privée',true);
   }
   function profileDiffBlock(original,current){
     if(!profileFieldChanged(current,original))return '';
-    return `<div class="composer-diff"><div class="composer-diff-label">Modifications par rapport au profil Me&YouToo</div><div class="composer-diff-text">${wordDiffHtml(original,current)}</div></div>`;
+    return `<div class="composer-diff"><div class="composer-diff-label">Modifications par rapport au profil Me&YouToo</div><div class="composer-diff-text">${separatedDiffHtml(original,current)}</div></div>`;
   }
   function projectCountries(){return [...new Set((Array.isArray(project?.country_codes)?project.country_codes:[]).concat(Array.isArray(project?.countries)?project.countries:[]).concat(project?.selected_country_code?[project.selected_country_code]:[]).map(x=>String(x||'').trim().toUpperCase()).filter(Boolean))];}
   function projectLocales(){return [...new Set((Array.isArray(project?.locales)?project.locales:[]).concat(project?.selected_locale?[project.selected_locale]:[]).map(x=>String(x||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];}
