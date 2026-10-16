@@ -7,7 +7,7 @@
   const requestedAnswer = params.get('answer') || '';
   const requestedCountry = String(params.get('countryCode')||'').trim().toUpperCase();
   const requestedLocale = String(params.get('locale')||'').trim().toLowerCase().replaceAll('_','-');
-  const state = { chapters: [], active: requestedChapter, project: null, country: requestedCountry, locale: requestedLocale||'fr', composerCountryLocales:{}, library: [], libraryMode: 'add', replaceId: '', translationContexts:new Map(), libraryAvailability:new Map(), collapsedSituations:new Set() };
+  const state = { chapters: [], active: requestedChapter, project: null, country: requestedCountry, locale: requestedLocale||'fr', composerCountryLocales:{}, library: [], libraryMode: 'add', replaceId: '', translationContexts:new Map(), libraryAvailability:new Map(), collapsedSituations:new Set(), expandedSituations:new Set(requestedSituation?[String(requestedSituation)]:[]), expandedAnswers:new Set(requestedAnswer&&requestedSituation?[String(requestedSituation)]:[]) };
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const canonical = value => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -666,6 +666,7 @@
 
   function situationHtml(s,index){
     const ch=state.chapters[state.active];
+    const expanded=state.expandedSituations.has(String(s.id)),answersExpanded=state.expandedAnswers.has(String(s.id));
     const stereotypes=isStereotypesChapter(ch);
     // Règle méthodologique Me&YouToo : le chapitre Stéréotypes est un socle
     // non modifiable dans Sexisme et dans Alliés de la mixité.
@@ -708,13 +709,13 @@
     return `<article class="composer-situation ${tone} ${locked?'is-locked':''} ${customized?'has-customization':''}" data-situation-card="${esc(s.id)}">
       <div class="composer-situation-head">
         <div class="composer-situation-tags">${isAdmin?`<span class="composer-position-chip">ID situation Studio : ${esc(s.id)}</span>${s.catalog_situation_id?`<span class="composer-position-chip">ID Catalogue : ${esc(s.catalog_situation_id)}</span>`:''}${s.legacy_payload?.surveyQuestionId?`<span class="composer-position-chip">ID question moteur : ${esc(s.legacy_payload.surveyQuestionId)}</span>`:''}${s.legacy_payload?.legacyId?`<span class="composer-position-chip">ID situation Legacy : ${esc(s.legacy_payload.legacyId)}</span>`:''}`:''}${showMethodologyChip?`<span class="composer-lock-chip">🔒 Situation socle — texte non modifiable</span>`:`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${directTranslationEdit?`<span class="composer-customized-tag">🌐 ${esc(localeLabel(translationView.targetLocale))}</span>`:(customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':'')}</div>
-        <div class="composer-situation-head-actions">${isAdmin?`<button type="button" class="button button-secondary button-small" data-reuse-client-situation="${esc(s.id)}" title="Copie indépendante vers la Bibliothèque complémentaire Me&YouToo">＋ Bibliothèque Me&YouToo</button>`:''}<button class="button button-ghost button-small composer-collapse-situation" type="button" data-collapse-situation="${esc(s.id)}" aria-expanded="false">Déplier</button></div>
+        <div class="composer-situation-head-actions">${isAdmin?`<button type="button" class="button button-secondary button-small" data-reuse-client-situation="${esc(s.id)}" title="Copie indépendante vers la Bibliothèque complémentaire Me&YouToo">＋ Bibliothèque Me&YouToo</button>`:''}<button class="button button-ghost button-small composer-collapse-situation" type="button" data-collapse-situation="${esc(s.id)}" aria-expanded="${expanded}">${expanded?'Replier':'Déplier'}</button></div>
       </div>
-      <div class="composer-situation-body" id="situation-body-${esc(s.id)}" hidden>
+      <div class="composer-situation-body" id="situation-body-${esc(s.id)}"${expanded?'':' hidden'}>
       ${linkedLabel?`<div class="composer-linked-chip">🔗 ${esc(linkedLabel)}</div>`:''}
       ${situationText}
-      <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="false"><span data-toggle-label>Voir les réponses et les scores</span> <span aria-hidden="true">⌄</span></button>
-      <div class="composer-answers" id="answers-${esc(s.id)}" hidden>${answerRows}</div>
+      <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="${answersExpanded}"><span data-toggle-label>${answersExpanded?'Masquer les réponses et les scores':'Voir les réponses et les scores'}</span> <span aria-hidden="true">⌄</span></button>
+      <div class="composer-answers" id="answers-${esc(s.id)}"${answersExpanded?'':' hidden'}>${answerRows}</div>
       ${((((state.country?(projectCountryLocales(state.project)[state.country]||[]):(state.project?.locales||[]))).length>1)?`<div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" ${legacyClientImport?'':'hidden'}>🌐 Vérifier les versions linguistiques</button></div><div class="translation-sync-warning" data-live-translation-warning ${customized?'':'hidden'}>⚠️ Vous modifiez le contenu de référence. Les autres versions linguistiques doivent être vérifiées.</div>`:'')}
       ${!locked?`<div class="composer-inline-help composer-context-help">${directTranslationEdit?`<strong>Vous travaillez en ${esc(localeLabel(translationView.targetLocale))}</strong><span>Complétez la traduction de la situation et de chaque réponse. Le français reste votre référence et ne sera pas modifié.</span>`:`<strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span>`}</div>
       <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${directTranslationEdit?'Enregistrement automatique de la traduction':(customized?'Enregistré':'Enregistrement automatique')}</span></span></div>
@@ -777,11 +778,12 @@
 
   function bindSituations(){
     if(isAdmin)document.querySelectorAll('[data-reuse-client-situation]').forEach(b=>b.onclick=()=>reuseClientSituation(b.dataset.reuseClientSituation));
-    document.querySelectorAll('[data-collapse-situation]').forEach(b=>b.onclick=()=>{const body=$(`situation-body-${b.dataset.collapseSituation}`);if(!body)return;body.hidden=!body.hidden;b.setAttribute('aria-expanded',String(!body.hidden));b.textContent=body.hidden?'Déplier':'Replier';});
+    document.querySelectorAll('[data-collapse-situation]').forEach(b=>b.onclick=()=>{const body=$(`situation-body-${b.dataset.collapseSituation}`);if(!body)return;body.hidden=!body.hidden;if(body.hidden)state.expandedSituations.delete(String(b.dataset.collapseSituation));else state.expandedSituations.add(String(b.dataset.collapseSituation));b.setAttribute('aria-expanded',String(!body.hidden));b.textContent=body.hidden?'Déplier':'Replier';});
     document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{
       const box=$(`answers-${b.dataset.toggle}`),label=b.querySelector('[data-toggle-label]');
       if(!box)return;
       box.hidden=!box.hidden;
+      if(box.hidden)state.expandedAnswers.delete(String(b.dataset.toggle));else state.expandedAnswers.add(String(b.dataset.toggle));
       b.setAttribute('aria-expanded',String(!box.hidden));
       if(label)label.textContent=box.hidden?'Voir les réponses et les scores':'Masquer les réponses et les scores';
     });
@@ -1207,11 +1209,13 @@
     if(!card)return;
     const body=$(`situation-body-${requestedSituation}`),toggle=card.querySelector('[data-collapse-situation]');
     if(body)body.hidden=false;
+    state.expandedSituations.add(String(requestedSituation));
     if(toggle){toggle.setAttribute('aria-expanded','true');toggle.textContent='Replier';}
     let field=card.querySelector('[data-situation-input]');
     if(requestedAnswer){
       const answers=$(`answers-${requestedSituation}`),answerToggle=card.querySelector('[data-toggle]');
       if(answers)answers.hidden=false;
+      state.expandedAnswers.add(String(requestedSituation));
       if(answerToggle){answerToggle.setAttribute('aria-expanded','true');const label=answerToggle.querySelector('[data-toggle-label]');if(label)label.textContent='Masquer les réponses et les scores';}
       field=card.querySelector(`[data-answer-input="${CSS.escape(String(requestedAnswer))}"]`)||field;
     }
