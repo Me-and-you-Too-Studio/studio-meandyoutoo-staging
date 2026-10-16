@@ -15304,3 +15304,107 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 #admin-library .admin-library-detail-title p {max-width:85ch;margin:12px 0;}
 #admin-library .admin-library-detail-stats {margin-top:16px;padding-top:12px;border-top:1px solid #e8eef2;}
 @media(max-width:600px){#admin-library .admin-library-theme-scope{display:grid;grid-template-columns:1fr;gap:16px;}#admin-library .admin-library-theme-title h3{font-size:1.15rem;}}
+
+/* Catalogue — filtres de périmètre et de langue (admin et client). */
+.admin-library-situation-filters > label,
+#catalog-country-filter > label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--royal-blue);
+  font-size: .9rem;
+  font-weight: 600;
+}
+:is(.admin-library-situation-filters, #catalog-country-filter, .library-filters) select {
+  box-sizing: border-box;
+  appearance: none;
+  min-height: 44px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 10px 40px 10px 14px;
+  border: 1px solid #cbdce3;
+  border-radius: 12px;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23007883' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 14px center;
+  background-repeat: no-repeat;
+  color: var(--royal-blue);
+  font: 500 .9rem/1.4 var(--font);
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+:is(.admin-library-situation-filters, #catalog-country-filter) select {
+  width: 320px;
+}
+:is(.admin-library-situation-filters, #catalog-country-filter, .library-filters) select:hover {
+  border-color: var(--green-blue);
+}
+:is(.admin-library-situation-filters, #catalog-country-filter, .library-filters) select:focus-visible {
+  outline: 2px solid var(--green-blue);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--green-blue-soft);
+}
+/* Le sélecteur natif reste disponible sur les navigateurs plus anciens. */
+@supports (appearance: base-select) {
+  :is(.admin-library-situation-filters, #catalog-country-filter, .library-filters) select,
+  :is(.admin-library-situation-filters, #catalog-country-filter, .library-filters) select::picker(select) {
+    appearance: base-select;
+  }
+  :is(.admin-library-situation-filters, #catalog-country-filter, .library-filters) select {
+    background-image: none;
+    padding-right: 14px;
+    align-items: center;
+    gap: 12px;
+  }
+  :is(.admin-library-situation-filters, #catalog-country-filter, .library-filters) select::picker-icon {
+    color: var(--green-blue);
+    transition: rotate .15s ease;
+  }
+  :is(.admin-library-situation-filters, #catalog-country-filter, .library-filters) select:open::picker-icon {
+    rotate: 180deg;
+  }
+  :is(.admin-library-situation-filters, #catalog-country-filter, .library-filters) select::picker(select) {
+    margin-block: 6px;
+    padding: 6px;
+    border: 1px solid #cbdce3;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 12px 30px rgba(39, 58, 100, .14);
+    max-block-size: min(360px, 60dvh);
+    overflow-y: auto;
+    color: var(--royal-blue);
+    font: 500 .9rem/1.4 var(--font);
+  }
+  :is(.admin-library-situation-filters, #catalog-country-filter, .library-filters) option {
+    padding: 10px 12px;
+    border-radius: 8px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+  }
+  :is(.admin-library-situation-filters, #catalog-country-filter, .library-filters) option:checked {
+    background: var(--green-blue-soft);
+    color: var(--green-blue-dark);
+    font-weight: 700;
+  }
+  :is(.admin-library-situation-filters, #catalog-country-filter, .library-filters) option:hover,
+  :is(.admin-library-situation-filters, #catalog-country-filter, .library-filters) option:focus-visible {
+    background: var(--royal-blue-soft);
+    outline: none;
+  }
+}
+@media (max-width: 700px) {
+  .admin-library-situation-filters > label,
+  #catalog-country-filter > label {
+    flex: 1 1 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  :is(.admin-library-situation-filters, #catalog-country-filter) select {
+    width: 100%;
+  }
+}
