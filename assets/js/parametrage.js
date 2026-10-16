@@ -115,6 +115,10 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
   };
   const genderForLocale=locale=>{const row=GENDER_TRANSLATIONS[normalizeLocale(locale)]||GENDER_TRANSLATIONS.fr;return{kind:'gender',q:row[0],opts:row[1].map(label=>({label,n:0}))};};
   // Traduit seulement les modèles standard non personnalisés (pas les contenus legacy).
+  function isAgeCriterion(criterion){
+    const norm=value=>String(value||'').trim().toLowerCase();
+    return norm(criterion?.kind)==='age'||['votre âge','your age'].includes(norm(criterion?.q));
+  }
   function localizeStandardCriteria(items,locale){
     const loc=normalizeLocale(locale);
     if(isLegacyClientCampaign()||!['en','es'].includes(loc))return items;
@@ -125,7 +129,8 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
         c.kind='gender';
         if([genderSource[0],'Vous êtes :'].includes(c.q))c.q=genderTarget[0];
         c.opts=(c.opts||[]).map(option=>{const variants=[['Homme','Un homme'],['Femme','Une femme'],['Non binaire','Non-binaire'],['Autre']];const i=variants.findIndex(row=>row.includes(String(option.label||'').trim()));return i>=0?{...option,label:genderTarget[1][i]}:option;});
-      }else if(c.kind==='age'){
+      }else if(isAgeCriterion(c)){
+        c.kind='age';
         if(ageSource[0]===c.q)c.q=ageTarget[0];
         c.opts=(c.opts||[]).map(option=>{const i=ageSource[1].indexOf(option.label);return i>=0?{...option,label:ageTarget[1][i]}:option;});
       }
@@ -140,7 +145,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
       return {...original,...((Object.hasOwn(original,'multiple')?original.multiple===true:original.multi_select===true||original.multiple_answers===true)?{multiple:true}:{}),q:String(original.q??original.label??original.question??''),opts:(Array.isArray(original.opts)?original.opts:Array.isArray(original.options)?original.options:[]).map(o=>({...o,label:String(o.label??''),n:Number(o.n)||0,subcriteria:rawSubcriteria(o).map(normalizeCriterion)}))};
     }
     return {
-      ...(item?.kind?{kind:String(item.kind)}:{}),
+      ...(isAgeCriterion(item)?{kind:'age'}:item?.kind?{kind:String(item.kind)}:{}),
       ...(item?.source_id!==undefined?{source_id:item.source_id}:{}),
       ...(item?.multiple===true||item?.multi_select===true||item?.multiple_answers===true?{multiple:true}:{}),
       q:String(item?.q||item?.question||''),
@@ -598,6 +603,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
   function normalizeSexismeCriteria(items,locale=socioContextLocale){
     if(isLegacyClientCampaign())return items;
     const loc=normalizeLocale(locale),todos=new Set(translationTodoPaths(loc)),keepCriterion=(c,i)=>!isBlankAutoCriterion(c)||todos.has(`q:${criterionKey(c,i)}`)||[...todos].some(path=>path.startsWith(`o:${criterionKey(c,i)}:`));
+    for(const criterion of items)if(isAgeCriterion(criterion))criterion.kind='age';
     const importedGender=items.find(isGenderCriterion);if(importedGender)importedGender.kind='gender';
     if(!genderRequiredTheme())return items.filter(keepCriterion);
     if(!isLegacyClientCampaign()&&['en','es'].includes(loc)){
@@ -607,10 +613,10 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
       return [genderForLocale(loc),...localized];
     }
     let cleaned=items.filter(keepCriterion);
-    cleaned=cleaned.filter(c=>c.kind==='age'||String(c.q||'').trim()==='Votre âge'||!/(?:âge|\bage\b)/i.test(String(c.q||'')));
+    // Les critères importés conservent leurs textes, bornes, IDs et effectifs.
     let gender=cleaned.find(isGenderCriterion);
     if(!gender){gender=clone(defaultSocio()[0]);cleaned.unshift(gender);}else gender.kind='gender';
-    const age=cleaned.find(c=>c.kind==='age'||String(c.q||'').trim()==='Votre âge');if(age){const existing=Array.isArray(age.opts)?age.opts:[];const count=label=>Number(existing.find(o=>String(o.label||'').trim()===label)?.n)||0;age.kind='age';age.q='Votre âge';age.opts=AGE.opts.map(o=>({label:o.label,n:count(o.label)}));}
+
     cleaned=cleaned.filter(c=>c!==gender);return [gender,...cleaned];
   }
   function show(message){const alert=$('param-alert');alert.hidden=false;alert.textContent=message;alert.scrollIntoView({behavior:'smooth',block:'center'});}
@@ -666,7 +672,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
     const ro=isSocioReadOnly(),structureEditable=!ro&&isSocioReferenceLocale();
     const toolbar=`<div class="socio-tree-toolbar"><div><strong>Données socio-démographiques</strong><span>${isLegacyClientCampaign()?(isAdminLegacySocio()?(isOrange382Project(project)?'Édition Me&YouToo : les réponses ajoutées depuis l’anglais sont créées dans toutes les langues actives. Complétez ensuite leur libellé dans chaque langue. Les autres modifications restent propres à la langue sélectionnée.':'Édition Me&YouToo : les modifications sont enregistrées uniquement dans la langue sélectionnée. Les autres langues restent inchangées.'):'Consultez les questions et réponses de la campagne dans la langue sélectionnée.'):'Repliez les critères et ouvrez uniquement la branche que vous souhaitez modifier.'}</span></div><div class="socio-tree-toolbar-actions"><button type="button" class="button button-ghost button-small" data-socio-collapse-all>Tout replier</button><button type="button" class="button button-secondary button-small" data-socio-expand-all>Tout déplier</button></div></div>`;
     $('socio-list').innerHTML=toolbar+socio.map((criterion,i)=>{
-      const path=String(i),isGender=isGenderCriterion(criterion),isAge=!isAdminLegacySocio()&&(criterion.kind==='age'||String(criterion.q||'').trim()==='Votre âge'),locked=isGender||isAge||ro,isOpen=socioOpenRoots.has(path),stats=criterionStats(criterion),translationMode=Boolean(referenceCriterionFor(criterion,i)),criterionStructureEditable=structureEditable&&!translationMode;
+      const path=String(i),isGender=isGenderCriterion(criterion),isAge=!isAdminLegacySocio()&&isAgeCriterion(criterion),locked=isGender||isAge||ro,isOpen=socioOpenRoots.has(path),stats=criterionStats(criterion),translationMode=Boolean(referenceCriterionFor(criterion,i)),criterionStructureEditable=structureEditable&&!translationMode;
       const optionsHtml=criterion.opts.map((option,j)=>{
         const optionPath=`${path}|${j}`;
         if(locked){
@@ -842,7 +848,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
     const reference=socioReference(),refLoc=normalizeLocale(reference.locale),items=reference.items||[];
     const st=reviewState();
     items.forEach((criterion,index)=>{
-      const kind=criterion.kind==='age'?'age':null;
+      const kind=isAgeCriterion(criterion)?'age':null;
       const matchIndex=kind?null:EXAMPLE_TRANSLATIONS[refLoc]?.findIndex((entry,i)=>{
         const expected=suggestedCriterion(i,refLoc);
         return criterion.q===expected.q&&criterion.opts?.length===expected.opts.length&&criterion.opts.every((o,j)=>o.label===expected.opts[j].label);
@@ -1283,7 +1289,7 @@ function incompleteSocioLocale(items,reference=[]){
     if(requestedLocale!==refLoc)activateLanguage(refLoc);
     ensureAllLocaleSocioVariants();
     const index=key==='age'?-1:Number(key);
-    if(key==='age'&&socio.some(c=>c.kind==='age')){
+    if(key==='age'&&socio.some(isAgeCriterion)){
       if(requestedLocale!==refLoc)activateLanguage(requestedLocale);
       renderSocioContext();renderSocio();return;
     }
