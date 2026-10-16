@@ -59,7 +59,7 @@ function genderAnswerKind(label){
   const groups={
     male:['homme','un homme','man','a man','male','masculin','hombre','un hombre','homem','um homem','masculino','mann','mannlich','uomo','maschio','mannelijk','mężczyzna','mezczyzna','barbat','muž','muz','erkek','мужчина','мъж','男性','남성','رجل','ذكر'],
     female:['femme','une femme','woman','a woman','female','feminin','mujer','una mujer','mulher','uma mulher','feminino','frau','weiblich','donna','femmina','vrouw','vrouwelijk','kobieta','femeie','žena','zena','kadin','женщина','жена','女性','여성','امرأة','انثى'],
-    nonbinary:['non binaire','nonbinaire','non binary','nonbinary','no binario','nao binario','nao binaria','nicht binar','nichtbinar','non binario','niet binair','nie binarny','niebinarna','nebinarny','nebinare','ne binar','nebinarní','небинарный','небинарен','非二元','논바이너리','غير ثنائي'],
+    nonbinary:['non binaire','nonbinaire','non binary','nonbinary','no binario','nao binario','nao binaria','nicht binar','nichtbinar','non binario','persona non binaria','niet binair','nie binarny','niebinarna','nebinarny','nebinare','ne binar','nebinarní','небинарный','небинарен','非二元','논바이너리','غير ثنائي'],
     other:['autre','other','others','otro','otra','outro','outra','altro','altra','andere','anderes','sonstiges','anders','andere identiteit','inne','inny','altul','alta','ine','iny','diğer','diger','другое','друг','その他','其他','其它','기타','اخر','أخرى']
   };
   return Object.keys(groups).find(key=>groups[key].some(value=>genderText(value)===text))||'';
