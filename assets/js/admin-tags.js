@@ -5,6 +5,8 @@
   const norm = v => String(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('fr');
   let tags = [], busy = false, pendingSaves = 0;
   let saveQueue = Promise.resolve();
+  let coverageSituations = [], coverageLoaded = false, coveragePage = 0;
+  const coveragePageSize = 30;
   const dialog = $('#tag-edit-dialog');
   function error(message) { $('#tag-manager-status').textContent = message; }
   function render() {
@@ -30,6 +32,7 @@
       $('#tag-manager-theme').innerHTML = '<option value="">Toutes les thématiques</option>' + [...themes].sort((a,b)=>a[1].localeCompare(b[1],'fr')).map(([id,title]) => `<option value="${esc(id)}">${esc(title)}</option>`).join('');
       if (themes.has(current)) $('#tag-manager-theme').value = current;
       render(); error('');
+      if (coverageLoaded) await loadCoverage();
     } catch (e) { error(e.message); }
   }
   window.StudioTags = { load };
@@ -37,6 +40,62 @@
   $('#tag-manager-theme').addEventListener('change',render);
   $('#tag-manager-duplicates').addEventListener('change',render);
   $('#tag-manager-refresh').onclick = load;
+  function coverageLocations(si) {
+    const theme = $('#tag-coverage-theme').value, placement = $('#tag-coverage-placement').value;
+    return (si.locations || []).filter(l => (!theme || String(l.theme_id) === theme) && (!placement || l.placement === placement));
+  }
+  function coverageState(si) {
+    return si.deleted_at ? 'deleted' : si.archived_at ? 'archived' : si.active === false ? 'inactive' : 'active';
+  }
+  function renderCoverage(resetPage = false) {
+    if (resetPage) coveragePage = 0;
+    const state = $('#tag-coverage-state').value, range = $('#tag-coverage-count').value, query = norm($('#tag-coverage-search').value);
+    const pool = coverageSituations.filter(si => coverageLocations(si).length && (!state || coverageState(si) === state));
+    const countMatch = n => !range || (range === '0-2' ? n <= 2 : range === '0' ? n === 0 : range === '1-2' ? n >= 1 && n <= 2 : range === '3-5' ? n >= 3 && n <= 5 : n >= 6);
+    const rows = pool.filter(si => countMatch(si.tag_count) && (!query || norm([si.id,si.content,...si.admin_tags].join(' ')).includes(query)))
+      .sort((a,b) => a.tag_count-b.tag_count || a.theme_title.localeCompare(b.theme_title,'fr') || String(a.id).localeCompare(String(b.id),'fr',{numeric:true}));
+    const libraries = pool.filter(si => coverageLocations(si).some(l => l.placement === 'library'));
+    $('#tag-coverage-summary').textContent = `${pool.length} situation(s) dans le périmètre : ${pool.filter(si => si.tag_count === 0).length} sans tag, ${pool.filter(si => si.tag_count >= 1 && si.tag_count <= 2).length} avec 1–2 tags. Bibliothèque complémentaire : ${libraries.length} situation(s), dont ${libraries.filter(si => si.tag_count === 0).length} sans tag. ${rows.length} résultat(s) pour les filtres de nombre et de recherche.`;
+    const pages = Math.max(1,Math.ceil(rows.length/coveragePageSize));
+    coveragePage = Math.min(coveragePage,pages-1);
+    $('#tag-coverage-page').textContent = `Page ${coveragePage+1} / ${pages}`;
+    $('#tag-coverage-prev').disabled = coveragePage === 0;
+    $('#tag-coverage-next').disabled = coveragePage >= pages-1;
+    $('#tag-coverage-results').innerHTML = rows.length ? rows.slice(coveragePage*coveragePageSize,(coveragePage+1)*coveragePageSize).map(si => {
+      const params = new URLSearchParams({tab:'library',themeId:String(si.theme_id),chapterId:String(si.chapter_id),situationId:String(si.id)});
+      return `<article class="tag-coverage-card"><div class="tag-coverage-card-head"><strong>Situation #${esc(si.id)}</strong><span class="tag-coverage-count ${si.tag_count === 0?'is-empty':''}">${si.tag_count} tag${si.tag_count>1?'s':''}</span></div><div class="tag-coverage-locations">${coverageLocations(si).map(l => `<span>${esc(l.theme_title)} · ${esc(l.chapter_title)} · <strong>${l.placement==='base'?'Base':'Bibliothèque complémentaire'}</strong></span>`).join('')}</div><p class="tag-coverage-content">${esc(si.content)}</p><div class="tag-coverage-keywords">${si.admin_tags.map(tag => `<span>${esc(tag)}</span>`).join('') || '<em>Aucun tag</em>'}</div><div class="tag-coverage-actions"><button type="button" class="button button-primary" data-coverage-edit="${esc(si.id)}">Modifier les tags</button><a class="button button-secondary" href="admin.html?${esc(params.toString())}" target="_blank" rel="noopener noreferrer">Ouvrir la situation ↗</a></div></article>`;
+    }).join('') : '<p class="admin-library-empty-line">Aucune situation ne correspond à ces filtres.</p>';
+  }
+  async function loadCoverage() {
+    $('#tag-coverage-status').textContent = 'Chargement du bilan des situations…';
+    try {
+      const data = await StudioAPI.request('/api/admin/catalog/tags/coverage');
+      coverageSituations = data.situations || []; coverageLoaded = true;
+      const current = $('#tag-coverage-theme').value;
+      const themes = new Map(coverageSituations.flatMap(si => si.locations.map(l => [String(l.theme_id),l.theme_title])));
+      $('#tag-coverage-theme').innerHTML = '<option value="">Toutes les thématiques</option>' + [...themes].sort((a,b)=>a[1].localeCompare(b[1],'fr')).map(([id,title])=>`<option value="${esc(id)}">${esc(title)}</option>`).join('');
+      if (themes.has(current)) $('#tag-coverage-theme').value = current;
+      renderCoverage(); $('#tag-coverage-status').textContent = '';
+    } catch (err) { $('#tag-coverage-status').textContent = err.message; }
+  }
+  async function setTagView(view) {
+    await saveQueue;
+    const situations = view === 'situations';
+    $('#tag-dictionary-panel').hidden = situations; $('#tag-coverage-panel').hidden = !situations;
+    $('#tag-view-tags').setAttribute('aria-selected',String(!situations)); $('#tag-view-situations').setAttribute('aria-selected',String(situations));
+    if (situations) await loadCoverage();
+  }
+  $('#tag-view-tags').onclick = () => setTagView('tags');
+  $('#tag-view-situations').onclick = () => setTagView('situations');
+  ['#tag-coverage-theme','#tag-coverage-placement','#tag-coverage-count','#tag-coverage-state'].forEach(selector => $(selector).addEventListener('change',()=>renderCoverage(true)));
+  $('#tag-coverage-search').addEventListener('input',()=>renderCoverage(true));
+  $('#tag-coverage-prev').onclick = () => { if (coveragePage > 0) { coveragePage--;renderCoverage(); } };
+  $('#tag-coverage-next').onclick = () => { coveragePage++;renderCoverage(); };
+  $('#tag-coverage-results').onclick = e => {
+    const button = e.target.closest('[data-coverage-edit]'); if (!button) return;
+    const si = coverageSituations.find(si => String(si.id) === button.dataset.coverageEdit);
+    if (si) showUsage(null,{...si,admin_tags:[...si.admin_tags]});
+  };
   function filterLock(locked) {
     ['#tag-manager-search','#tag-manager-theme','#tag-manager-duplicates','#tag-manager-refresh'].forEach(s => $(s).disabled = locked);
   }
@@ -119,9 +178,9 @@
       if (request === usageRequest) {
         editor.querySelector('.tag-usage-chips').innerHTML = usageChips(si);
         editor.querySelector('[data-usage-search]').value = '';
-        status.textContent = `Enregistré${si.admin_tags.includes(usageTag) ? '' : ' · Le tag consulté a été retiré de cette situation.'}`;
+        status.textContent = `Enregistré${usageTag && !si.admin_tags.includes(usageTag) ? ' · Le tag consulté a été retiré de cette situation.' : ''}`;
         const remaining = [...usageSituations.values()].filter(s => (s.admin_tags || []).includes(usageTag)).length;
-        $('#tag-usage-membership').textContent = `${remaining} situation(s) de cette liste portent encore « ${usageTag} ». Les situations restent affichées pour poursuivre vos corrections.`;
+        $('#tag-usage-membership').textContent = usageTag ? `${remaining} situation(s) de cette liste portent encore « ${usageTag} ». Les situations restent affichées pour poursuivre vos corrections.` : `${si.admin_tags.length} tag(s) sur cette situation. Le bilan sera actualisé automatiquement.`;
       }
       document.dispatchEvent(new Event('studio-catalog-tags-changed'));
       await load();
@@ -153,17 +212,17 @@
   });
   $('#tag-usage-close').onclick = () => { usageRequest++; usageDialog.close(); };
   usageDialog.addEventListener('cancel',() => { usageRequest++; });
-  async function showUsage(index) {
+  async function showUsage(index,situation = null) {
     await saveQueue;
     const tag = tags[index];
-    if (!tag || busy) return;
+    if ((!tag && !situation) || busy) return;
     const request = ++usageRequest;
-    usageTag = tag.tag; usageSituations = new Map();
-    $('#tag-usage-title').textContent = `Situations associées à « ${tag.tag} »`;
+    usageTag = situation ? '' : tag.tag; usageSituations = new Map();
+    $('#tag-usage-title').textContent = situation ? `Modifier les tags · Situation #${situation.id}` : `Situations associées à « ${tag.tag} »`;
     $('#tag-usage-list').innerHTML = '<p role="status">Chargement des situations…</p>';
     usageDialog.showModal();
     try {
-      const data = await StudioAPI.request('/api/admin/catalog/tags/situations?tag='+encodeURIComponent(tag.tag));
+      const data = situation ? {situations:[situation]} : await StudioAPI.request('/api/admin/catalog/tags/situations?tag='+encodeURIComponent(tag.tag));
       if (request !== usageRequest) return;
       const situations = data.situations || [];
       usageSituations = new Map(situations.map(si => [String(si.id),si]));
