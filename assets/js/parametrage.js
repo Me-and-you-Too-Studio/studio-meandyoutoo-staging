@@ -51,6 +51,34 @@
   const slugify=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/&/g,' et ').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80);
   function parseDiffusionUrl(value){const raw=String(value||'').trim();if(!raw)return null;try{const url=new URL(raw),base=new URL(DIFFUSION_BASE_URL);if(url.origin!==base.origin)return null;const parts=url.pathname.split('/').filter(Boolean);if(parts.length<2)return null;return{customer:parts[0],slug:parts.slice(1).join('/'),url:raw};}catch(_){return null;}}
   function currentDiffusionUrl(){const raw=String($('diffusion-slug')?.value||'').trim(),slug=slugify(raw);if(!slug)return diffusionExistingUrl&&!diffusionDirty?diffusionExistingUrl:'';if(diffusionExistingUrl&&!diffusionDirty)return diffusionExistingUrl;return `${DIFFUSION_BASE_URL}${encodeURIComponent(diffusionCustomerSlug)}/${encodeURIComponent(slug)}`;}
+  let diffusionSlugError='',diffusionErrorShadow=null;
+  function renderDiffusionSlugError(message='',focus=false){
+    const field=$('diffusion-slug');if(!field)return;
+    const builder=field.closest('.diffusion-url-builder');
+    let hint=$('diffusion-slug-error');
+    if(!hint&&message){
+      hint=document.createElement('p');hint.id='diffusion-slug-error';hint.className='hint';hint.setAttribute('role','alert');
+      hint.style.cssText='margin:8px 0;padding:10px 12px;border-radius:10px;background:#fff2f2;color:#a3212b;font-weight:600;';
+      (builder||field).insertAdjacentElement('afterend',hint);
+    }
+    const previous=diffusionSlugError;diffusionSlugError=String(message||'');
+    field.setCustomValidity(diffusionSlugError);
+    if(hint){hint.textContent=diffusionSlugError;hint.hidden=!diffusionSlugError;}
+    const described=new Set(String(field.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean));
+    if(diffusionSlugError){
+      field.setAttribute('aria-invalid','true');described.add('diffusion-slug-error');
+      if(builder){if(diffusionErrorShadow===null)diffusionErrorShadow=builder.style.boxShadow;builder.style.boxShadow='0 0 0 2px #c63843';}
+    }else{
+      field.removeAttribute('aria-invalid');described.delete('diffusion-slug-error');
+      if(builder&&diffusionErrorShadow!==null){builder.style.boxShadow=diffusionErrorShadow;diffusionErrorShadow=null;}
+      const alert=$('param-alert');if(previous&&alert?.textContent?.includes(previous))alert.hidden=true;
+    }
+    if(described.size)field.setAttribute('aria-describedby',[...described].join(' '));else field.removeAttribute('aria-describedby');
+    if(message&&focus){
+      for(let parent=field.parentElement;parent;parent=parent.parentElement)if(parent.tagName==='DETAILS')parent.open=true;
+      field.focus({preventScroll:true});field.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'center'});
+    }
+  }
   function renderDiffusionAddress(){const input=$('diffusion-slug'),prefix=$('diffusion-url-prefix'),preview=$('diffusion-url-preview'),note=$('diffusion-url-note');if(!input||!prefix||!preview)return;prefix.textContent=`${DIFFUSION_BASE_URL}${diffusionCustomerSlug||'client'}/`;const url=currentDiffusionUrl();preview.textContent=url||'Adresse en attente du slug de campagne.';preview.classList.toggle('is-legacy',Boolean(diffusionExistingUrl&&!diffusionDirty));if(note){if(isLegacyClientCampaign()&&diffusionExistingUrl&&!diffusionDirty)note.textContent=currentUser.role==='admin'?'URL historique reprise telle quelle. Vous pouvez modifier le slug si cette adresse doit être corrigée.':'URL historique reprise telle quelle depuis la campagne existante.';else note.textContent='Le nom du client constitue automatiquement la première partie de l’adresse. Saisissez uniquement le slug souhaité pour cette campagne.';}}
   const iso=d=>{const x=new Date();x.setDate(x.getDate()+d);return x.toISOString().slice(0,10);};
 function genderText(value){return String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();}
@@ -1148,7 +1176,7 @@ function incompleteSocioLocale(items,reference=[]){
     if(!autosaveEnabled||isReadOnly()||!projectId)return true;
     if(autosaveInFlight){autosavePending=true;await autosaveInFlight;if(autosavePending){autosavePending=false;return autosaveNow();}return true;}
     const payload=autosavePayload(),fingerprint=autosaveFingerprint(payload);
-    if(fingerprint===lastSavedFingerprint){autosaveStatus('✓ Enregistré automatiquement','saved');settleAutosaveFields('saved');return true;}
+    if(fingerprint===lastSavedFingerprint){renderDiffusionSlugError();autosaveStatus('✓ Enregistré automatiquement','saved');settleAutosaveFields('saved');return true;}
     autosaveStatus('Enregistrement…','saving');
     autosaveInFlight=(async()=>{
       try{
@@ -1160,16 +1188,17 @@ function incompleteSocioLocale(items,reference=[]){
         lastSavedFingerprint=fingerprint;
         if(lastAutosaveError&&$('param-alert')?.textContent?.includes(lastAutosaveError))$('param-alert').hidden=true;
         lastAutosaveError='';
-        $('diffusion-slug')?.setCustomValidity('');
+        renderDiffusionSlugError();
         autosaveStatus('✓ Enregistré automatiquement','saved');
         settleAutosaveFields('saved');
         return true;
       }catch(error){
         const message=String(error?.message||'').trim();
         lastAutosaveError=message||'Erreur serveur lors de l’enregistrement.';
-        if(error.code==='DIFFUSION_URL_TAKEN'){const field=$('diffusion-slug');field?.setCustomValidity(lastAutosaveError);show(lastAutosaveError);field?.focus();field?.scrollIntoView({behavior:'smooth',block:'center'});}
+        const slugTaken=error.code==='DIFFUSION_URL_TAKEN';
+        if(slugTaken)renderDiffusionSlugError(lastAutosaveError,true);
         autosaveStatus('⚠ Non enregistré : '+(message||'erreur serveur'),'error');settleAutosaveFields('error');
-        const alert=$('param-alert');if(alert){alert.hidden=false;alert.textContent='Modifications non enregistrées : '+lastAutosaveError;}
+        const alert=$('param-alert');if(alert&&!slugTaken){alert.hidden=false;alert.textContent='Modifications non enregistrées : '+lastAutosaveError;}
         return false;
       }finally{autosaveInFlight=null;}
     })();
@@ -1220,6 +1249,7 @@ function incompleteSocioLocale(items,reference=[]){
     return items;
   }
   function focusSetting(item){
+    if(item.id==='diffusion-slug'&&diffusionSlugError){renderDiffusionSlugError(diffusionSlugError,true);return;}
     if(item.prepareSocio){
       storeActiveLanguageContent();const reference=socioReference();
       socioLanguageVariants[normalizeLocale(item.locale)]=fillMissingSocioStructure(socioForLocale(item.locale),reference.items||[]);
@@ -1306,7 +1336,7 @@ function incompleteSocioLocale(items,reference=[]){
   $('add-result-resource').onclick=()=>openResourceModal();
   $('result-preview-toggle').onclick=()=>{const button=$('result-preview-toggle'),body=$('result-resources-preview'),open=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',String(!open));body.hidden=open;button.querySelector('span').textContent=open?'⌄':'⌃';};
   window.StudioParametragePreviewSnapshot=()=>{storeActiveLanguageContent();return {project:{theme:project?.theme_title||'',title:$('respondent-title')?.value.trim()||project?.respondent_title||baseTitle||'Autodiagnostic',intro:$('intro')?.value.trim()||'',socio:socio,result_buttons:resultResources.filter(resourceComplete)},respondent_context:{countryCode:socioContextCountry,locale:socioContextLocale}};};
-  $('diffusion-slug')?.addEventListener('input',event=>{event.currentTarget.setCustomValidity('');if(isReadOnly()||event.currentTarget.readOnly)return;const normalized=slugify(event.currentTarget.value);if(event.currentTarget.value!==normalized)event.currentTarget.value=normalized;diffusionDirty=true;renderDiffusionAddress();updateNextState();scheduleAutosave();});
+  $('diffusion-slug')?.addEventListener('input',event=>{renderDiffusionSlugError();if(isReadOnly()||event.currentTarget.readOnly)return;const normalized=slugify(event.currentTarget.value);if(event.currentTarget.value!==normalized)event.currentTarget.value=normalized;diffusionDirty=true;renderDiffusionAddress();updateNextState();scheduleAutosave();});
   $('nb-respondents').oninput=()=>{if(isReadOnly())return;updateVigilance();renderQuota();scheduleAutosave();};
   $('close-packs').onclick=()=>{const panel=$('inline-packs');panel.hidden=true;const toggle=$('toggle-packs');if(toggle)toggle.textContent='Voir les packs disponibles';};window.addEventListener('studio:pack-requested',loadQuota);bindPackToggle();
   ['campaign-name','respondent-title'].forEach(id=>$(id)?.addEventListener('input',()=>scheduleAutosave()));
@@ -1320,6 +1350,6 @@ function incompleteSocioLocale(items,reference=[]){
     const readiness=settingsReadiness();
     storeActiveLanguageContent();const campaignName=$('campaign-name').value.trim(),respondentTitle=$('respondent-title').value.trim(),primaryLocale=normalizeLocale(project?.selected_locale||(Array.isArray(project?.locales)&&project.locales[0])||'fr'),introductionHtml=reviewPrimaryIntroForSave(primaryLocale,readiness.intro,readiness.intro),launchDate=readiness.launch,closeDate=readiness.close;const rawRespondents=$('nb-respondents').value.trim(),nbRespondents=rawRespondents?Number(rawRespondents):null;
     if(!respondentTitle)return show('Le titre visible est obligatoire.');if(!isLegacyClientCampaign()&&!project?.review_mode&&launchDate<iso(5))return show('La date de lancement doit être au minimum à J+5.');if(closeDate<=launchDate)return show('La date de clôture doit être postérieure à la date de lancement.');if(!socio.length)return show('Au moins une donnée d’analyse doit être présente.');if(invalidSocio())return show('Chaque donnée et chaque sous-critère doivent avoir un intitulé et au moins deux réponses renseignées.');const incompleteResource=resultResources.find(r=>!resourceComplete(r));if(incompleteResource)return show(incompleteResource.type==='legacy_document'?`Le PDF historique « ${incompleteResource.legacyFilename} » doit être rattaché avant de pouvoir être utilisé.`:'Chaque ressource doit avoir un texte et soit une URL valide, soit un fichier PDF.');const resultButtons=resultResources.filter(resourceComplete);
-    try{await api(`/api/projects/${projectId}/settings`,{method:'PATCH',body:JSON.stringify({campaignName,respondentTitle,introductionHtml:isLegacyClientCampaign()?project.introduction_html:introductionHtml,introductionVariants:isLegacyClientCampaign()?project.introduction_variants:activeLanguageVariants(introVariants),launchDate,closeDate,nbRespondents,sociodemo:isAdminLegacySocio()?undefined:(Array.isArray(project?.sociodemo)?project.sociodemo:socio),sociodemoLanguageVariants:isAdminLegacySocio()?undefined:(isLegacyClientCampaign()?project.sociodemo_language_variants:activeLanguageVariants(socioLanguageVariants)),translationReviewState:isLegacyClientCampaign()?project.translation_review_state:reviewState(),communicationShareUrl:readiness.shareUrl||null,resultButtons})});location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;}catch(error){if(error.code==='DIFFUSION_URL_TAKEN'){$('diffusion-slug')?.setCustomValidity(error.message);await showMissingSettings([{id:'diffusion-slug',title:'Adresse de diffusion à modifier',message:error.message}]);}else if(error.code==='SOCIODEMO_TRANSLATIONS_INCOMPLETE'){const missing=incompleteSociodemo();await showMissingSettings(missing.length?missing:[{id:'socio-list',title:'Données d’analyse à compléter',message:error.message}]);}else if(error.code==='INTRODUCTIONS_INCOMPLETE'){const missing=missingSettings().filter(item=>item.id==='intro');await showMissingSettings(missing.length?missing:[{id:'intro',title:'Introductions à personnaliser',message:error.message}]);}else await showMissingSettings([{id:'param-autosave-status',title:'Enregistrement à vérifier',message:error.message||'Impossible d’enregistrer la campagne pour le moment.'}]);}
+    try{await api(`/api/projects/${projectId}/settings`,{method:'PATCH',body:JSON.stringify({campaignName,respondentTitle,introductionHtml:isLegacyClientCampaign()?project.introduction_html:introductionHtml,introductionVariants:isLegacyClientCampaign()?project.introduction_variants:activeLanguageVariants(introVariants),launchDate,closeDate,nbRespondents,sociodemo:isAdminLegacySocio()?undefined:(Array.isArray(project?.sociodemo)?project.sociodemo:socio),sociodemoLanguageVariants:isAdminLegacySocio()?undefined:(isLegacyClientCampaign()?project.sociodemo_language_variants:activeLanguageVariants(socioLanguageVariants)),translationReviewState:isLegacyClientCampaign()?project.translation_review_state:reviewState(),communicationShareUrl:readiness.shareUrl||null,resultButtons})});location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;}catch(error){if(error.code==='DIFFUSION_URL_TAKEN'){renderDiffusionSlugError(error.message,true);}else if(error.code==='SOCIODEMO_TRANSLATIONS_INCOMPLETE'){const missing=incompleteSociodemo();await showMissingSettings(missing.length?missing:[{id:'socio-list',title:'Données d’analyse à compléter',message:error.message}]);}else if(error.code==='INTRODUCTIONS_INCOMPLETE'){const missing=missingSettings().filter(item=>item.id==='intro');await showMissingSettings(missing.length?missing:[{id:'intro',title:'Introductions à personnaliser',message:error.message}]);}else await showMissingSettings([{id:'param-autosave-status',title:'Enregistrement à vérifier',message:error.message||'Impossible d’enregistrer la campagne pour le moment.'}]);}
   });load();
 })();
