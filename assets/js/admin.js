@@ -2694,9 +2694,11 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   }
   function libraryFilteredTranslations(entity,countryCodes=[]){
     const scoped=libraryScopedLocales(entity),country=String(state.libraryCountryFilter||'').toUpperCase();
+    const occurrenceCountries=new Set([...(entity?.country_codes||[]),...countryCodes].map(code=>String(code||'').toUpperCase()).filter(Boolean));
     return libraryTranslationRows(entity).filter(row=>
-      (!country||!row.country_code||String(row.country_code).toUpperCase()===country)&&
-      (!country||scoped===null||scoped.includes(catalogLocale(row.locale))));
+      (!row.country_code||(country?String(row.country_code).toUpperCase()===country:
+        !occurrenceCountries.size||occurrenceCountries.has(String(row.country_code).toUpperCase())))&&
+      (scoped===null||scoped.includes(catalogLocale(row.locale))));
   }
   const catalogLocale=value=>String(value||'').trim().toLowerCase().replaceAll('_','-');
   function libraryScopedLocales(entity){
@@ -2742,8 +2744,8 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       else body=`<label><b>Texte</b><textarea data-translation-field="content" rows="5">${esc(c.content||c.text||c.title||'')}</textarea></label>`;
       return `<details class="admin-library-localization-row ${isVariant?'is-cultural':''}" data-library-translation-row="${row.id}"><summary><strong>${isVariant?'Adaptation culturelle et légale':'Version'} ${locale}${country}</strong><span>${isVariant?'Version spécifique au périmètre':'Traduction ou adaptation'}</span></summary><div class="admin-library-localization-copy">${readonly?body.replaceAll('data-translation-field=','disabled data-translation-field='):body}${readonly?'':`<div class="admin-library-localization-actions"><button type="button" class="button button-primary button-small" data-save-library-translation="${row.id}">Enregistrer cette version</button><p data-library-translation-status role="status"></p></div>`}</div></details>`;
     };
-    const scopeLabel=state.libraryCountryFilter?`Versions pour ${esc(libraryCountryLabel(state.libraryCountryFilter))}`:'Toutes les versions enregistrées';
-    return `<p class="admin-library-localization-empty">${scopeLabel} <span class="admin-info-dot" tabindex="0" data-info="Avec un périmètre sélectionné, seules ses langues sont affichées. Une langue hors périmètre n’est pas une traduction manquante. Choisissez Tous les périmètres pour consulter toutes les versions enregistrées. Le texte principal reste la référence de lecture admin ; une correction n’active pas une langue.">i</span></p>${generic.map(r=>rowHtml(r,false)).join('')}${variants.map(r=>rowHtml(r,true)).join('')}${missing}`;
+    const scopeLabel=state.libraryCountryFilter?`Versions pour ${esc(libraryCountryLabel(state.libraryCountryFilter))}`:libraryScopedLocales(entity)!==null?'Versions du périmètre de ce contenu':'Versions enregistrées';
+    return `<p class="admin-library-localization-empty">${scopeLabel} <span class="admin-info-dot" tabindex="0" data-info="Seules les langues rattachées au périmètre de ce contenu sont affichées. Le filtre pays peut encore réduire cette liste. Tous les périmètres affiche tous les contenus, tout en respectant les langues propres à chacun. Une langue hors périmètre n’est pas une traduction manquante. Le texte principal reste la référence de lecture admin ; une correction n’active pas une langue.">i</span></p>${generic.map(r=>rowHtml(r,false)).join('')}${variants.map(r=>rowHtml(r,true)).join('')}${missing}`;
   }
   function linkedSituationLocaleEditor(si){
     if(!(si?._linked||si?._placement_id))return '';
