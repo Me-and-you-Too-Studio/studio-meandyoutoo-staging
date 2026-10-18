@@ -15449,3 +15449,12 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 [data-admin-panel="accounts"] .admin-access-size-top {display:flex;justify-content:flex-end;margin:0 0 12px;color:#4c6580;font-size:.8rem;}
 [data-admin-panel="accounts"] .admin-access-size-top label {display:flex;align-items:center;gap:8px;}
 [data-admin-panel="accounts"] .admin-access-size-top select {padding:7px 12px;border:1px solid #cfdfec;border-radius:8px;background:#fff;color:#214568;font:inherit;}
+
+/* Explications des indicateurs du cockpit clients. */
+.admin-client-pilot-kpi {position:relative;}
+.admin-client-pilot-kpi:hover,.admin-client-pilot-kpi:focus-within {z-index:10;}
+.admin-client-pilot-kpi .admin-info-dot {position:absolute;top:10px;right:10px;}
+.admin-client-pilot-kpi .admin-info-dot[data-info]::after {left:auto;right:-2px;transform:translateY(6px);}
+.admin-client-pilot-kpi .admin-info-dot[data-info]:hover::after,.admin-client-pilot-kpi .admin-info-dot[data-info]:focus::after {opacity:1;visibility:visible;transform:translateY(0);}
+.admin-client-pilot-kpi .admin-info-dot[data-info]:focus::before {opacity:1;visibility:visible;transform:translate(-50%,0);}
+.admin-client-pilot-kpi .admin-info-dot:focus-visible {outline:2px solid #007f87;outline-offset:3px;}
