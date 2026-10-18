@@ -2260,7 +2260,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     return [...groups.values()].sort((a,b)=>(Number(a.position)||0)-(Number(b.position)||0)||Number(a.id)-Number(b.id));
   }
   const currentSituations=chapter=>canonicalSituations(chapter)
-    .filter(si=>!si.archived_at&&!si.deleted_at)
+    .filter(si=>si.active!==false&&!si.archived_at&&!si.deleted_at&&si.metadata?.permanently_removed_from_catalog!==true&&si.metadata?.permanently_removed_from_catalog!=='true')
     .sort((a,b)=>(Number(Boolean(b.is_default))-Number(Boolean(a.is_default)))||((Number(a.position)||0)-(Number(b.position)||0))||Number(a.id)-Number(b.id));
   const archivedSituations=chapter=>canonicalSituations(chapter).filter(si=>Boolean(si.archived_at)&&!si.deleted_at);
   const deletedSituations=chapter=>canonicalSituations(chapter).filter(si=>Boolean(si.deleted_at));
@@ -2756,7 +2756,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       return `<label class="admin-library-video-select admin-profile-video-select"><span>${esc(locale.toUpperCase())}</span><select data-profile-video-library data-profile-video-locale="${esc(locale)}">${mediaLibraryOptions(current?.video_id||'',{chapter:ch,locale})}</select></label>`;
     }).join('');
     const color=esc(profile.color||'#dce6ec');
-    return `<article class="admin-library-profile-inline-card admin-profile-card-v2">${profile.id?`<button class="button button-ghost button-small" type="button" data-rename-catalog-profile="${profile.id}" data-rename-chapter="${ch.id}">✎ Renommer le profil</button>`:''}<details><summary>
+    return `<article class="admin-library-profile-inline-card admin-profile-card-v2" data-catalog-profile-id="${esc(profile.id||'')}">${profile.id?`<button class="button button-ghost button-small" type="button" data-rename-catalog-profile="${profile.id}" data-rename-chapter="${ch.id}">✎ Renommer le profil</button>`:''}<details><summary>
       <div class="admin-library-profile-summary">
         <span class="admin-library-profile-index">Profil ${index+1}</span>
         <div class="admin-profile-summary-copy">
@@ -2796,7 +2796,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
       <section class="admin-profile-editor-card admin-profile-localization-card">
         <div class="admin-profile-editor-card-head">
           <span class="admin-profile-editor-card-icon">🌐</span>
-          <div><h4>Langues et périmètre culturel</h4><p>Les traductions générales et les variantes propres à un pays restent rattachées à ce même profil.</p></div>
+          <div><h4>Langues du profil</h4><p>Les profils sont traduits par langue et communs à tous les pays.</p></div>
         </div>
         ${libraryLocalizationBadges(profile)}
         <div class="admin-library-localization-list">${libraryLocalizationDetails(profile,'profile')}</div>
@@ -2844,23 +2844,39 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     field.querySelectorAll('[data-remove-target-locale]').forEach(b=>b.onclick=()=>{form._targetLocales=chosen.filter(l=>l!==b.dataset.removeTargetLocale);renderThemeLocaleEditor(form);});
     const select=field.querySelector('[data-add-target-locale]');select.onchange=()=>{if(select.value){form._targetLocales=[...chosen,select.value];renderThemeLocaleEditor(form);}};
   }
+  function catalogCoverageText(value){
+    return String(value||'').replace(/<[^>]*>/g,' ').replace(/&nbsp;|&#160;|&#xA0;/gi,' ').trim();
+  }
+  function catalogProfileComplete(profile,locale){
+    const required=['title','content',...(catalogCoverageText(profile.summary)?['summary']:[])];
+    if(locale==='fr')return required.every(key=>catalogCoverageText(profile[key]));
+    return (profile.translations||[]).some(row=>catalogLocale(row.locale)===locale&&!row.country_code&&row.validation_status==='validated'&&required.every(key=>catalogCoverageText(libraryContentObject(row)[key])));
+  }
   function themeTranslationCoverage(theme){
-    const langs=[...new Set((theme?.available_locales||['fr']).map(x=>String(x).toLowerCase()))];
-    const situations=(theme?.chapters||[]).flatMap(ch=>currentSituations(ch).filter(si=>si.is_default&&!si.archived_at&&!si.deleted_at));
+    const langs=[...new Set((theme?.available_locales||['fr']).map(catalogLocale))];
     return langs.map(locale=>{
+      // Each alternative chapter has its own languages. Profiles have no country dimension.
+      const chapters=(theme?.chapters||[]).filter(ch=>!(ch.available_locales||[]).length||(ch.available_locales||[]).map(catalogLocale).includes(locale));
+      const situations=chapters.flatMap(ch=>currentSituations(ch).filter(si=>si.is_default));
+      const profiles=chapters.flatMap(ch=>ch.profiles||[]);
       const complete=situations.filter(si=>{
-        if(locale==='fr')return Boolean(String(si.content||'').trim())&&(si.answers||[]).every(a=>String(a.content||'').trim());
-        const translation=si.translations||[];
-        const sit=translation.some(t=>String(t.locale||'').toLowerCase()===locale&&String(t.content||t.text||'').trim()&&t.validation_status==='validated');
-        const answers=(si.answers||[]).every(a=>(a.translations||[]).some(t=>String(t.locale||'').toLowerCase()===locale&&String(t.content||t.text||'').trim()&&t.validation_status==='validated'));
-        return sit&&answers;
+        const answers=si.answers||[];
+        if(!answers.length)return false;
+        if(locale==='fr')return Boolean(catalogCoverageText(si.content))&&answers.every(a=>catalogCoverageText(a.content));
+        const translated=entity=>(entity.translations||[]).some(t=>catalogLocale(t.locale)===locale&&catalogCoverageText(libraryContentObject(t).content||libraryContentObject(t).text)&&t.validation_status==='validated');
+        return translated(si)&&answers.every(translated);
       }).length;
-      return {locale,total:situations.length,complete};
+      return {locale,total:situations.length,complete,profileTotal:profiles.length,profileComplete:profiles.filter(p=>catalogProfileComplete(p,locale)).length};
     });
   }
   function themeCoveragePanel(theme){
     const coverage=themeTranslationCoverage(theme);
-    return `<section class="admin-theme-coverage"><div class="admin-theme-coverage-head"><strong>Langues et traductions</strong><span class="hint">Couverture des situations de la Base, réponses comprises · traductions validées uniquement</span></div>${coverage.map(row=>{const percent=row.total?Math.round(100*row.complete/row.total):0;const status=!row.total?'Aucun contenu':row.complete===row.total?'Situations complètes':row.complete?'Incomplète':'À traduire';return `<div class="admin-theme-coverage-row"><div><strong>${esc(studioLocaleLabels[row.locale]||row.locale.toUpperCase())}</strong><small>${row.complete}/${row.total} situations · ${esc(status)}</small></div><div class="admin-theme-coverage-track"><span style="width:${percent}%"></span></div><strong>${percent} %</strong></div>`;}).join('')}<p class="hint">Un taux de 100 % sur les situations ne suffit pas à valider la publication : vérifiez aussi les profils, introductions et autres contenus de la langue. Aucune traduction manquante n’est créée automatiquement.</p></section>`;
+    const metric=(complete,total,label)=>{
+      const percent=total?Math.round(100*complete/total):0;
+      const status=!total?'Aucun contenu':complete===total?'Complet':complete?'Incomplet':'À traduire';
+      return `<div class="admin-theme-coverage-row"><div><strong>${label}</strong><small>${complete}/${total} · ${status}</small></div><div class="admin-theme-coverage-track"><span style="width:${percent}%"></span></div><strong>${percent} %</strong></div>`;
+    };
+    return `<section class="admin-theme-coverage"><div class="admin-theme-coverage-head"><strong>Langues et traductions</strong><span class="admin-info-dot" tabindex="0" data-info="Situations : Base active et réponses. Profils : titre, texte et résumé lorsqu’il existe en français, dans les langues de chaque chapitre, y compris les chapitres alternatifs. Les profils sont communs aux pays. Seules les traductions validées sont comptées. Les introductions et DSD restent à vérifier séparément.">i</span></div>${coverage.map(row=>`<div><strong>${esc(studioLocaleLabels[row.locale]||row.locale.toUpperCase())}</strong>${metric(row.complete,row.total,'Situations de la Base')}${metric(row.profileComplete,row.profileTotal,'Profils · communs aux pays')}</div>`).join('')}<p class="hint">Situations inactives, archivées ou supprimées exclues. Bibliothèque complémentaire hors de ces compteurs. Vérifiez séparément les introductions et DSD. Aucune traduction manquante n’est créée automatiquement.</p></section>`;
   }
   function renderThemeCountryEditor(form){
     const box=$('#library-theme-country-tags'),select=$('#library-theme-country-add');
@@ -3224,7 +3240,7 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
     $$('[data-delete-situation]').forEach(b=>b.onclick=async e=>{e.preventDefault();e.stopPropagation();const si=findSituation(b.dataset.deleteSituation);if(!await StudioModal.confirm({eyebrow:'Catalogue Me&YouToo',title:'Déplacer cette situation dans les supprimées ?',message:`« ${si?.content||'Cette situation'} »\n\nElle ne sera plus proposée dans les nouvelles campagnes et pourra être restaurée depuis le filtre « Supprimées ».`,type:'danger',cancelLabel:'Conserver',confirmLabel:'Déplacer dans les supprimées'}))return;try{await StudioAPI.request('/api/admin/catalog/situations/'+b.dataset.deleteSituation,{method:'DELETE'});await refreshLibrary();renderLibraryAdmin();}catch(error){showError(error.message);}});
     $$('[data-undelete-situation]').forEach(b=>b.onclick=async e=>{e.preventDefault();e.stopPropagation();try{await StudioAPI.request('/api/admin/catalog/situations/'+b.dataset.undeleteSituation+'/undelete',{method:'POST'});await refreshLibrary();renderLibraryAdmin();}catch(error){showError(error.message);}});
     $$('[data-delete-situation-permanent]').forEach(b=>b.onclick=async e=>{e.preventDefault();e.stopPropagation();const si=findSituation(b.dataset.deleteSituationPermanent);if(!await StudioModal.confirm({eyebrow:'Catalogue Me&YouToo',title:'Supprimer définitivement cette situation ?',message:`« ${si?.content||'Cette situation'} »\n\nCette action retire définitivement la situation du Catalogue. Les campagnes clientes existantes restent intactes et leurs références historiques sont conservées si nécessaire.`,type:'danger',cancelLabel:'Conserver',confirmLabel:'Supprimer définitivement'}))return;try{await StudioAPI.request('/api/admin/catalog/situations/'+b.dataset.deleteSituationPermanent+'/permanent',{method:'DELETE'});await refreshLibrary();renderLibraryAdmin();}catch(error){showError(error.message);}});
-    $$('[data-profile-inline-form]').forEach(form=>{bindProfileVideoSync(form);form.querySelector('[data-cancel-inline]').onclick=()=>{const d=form.closest('details');if(d)d.open=false;};form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;const chapterId=form.dataset.profileInlineForm,rows=[...form.querySelectorAll('.admin-library-profile-inline-card')],profiles=rows.map(row=>({title:row.querySelector('[data-profile-title]').value.trim(),content:row.querySelector('[data-profile-content]').value.trim(),summary:row.querySelector('[data-profile-summary]').value.trim(),scoringMin:row.querySelector('[data-profile-min]').value,scoringMax:row.querySelector('[data-profile-max]').value,topScore:row.querySelector('[data-profile-top]').value,color:row.querySelector('[data-profile-color]').value.trim()}));try{await StudioAPI.request('/api/admin/catalog/chapters/'+chapterId+'/profiles',{method:'PUT',body:JSON.stringify({profiles})});await syncChapterProfileVideo(chapterId,form);await refreshLibrary();state.libraryExpandedChapters.add(String(chapterId));renderLibraryAdmin();}catch(error){showError(error.message);}};});
+    $$('[data-profile-inline-form]').forEach(form=>{bindProfileVideoSync(form);form.querySelector('[data-cancel-inline]').onclick=()=>{const d=form.closest('details');if(d)d.open=false;};form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;const chapterId=form.dataset.profileInlineForm,rows=[...form.querySelectorAll('.admin-library-profile-inline-card')],profiles=rows.map(row=>({id:row.dataset.catalogProfileId||undefined,title:row.querySelector('[data-profile-title]').value.trim(),content:row.querySelector('[data-profile-content]').value.trim(),summary:row.querySelector('[data-profile-summary]').value.trim(),scoringMin:row.querySelector('[data-profile-min]').value,scoringMax:row.querySelector('[data-profile-max]').value,topScore:row.querySelector('[data-profile-top]').value,color:row.querySelector('[data-profile-color]').value.trim()}));try{await StudioAPI.request('/api/admin/catalog/chapters/'+chapterId+'/profiles',{method:'PUT',body:JSON.stringify({profiles})});await syncChapterProfileVideo(chapterId,form);await refreshLibrary();state.libraryExpandedChapters.add(String(chapterId));renderLibraryAdmin();}catch(error){showError(error.message);}};});
   }
   function bindProfileVideoSync(form){
     const selects=[...form.querySelectorAll('[data-profile-video-library]')];
