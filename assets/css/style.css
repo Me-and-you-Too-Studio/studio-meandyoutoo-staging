@@ -15411,3 +15411,41 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 
 /* Catalogue admin: complementary library visible before opening a theme. */
 .admin-library-theme-card .admin-library-complement-status{display:flex;align-items:center;gap:8px;align-self:flex-start;margin:0 0 12px;padding:9px 11px;border:1px solid #c5e4df;border-radius:10px;background:#edf8f5;color:#22665c;font-size:13px;line-height:1.45;font-weight:600}.admin-library-theme-card .admin-library-complement-status.is-empty{background:#f6f8fa;border-color:#e1e7ed;color:#637b8d}.admin-library-complement-status .admin-info-dot{flex-shrink:0}.admin-library-complement-status .admin-info-dot[data-info]::after{left:auto;right:-8px;transform:translateY(6px)}.admin-library-complement-status .admin-info-dot[data-info]:hover::after,.admin-library-complement-status .admin-info-dot[data-info]:focus-visible::after{transform:translateY(0)}
+
+/* Comptes et accès : vues distinctes et listes paginées. */
+[data-admin-panel="accounts"] .admin-access-tabs {display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 22px;padding-bottom:16px;border-bottom:1px solid #e0e9f2;}
+[data-admin-panel="accounts"] .admin-access-tabs button {display:flex;align-items:center;gap:10px;padding:12px 18px;border:1px solid #cfdfec;border-radius:12px;background:#fff;color:#214568;font:inherit;font-weight:750;cursor:pointer;}
+[data-admin-panel="accounts"] .admin-access-tabs button.is-active {background:#007e89;border-color:#007e89;color:#fff;}
+[data-admin-panel="accounts"] .admin-access-tabs button span {min-width:24px;padding:2px 7px;border-radius:20px;background:#edf4f8;color:#214568;font-size:.8rem;}
+[data-admin-panel="accounts"] [role="tabpanel"][hidden] {display:none;}
+[data-admin-panel="accounts"] .admin-access-filters {display:grid;grid-template-columns:minmax(220px,1.5fr) repeat(3,minmax(140px,1fr));gap:12px;margin-bottom:18px;padding:16px;background:#f7fafc;border:1px solid #e0e9f2;border-radius:14px;}
+[data-admin-panel="accounts"] .admin-access-filters label {display:grid;align-content:start;gap:6px;min-width:0;color:#385573;font-size:.8rem;font-weight:700;}
+[data-admin-panel="accounts"] .admin-access-filters input,[data-admin-panel="accounts"] .admin-access-filters select {box-sizing:border-box;width:100%;min-width:0;min-height:43px;margin:0;padding:10px 12px;border:1px solid #cfdfec;border-radius:9px;background:#fff;color:#214568;font:inherit;}
+[data-admin-panel="accounts"] .admin-access-admin-filters {grid-template-columns:minmax(220px,2fr) minmax(160px,1fr);}
+[data-admin-panel="accounts"] .admin-access-table-wrap {overflow-x:auto;border:1px solid #e0e9f2;border-radius:14px;}
+[data-admin-panel="accounts"] .admin-access-table {width:100%;border-collapse:collapse;text-align:left;font-size:.82rem;}
+[data-admin-panel="accounts"] .admin-access-table caption {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+[data-admin-panel="accounts"] .admin-access-table th {padding:12px;background:#f1f6fa;color:#48617d;font-size:.74rem;white-space:nowrap;}
+[data-admin-panel="accounts"] .admin-access-table td {padding:13px 12px;border-top:1px solid #e8eff5;vertical-align:top;color:#345371;}
+[data-admin-panel="accounts"] .admin-access-table tbody tr:hover {background:#f8fcfd;}
+[data-admin-panel="accounts"] .admin-access-table strong {color:#193e61;}
+[data-admin-panel="accounts"] .admin-access-email {overflow-wrap:anywhere;}
+[data-admin-panel="accounts"] .admin-access-actions {display:flex;align-items:flex-start;justify-content:flex-end;gap:6px;}
+[data-admin-panel="accounts"] .admin-access-actions button,[data-admin-panel="accounts"] .admin-access-more summary {padding:7px 10px;border:1px solid #d7e5ef;border-radius:8px;background:#f1f7fb;color:#1f4a68;cursor:pointer;font:inherit;font-size:.75rem;font-weight:700;white-space:nowrap;}
+[data-admin-panel="accounts"] .admin-access-more summary {list-style:none;font-size:1rem;line-height:1;}
+[data-admin-panel="accounts"] .admin-access-more summary::-webkit-details-marker {display:none;}
+[data-admin-panel="accounts"] .admin-access-more[open] summary {background:#dfeef3;}
+[data-admin-panel="accounts"] .admin-access-more > div {display:grid;gap:5px;margin-top:6px;}
+[data-admin-panel="accounts"] .admin-access-actions .danger {background:#fff2f3;color:#ad243b;border-color:#f1d8dd;}
+[data-admin-panel="accounts"] .admin-access-pagination {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px;color:#4c6580;font-size:.8rem;}
+[data-admin-panel="accounts"] .admin-access-pagination label,[data-admin-panel="accounts"] .admin-access-pagination > div {display:flex;align-items:center;gap:10px;}
+[data-admin-panel="accounts"] .admin-access-pagination select,[data-admin-panel="accounts"] .admin-access-pagination button {padding:8px 10px;border:1px solid #cfdfec;border-radius:8px;background:#fff;color:#214568;font:inherit;}
+[data-admin-panel="accounts"] .admin-access-pagination button {cursor:pointer;font-weight:700;}
+[data-admin-panel="accounts"] .admin-access-pagination button:disabled {opacity:.45;cursor:default;}
+[data-admin-panel="accounts"] button:focus-visible,[data-admin-panel="accounts"] summary:focus-visible {outline:3px solid #00a6b2;outline-offset:3px;}
+@media(max-width:1200px) {[data-admin-panel="accounts"] .admin-access-filters {grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:650px) {[data-admin-panel="accounts"] .admin-access-filters {grid-template-columns:minmax(0,1fr);}[data-admin-panel="accounts"] .admin-access-table {min-width:680px;}[data-admin-panel="accounts"] .admin-access-tabs button {flex:1;justify-content:center;}[data-admin-panel="accounts"] .admin-access-pagination > div {width:100%;justify-content:space-between;}}
+
+[data-admin-panel="accounts"] .admin-access-size-top {display:flex;justify-content:flex-end;margin:0 0 12px;color:#4c6580;font-size:.8rem;}
+[data-admin-panel="accounts"] .admin-access-size-top label {display:flex;align-items:center;gap:8px;}
+[data-admin-panel="accounts"] .admin-access-size-top select {padding:7px 12px;border:1px solid #cfdfec;border-radius:8px;background:#fff;color:#214568;font:inherit;}
