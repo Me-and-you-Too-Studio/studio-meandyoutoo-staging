@@ -2808,9 +2808,9 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
           <div><h4>Plage de scoring</h4><p>Définissez les seuils qui orientent le répondant vers ce profil.</p></div>
         </div>
         <div class="admin-profile-score-pills">
-          <label><span>Minimum</span><input data-profile-min type="number" step="0.01" value="${profile.scoring_min??''}"></label>
+          <label><span>Minimum</span><input data-profile-min type="number" step="any" value="${profile.scoring_min??''}"></label>
           <span class="admin-profile-score-arrow">→</span>
-          <label><span>Maximum</span><input data-profile-max type="number" step="0.01" value="${profile.scoring_max??''}"></label>
+          <label><span>Maximum</span><input data-profile-max type="number" step="any" value="${profile.scoring_max??''}"></label>
           <label class="admin-profile-top-score"><span>Score plafond</span><input data-profile-top type="number" step="0.01" value="${profile.top_score??''}"></label>
         </div>
       </section>
