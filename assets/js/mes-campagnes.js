@@ -71,7 +71,7 @@
         ready_to_publish: "Prête à publier",
         published: "Publiée",
         scheduled: "Programmée",
-        active: "En cours",
+        active: "En cours de diffusion",
         unpublished: "Dépubliée",
         closed: "Terminée",
         completed: "Terminée",
@@ -383,8 +383,8 @@
     return String(value || "").slice(0, 10);
   }
   function addDays(day, count) {
-    var d = new Date(day + "T12:00:00");
-    d.setDate(d.getDate() + count);
+    var d = new Date(day + "T12:00:00Z");
+    d.setUTCDate(d.getUTCDate() + count);
     return d.toISOString().slice(0, 10);
   }
   function askExtensionDate(p) {
@@ -762,7 +762,7 @@
   }
 
   function cardHtml(p) {
-    var visual = statusVisual(p.status);
+    var visual = statusVisual(statusKey(p));
     var links = linkState(p);
     var themeWarning = hasTheme(p)
       ? ""
@@ -798,7 +798,7 @@
       '<span class="campaign-status-tag ' +
       visual +
       '">' +
-      esc(statusLabel(p.status)) +
+      esc(statusLabel(statusKey(p))) +
       "</span>" +
       (folderById(p.folder_id) ? '<span class="campaign-folder-tag">📁 ' + esc(folderById(p.folder_id).name) + '</span>' : "") +
       extraBadges(p) +
@@ -1108,16 +1108,20 @@
     return p && p.close_date ? new Date(p.close_date) : null;
   }
 
+  function campaignToday() {
+    return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  }
+
   function isStartingSoon(p) {
-    if (p.status !== "scheduled" || !p.launch_date) return false;
-    var now = new Date(), limit = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), d = new Date(p.launch_date);
-    return !Number.isNaN(d.getTime()) && d >= now && d <= limit;
+    if (statusKey(p) !== "scheduled" || !p.launch_date) return false;
+    var today = campaignToday(), start = isoDay(p.launch_date);
+    return start > today && start <= addDays(today, 14);
   }
 
   function isEndingSoon(p) {
-    if (!["scheduled", "published", "active"].includes(p.status) || !p.close_date) return false;
-    var now = new Date(), limit = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), d = new Date(p.close_date);
-    return !Number.isNaN(d.getTime()) && d >= now && d <= limit;
+    if (!["scheduled", "published", "active"].includes(statusKey(p)) || !p.close_date) return false;
+    var today = campaignToday(), end = isoDay(p.close_date);
+    return end >= today && end <= addDays(today, 14);
   }
 
   function hasResults(p) {
@@ -1129,14 +1133,12 @@
     var now = new Date();
     if (activePeriod === "current") {
       if (!p.launch_date) return false;
-      var start = new Date(p.launch_date), end = projectEndDate(p);
-      if (Number.isNaN(start.getTime())) return false;
-      return start <= now && (!end || Number.isNaN(end.getTime()) || end >= now) && isOngoingStatus(p.status);
+      var today = campaignToday(), start = isoDay(p.launch_date), end = isoDay(p.close_date);
+      return start <= today && (!end || end >= today) && isOngoingStatus(statusKey(p));
     }
     if (activePeriod === "upcoming") {
       if (!p.launch_date) return false;
-      var upcoming = new Date(p.launch_date);
-      return Boolean(!Number.isNaN(upcoming.getTime()) && upcoming > now);
+      return isoDay(p.launch_date) > campaignToday();
     }
     if (activePeriod.indexOf("year:") === 0) {
       var year = Number(activePeriod.split(":")[1]);
@@ -1173,8 +1175,8 @@
       "kpi-total-count": projects.length,
       "kpi-draft-count": projects.filter(function (p) { return p.status === "draft"; }).length,
       "kpi-review-count": projects.filter(function (p) { return isReviewStatus(p.status); }).length,
-      "kpi-active-count": projects.filter(function (p) { return isOngoingStatus(p.status); }).length,
-      "kpi-finished-count": projects.filter(function (p) { return isFinishedStatus(p.status); }).length
+      "kpi-active-count": projects.filter(function (p) { return isOngoingStatus(statusKey(p)); }).length,
+      "kpi-finished-count": projects.filter(function (p) { return isFinishedStatus(statusKey(p)); }).length
     };
     Object.keys(values).forEach(function (id) { var el = document.getElementById(id); if (el) el.textContent = values[id]; });
     document.querySelectorAll("[data-kpi-filter]").forEach(function (button) {
@@ -1188,7 +1190,13 @@
   }
 
   function statusKey(p) {
-    return p.status || "unknown";
+    var status = p.status || "unknown";
+    if (!["scheduled", "published", "active"].includes(status)) return status;
+    var today = campaignToday(), start = isoDay(p.launch_date), end = isoDay(p.close_date);
+    if (end && end < today) return "closed";
+    if (start && start > today) return "scheduled";
+    if (start && start <= today) return "active";
+    return status;
   }
 
   function filterLabel(key) {
@@ -1198,7 +1206,7 @@
     if (key === "endingSoon") return "Fin proche";
     if (key === "validation") return "À valider";
     if (key === "review") return "En validation";
-    if (key === "ongoing") return "En cours";
+    if (key === "ongoing") return "En cours de diffusion";
     if (key === "finished") return "Terminées";
     return statusLabel(key);
   }
@@ -1228,8 +1236,8 @@
     if (key === "results") return projects.filter(hasResults).length;
     if (key === "validation") return projects.filter(function (p) { return p.status === "client_validation_required"; }).length;
     if (key === "review") return projects.filter(function (p) { return isReviewStatus(p.status); }).length;
-    if (key === "ongoing") return projects.filter(function (p) { return isOngoingStatus(p.status); }).length;
-    if (key === "finished") return projects.filter(function (p) { return isFinishedStatus(p.status); }).length;
+    if (key === "ongoing") return projects.filter(function (p) { return isOngoingStatus(statusKey(p)); }).length;
+    if (key === "finished") return projects.filter(function (p) { return isFinishedStatus(statusKey(p)); }).length;
     if (key === "startingSoon") return projects.filter(isStartingSoon).length;
     if (key === "endingSoon") return projects.filter(isEndingSoon).length;
     return projects.filter(function (p) {
@@ -1267,8 +1275,8 @@
     if (activeFilter === "validation")
       return p.status === "client_validation_required";
     if (activeFilter === "review") return isReviewStatus(p.status);
-    if (activeFilter === "ongoing") return isOngoingStatus(p.status);
-    if (activeFilter === "finished") return isFinishedStatus(p.status);
+    if (activeFilter === "ongoing") return isOngoingStatus(statusKey(p));
+    if (activeFilter === "finished") return isFinishedStatus(statusKey(p));
     if (activeFilter === "startingSoon") return isStartingSoon(p);
     if (activeFilter === "endingSoon") return isEndingSoon(p);
     return statusKey(p) === activeFilter;
@@ -1281,7 +1289,7 @@
     var filtered = projects.filter(function (p) {
       var countries = projectCountries(p);
       var locales = projectLocales(p);
-      var haystack = [campaignName(p), themeLabel(p), statusLabel(p.status)]
+      var haystack = [campaignName(p), themeLabel(p), statusLabel(statusKey(p))]
         .concat(countries.map(countryLabel))
         .concat(locales.map(function (locale) { return locale + " " + localeLabel(locale); }))
         .join(" ")
