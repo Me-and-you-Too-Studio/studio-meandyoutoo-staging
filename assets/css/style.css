@@ -15516,3 +15516,14 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 [data-admin-panel="situations"] button:disabled {opacity:.5;cursor:default;}
 @media(max-width:1000px) {[data-admin-panel="situations"] .all-situations-filters {grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:650px) {[data-admin-panel="situations"] .all-situations-filters {grid-template-columns:minmax(0,1fr);}[data-admin-panel="situations"] .all-situations-search {grid-column:auto;}[data-admin-panel="situations"] .all-situations-card > header {align-items:flex-start;}[data-admin-panel="situations"] .all-situations-content {font-size:.95rem;}[data-admin-panel="situations"] .all-situations-usage a {margin-left:0;}}
+
+/* Menu de tags intégré : liste existante, recherche et création explicite. */
+[data-admin-panel="situations"] .all-situations-tag-picker {position:relative;flex:1;min-width:0;}
+[data-admin-panel="situations"] [data-all-tag-menu] {position:absolute;top:calc(100% + 6px);left:0;right:0;max-height:300px;overflow-y:auto;z-index:30;padding:7px;border:1px solid #bfd9df;border-radius:12px;background:#fff;box-shadow:0 10px 28px rgba(22,58,80,.17);}
+[data-admin-panel="situations"] [data-all-tag-menu][hidden] {display:none;}
+[data-admin-panel="situations"] .all-situations-card:has([data-all-tag-menu]:not([hidden])) {overflow:visible;position:relative;z-index:5;}
+[data-admin-panel="situations"] [data-all-tag-menu] button {display:block;width:100%;padding:9px 10px;border:0;border-radius:7px;background:#fff;color:#2b5367;text-align:left;white-space:normal;font:inherit;font-size:.84rem;cursor:pointer;}
+[data-admin-panel="situations"] [data-all-tag-menu] button:hover,[data-admin-panel="situations"] [data-all-tag-menu] button:focus-visible {background:#edf7f3;outline:2px solid #007e89;outline-offset:-2px;}
+[data-admin-panel="situations"] [data-all-tag-menu] .all-tag-menu-heading {padding:7px 10px;color:#547282;font-size:.74rem;font-weight:750;border-bottom:1px solid #e5eef2;margin-bottom:5px;}
+[data-admin-panel="situations"] [data-all-tag-menu] p {margin:6px 10px;color:#6a7f8e;font-size:.77rem;line-height:1.5;}
+[data-admin-panel="situations"] [data-all-tag-menu] .all-tag-create {font-weight:750;color:#007e89;border-top:1px solid #d9e9e9;border-radius:0;margin-top:6px;padding-top:12px;}
