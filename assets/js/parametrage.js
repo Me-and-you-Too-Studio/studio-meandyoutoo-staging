@@ -876,8 +876,10 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
         for(let k=0;k<Math.max(children.length,sourceChildren.length);k++)visit(children[k],sourceChildren[k],`${path}.${j}.${k}`);
       }
     };
-    (reference.length?reference:rows).forEach((source,i)=>{
-      const criterion=rows.includes(source)?source:uniqueSocioMatch(source,rows),key=criterionKey(source||criterion,i);visit(criterion,source,key);
+    // Same structural positions as the readiness check: translated text is
+    // not an identity key, and older copies may have no source_id.
+    Array.from({length:Math.max(reference.length,rows.length)}).forEach((_,i)=>{
+      const source=reference[i],criterion=rows[i],key=criterionKey(source||criterion,i);visit(criterion,source,key);
       const targetKey=criterionKey(criterion,i);
       if(targetKey!==key){aliases.set(`q:${targetKey}`,fields.get(`q:${key}`));(criterion?.opts||[]).forEach((option,j)=>aliases.set(`o:${targetKey}:${String(option?.source_id??`i${j}`)}`,aliases.get(`o:${key}:${String(source?.opts?.[j]?.source_id??option?.source_id??`i${j}`)}`)));}
     });
