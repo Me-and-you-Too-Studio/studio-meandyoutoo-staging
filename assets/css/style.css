@@ -15458,3 +15458,10 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .admin-client-pilot-kpi .admin-info-dot[data-info]:hover::after,.admin-client-pilot-kpi .admin-info-dot[data-info]:focus::after {opacity:1;visibility:visible;transform:translateY(0);}
 .admin-client-pilot-kpi .admin-info-dot[data-info]:focus::before {opacity:1;visibility:visible;transform:translate(-50%,0);}
 .admin-client-pilot-kpi .admin-info-dot:focus-visible {outline:2px solid #007f87;outline-offset:3px;}
+
+/* Les indicateurs filtrent la liste ; les points info restent indépendants. */
+.admin-client-pilot-kpi .admin-kpi-filter-trigger {position:absolute;inset:0;z-index:1;width:100%;height:100%;padding:0;border:0;border-radius:inherit;background:transparent;cursor:pointer;}
+.admin-client-pilot-kpi .admin-info-dot {z-index:2;}
+.admin-client-pilot-kpi:has(.admin-kpi-filter-trigger:hover) {box-shadow:0 8px 24px rgba(13,76,114,.13);}
+.admin-client-pilot-kpi.is-filter-selected {outline:2px solid #007e89;outline-offset:2px;}
+.admin-client-pilot-kpi .admin-kpi-filter-trigger:focus-visible {outline:3px solid #007e89;outline-offset:3px;}
