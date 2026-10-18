@@ -918,13 +918,13 @@
       '" data-has-results="' +
       (String(p.communication_results_url || "").trim() ? "true" : "false") +
       '" data-search="' +
-      esc((title + " " + theme + " " + respondent).toLowerCase()) +
+      esc(("#" + p.id + " " + title + " " + theme + " " + respondent).toLowerCase()) +
       '" id="admin-ad-' +
       p.id +
       '"><h3>' +
       esc(title) +
       (p.legacy_source === 'cloned_legacy' || p.legacy_source === 'cloned_studio' ? ' <span class="campaign-topic-tag" title="Copie indépendante de campagne">🧬 Copie</span>' : '') +
-      '</h3><div class="admin-ad-meta">Base catalogue : <strong>' +
+      '</h3><div class="admin-ad-meta">Projet Studio : <strong>#' + esc(p.id) + '</strong> <span class="info-dot" title="Identifiant unique de cette campagne dans le Studio. Une copie reçoit un nouveau numéro.">i</span></div><div class="admin-ad-meta">Base catalogue : <strong>' +
       esc(catalogBase) +
       '</strong></div>' + (p.legacy_history && p.legacy_theme_title ? '<div class="admin-ad-meta">Thématique historique : <strong>' + esc(p.legacy_theme_title) + '</strong></div>' : '') + '<div class="admin-ad-meta">Titre répondants : <strong>' +
       esc(respondent) +
@@ -1192,7 +1192,7 @@
             "</strong></button>",
         )
         .join("") +
-      '<label class="admin-ad-search">🔎 <input id="client-ad-search" type="search" placeholder="Rechercher un AD, une thématique…"></label>';
+      '<label class="admin-ad-search">🔎 <input id="client-ad-search" type="search" placeholder="Rechercher un AD, un n° de projet, une thématique…"></label>';
     $("#client-ad-filters").insertAdjacentHTML(
       "beforeend",
       '<label class="admin-ad-sort">Trier par <select id="client-ad-sort"><option value="updated-desc">Dernière modification</option><option value="name-asc">Nom A–Z</option><option value="launch-asc">Lancement le plus proche</option><option value="close-asc">Clôture la plus proche</option></select></label>',
