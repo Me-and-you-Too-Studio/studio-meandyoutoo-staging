@@ -844,7 +844,7 @@
           id +
           '">⏹ Dépublier</button>',
       );
-    if (p.legacy_history === true && st !== "draft")
+    if ((p.legacy_history === true || p.legacy_source === "cloned_legacy") && st !== "draft")
       more.push(
         '<button type="button" data-mark-draft="' +
           id +
@@ -1758,14 +1758,14 @@
           const p = projects.get(String(b.dataset.markDraft));
           if (!p) return;
           const ok = await StudioModal.confirm({
-            eyebrow: "Campagne historique importée",
+            eyebrow: "Administration de la campagne",
             type: "warning",
             title:
               "Remettre « " +
               (p.campaign_name || p.title || "cette campagne") +
               " » en brouillon ?",
             message:
-              "Le contenu, les langues, les dates et les données historiques seront conservés. Seul le statut passera en brouillon.",
+              "La campagne ne sera plus publiée. Le contenu, les langues, les dates et les liens seront conservés. Elle redeviendra un brouillon, que vous pourrez modifier ou supprimer.",
             cancelLabel: "Annuler",
             confirmLabel: "Remettre en brouillon",
           });
