@@ -1410,6 +1410,20 @@
       showError(e.message);
     }
   }
+  function validateCampaignUrls(shareInput,resultsInput,requireBoth=true){
+    const fields=[[shareInput,'L’URL de la campagne'],[resultsInput,'L’URL analytics / statistiques']];
+    const required=requireBoth||fields.some(([input])=>input.value.trim());
+    for(const [input,label] of fields){
+      input.required=required;input.setCustomValidity('');
+      const value=input.value.trim();
+      if(required&&!value)input.setCustomValidity(label+' est obligatoire. Renseignez les deux URL.');
+      else if(value){try{const url=new URL(value);if(url.protocol!=='https:'||!url.hostname)throw new Error('url');}catch{input.setCustomValidity(label+' doit être une URL HTTPS valide.');}}
+      input.oninput=()=>input.setCustomValidity('');
+    }
+    const invalid=fields.find(([input])=>!input.checkValidity());
+    if(invalid){invalid[0].reportValidity();invalid[0].focus();return false;}
+    return true;
+  }
   async function openPublish(id) {
     const p = projects.get(String(id));
     if (!p) return;
@@ -1435,6 +1449,7 @@
   }
   async function publish() {
     const form = $("#publish-form");
+    if(!validateCampaignUrls($("#publish-share"),$("#publish-results")))return;
     if (!form.reportValidity()) return;
     const id = $("#publish-project-id").value;
     try {
@@ -1572,6 +1587,7 @@
       '<label class="field"><span>URL de la campagne</span><input id="admin-management-share-url" type="url" value="' + esc(p.communication_share_url || "") + '" placeholder="https://…"></label>' +
       '<label class="field"><span>URL analytics / statistiques</span><input id="admin-management-results-url" type="url" value="' + esc(p.communication_results_url || "") + '" placeholder="https://stats.meandyoutoo.app/…"></label>' +
       '</div>' +
+      '<p class="hint">Les URL de la campagne et des statistiques doivent être renseignées ensemble, en HTTPS. Elles sont toutes deux obligatoires pour publier.</p>' +
       '<div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" id="admin-management-save" type="button">Enregistrer</button></div></form>';
     document.body.append(dialog);
     const legacyScopeRoot=dialog.querySelector("#admin-management-legacy-scopes");
@@ -1610,6 +1626,7 @@
         showError("La date de fin doit être postérieure à la date de début");
         return;
       }
+      if(!validateCampaignUrls(dialog.querySelector("#admin-management-share-url"),dialog.querySelector("#admin-management-results-url"),['scheduled','published','active'].includes(p.status)))return;
       const emailInput = dialog.querySelector("#admin-management-commanditaire-email");
       if (emailInput.value && !emailInput.checkValidity()) {
         emailInput.reportValidity();
