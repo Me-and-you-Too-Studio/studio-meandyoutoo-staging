@@ -481,7 +481,7 @@
     var banner=document.createElement('div');banner.className='studio-client-preview-banner';banner.setAttribute('role','region');banner.setAttribute('aria-label','Vue client en consultation');
     banner.style.cssText='position:sticky;top:0;z-index:10050;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 20px;background:#124b61;color:white;font:600 15px Asap,Arial,sans-serif;box-shadow:0 2px 8px #0002';
     var text=document.createElement('span');text.style.flex='1';text.textContent='Vous consultez l’espace de '+(CLIENT_PREVIEW.user.organizationName||'ce client')+' — Vue client · Consultation seule';
-    var account=document.createElement('small');account.textContent='Accès : '+(CLIENT_PREVIEW.user.email||'');
+    var account=document.createElement('small');account.textContent=CLIENT_PREVIEW.previewMode==='standard'?'Droits standards du responsable client · Aucun compte associé':'Accès : '+(CLIENT_PREVIEW.user.email||'');
     var back=document.createElement('button');back.type='button';back.className='button button-secondary';back.textContent='Retour au dossier admin';back.onclick=function(){StudioAPI.endClientPreview();};
     banner.append(text,account,back);document.body.prepend(banner);
     var previewStyle=document.createElement('style');previewStyle.textContent='body.studio-client-preview .sidebar{top:calc(var(--client-preview-height,64px) + 16px);height:calc(100dvh - var(--client-preview-height,64px) - 32px)}';document.head.append(previewStyle);
