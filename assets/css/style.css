@@ -15581,3 +15581,31 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
   white-space:normal;
   overflow-wrap:anywhere;
 }
+
+/* État vide des accès sur Mon compte. */
+.account-access-empty {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  margin:24px;
+  padding:24px;
+  border:1px dashed #cbdfe5;
+  border-radius:16px;
+  background:#f7fbfc;
+  color:#234c66;
+}
+.account-access-empty-icon {
+  display:grid;
+  place-items:center;
+  flex:0 0 52px;
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  background:#e5f3f4;
+  color:#007f87;
+}
+.account-access-empty strong {display:block;font-size:1rem;line-height:1.45;}
+.account-access-empty p {margin:6px 0 0;color:#586e86;line-height:1.5;}
+@media(max-width:600px){
+  .account-access-empty {margin:16px;padding:20px;align-items:flex-start;flex-direction:column;}
+}
