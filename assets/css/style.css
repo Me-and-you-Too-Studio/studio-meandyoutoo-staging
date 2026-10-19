@@ -15543,3 +15543,41 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .studio-info-modal-trigger:focus-visible{outline:2px solid #007f87;outline-offset:3px}
 .studio-info-modal-trigger[data-info]::before,.studio-info-modal-trigger[data-info]::after{display:none}
 .studio-info-modal-help .field-help-content{display:none}
+
+/* Création de campagne depuis le dossier client : contenu ajusté à la modale. */
+#client-campaign-create-dialog {
+  width:min(680px,calc(100vw - 32px));
+  max-width:calc(100vw - 32px);
+  max-height:calc(100dvh - 32px);
+}
+#client-campaign-create-dialog form,
+#client-campaign-create-dialog .field {
+  min-width:0;
+  max-width:100%;
+}
+#client-campaign-create-dialog select,
+#client-campaign-create-dialog input {
+  width:100%;
+  min-width:0;
+  max-width:100%;
+}
+#client-campaign-create-dialog .admin-library-note {
+  flex-direction:column;
+  gap:8px;
+}
+#client-campaign-create-dialog .admin-library-note strong {
+  white-space:normal;
+}
+#client-campaign-create-dialog p,
+#client-campaign-create-dialog .admin-library-note {
+  overflow-wrap:anywhere;
+}
+#client-campaign-create-dialog .top-actions {
+  flex-wrap:wrap;
+}
+#client-campaign-create-dialog .top-actions .button {
+  min-width:0;
+  max-width:100%;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
