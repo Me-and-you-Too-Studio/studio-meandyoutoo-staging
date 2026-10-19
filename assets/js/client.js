@@ -50,6 +50,7 @@
     users = new Map(),
     projects = new Map(),
     catalogThemes = [],
+    clientCampaignDialogOpen = false,
     folders = [],
     activeFolder = "all",
     activeTheme = "all",
@@ -1254,6 +1255,53 @@
       c.hidden = !(folderOk && themeOk && ok && (!q || c.dataset.search.includes(q)));
     });
   }
+  async function openClientCampaignCreation(){
+    if(!organization?.id||clientCampaignDialogOpen)return;
+    if(organization.active===false){
+      await StudioModal.alert({title:'Compte client archivé',message:'Réactivez ce compte avant de créer une campagne.',type:'info'});return;
+    }
+    const targetId=String(organization.id),targetName=organization.name||'ce client';
+    const available=catalogThemes.filter(theme=>theme.active===true&&theme.slug).slice().sort((a,b)=>String(a.title||a.slug).localeCompare(String(b.title||b.slug),'fr',{sensitivity:'base'}));
+    clientCampaignDialogOpen=true;
+    const dialog=document.createElement('dialog');dialog.id='client-campaign-create-dialog';dialog.className='admin-dialog campaign-rename-dialog';
+    dialog.setAttribute('aria-labelledby','client-campaign-create-title');
+    dialog.innerHTML=`<form><button type="button" class="admin-dialog-close" data-create-close aria-label="Fermer">×</button><p class="eyebrow">Administration Me&amp;YouToo</p><h2 id="client-campaign-create-title">Créer une campagne</h2><p>Client : <strong>${esc(targetName)}</strong></p><label class="field"><span>Thématique du catalogue</span><select data-create-theme required ${available.length?'':'disabled'}><option value="">Choisir une thématique</option>${available.map(theme=>`<option value="${esc(theme.slug)}">${esc(theme.title||theme.slug)}</option>`).join('')}</select></label><label class="field"><span>Nom de la campagne</span><input data-create-name required minlength="2" maxlength="200" autocomplete="off" placeholder="Nom de la campagne pour ce client"></label><div class="admin-library-note"><strong>Un nouveau brouillon pour ${esc(targetName)} <span class="admin-info-dot" tabindex="0" data-info="La campagne sera attribuée à ce client. Elle aura ses propres identifiants et ses copies des contenus, réponses, scores et profils. Les crédits du compte ne sont pas consommés à la création.">i</span></strong><span>Choisissez ensuite les chapitres proposés, les périmètres et les langues disponibles dans le catalogue. Vous pourrez personnaliser la campagne avant transmission.</span></div><p data-create-error role="alert" class="composer-alert" ${available.length?'hidden':''}>${available.length?'':'Aucune thématique active disponible dans le catalogue.'}</p><div class="top-actions"><button type="button" class="button button-secondary" data-create-close>Annuler</button><button type="submit" class="button button-primary" data-create-confirm ${available.length?'':'disabled'}>Choisir les périmètres et langues →</button></div></form>`;
+    document.body.appendChild(dialog);
+    const form=dialog.querySelector('form'),select=dialog.querySelector('[data-create-theme]'),name=dialog.querySelector('[data-create-name]'),confirm=dialog.querySelector('[data-create-confirm]'),errorBox=dialog.querySelector('[data-create-error]'),closeButtons=[...dialog.querySelectorAll('[data-create-close]')];
+    let busy=false,created=null,suggestedName='';
+    const close=()=>{if(busy)return;dialog.close();dialog.remove();clientCampaignDialogOpen=false;};
+    closeButtons.forEach(button=>button.onclick=close);
+    dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
+    dialog.addEventListener('click',event=>{if(event.target===dialog)close();});
+    select.onchange=()=>{
+      const chosen=available.find(theme=>theme.slug===select.value);
+      if(chosen&&(!name.value.trim()||name.value===suggestedName)){suggestedName=((chosen.title||chosen.slug)+' — '+targetName).slice(0,200);name.value=suggestedName;}
+      errorBox.hidden=true;
+    };
+    form.onsubmit=async event=>{
+      event.preventDefault();if(busy||created||!form.reportValidity())return;
+      const chosen=available.find(theme=>theme.slug===select.value),campaignName=name.value.trim();
+      if(!chosen||campaignName.length<2||campaignName.length>200)return;
+      busy=true;confirm.disabled=true;select.disabled=true;name.disabled=true;closeButtons.forEach(button=>button.disabled=true);errorBox.hidden=true;
+      try{
+        confirm.textContent='Chargement des périmètres…';
+        const options=await StudioAPI.request('/api/catalog/themes/'+encodeURIComponent(chosen.slug)+'/variants');
+        if(!Array.isArray(options.variants)||!options.variants.length)throw new Error('Aucun périmètre disponible pour cette thématique. Vérifiez sa configuration dans le catalogue.');
+        if(!window.StudioCatalogSelection?.choose)throw new Error('Le sélecteur de périmètres est indisponible. Rechargez la page.');
+        const selection=await window.StudioCatalogSelection.choose(options,Boolean(options.theme?.culturalLegalScope));
+        if(!selection)return;
+        confirm.textContent='Création de la campagne…';
+        const result=await StudioAPI.request('/api/projects/from-template',{method:'POST',body:JSON.stringify({themeSlug:chosen.slug,title:campaignName,organizationId:targetId,startMode:'new',creationIntent:'confirmed-theme-selection',culturalScope:selection.culturalScope||'',countryCode:selection.countryCode||'',locale:selection.locale||'',countryCodes:selection.countryCodes||[],locales:selection.locales||[],localesByCountry:selection.localesByCountry||{},choiceSelections:selection.choiceSelections||{}})});
+        if(result?.project?.id)created=result.project;
+        if(!created||String(created.organization_id)!==targetId)throw new Error('La création n’a pas retourné un brouillon pour le client attendu. Actualisez le dossier avant de réessayer.');
+        busy=false;close();
+        location.href='composer.html?theme='+encodeURIComponent(chosen.slug)+'&projectId='+encodeURIComponent(created.id);
+      }catch(error){errorBox.textContent=error.message||'Impossible de créer cette campagne.';errorBox.hidden=false;}
+      finally{busy=false;if(dialog.isConnected){confirm.disabled=Boolean(created)||!available.length;confirm.textContent='Choisir les périmètres et langues →';select.disabled=Boolean(created)||!available.length;name.disabled=Boolean(created);closeButtons.forEach(button=>button.disabled=false);}}
+    };
+    dialog.showModal();select.focus();
+  }
+
   async function openClientCampaignCopy(project){
     if(!project)return;
     document.getElementById('client-campaign-copy-dialog')?.remove();
@@ -1805,6 +1853,7 @@
   }
 
   function bind() {
+    const createCampaign=$('#create-client-campaign');if(createCampaign){createCampaign.disabled=!organization?.id;createCampaign.onclick=openClientCampaignCreation;}
     $('#admin-theme-filter')?.addEventListener('change', (event) => { activeTheme = event.target.value; applyFilter(); });
     $$('[data-admin-folder-filter]').forEach((btn) => btn.onclick = () => { activeFolder = btn.dataset.adminFolderFilter; render(); });
     $('[data-admin-folder-create]')?.addEventListener('click', async () => { const name = await askFolderValue("Nouveau dossier"); if (!name) return; await StudioAPI.request('/api/campaign-folders', { method: 'POST', body: JSON.stringify({ organizationId: organization.id, name }) }); await load(); });

@@ -241,6 +241,8 @@
       var sharedScope=options.theme&&options.theme.content_scope_policy;
       var groups=options.choiceGroups||{};
       var dialog=document.createElement('dialog');dialog.className='studio-modal version-picker-dialog';
+      var settled=false;
+      function finish(value){if(settled)return;settled=true;resolve(value);dialog.close();}
       var groupKeys=Object.keys(groups);
       var defaults={};
       groupKeys.forEach(function(g){var d=(groups[g]||[]).find(function(c){return c.isDefaultChoice;})||(groups[g]||[])[0];if(d)defaults[g]=String(d.id);});
@@ -347,7 +349,7 @@
       }
       dialog.querySelectorAll('[data-choice-groups] input[type=radio]').forEach(function(i){i.onchange=renderCountries;});
       renderCountries();
-      dialog.querySelector('[data-cancel]').onclick=function(){dialog.close();resolve(null);};
+      dialog.querySelector('[data-cancel]').onclick=function(){finish(null);};
       dialog.querySelector('[data-confirm]').onclick=function(){
         var countries=[].slice.call(countriesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
         var localesByCountry={};
@@ -357,11 +359,13 @@
         if(!countries.length||!locales.length||uncovered.length){updateConfirmState();return;}
         var choiceSelections={};groupKeys.forEach(function(g,gi){var r=dialog.querySelector('input[name="choice-'+gi+'"]:checked');if(r)choiceSelections[g]=Number(r.value);});
         var firstCountry=countries[0],firstLocales=localesByCountry[firstCountry]||[];
-        dialog.close();resolve({culturalScope:'country',countryCode:firstCountry,locale:firstLocales[0]||locales[0],countryCodes:countries,locales:locales,localesByCountry:localesByCountry,choiceSelections:choiceSelections});
+        finish({culturalScope:'country',countryCode:firstCountry,locale:firstLocales[0]||locales[0],countryCodes:countries,locales:locales,localesByCountry:localesByCountry,choiceSelections:choiceSelections});
       };
-      dialog.addEventListener('close',function(){setTimeout(function(){dialog.remove();},0);},{once:true});dialog.showModal();
+      dialog.addEventListener('close',function(){if(!settled){settled=true;resolve(null);}setTimeout(function(){dialog.remove();},0);},{once:true});dialog.showModal();
     });
   }
+
+  window.StudioCatalogSelection={choose:chooseCatalogVariant};
 
   // La création d'un brouillon est réservée au CTA principal de la page.
   // La liste des chapitres reste une consultation sans effet en base.
