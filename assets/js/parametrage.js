@@ -101,8 +101,8 @@ function isGenderCriterion(criterion){
 function optionalGenderAnswer(option){return ['nonbinary','other'].includes(genderAnswerKind(option?.label));}
 function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].includes(String(slug||'').toLowerCase().replace(/--copie--[a-f0-9]{12}$/, ''));}
 
-  const optionalMinorityTheme=()=>['collegue-inclusif','lgbt'].includes(String(project?.theme_slug||theme||'').toLowerCase().replace(/--copie--[a-f0-9]{12}$/, ''))&&!isLegacyClientCampaign();
-  const genderRequiredTheme=()=>requiredGenderTheme(theme);
+  const optionalMinorityTheme=()=>['collegue-inclusif','collaborateur','collaborateur-inclusif','management','manager-inclusif','management-inclusif','lgbt'].includes(String(project?.theme_slug||theme||'').toLowerCase().replace(/--copie--[a-f0-9]{12}$/, ''))&&!isLegacyClientCampaign();
+  const genderRequiredTheme=()=>requiredGenderTheme(project?.theme_slug||theme);
   const defaultSocio=()=>genderRequiredTheme()?[{kind:'gender',q:'Quel est votre genre ?',opts:[{label:'Homme',n:0},{label:'Femme',n:0},{label:'Non binaire',n:0},{label:'Autre',n:0}]}]:[];
   const normalizeLocale=value=>String(value||'fr').trim().toLowerCase().replaceAll('_','-')||'fr';
   const AGE_TRANSLATIONS={
