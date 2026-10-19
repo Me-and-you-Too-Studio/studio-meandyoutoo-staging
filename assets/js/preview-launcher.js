@@ -74,8 +74,8 @@
     bubble.className='campaign-settings-info-bubble';
     bubble.setAttribute('role','tooltip');
     bubble.innerHTML=isAdmin
-      ?'<strong>Paramétrage de la campagne</strong><span>Retrouvez ici l’introduction, les questions socio-démographiques (DSD), les dates de campagne, les ressources après résultats et les autres réglages de diffusion.</span>'
-      :'<strong>Paramétrage de la campagne</strong><span>Vous pouvez consulter l’introduction, les DSD, les dates de campagne, les ressources après résultats et les autres réglages. Si une modification est nécessaire, utilisez « Demander un ajustement » : vous ne modifiez pas directement ces éléments.</span>';
+      ?'<strong>Paramétrage de la campagne</strong><span>Retrouvez ici l’introduction, les données d’analyse, les dates de campagne, les ressources après résultats et les autres réglages de diffusion.</span>'
+      :'<strong>Paramétrage de la campagne</strong><span>Avant transmission, vous pouvez modifier directement l’introduction, les données d’analyse, les dates de campagne, les ressources après les résultats et les autres réglages. Après transmission, ces éléments sont en lecture seule : utilisez « Demander un ajustement » pour demander une modification.</span>';
     info.append(dot,bubble);
     wrap.append(a,info);
     return wrap;
