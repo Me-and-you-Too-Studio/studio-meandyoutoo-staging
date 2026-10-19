@@ -15537,3 +15537,9 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 #client-campaign-copy-dialog .client-copy-results [aria-selected=true]{font-weight:700}
 #client-campaign-copy-dialog [data-copy-selection]{display:block;margin-top:7px;color:#52677d;font-size:.82rem}
 #client-campaign-copy-dialog .client-copy-empty{margin:0;padding:12px 14px;color:#52677d}
+
+/* Clickable help uses the shared Studio information dialog. */
+.studio-info-modal-trigger{cursor:pointer}
+.studio-info-modal-trigger:focus-visible{outline:2px solid #007f87;outline-offset:3px}
+.studio-info-modal-trigger[data-info]::before,.studio-info-modal-trigger[data-info]::after{display:none}
+.studio-info-modal-help .field-help-content{display:none}

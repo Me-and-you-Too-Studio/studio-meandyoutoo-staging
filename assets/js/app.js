@@ -143,6 +143,55 @@
 
   setupSharedModal();
 
+  function setupInfoModals(){
+    var selector='.admin-info-dot[data-info],.admin-info-dot[title],.field-help-button';
+    function prepare(control){
+      var help=control.matches('.field-help-button')?control.closest('.field-help'):null;
+      var content=help&&help.querySelector('.field-help-content');
+      var message=String(control.getAttribute('data-info')||control.getAttribute('title')||(content&&content.textContent)||'').trim();
+      if(!message)return;
+      control.setAttribute('data-info',message);
+      control.removeAttribute('title');
+      control.classList.add('studio-info-modal-trigger');
+      if(help)help.classList.add('studio-info-modal-help');
+      if(control.tagName!=='BUTTON'){
+        control.setAttribute('role','button');
+        control.setAttribute('tabindex','0');
+      }
+      control.setAttribute('aria-haspopup','dialog');
+      if(!control.getAttribute('aria-label'))control.setAttribute('aria-label','Afficher les informations');
+    }
+    function prepareTree(root){
+      if(root.matches&&root.matches(selector))prepare(root);
+      if(root.querySelectorAll)root.querySelectorAll(selector).forEach(prepare);
+    }
+    function activate(event){
+      var control=event.target.closest&&event.target.closest(selector);
+      if(!control)return;
+      // Native buttons already produce a click on Enter/Space.
+      if(event.type==='keydown'&&(control.tagName==='BUTTON'||!['Enter',' '].includes(event.key)||event.repeat))return;
+      prepare(control);
+      var message=control.getAttribute('data-info');
+      if(!message)return;
+      event.preventDefault();event.stopPropagation();
+      window.StudioModal.alert({title:control.getAttribute('data-info-title')||'Information',message:message,type:'info',confirmLabel:'Fermer'});
+    }
+    prepareTree(document);
+    document.addEventListener('click',activate,true);
+    document.addEventListener('keydown',activate,true);
+    // Catalogue cards and project dialogs are rendered after app.js has loaded.
+    var observer=new MutationObserver(function(records){
+      records.forEach(function(record){
+        if(record.type==='attributes'){
+          var control=record.target;
+          if(control.matches(selector)&&(!control.classList.contains('studio-info-modal-trigger')||control.hasAttribute('title')))prepare(control);
+        }else record.addedNodes.forEach(prepareTree);
+      });
+    });
+    observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['title','data-info']});
+  }
+  setupInfoModals();
+
   var NAV_MAIN = [
     { href: 'accueil.html', label: 'Accueil', icon: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/>' },
     { href: 'mes-campagnes.html', label: 'Mes campagnes', icon: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/>' },
