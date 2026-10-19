@@ -1353,7 +1353,7 @@
     try {
       var me = await window.StudioAPI.request("/api/me");
       currentUser = me.user || currentUser;
-      localStorage.setItem("studio_user", JSON.stringify(currentUser));
+      if(!window.StudioAPI.clientPreview?.())localStorage.setItem("studio_user", JSON.stringify(currentUser));
       var newCampaign = document.querySelector(
         'a[href="bibliotheque.html"].button-primary',
       );

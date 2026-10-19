@@ -1,6 +1,6 @@
 (function(){
   var user=null;
-  try{user=JSON.parse(localStorage.getItem('studio_user')||'null');}catch(e){}
+  try{user=window.StudioAPI?StudioAPI.user():JSON.parse(localStorage.getItem('studio_user')||'null');}catch(e){}
   var isAdmin=Boolean(user&&user.role==='admin');
   var audience=new URLSearchParams(location.search).get('audience');
   var adminView=isAdmin&&audience!=='client';

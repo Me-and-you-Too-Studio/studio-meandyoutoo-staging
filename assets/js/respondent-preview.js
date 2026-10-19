@@ -13,7 +13,7 @@ function apiBase(){
 async function api(u){
   if(window.StudioAPI&&typeof window.StudioAPI.request==='function')return window.StudioAPI.request(u);
   const base=apiBase();
-  const token=localStorage.getItem('studio_token')||'';
+  const token=window.StudioAPI?.token?.()||'';
   const headers=token?{Authorization:'Bearer '+token}:{};
   let r=await fetch(base+u,{headers});
   let data=await r.json().catch(()=>({}));
@@ -376,7 +376,7 @@ function colleaguesHtml(chapter,result,chapterIndex){
 async function downloadResourceDocument(documentId,filename){
   try{
     const base=typeof window.StudioAPI?.base==='function'?window.StudioAPI.base():apiBase();
-    const token=localStorage.getItem('studio_token')||'';
+    const token=window.StudioAPI?.token?.()||'';
     const response=await fetch(`${String(base).replace(/\/$/,'')}/api/projects/${encodeURIComponent(pid)}/resource-library/${encodeURIComponent(documentId)}/download`,{headers:token?{Authorization:`Bearer ${token}`}:{}});
     if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data.error||'Téléchargement impossible');}
     const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename||'document.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);

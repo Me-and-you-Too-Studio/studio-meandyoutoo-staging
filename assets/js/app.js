@@ -9,7 +9,8 @@
   }
   var CURRENT = location.pathname.split('/').pop() || 'accueil.html';
   var CURRENT_USER = null;
-  try { CURRENT_USER = JSON.parse(localStorage.getItem('studio_user') || 'null'); } catch (e) {}
+  try { CURRENT_USER = window.StudioAPI?StudioAPI.user():JSON.parse(localStorage.getItem('studio_user') || 'null'); } catch (e) {}
+  var CLIENT_PREVIEW=window.StudioAPI?.clientPreview?.();
   var IS_ADMIN = Boolean(CURRENT_USER && CURRENT_USER.role === 'admin');
   var INTERFACE_MODE = IS_ADMIN && sessionStorage.getItem('studio_interface_mode') !== 'client' ? 'admin' : 'client';
   var ADMIN_PAGES = ['admin.html','client.html'];
@@ -418,14 +419,14 @@
   }
 
   function trackProductActivity(){
-    if(!window.StudioAPI||!StudioAPI.token())return;
+    if(CLIENT_PREVIEW||!window.StudioAPI||!StudioAPI.token())return;
     var params=new URLSearchParams(location.search),projectId=params.get('projectId')||params.get('id')||localStorage.getItem('studio_current_project_id')||null;
     StudioAPI.request('/api/me/activity',{method:'POST',body:JSON.stringify({page:CURRENT,eventType:'page_view',projectId:/^\d+$/.test(String(projectId||''))?Number(projectId):null})}).catch(function(){});
   }
 
 
   function studioSubscriptionCached(){
-    try{return JSON.parse(localStorage.getItem('studio_subscription')||'null');}catch(e){return null;}
+    try{return JSON.parse((CLIENT_PREVIEW?sessionStorage:localStorage).getItem(CLIENT_PREVIEW?'studio_preview_subscription':'studio_subscription')||'null');}catch(e){return null;}
   }
   function showSubscriptionRequired(){
     return StudioModal.alert({eyebrow:'Abonnement Studio',title:'Abonnement Studio requis',message:'Votre abonnement Studio est arrivé à échéance. Vous pouvez continuer à consulter vos campagnes et vos passations, mais la création et la modification de campagnes nécessitent un abonnement actif.',type:'warning',confirmLabel:'Fermer'});
@@ -469,12 +470,28 @@
     try{
       var data=await StudioAPI.request('/api/me');
       if(data&&data.studioSubscription){
-        localStorage.setItem('studio_subscription',JSON.stringify(data.studioSubscription));
+        (CLIENT_PREVIEW?sessionStorage:localStorage).setItem(CLIENT_PREVIEW?'studio_preview_subscription':'studio_subscription',JSON.stringify(data.studioSubscription));
         disableForExpiredSubscription(data.studioSubscription);
       }
     }catch(e){}
   }
 
+  if(CLIENT_PREVIEW){
+    document.body.classList.add('studio-client-preview');
+    var banner=document.createElement('div');banner.className='studio-client-preview-banner';banner.setAttribute('role','region');banner.setAttribute('aria-label','Vue client en consultation');
+    banner.style.cssText='position:sticky;top:0;z-index:10050;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 20px;background:#124b61;color:white;font:600 15px Asap,Arial,sans-serif;box-shadow:0 2px 8px #0002';
+    var text=document.createElement('span');text.style.flex='1';text.textContent='Vous consultez l’espace de '+(CLIENT_PREVIEW.user.organizationName||'ce client')+' — Vue client · Consultation seule';
+    var account=document.createElement('small');account.textContent='Accès : '+(CLIENT_PREVIEW.user.email||'');
+    var back=document.createElement('button');back.type='button';back.className='button button-secondary';back.textContent='Retour au dossier admin';back.onclick=function(){StudioAPI.endClientPreview();};
+    banner.append(text,account,back);document.body.prepend(banner);
+    var previewStyle=document.createElement('style');previewStyle.textContent='body.studio-client-preview .sidebar{top:calc(var(--client-preview-height,64px) + 16px);height:calc(100dvh - var(--client-preview-height,64px) - 32px)}';document.head.append(previewStyle);
+    var sizeBanner=function(){document.documentElement.style.setProperty('--client-preview-height',banner.offsetHeight+'px');};
+    sizeBanner();if(window.ResizeObserver)new ResizeObserver(sizeBanner).observe(banner);
+    var lockPreviewFields=function(){
+      document.querySelectorAll('[data-situation-input],[data-answer-input],#intro,#campaign-name,#respondent-title,#launch-date,#close-date,#nb-respondents,#diffusion-slug').forEach(function(input){if(!input.readOnly){input.readOnly=true;input.setAttribute('aria-readonly','true');input.title='Vue client en consultation seule';}});
+    };
+    lockPreviewFields();new MutationObserver(lockPreviewFields).observe(document.body,{childList:true,subtree:true});
+  }
   renderSidebar();
   enforcePageAccess();
   enforceActionAccess();
@@ -488,6 +505,7 @@
   });
   var logoutButton = document.querySelector('[data-logout]');
   if (logoutButton) logoutButton.addEventListener('click', function(){
+    if(CLIENT_PREVIEW){StudioAPI.endClientPreview();return;}
     localStorage.removeItem('studio_token');
     localStorage.removeItem('studio_user');
     localStorage.removeItem('studio_organization_id');

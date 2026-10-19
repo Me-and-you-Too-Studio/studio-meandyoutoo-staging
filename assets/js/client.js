@@ -1255,6 +1255,29 @@
       c.hidden = !(folderOk && themeOk && ok && (!q || c.dataset.search.includes(q)));
     });
   }
+  async function openClientPreview(){
+    if(!organization?.id)return;
+    const trigger=$('#view-client-space');if(trigger)trigger.disabled=true;
+    try{
+      const path=`/api/admin/organizations/${encodeURIComponent(organization.id)}/client-preview`;
+      const data=await StudioAPI.request(path),accounts=data.users||[];
+      if(!accounts.length){await StudioModal.alert({title:'Aucun accès client actif',message:'Ajoutez ou réactivez un accès client pour consulter cet espace avec ses droits réels.',type:'info'});return;}
+      const start=async(userId)=>{const result=await StudioAPI.request(path,{method:'POST',body:JSON.stringify({userId})});StudioAPI.startClientPreview(result);location.href='accueil.html';};
+      if(accounts.length===1){await start(accounts[0].id);return;}
+      const dialog=document.createElement('dialog');dialog.className='admin-dialog';dialog.setAttribute('aria-labelledby','client-preview-title');
+      dialog.innerHTML=`<form><button class="admin-dialog-close" type="button" data-preview-close aria-label="Fermer">×</button><p class="eyebrow">Vue client · Consultation seule</p><h2 id="client-preview-title">Voir l’espace de ${esc(organization.name||'ce client')}</h2><p>Choisissez l’accès à consulter. Les menus et les campagnes s’afficheront avec ses droits réels.</p><label class="field"><span>Compte client</span><select data-preview-user style="width:100%;min-width:0;max-width:100%">${accounts.map(u=>`<option value="${esc(u.id)}">${esc([u.firstName,u.lastName].filter(Boolean).join(' ')||u.email)} — ${esc(u.email)}${u.accessLevel==='owner'?' · Responsable du compte':''}</option>`).join('')}</select></label><p data-preview-error role="alert" hidden></p><div class="top-actions"><button type="button" class="button button-secondary" data-preview-close>Annuler</button><button type="submit" class="button button-primary">Ouvrir la vue client</button></div></form>`;
+      document.body.append(dialog);
+      const close=()=>{dialog.close();dialog.remove();};
+      dialog.querySelectorAll('[data-preview-close]').forEach(b=>b.onclick=close);
+      dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
+      dialog.querySelector('form').onsubmit=async event=>{
+        event.preventDefault();const submit=dialog.querySelector('[type="submit"]');submit.disabled=true;
+        try{await start(dialog.querySelector('[data-preview-user]').value);close();}catch(error){const box=dialog.querySelector('[data-preview-error]');box.hidden=false;box.textContent=error.message;submit.disabled=false;}
+      };
+      dialog.showModal();
+    }catch(error){await StudioModal.alert({title:'Vue client indisponible',message:error.message,type:'error'});}
+    finally{if(trigger)trigger.disabled=false;}
+  }
   async function openClientCampaignCreation(){
     if(!organization?.id||clientCampaignDialogOpen)return;
     if(organization.active===false){
@@ -1853,6 +1876,7 @@
   }
 
   function bind() {
+    const viewClient=$('#view-client-space');if(viewClient){viewClient.disabled=!organization?.id;viewClient.onclick=openClientPreview;}
     const createCampaign=$('#create-client-campaign');if(createCampaign){createCampaign.disabled=!organization?.id;createCampaign.onclick=openClientCampaignCreation;}
     $('#admin-theme-filter')?.addEventListener('change', (event) => { activeTheme = event.target.value; applyFilter(); });
     $$('[data-admin-folder-filter]').forEach((btn) => btn.onclick = () => { activeFolder = btn.dataset.adminFolderFilter; render(); });
