@@ -13,7 +13,7 @@
   const canonical = value => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
   const api = (path, options={}) => window.StudioAPI.request(path, options);
   const currentUser = window.StudioAPI?.user?.() || {};
-  const isAdmin = currentUser.role === 'admin';
+  const isAdmin = currentUser.role === 'admin' && (!window.StudioAPI?.interfaceMode || window.StudioAPI.interfaceMode() !== 'client');
   const campaignContextInfoText=`Ajouter un périmètre ou une langue conserve ce que vous avez déjà composé sur les autres périmètres. Retirer un périmètre supprime uniquement le contenu rattaché à ce pays dans la campagne.`;
 
   function infoDot(message,label='Informations importantes',floating=false){
@@ -610,14 +610,14 @@
     return `${String(ch?.catalog_chapter_id||ch?.id||'')}:${String(state.country||'')}`;
   }
   function chapterHasLibrary(ch=state.chapters[state.active]){
-    return state.libraryAvailability.get(libraryAvailabilityKey(ch))===true;
+    return Boolean(ch&&state.project?.can_edit!==false&&(!isStereotypesChapter(ch)||isAdmin));
   }
   async function ensureLibraryAvailability(ch=state.chapters[state.active]){
     if(!ch||state.project?.can_edit===false||(isStereotypesChapter(ch)&&!isAdmin))return false;
     const key=libraryAvailabilityKey(ch);
     if(state.libraryAvailability.has(key))return state.libraryAvailability.get(key)===true;
-    // Valeur provisoire : tant que le contrôle n'est pas terminé, aucun bouton
-    // de bibliothèque n'est affiché. Cela évite un clic vers une bibliothèque vide.
+    // Le contrôle de disponibilité ne masque pas l’accès à la bibliothèque :
+    // une sélection vide est expliquée directement dans le panneau.
     state.libraryAvailability.set(key,false);
     try{
       const data=await api(`/api/catalog/themes/${themeSlug}/library?chapterId=${encodeURIComponent(ch.catalog_chapter_id||ch.id)}&projectId=${encodeURIComponent(projectId)}&countryCode=${encodeURIComponent(state.country||'')}`);
@@ -709,7 +709,7 @@
     return `<article class="composer-situation ${tone} ${locked?'is-locked':''} ${customized?'has-customization':''}" data-situation-card="${esc(s.id)}">
       <div class="composer-situation-head">
         <div class="composer-situation-tags">${isAdmin?`<span class="composer-position-chip">ID situation Studio : ${esc(s.id)}</span>${s.catalog_situation_id?`<span class="composer-position-chip">ID Catalogue : ${esc(s.catalog_situation_id)}</span>`:''}${s.legacy_payload?.surveyQuestionId?`<span class="composer-position-chip">ID question moteur : ${esc(s.legacy_payload.surveyQuestionId)}</span>`:''}${s.legacy_payload?.legacyId?`<span class="composer-position-chip">ID situation Legacy : ${esc(s.legacy_payload.legacyId)}</span>`:''}`:''}${showMethodologyChip?`<span class="composer-lock-chip">🔒 Situation socle — texte non modifiable</span>`:`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}${directTranslationEdit?`<span class="composer-customized-tag">🌐 ${esc(localeLabel(translationView.targetLocale))}</span>`:(customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':'')}</div>
-        <div class="composer-situation-head-actions">${isAdmin?`<button type="button" class="button button-secondary button-small" data-reuse-client-situation="${esc(s.id)}" title="Copie indépendante vers la Bibliothèque complémentaire Me&YouToo">＋ Bibliothèque Me&YouToo</button>`:''}<button class="button button-ghost button-small composer-collapse-situation" type="button" data-collapse-situation="${esc(s.id)}" aria-expanded="${expanded}">${expanded?'Replier':'Déplier'}</button></div>
+        <div class="composer-situation-head-actions">${isAdmin?`<button type="button" class="button button-secondary button-small" data-reuse-client-situation="${esc(s.id)}" title="Copie indépendante vers la Bibliothèque complémentaire Me&YouToo">Copier vers la bibliothèque Me&YouToo</button>`:''}<button class="button button-ghost button-small composer-collapse-situation" type="button" data-collapse-situation="${esc(s.id)}" aria-expanded="${expanded}">${expanded?'Replier':'Déplier'}</button></div>
       </div>
       <div class="composer-situation-body" id="situation-body-${esc(s.id)}"${expanded?'':' hidden'}>
       ${linkedLabel?`<div class="composer-linked-chip">🔗 ${esc(linkedLabel)}</div>`:''}
@@ -721,7 +721,7 @@
       <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${directTranslationEdit?'Enregistrement automatique de la traduction':(customized?'Enregistré':'Enregistrement automatique')}</span></span></div>
       <div class="composer-actions">
         ${!directTranslationEdit&&customized?`<button class="button button-ghost" type="button" data-reset="${esc(s.id)}">↶ ${state.project?.review_mode?'Annuler ma correction':'Annuler mes modifications'}</button>`:''}
-        ${hasLibrary?`<button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer</button>`:''}
+        ${hasLibrary?`<button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer depuis la bibliothèque</button>`:''}
         <button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button>
       </div>`:canReplaceLocked?`<div class="composer-inline-help composer-context-help composer-socle-help"><strong>Situation socle Stéréotypes</strong><span>Le texte et les réponses ne se modifient pas directement. Vous pouvez toutefois remplacer cette situation par une autre situation validée de la bibliothèque Me&YouToo.</span></div><div class="composer-actions"><button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer via la bibliothèque</button></div>`:''}
       </div>
@@ -754,6 +754,7 @@
     warning.hidden=!(hasOtherLocales&&(situationChanged||answerChanged));
   }
   async function reuseClientSituation(id){
+    if(!isAdmin)return;
     const source=findSituation(id);
     if(!source)return;
     try{
@@ -1012,7 +1013,7 @@
           const label=linked?`${entry.members.length} situations liées · ${mode==='replace'?'remplacées':'ajoutées'} ensemble`:'Situation disponible';
           const body=entry.members.map((m,mi)=>{const tags=Array.isArray(m.admin_tags)?m.admin_tags.filter(Boolean):[];return `<section class="composer-library-linked-item">${linked?`<div class="composer-library-linked-title">Situation ${mi+1}/${entry.members.length}</div>`:''}<h3>${esc(m.content)}</h3>${tags.length?`<div class="composer-library-keywords">${tags.map(tag=>`<span>${esc(tag)}</span>`).join('')}</div>`:''}<details><summary>Consulter les réponses et les scores</summary>${(m.answers||[]).map(a=>answerHtml(a,false,'')).join('')}</details></section>`;}).join('');
           return `<article class="composer-library-card composer-library-bundle tone-${index%4+1}"><div class="composer-library-number">${String(index+1).padStart(2,'0')}</div><div class="composer-library-content"><div class="composer-library-label">${label}</div>${body}<button class="button button-primary" type="button" data-library-pick="${esc(entry.primary.id)}">${mode==='replace'?(linked?`Remplacer par ces ${entry.members.length} situations`:'Remplacer par cette situation'):(linked?`Ajouter les ${entry.members.length} situations au chapitre`:'Ajouter au chapitre')}</button></div></article>`;
-        }).join(''):'<div class="composer-library-empty"><strong>Aucune situation trouvée</strong><p>Modifiez votre recherche. Vous restez dans la bibliothèque complémentaire autorisée pour cet autodiagnostic.</p></div>';
+        }).join(''):`<div class="composer-library-empty"><strong>${q?'Aucune situation trouvée':state.library.length?'Aucune situation trouvée':'Aucune situation complémentaire disponible'}</strong><p>${q?'Modifiez votre recherche.':(data.situations||[]).length?'Les situations proposées pour ce chapitre et ce périmètre sont déjà présentes dans votre campagne.':'Aucune situation complémentaire n’est actuellement proposée pour ce chapitre et le périmètre sélectionné. Le nombre affiché sur la carte du catalogue concerne l’ensemble de la thématique. Vous pouvez consulter les autres chapitres ou contacter Me&YouToo.'}</p></div>`;
         document.querySelectorAll('[data-library-pick]').forEach(b=>b.onclick=()=>mode==='replace'?replaceSituation(replaceId,b.dataset.libraryPick):addSituation(b.dataset.libraryPick));
       };
       const librarySearch=$('library-search');if(librarySearch){librarySearch.value='';librarySearch.oninput=()=>renderLibraryEntries(librarySearch.value);}
@@ -1175,7 +1176,8 @@
     if(!libraryButton.hidden){
       libraryButton.classList.toggle('is-disabled',status.atMax);
       libraryButton.setAttribute('aria-disabled',String(status.atMax));
-      libraryButton.title=status.atMax?`Maximum de ${status.rules.max} situations atteint`:'';
+      libraryButton.textContent='Choisir dans la bibliothèque';
+      libraryButton.title=status.atMax?`Maximum de ${status.rules.max} situations atteint`: 'Parcourir les situations complémentaires autorisées pour ce chapitre et ce périmètre';
     }
     if((!stereotypes||isAdmin)&&state.project?.can_edit!==false&&!state.libraryAvailability.has(libraryAvailabilityKey(ch))){
       ensureLibraryAvailability(ch);
@@ -1201,7 +1203,7 @@
 
   async function ensureProject(){if(projectId)return;location.replace(`theme-${encodeURIComponent(themeSlug)}.html?theme=${encodeURIComponent(themeSlug)}`);throw new Error('redirect');}
   function configureContextBack(project){
-    const user=window.StudioAPI?.user?.()||{},isAdmin=user.role==='admin';
+    const user=window.StudioAPI?.user?.()||{},isAdmin=user.role==='admin'&&(!window.StudioAPI?.interfaceMode||window.StudioAPI.interfaceMode()!=='client');
     let href='mes-campagnes.html',label='← Mes campagnes';
     if(project.review_mode){href=`validation.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}`;label='← Retour au contrôle qualité';}
     else if(isAdmin&&project.organization_id){href=`client.html?organizationId=${encodeURIComponent(project.organization_id)}&projectId=${encodeURIComponent(projectId)}`;label='← Retour au dossier client';}
