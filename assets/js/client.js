@@ -926,7 +926,7 @@
       '"><h3>' +
       esc(title) +
       (p.legacy_source === 'cloned_legacy' || p.legacy_source === 'cloned_studio' ? ' <span class="campaign-topic-tag" title="Copie indépendante de campagne">🧬 Copie</span>' : '') +
-      '</h3><div class="admin-ad-meta">Projet Studio : <strong>#' + esc(p.id) + '</strong> <span class="info-dot" title="Identifiant unique de cette campagne dans le Studio. Une copie reçoit un nouveau numéro.">i</span></div><div class="admin-ad-meta">Base catalogue : <strong>' +
+      '</h3><div class="admin-ad-meta">Projet Studio : <strong>#' + esc(p.id) + '</strong> <button type="button" class="admin-info-dot" data-info="Identifiant unique de cette campagne dans le Studio. Une copie reçoit un nouveau numéro." aria-label="Comprendre le numéro de projet" aria-haspopup="dialog">i</button></div><div class="admin-ad-meta">Base catalogue : <strong>' +
       esc(catalogBase) +
       '</strong></div>' + (p.legacy_history && p.legacy_theme_title ? '<div class="admin-ad-meta">Thématique historique : <strong>' + esc(p.legacy_theme_title) + '</strong></div>' : '') + '<div class="admin-ad-meta">Titre répondants : <strong>' +
       esc(respondent) +
