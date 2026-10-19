@@ -1260,34 +1260,55 @@
     const dialog=document.createElement('dialog');dialog.id='client-campaign-copy-dialog';dialog.className='admin-dialog campaign-rename-dialog';
     dialog.setAttribute('aria-labelledby','client-campaign-copy-title');
     const sourceName=project.campaign_name||project.title||'Autodiagnostic';
-    dialog.innerHTML=`<form><button type="button" class="admin-dialog-close" data-copy-close aria-label="Fermer">×</button><p class="eyebrow">Administration Me&amp;YouToo</p><h2 id="client-campaign-copy-title">Dupliquer pour un autre client</h2><p>Source : <strong>${esc(organization.name)} · ${esc(sourceName)} · #${esc(project.id)}</strong></p><label class="field"><span>Rechercher le client destinataire</span><input type="search" data-copy-search placeholder="Ex. Pernod"></label><label class="field"><span>Client destinataire</span><select data-copy-client required disabled><option value="">Chargement des clients…</option></select></label><label class="field"><span>Nom du nouvel AD</span><input data-copy-name required minlength="2" maxlength="200" placeholder="Nom de la campagne pour le destinataire"></label><div class="admin-library-note"><strong>Nouveau brouillon indépendant <span class="admin-info-dot" tabindex="0" role="note" data-info="La source reste chez son client. La copie reçoit de nouveaux identifiants et appartient au client choisi. Les crédits du destinataire restent inchangés.">i</span></strong><span>Contenus, réponses, scores, profils et traductions sont repris. Les PDF associés sont copiés dans les ressources du destinataire. Dates, liens de diffusion, statistiques et kit de communication ne sont pas repris.</span></div><label class="field"><span><input type="checkbox" data-copy-reviewed required> J’ai vérifié que ces contenus et ressources peuvent être réutilisés pour ce client.</span></label><p class="hint">Avant transmission, adaptez les textes, données d’analyse et liens web propres au client d’origine.</p><p class="composer-alert" data-copy-error role="alert" hidden></p><div class="top-actions"><button type="button" class="button button-secondary" data-copy-close>Annuler</button><button type="submit" class="button button-primary" data-copy-confirm disabled>Créer le brouillon</button></div></form>`;
+    dialog.innerHTML=`<form><button type="button" class="admin-dialog-close" data-copy-close aria-label="Fermer">×</button><p class="eyebrow">Administration Me&amp;YouToo</p><h2 id="client-campaign-copy-title">Dupliquer pour un autre client</h2><p>Source : <strong>${esc(organization.name)} · ${esc(sourceName)} · #${esc(project.id)}</strong></p><div class="client-copy-picker" data-copy-picker><label class="field"><span>Client destinataire</span><input type="search" data-copy-search id="client-copy-search" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="client-copy-results" aria-describedby="client-copy-selection" autocomplete="off" required placeholder="Tapez un nom, puis sélectionnez le client"></label><div class="client-copy-results" id="client-copy-results" data-copy-results role="listbox" aria-label="Clients destinataires" hidden></div><small id="client-copy-selection" data-copy-selection role="status" aria-live="polite">Chargement des clients…</small></div><label class="field"><span>Nom du nouvel AD</span><input data-copy-name required minlength="2" maxlength="200" placeholder="Nom de la campagne pour le destinataire"></label><div class="admin-library-note"><strong>Nouveau brouillon indépendant <span class="admin-info-dot" tabindex="0" role="note" data-info="La source reste chez son client. La copie reçoit de nouveaux identifiants et appartient au client choisi. Les crédits du destinataire restent inchangés.">i</span></strong><span>Contenus, réponses, scores, profils et traductions sont repris. Les PDF associés sont copiés dans les ressources du destinataire. Dates, liens de diffusion, statistiques et kit de communication ne sont pas repris.</span></div><label class="field"><span><input type="checkbox" data-copy-reviewed required> J’ai vérifié que ces contenus et ressources peuvent être réutilisés pour ce client.</span></label><p class="hint">Avant transmission, adaptez les textes, données d’analyse et liens web propres au client d’origine.</p><p class="composer-alert" data-copy-error role="alert" hidden></p><div class="top-actions"><button type="button" class="button button-secondary" data-copy-close>Annuler</button><button type="submit" class="button button-primary" data-copy-confirm disabled>Créer le brouillon</button></div></form>`;
     document.body.appendChild(dialog);
-    const el=selector=>dialog.querySelector(selector),form=el('form'),select=el('[data-copy-client]'),search=el('[data-copy-search]'),name=el('[data-copy-name]'),reviewed=el('[data-copy-reviewed]'),confirm=el('[data-copy-confirm]'),error=el('[data-copy-error]');
-    let clients=[],busy=false,lastName='',created=null;
+    const el=selector=>dialog.querySelector(selector),form=el('form'),picker=el('[data-copy-picker]'),results=el('[data-copy-results]'),selection=el('[data-copy-selection]'),search=el('[data-copy-search]'),name=el('[data-copy-name]'),reviewed=el('[data-copy-reviewed]'),confirm=el('[data-copy-confirm]'),error=el('[data-copy-error]');
+    let clients=[],matches=[],selectedClient=null,activeIndex=-1,loaded=false,busy=false,lastName='',created=null;
     const close=()=>{if(busy)return;dialog.close();dialog.remove();};
     dialog.querySelectorAll('[data-copy-close]').forEach(button=>button.onclick=close);
     dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
     const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    const closeResults=()=>{results.hidden=true;search.setAttribute('aria-expanded','false');search.removeAttribute('aria-activedescendant');activeIndex=-1;};
+    const setActive=index=>{
+      const buttons=[...results.querySelectorAll('[data-copy-option]')];
+      activeIndex=buttons.length?Math.max(0,Math.min(index,buttons.length-1)):-1;
+      buttons.forEach((button,i)=>button.classList.toggle('is-active',i===activeIndex));
+      if(activeIndex>=0){search.setAttribute('aria-activedescendant',buttons[activeIndex].id);buttons[activeIndex].scrollIntoView({block:'nearest'});}
+      else search.removeAttribute('aria-activedescendant');
+    };
+    const chooseClient=client=>{
+      if(busy)return;
+      selectedClient=client;search.value=client.name;search.setCustomValidity('');reviewed.checked=false;
+      if(!name.value.trim()||name.value===lastName){lastName=((project.theme_title||'Autodiagnostic')+' — '+client.name).slice(0,200);name.value=lastName;}
+      selection.textContent='Client sélectionné : '+client.name;confirm.disabled=false;search.focus();closeResults();
+    };
     const renderClients=()=>{
-      const selected=select.value,query=normalize(search.value),rows=clients.filter(client=>normalize(client.name).includes(query));
-      select.innerHTML='<option value="">'+(rows.length?'Choisir un client…':'Aucun client correspondant')+'</option>'+rows.map(client=>`<option value="${esc(client.id)}">${esc(client.name)}</option>`).join('');
-      select.value=rows.some(client=>String(client.id)===selected)?selected:'';
-      confirm.disabled=!select.value;
+      if(busy||!loaded)return;
+      const query=normalize(search.value);matches=clients.filter(client=>normalize(client.name).includes(query));
+      results.innerHTML=matches.length?matches.map((client,index)=>`<button type="button" role="option" tabindex="-1" id="client-copy-option-${index}" data-copy-option="${index}" aria-selected="${String(selectedClient?.id)===String(client.id)}">${esc(client.name)}</button>`).join(''):'<p class="client-copy-empty">Aucun client correspondant</p>';
+      results.querySelectorAll('[data-copy-option]').forEach(button=>button.onclick=()=>{chooseClient(matches[Number(button.dataset.copyOption)]);});
+      results.hidden=false;search.setAttribute('aria-expanded','true');
+      selection.textContent=selectedClient?'Client sélectionné : '+selectedClient.name:matches.length+' client(s) · sélectionnez un nom dans la liste';
+      setActive(Math.max(0,matches.findIndex(client=>String(client.id)===String(selectedClient?.id))));
     };
-    search.oninput=renderClients;
-    select.onchange=()=>{
-      reviewed.checked=false;
-      const target=clients.find(client=>String(client.id)===select.value);
-      if(target&&(!name.value.trim()||name.value===lastName)){lastName=((project.theme_title||'Autodiagnostic')+' — '+target.name).slice(0,200);name.value=lastName;}
-      confirm.disabled=!target;
+    search.onfocus=renderClients;
+    search.oninput=()=>{if(busy)return;selectedClient=null;reviewed.checked=false;confirm.disabled=true;search.setCustomValidity('');renderClients();};
+    search.onkeydown=event=>{
+      if(busy)return;
+      if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+        event.preventDefault();if(results.hidden){renderClients();if(event.key==='ArrowUp')setActive(matches.length-1);}else setActive(activeIndex+(event.key==='ArrowDown'?1:-1));
+      }else if(event.key==='Enter'&&!results.hidden){event.preventDefault();if(matches[activeIndex])chooseClient(matches[activeIndex]);}
+      else if(event.key==='Escape'&&!results.hidden){event.preventDefault();event.stopPropagation();closeResults();}
     };
+    picker.addEventListener('focusout',event=>{if(!picker.contains(event.relatedTarget))closeResults();});
+    dialog.addEventListener('click',event=>{if(!picker.contains(event.target))closeResults();});
     form.onsubmit=async event=>{
       event.preventDefault();if(busy||created)return;
-      const target=clients.find(client=>String(client.id)===select.value);if(!target)return;
+      const target=selectedClient;if(!target){search.setCustomValidity('Sélectionnez un client dans les résultats.');search.reportValidity();return;}
       const campaignName=name.value.trim();if(campaignName.length<2){name.setCustomValidity('Indiquez un nom d’au moins 2 caractères.');name.reportValidity();return;}
       name.setCustomValidity('');if(!form.reportValidity())return;
-      busy=true;error.hidden=true;confirm.disabled=true;confirm.textContent='Duplication en cours…';
-      [select,search,name,reviewed,...dialog.querySelectorAll('[data-copy-close]')].forEach(control=>control.disabled=true);
+      busy=true;closeResults();error.hidden=true;confirm.disabled=true;confirm.textContent='Duplication en cours…';
+      [search,name,reviewed,...dialog.querySelectorAll('[data-copy-close]')].forEach(control=>control.disabled=true);
       try{
         const result=await StudioAPI.request('/api/projects/'+encodeURIComponent(project.id)+'/clone',{method:'POST',body:JSON.stringify({targetOrganizationId:target.id,campaignName,reuseReviewed:reviewed.checked})});
         created=result.project;busy=false;close();
@@ -1297,8 +1318,8 @@
         if(created){showError('Le brouillon #'+created.id+' a été créé pour '+target.name+'. Retrouvez-le dans son dossier client.');return;}
         error.textContent=err.message;error.hidden=false;
       }finally{
-        busy=false;confirm.disabled=!select.value;confirm.textContent='Créer le brouillon';
-        [select,search,name,reviewed,...dialog.querySelectorAll('[data-copy-close]')].forEach(control=>control.disabled=false);
+        busy=false;confirm.disabled=!selectedClient;confirm.textContent='Créer le brouillon';
+        [search,name,reviewed,...dialog.querySelectorAll('[data-copy-close]')].forEach(control=>control.disabled=false);
       }
     };
     name.oninput=()=>name.setCustomValidity('');
@@ -1307,8 +1328,8 @@
       const result=await StudioAPI.request('/api/admin/campaign-copy-targets');
       if(!dialog.isConnected)return;
       clients=(result.organizations||[]).filter(client=>String(client.id)!==String(organization.id)).sort((a,b)=>String(a.name).localeCompare(String(b.name),'fr',{sensitivity:'base'}));
-      select.disabled=false;renderClients();
-    }catch(err){if(dialog.isConnected){error.textContent=err.message;error.hidden=false;select.innerHTML='<option value="">Chargement impossible — fermez puis réessayez</option>';}}
+      loaded=true;renderClients();
+    }catch(err){if(dialog.isConnected){error.textContent=err.message;error.hidden=false;selection.textContent='Impossible de charger la liste des clients.';search.disabled=true;closeResults();}}
   }
   async function mutate(id, path, options, success) {
     try {

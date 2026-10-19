@@ -15527,3 +15527,13 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 [data-admin-panel="situations"] [data-all-tag-menu] .all-tag-menu-heading {padding:7px 10px;color:#547282;font-size:.74rem;font-weight:750;border-bottom:1px solid #e5eef2;margin-bottom:5px;}
 [data-admin-panel="situations"] [data-all-tag-menu] p {margin:6px 10px;color:#6a7f8e;font-size:.77rem;line-height:1.5;}
 [data-admin-panel="situations"] [data-all-tag-menu] .all-tag-create {font-weight:750;color:#007e89;border-top:1px solid #d9e9e9;border-radius:0;margin-top:6px;padding-top:12px;}
+
+/* Client destinataire : résultats visibles immédiatement sous la saisie. */
+#client-campaign-copy-dialog .client-copy-picker{margin-bottom:18px;min-width:0}
+#client-campaign-copy-dialog .client-copy-picker .field{margin-bottom:0}
+#client-campaign-copy-dialog .client-copy-results:not([hidden]){display:block;max-height:180px;overflow-y:auto;overscroll-behavior:contain;margin:6px 0;border:1px solid #c9dce3;border-radius:10px;background:#fff;box-shadow:0 5px 16px #173b5f16}
+#client-campaign-copy-dialog .client-copy-results [role=option]{display:block;width:100%;border:0;border-radius:0;padding:10px 14px;min-height:42px;background:#fff;color:#173b5f;text-align:left;font:inherit;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
+#client-campaign-copy-dialog .client-copy-results [role=option]:hover,#client-campaign-copy-dialog .client-copy-results [role=option].is-active{background:#eaf6f4}
+#client-campaign-copy-dialog .client-copy-results [aria-selected=true]{font-weight:700}
+#client-campaign-copy-dialog [data-copy-selection]{display:block;margin-top:7px;color:#52677d;font-size:.82rem}
+#client-campaign-copy-dialog .client-copy-empty{margin:0;padding:12px 14px;color:#52677d}
