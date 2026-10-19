@@ -88,6 +88,7 @@
 
     <section class="table-card account-history" aria-labelledby="history-title">
       <div class="account-history-heading"><span class="account-history-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span><div><p class="eyebrow">Suivi des commandes</p><h2 class="section-title" id="history-title">Historique des packs commandés</h2></div></div>
+      <div id="packs-history-empty" class="account-access-empty" style="display:none"><span class="account-access-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v10l9 5 9-5V8M12 13v10M7.5 5.5l9 5"/></svg></span><div><strong>Aucun pack commandé pour le moment</strong><p>Vos commandes de packs et leur statut apparaîtront ici.</p></div></div>
       <table class="data-table">
         <thead><tr><th>Date</th><th>Pack</th><th>Volume</th><th>Montant HT</th><th>Statut</th></tr></thead>
         <tbody id="packs-history"><tr><td colspan="5">Chargement…</td></tr></tbody>
@@ -100,6 +101,6 @@
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20261019-client-preview-1"></script>
 <script src="assets/js/app.js?v=20261019-client-preview-1"></script>
-<script src="assets/js/account.js?v=20261019-account-empty-access-1"></script>
+<script src="assets/js/account.js?v=20261019-empty-pack-history-1"></script>
 </body>
 </html>
