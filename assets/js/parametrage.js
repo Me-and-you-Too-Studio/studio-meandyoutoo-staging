@@ -99,9 +99,9 @@ function isGenderCriterion(criterion){
   return kinds.includes('male')&&kinds.includes('female');
 }
 function optionalGenderAnswer(option){return ['nonbinary','other'].includes(genderAnswerKind(option?.label));}
-function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].includes(String(slug||'').toLowerCase());}
+function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].includes(String(slug||'').toLowerCase().replace(/--copie--[a-f0-9]{12}$/, ''));}
 
-  const genderRequiredTheme=()=>['sexisme','mixite','allie-mixite'].includes(String(theme||'').toLowerCase());
+  const genderRequiredTheme=()=>requiredGenderTheme(theme);
   const defaultSocio=()=>genderRequiredTheme()?[{kind:'gender',q:'Quel est votre genre ?',opts:[{label:'Homme',n:0},{label:'Femme',n:0},{label:'Non binaire',n:0},{label:'Autre',n:0}]}]:[];
   const normalizeLocale=value=>String(value||'fr').trim().toLowerCase().replaceAll('_','-')||'fr';
   const AGE_TRANSLATIONS={
