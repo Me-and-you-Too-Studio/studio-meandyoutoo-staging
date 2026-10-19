@@ -856,6 +856,10 @@
   }
 
   async function projectAction(action, id) {
+    if(window.StudioAPI.clientPreview?.()&&action!=='view-legacy-pdf'){
+      await StudioModal.alert({title:'Consultation seule',message:'Revenez au dossier admin pour modifier, prolonger ou reprogrammer une campagne.',type:'info'});
+      return;
+    }
     var p = projects.find(function (x) {
       return String(x.id) === String(id);
     });
@@ -1048,6 +1052,9 @@
 
   function bindProjectActions() {
     document.querySelectorAll("[data-project-action]").forEach(function (b) {
+      if(window.StudioAPI.clientPreview?.()&&b.dataset.projectAction!=='view-legacy-pdf'){
+        b.disabled=true;b.setAttribute('aria-disabled','true');b.title='Consultation seule : revenez au dossier admin pour effectuer cette action.';
+      }
       b.onclick = function (e) {
         e.preventDefault();
         e.stopPropagation();
