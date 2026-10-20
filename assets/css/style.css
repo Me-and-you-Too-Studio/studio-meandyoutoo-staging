@@ -3819,6 +3819,30 @@ legend {
   color: var(--green-blue-dark);
   margin-bottom: 6px;
 }
+.composer-library-replacement {
+  margin-top: 16px;
+  min-width: 0;
+}
+.composer-library-replacement summary {
+  cursor: pointer;
+  color: var(--color-primary, #007f8b);
+  font-weight: 700;
+}
+.composer-library-replacement label {
+  display: block;
+  margin: 12px 0 6px;
+}
+.composer-library-replacement select {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.composer-library-replacement button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
 .composer-library-content h3 {
   font-size: 1rem;
   line-height: 1.5;

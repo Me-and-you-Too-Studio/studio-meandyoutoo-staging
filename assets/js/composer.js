@@ -1001,12 +1001,35 @@
     const existing=currentCatalogIds();
     return (Array.isArray(situations)?situations:[]).filter(s=>![String(s.id||''),String(s.source_id||''),String(s.metadata?.duplicate_of_source_id||''),canonical(s.content)].filter(Boolean).some(k=>existing.has(k)));
   }
+  function libraryReplacementCandidates(ch,adding){
+    if(state.project?.can_edit===false||(!isAdmin&&(ch.locked||isStereotypesChapter(ch))))return [];
+    const {rules,count}=chapterCountStatus(ch);
+    const seen=new Set();
+    return ch.situations.flatMap((s,index)=>{
+      const group=s.metadata?.link_group;
+      if(group&&seen.has(group))return [];
+      if(group)seen.add(group);
+      const removing=group?ch.situations.filter(item=>item.metadata?.link_group===group).length:1;
+      const next=count-removing+adding;
+      if((rules.min!=null&&next<rules.min)||(rules.max!=null&&next>rules.max))return [];
+      return [{s,index,removing}];
+    });
+  }
+  function libraryCardActions(entry,mode){
+    const linked=entry.members.length>1,id=esc(entry.primary.id);
+    if(mode==='replace')return `<button class="button button-primary" type="button" data-library-pick="${id}">${linked?`Remplacer par ces ${entry.members.length} situations`:'Remplacer par cette situation'}</button>`;
+    const ch=state.chapters[state.active],{rules,count}=chapterCountStatus(ch);
+    if(rules.max==null||count+entry.members.length<=rules.max)return `<button class="button button-primary" type="button" data-library-pick="${id}">${linked?`Ajouter les ${entry.members.length} situations au chapitre`:'Ajouter au chapitre'}</button>`;
+    const candidates=libraryReplacementCandidates(ch,entry.members.length);
+    if(!candidates.length)return '<p>Cette sélection peut être consultée, mais aucun remplacement ne permet de respecter les limites de ce chapitre.</p>';
+    return `<details class="composer-library-replacement"><summary>Remplacer une situation par cette sélection</summary><p>Votre chapitre est limité à ${rules.max} situations. Choisissez ce que vous souhaitez remplacer. Rien ne change avant votre confirmation.</p><label for="library-replace-${id}">Situation à remplacer</label><select id="library-replace-${id}" data-library-replace-target><option value="">Choisir une situation du chapitre…</option>${candidates.map(({s,index,removing})=>`<option value="${esc(s.id)}">Situation ${index+1}${removing>1?` et sa sélection liée (${removing} situations)`:''} : ${esc(s.custom_content||s.content||s.original_content||'')}</option>`).join('')}</select><button class="button button-primary" type="button" data-library-replace="${id}" disabled>Confirmer le remplacement</button></details>`;
+  }
   async function openLibrary(mode='add',replaceId=''){
     const ch=state.chapters[state.active];if(!chapterHasLibrary(ch))return;state.libraryMode=mode;state.replaceId=replaceId;
     try{
       const data=await api(`/api/catalog/themes/${themeSlug}/library?chapterId=${encodeURIComponent(ch.catalog_chapter_id||ch.id)}&projectId=${encodeURIComponent(projectId)}&countryCode=${encodeURIComponent(state.country||'')}`);
       state.library=availableLibrarySituations(data?.situations);
-      $('library-title').textContent=mode==='replace'?`Remplacer une situation · ${ch.title}`:`Ajouter une situation · ${ch.title}`;
+      $('library-title').textContent=mode==='replace'?`Remplacer une situation · ${ch.title}`:`Bibliothèque · ${ch.title}`;
 
       const seenGroups=new Set(),entries=[];
       for(const s of state.library){
@@ -1022,11 +1045,21 @@
         const filtered=entries.filter(entry=>!q||entry.members.some(m=>[m.content,...(Array.isArray(m.admin_tags)?m.admin_tags:[])].join(' ').toLowerCase().includes(q)));
         $('library-list').innerHTML=filtered.length?filtered.map((entry,index)=>{
           const linked=entry.members.length>1;
-          const label=linked?`${entry.members.length} situations liées · ${mode==='replace'?'remplacées':'ajoutées'} ensemble`:'Situation disponible';
+          const label=linked?`${entry.members.length} situations liées · à sélectionner ensemble`:'Situation disponible';
           const body=entry.members.map((m,mi)=>{const tags=Array.isArray(m.admin_tags)?m.admin_tags.filter(Boolean):[];return `<section class="composer-library-linked-item">${linked?`<div class="composer-library-linked-title">Situation ${mi+1}/${entry.members.length}</div>`:''}<h3>${esc(m.content)}</h3>${tags.length?`<div class="composer-library-keywords">${tags.map(tag=>`<span>${esc(tag)}</span>`).join('')}</div>`:''}<details><summary>Consulter les réponses et les scores</summary>${(m.answers||[]).map(a=>answerHtml(a,false,'')).join('')}</details></section>`;}).join('');
-          return `<article class="composer-library-card composer-library-bundle tone-${index%4+1}"><div class="composer-library-number">${String(index+1).padStart(2,'0')}</div><div class="composer-library-content"><div class="composer-library-label">${label}</div>${body}<button class="button button-primary" type="button" data-library-pick="${esc(entry.primary.id)}">${mode==='replace'?(linked?`Remplacer par ces ${entry.members.length} situations`:'Remplacer par cette situation'):(linked?`Ajouter les ${entry.members.length} situations au chapitre`:'Ajouter au chapitre')}</button></div></article>`;
+          return `<article class="composer-library-card composer-library-bundle tone-${index%4+1}"><div class="composer-library-number">${String(index+1).padStart(2,'0')}</div><div class="composer-library-content"><div class="composer-library-label">${label}</div>${body}${libraryCardActions(entry,mode)}</div></article>`;
         }).join(''):`<div class="composer-library-empty"><strong>${q?'Aucune situation trouvée':state.library.length?'Aucune situation trouvée':'Aucune situation complémentaire disponible'}</strong><p>${q?'Modifiez votre recherche.':(data.situations||[]).length?'Les situations proposées pour ce chapitre et ce périmètre sont déjà présentes dans votre campagne.':'Aucune situation complémentaire n’est actuellement proposée pour ce chapitre et le périmètre sélectionné. Le nombre affiché sur la carte du catalogue concerne l’ensemble de la thématique. Vous pouvez consulter les autres chapitres ou contacter Me&YouToo.'}</p></div>`;
         document.querySelectorAll('[data-library-pick]').forEach(b=>b.onclick=()=>mode==='replace'?replaceSituation(replaceId,b.dataset.libraryPick):addSituation(b.dataset.libraryPick));
+        document.querySelectorAll('[data-library-replace]').forEach(b=>{
+          const select=b.closest('.composer-library-replacement').querySelector('[data-library-replace-target]');
+          select.onchange=()=>{b.disabled=!select.value;};
+          b.onclick=async()=>{
+            const candidate=libraryReplacementCandidates(ch,entries.find(entry=>String(entry.primary.id)===b.dataset.libraryReplace)?.members.length||1).find(item=>String(item.s.id)===select.value);
+            if(!candidate)return;
+            const confirmed=await window.StudioModal.confirm({eyebrow:'Composition du diagnostic',title:'Confirmer ce remplacement ?',message:`La situation ${candidate.index+1}${candidate.removing>1?' et sa sélection liée':''} sera remplacée par votre sélection de la bibliothèque. Ses personnalisations éventuelles seront retirées de ce brouillon.`,type:'warning',cancelLabel:'Continuer à consulter',confirmLabel:'Remplacer'});
+            if(confirmed)await replaceSituation(select.value,b.dataset.libraryReplace);
+          };
+        });
       };
       const librarySearch=$('library-search');if(librarySearch){librarySearch.value='';librarySearch.oninput=()=>renderLibraryEntries(librarySearch.value);}
       renderLibraryEntries('');
@@ -1189,10 +1222,10 @@
     const libraryButton=$('library-button');
     libraryButton.hidden=Boolean((stereotypes&&!isAdmin)||state.project?.can_edit===false||!hasLibrary);
     if(!libraryButton.hidden){
-      libraryButton.classList.toggle('is-disabled',status.atMax);
-      libraryButton.setAttribute('aria-disabled',String(status.atMax));
-      libraryButton.textContent='Choisir dans la bibliothèque';
-      libraryButton.title=status.atMax?`Maximum de ${status.rules.max} situations atteint`: 'Parcourir les situations complémentaires autorisées pour ce chapitre et ce périmètre';
+      libraryButton.classList.remove('is-disabled');
+      libraryButton.removeAttribute('aria-disabled');
+      libraryButton.textContent='Consulter la bibliothèque';
+      libraryButton.title='Consulter les situations complémentaires et choisir un éventuel remplacement';
     }
     if((!stereotypes||isAdmin)&&state.project?.can_edit!==false&&!state.libraryAvailability.has(libraryAvailabilityKey(ch))){
       ensureLibraryAvailability(ch);
@@ -1250,18 +1283,6 @@
   async function load(){try{await ensureProject();const query=new URLSearchParams();if(state.country)query.set('countryCode',state.country);if(state.locale)query.set('locale',state.locale);const data=await api(`/api/projects/${projectId}/composer${query.toString()?`?${query.toString()}`:''}`);state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);const countries=campaignCountries(data.project);state.country=requestedCountry&&countries.includes(requestedCountry)?requestedCountry:(countries.length===1?countries[0]:'');const locales=projectContentLocales(data.project);if(isLegacyClientCampaign(data.project)&&!requestedLocale&&locales.includes('fr'))state.locale='fr';else if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':(locales[0]||'fr');if(state.country!==requestedCountry||state.locale!==(requestedLocale||'fr')){const q2=new URLSearchParams();if(state.country)q2.set('countryCode',state.country);if(state.locale)q2.set('locale',state.locale);const refreshed=await api(`/api/projects/${projectId}/composer?${q2.toString()}`);state.project=refreshed.project;state.chapters=refreshed.chapters;rememberComposerContext(refreshed);}const targetChapter=requestedSituation?state.chapters.findIndex(ch=>(ch.situations||[]).some(s=>String(s.id)===requestedSituation)):-1;state.active=targetChapter>=0?targetChapter:Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title||data.project.legacy_theme_title||'Campagne historique';const clientName=$('composer-client-name');if(clientName)clientName.hidden=true;renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();configureContextBack(state.project);if(state.project.can_edit)await saveStep('composer');if(state.country){await preloadActiveTranslationContexts();render();}if(requestedSituation&&state.country)requestAnimationFrame(openRequestedSituation);if(state.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!state.project.can_edit)showMessage('Campagne historique en lecture seule. Choisissez une langue ci-dessus pour consulter ses traductions.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
 
   $('library-button').onclick=async()=>{
-    const status=chapterCountStatus(state.chapters[state.active]);
-    if(status.atMax){
-      await window.StudioModal.confirm({
-        eyebrow:'Composition du diagnostic',
-        title:`Maximum de ${status.rules.max} situations atteint`,
-        message:`Vous avez déjà ${status.rules.max} situations dans ce chapitre. Supprimez-en une avant d’en ajouter une autre depuis la bibliothèque.`,
-        type:'warning',
-        cancelLabel:'Fermer',
-        confirmLabel:'Compris'
-      });
-      return;
-    }
     openLibrary('add');
   };
   window.StudioComposerPreviewSnapshot=()=>({
