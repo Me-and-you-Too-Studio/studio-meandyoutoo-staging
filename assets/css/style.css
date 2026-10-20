@@ -15675,3 +15675,49 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
   font-weight:700;
   line-height:1.5;
 }
+
+
+/* Dossier client admin : actions de campagne et menu Cloner. */
+.admin-client-page .admin-ad-actions > .campaign-more > summary{
+  min-height:46px;
+  padding:12px 16px;
+  box-sizing:border-box;
+  white-space:nowrap;
+}
+.admin-client-page .admin-ad-actions .admin-campaign-clone > summary{
+  background:#edf7f7;
+  border-color:#aed4d5;
+  color:#09666e;
+}
+.admin-client-page .admin-ad-actions .campaign-more-menu{
+  min-width:250px;
+  width:max-content;
+  max-width:calc(100vw - 48px);
+}
+.admin-client-page .admin-ad-actions .campaign-more-menu > a,
+.admin-client-page .admin-ad-actions .campaign-more-menu > button{
+  white-space:nowrap;
+}
+.admin-client-page .admin-ad-actions .campaign-more-menu button:disabled{
+  color:#7a8591;
+  background:#f4f6f8;
+  cursor:not-allowed;
+  opacity:1;
+}
+.admin-client-page .admin-ad-actions .campaign-more-menu :is(a,button):focus-visible,
+.admin-client-page .admin-ad-actions .campaign-more > summary:focus-visible{
+  outline:2px solid #087f81;
+  outline-offset:2px;
+}
+.admin-client-page .admin-ad-actions .admin-campaign-sensitive{
+  border-top:1px solid #e4e8ee;
+  padding-top:5px;
+  margin-top:5px;
+}
+@media(max-width:620px){
+  .admin-client-page .admin-ad-actions .campaign-more-menu{
+    min-width:0;
+    width:100%;
+    box-sizing:border-box;
+  }
+}

@@ -786,7 +786,8 @@
     const st = normalizedStatus(p),
       id = p.id,
       q = "?projectId=" + encodeURIComponent(id),
-      more = [];
+      more = [],
+      sensitive = [];
     more.push('<a href="composer.html' + q + '">✏️ Modifier le contenu</a>');
     more.push('<a href="personnalisation.html' + q + '">👤 Modifier les profils</a>');
     more.push('<a href="parametrage.html' + q + '">⚙️ Modifier le paramétrage</a>');
@@ -823,15 +824,22 @@
       primary =
         '<a class="button button-secondary" href="campagne-detail.html' +
           q +
-          '">👁️ Voir la campagne</a>';
+          '">👁️ Gérer la campagne</a>';
     const kit = '<a class="button button-secondary" href="kit-communication.html' + q + '">📣 Kit de com</a>',
-      openCampaign = String(p.communication_share_url || "").trim()
-        ? '<a class="button button-secondary" href="' + esc(p.communication_share_url) + '" target="_blank" rel="noopener">↗ Ouvrir la campagne</a>'
-        : "",
-      openStats = String(p.communication_results_url || "").trim()
-        ? '<a class="button button-secondary" href="' + esc(p.communication_results_url) + '" target="_blank" rel="noopener">📊 Ouvrir les stats</a>'
-        : "",
+      shareUrl = String(p.communication_share_url || "").trim(),
+      statsUrl = String(p.communication_results_url || "").trim(),
+      respondentReady = ["scheduled", "published", "active"].includes(st) && Boolean(shareUrl),
+      respondentHint = !["scheduled", "published", "active"].includes(st)
+        ? 'Disponible lorsque la campagne est publiée ou programmée.'
+        : 'Le lien répondant doit être renseigné et validé avant ouverture.',
+      openCampaign = respondentReady
+        ? '<a href="' + esc(shareUrl) + '" target="_blank" rel="noopener">↗ Lien répondant</a>'
+        : '<button type="button" disabled title="' + respondentHint + '">↗ Lien répondant</button>',
+      openStats = statsUrl
+        ? '<a href="' + esc(statsUrl) + '" target="_blank" rel="noopener">📊 Statistiques</a>'
+        : '<button type="button" disabled title="Le lien des statistiques n’est pas encore disponible.">📊 Statistiques</button>',
       manage = '<button class="button button-secondary" type="button" data-manage-campaign="' + id + '">⚙️ Infos campagne</button>';
+    more.splice(3, 0, openCampaign, openStats);
     if (["scheduled", "published", "active"].includes(st))
       more.push(
         '<button type="button" data-extend="' +
@@ -839,7 +847,7 @@
           '">📅 Prolonger</button>',
       );
     if (["published", "active"].includes(st))
-      more.push(
+      sensitive.push(
         '<button class="danger" type="button" data-unpublish="' +
           id +
           '">⏹ Dépublier</button>',
@@ -850,17 +858,13 @@
           id +
           '">📝 Remettre en brouillon</button>',
       );
-    if (
-      ["draft", "scheduled", "published", "active", "unpublished", "archived"].includes(
-        st,
-      )
-    )
-      more.push(
-        '<button type="button" data-clone="' +
-          id +
-          '">🧬 Cloner pour ce client</button>',
-        '<button type="button" data-clone-other-client="' + id + '">⧉ Dupliquer pour un autre client</button>',
-      );
+    const canClone = ["draft", "scheduled", "published", "active", "unpublished", "archived"].includes(st);
+    const clone = canClone
+      ? '<details class="campaign-more admin-campaign-clone" name="admin-campaign-actions-' + id + '"><summary>🧬 Cloner</summary><div class="campaign-more-menu">' +
+        '<button type="button" data-clone="' + id + '">Pour ce client</button>' +
+        '<button type="button" data-clone-other-client="' + id + '">Pour un autre client</button>' +
+        '</div></details>'
+      : '';
     if (st === "unpublished")
       more.push(
         '<button type="button" data-archive="' +
@@ -868,12 +872,15 @@
           '">📦 Archiver</button>',
       );
     if (!["published", "active", "scheduled"].includes(st))
-      more.push(
+      sensitive.push(
         '<button class="danger" type="button" data-delete-project="' +
           id +
           '">🗑️ Supprimer</button>',
       );
-    return primary + openCampaign + openStats + kit + manage + '<details class="campaign-more"><summary>Autres actions</summary><div class="campaign-more-menu">' + more.join("") + '</div></details>';
+    const sensitiveGroup = sensitive.length
+      ? '<div class="admin-campaign-sensitive">' + sensitive.join("") + '</div>'
+      : '';
+    return primary + clone + kit + manage + '<details class="campaign-more" name="admin-campaign-actions-' + id + '"><summary>Autres actions</summary><div class="campaign-more-menu">' + more.join("") + sensitiveGroup + '</div></details>';
   }
   function card(p) {
     const st = normalizedStatus(p),
@@ -1684,6 +1691,19 @@
     dialog.showModal();
   }
 
+  document.addEventListener('click', event => {
+    $$('.admin-ad-actions .campaign-more[open]').forEach(menu => {
+      if (!menu.contains(event.target) || event.target.closest('a, button')) menu.open = false;
+    });
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    $$('.admin-ad-actions .campaign-more[open]').forEach(menu => {
+      const focused = menu.contains(document.activeElement);
+      menu.open = false;
+      if (focused) menu.querySelector('summary')?.focus();
+    });
+  });
   function bindProjectActions() {
     $$('[data-clone-other-client]').forEach(button=>button.onclick=()=>openClientCampaignCopy(projects.get(String(button.dataset.cloneOtherClient))));
     $$('[data-manage-campaign]').forEach(
