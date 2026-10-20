@@ -1264,6 +1264,7 @@
       situations:(ch.situations||[]).filter(si=>si.selected!==false).map((si,sidx)=>({
         id:si.id||si.source_id||`${cidx}-${sidx}`,
         content:si.content||si.custom_content||si.original_content||'',
+        kind:si.kind,response_kind:si.response_kind||si.legacy_payload?.responseKind||si.legacy_payload?.kind||null,
         answers:si.answers||[]
       }))
     }))

@@ -92,8 +92,11 @@ function normalizeScaleAnswers(list){
 }
 function normalizeSituation(s,sidx,cidx){
   const raw=Array.isArray(s.answers)?s.answers:[];
-  const scale=isFivePointScaleAnswers(raw);
-  return {id:s.id||s.source_id||`${cidx}-${sidx}`,content:s.content||s.original_content||s.text||'',scaleType:scale?'five-point':null,answers:scale?normalizeScaleAnswers(raw):shuffle(raw.map(normalizeAnswer))};
+  // Les anciennes campagnes sans modalité figée gardent leur affichage historique.
+  // Pour le Catalogue et les nouvelles copies, la modalité explicite est prioritaire.
+  const explicitKind=s.response_kind||s.legacy_payload?.responseKind||s.legacy_payload?.kind||(mode!=='project'?s.kind:null);
+  const scale=explicitKind?explicitKind==='rating':isFivePointScaleAnswers(raw);
+  return {id:s.id||s.source_id||`${cidx}-${sidx}`,content:s.content||s.original_content||s.text||'',scaleType:scale?'rating':null,answers:scale?normalizeScaleAnswers(raw):shuffle(raw.map(normalizeAnswer))};
 }
 function normalizeResources(list){return (Array.isArray(list)?list:[]).map((r,i)=>{const title=String(r?.title||r?.titre||r?.label||r?.text||`Ressource ${i+1}`).trim(),url=String(r?.url||r?.href||r?.link||'').trim(),documentId=String(r?.documentId??r?.document_id??'').trim(),legacyFilename=String(r?.legacyFilename||r?.legacy_filename||r?.filename||'').trim(),type=String(r?.type||'').toLowerCase()||(documentId?'document':legacyFilename&&!url?'legacy_document':'link');return{title,type,url,documentId,legacyFilename,filename:String(r?.filename||legacyFilename||'').trim()}}).filter(r=>r.title&&(r.type==='document'?r.documentId:r.type==='legacy_document'?r.legacyFilename:/^https?:\/\//i.test(r.url)))}
 function normalizeMedia(list){const rows=(Array.isArray(list)?list:[]).map(m=>({id:m.id,title:String(m.title||'Vidéo'),placement:m.placement,profile_position:m.profile_position===null||m.profile_position===undefined?null:Number(m.profile_position),locale:String(m.locale||'').toLowerCase().replaceAll('_','-'),playback_path:String(m.playback_path||'')})).filter(m=>m.id&&m.playback_path);const exact=rows.filter(m=>m.locale===previewLocale);return exact.length?exact:(previewLocale==='fr'?rows.filter(m=>!m.locale):[])}
@@ -325,15 +328,19 @@ function profileMedia(ch,p){
 }
 function renderScaleAnswers(s,selected){
   const rows=Array.isArray(s?.answers)?s.answers:[];
-  // 1 à 5 sont des positions de réponse, jamais des valeurs de scoring.
+  // Les numéros visibles sont des positions de réponse, jamais des valeurs de scoring.
   // data-i maintient l'association avec le score réel de la réponse sélectionnée.
-  return `<div class="rp-scale" dir="ltr"><div class="rp-scale-grid">${rows.map((a,i)=>`<button type="button" class="rp-scale-option ${selected===i?'selected':''}" data-i="${i}" aria-label="${esc(`${i+1} - ${a.label}`)}"><span>${i+1}</span></button>`).join('')}</div><div class="rp-scale-legend"><div class="rp-scale-legend-item rp-scale-legend-1" dir="auto">${esc(rows[0]?.label||'')}</div><div class="rp-scale-legend-item rp-scale-legend-3" dir="auto">${esc(rows[2]?.label||'')}</div><div class="rp-scale-legend-item rp-scale-legend-5" dir="auto">${esc(rows[4]?.label||'')}</div></div></div>`;
+  const columns=`grid-template-columns:repeat(${Math.max(1,rows.length)},minmax(0,1fr))`;
+  const legend=rows.length===5
+    ?`<div class="rp-scale-legend-item rp-scale-legend-1" dir="auto">${esc(rows[0]?.label||'')}</div><div class="rp-scale-legend-item rp-scale-legend-3" dir="auto">${esc(rows[2]?.label||'')}</div><div class="rp-scale-legend-item rp-scale-legend-5" dir="auto">${esc(rows[4]?.label||'')}</div>`
+    :rows.map((a,i)=>`<div class="rp-scale-legend-item" style="grid-column:${i+1}" dir="auto">${esc(a.label)}</div>`).join('');
+  return `<div class="rp-scale" dir="ltr"><div class="rp-scale-grid" style="${columns}">${rows.map((a,i)=>`<button type="button" class="rp-scale-option ${selected===i?'selected':''}" data-i="${i}" aria-label="${esc(`${i+1} - ${a.label}`)}"><span>${i+1}</span></button>`).join('')}</div><div class="rp-scale-legend" style="${columns}">${legend}</div></div>`;
 }
 function question(){
   let ch=d.chapters[ci],s=ch?.situations?.[qi];if(!s){done();return}
-  const selected=answers[answerKey()],isScale=s.scaleType==='five-point';
+  const selected=answers[answerKey()],isScale=s.scaleType==='rating';
   const answerBlock=isScale?renderScaleAnswers(s,selected):`<div class="rp-answers">${(s.answers||[]).map((a,i)=>`<button type="button" class="rp-answer ${selected===i?'selected':''}" data-i="${i}"><span>${String.fromCharCode(65+i)}</span>${esc(a.label)}</button>`).join('')}</div>`;
-  const help=isScale?'Répondez à cette série de questions en choisissant une valeur de 1 à 5.':'Choisissez la réponse qui correspond le mieux à ce que vous pensez ou feriez spontanément.';
+  const help=isScale?`Choisissez la valeur qui correspond à votre réponse, de 1 à ${s.answers.length}.`:'Choisissez la réponse qui correspond le mieux à ce que vous pensez ou feriez spontanément.';
   root.innerHTML=head(`Partie ${ci+1} sur ${d.chapters.length}`)+`<section class="rp-card ${isScale?'rp-card-scale':''}"><div class="rp-progress-row"><div><span>Partie ${ci+1}/${d.chapters.length}</span><strong class="rp-chapter-title">${esc(ch.title)}</strong></div><span>Situation ${qi+1} / ${ch.situations.length}</span></div><div class="rp-bar"><i style="width:${Math.round(((qi+1)/Math.max(1,ch.situations.length))*100)}%"></i></div><h1>${esc(s.content)}</h1><p class="rp-help">${esc(help)}</p>${answerBlock}<div class="rp-actions"><button id="prev" class="button button-secondary">Précédent</button><button id="next" class="button button-primary" ${selected===undefined?'disabled':''}>Continuer</button></div></section>`;
   root.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{answers[answerKey()]=Number(b.dataset.i);question()});
   $('#prev').onclick=()=>{if(qi>0)qi--;else if(ci>0){ci--;qi=d.chapters[ci].situations.length-1;step=1}else{step=d.socio.length?0:-1}render()};
