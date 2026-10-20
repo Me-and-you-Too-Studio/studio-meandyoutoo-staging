@@ -3819,6 +3819,28 @@ legend {
   color: var(--green-blue-dark);
   margin-bottom: 6px;
 }
+.composer-translation-gap-badge {
+  display: inline-flex;
+  padding: 6px 10px;
+  margin: 4px;
+  border: 1px solid #be293e;
+  border-radius: 20px;
+  background: #fff0f2;
+  color: #a51c30;
+  font-size: .8rem;
+  font-weight: 800;
+}
+.composer-translation-gap-alert {
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 2px solid #be293e;
+  border-left-width: 6px;
+  border-radius: 14px;
+  background: #fff3f4;
+  color: #822037;
+}
+.composer-translation-gap-alert strong { display: block; margin-bottom: 8px; }
+.composer-translation-gap-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .composer-library-replacement {
   margin-top: 16px;
   min-width: 0;
