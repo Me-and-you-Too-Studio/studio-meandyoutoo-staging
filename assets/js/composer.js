@@ -610,23 +610,25 @@
     return `${String(ch?.catalog_chapter_id||ch?.id||'')}:${String(state.country||'')}`;
   }
   function chapterHasLibrary(ch=state.chapters[state.active]){
-    return Boolean(ch&&state.project?.can_edit!==false&&(!isStereotypesChapter(ch)||isAdmin));
+    return Boolean(ch&&state.project?.can_edit!==false&&(!isStereotypesChapter(ch)||isAdmin)&&state.libraryAvailability.get(libraryAvailabilityKey(ch))===true);
   }
   async function ensureLibraryAvailability(ch=state.chapters[state.active]){
     if(!ch||state.project?.can_edit===false||(isStereotypesChapter(ch)&&!isAdmin))return false;
     const key=libraryAvailabilityKey(ch);
     if(state.libraryAvailability.has(key))return state.libraryAvailability.get(key)===true;
-    // Le contrôle de disponibilité ne masque pas l’accès à la bibliothèque :
-    // une sélection vide est expliquée directement dans le panneau.
-    state.libraryAvailability.set(key,false);
+    // Masquer les accès jusqu'à confirmation d'une alternative réellement disponible.
+    const pending={};
+    state.libraryAvailability.set(key,pending);
     try{
       const data=await api(`/api/catalog/themes/${themeSlug}/library?chapterId=${encodeURIComponent(ch.catalog_chapter_id||ch.id)}&projectId=${encodeURIComponent(projectId)}&countryCode=${encodeURIComponent(state.country||'')}`);
-      const has=Array.isArray(data?.situations)&&data.situations.length>0;
+      if(state.libraryAvailability.get(key)!==pending)return false;
+      const has=availableLibrarySituations(data?.situations).length>0;
       state.libraryAvailability.set(key,has);
       if(ch===state.chapters[state.active])render();
       return has;
     }catch(error){
       console.warn('Bibliothèque complémentaire indisponible',error);
+      if(state.libraryAvailability.get(key)!==pending)return false;
       state.libraryAvailability.set(key,false);
       if(ch===state.chapters[state.active])render();
       return false;
@@ -717,7 +719,7 @@
       <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="${answersExpanded}"><span data-toggle-label>${answersExpanded?'Masquer les réponses et les scores':'Voir les réponses et les scores'}</span> <span aria-hidden="true">⌄</span></button>
       <div class="composer-answers" id="answers-${esc(s.id)}"${answersExpanded?'':' hidden'}>${answerRows}</div>
       ${((((state.country?(projectCountryLocales(state.project)[state.country]||[]):(state.project?.locales||[]))).length>1)?`<div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" ${legacyClientImport?'':'hidden'}>🌐 Vérifier les versions linguistiques</button></div><div class="translation-sync-warning" data-live-translation-warning ${customized?'':'hidden'}>⚠️ Vous modifiez le contenu de référence. Les autres versions linguistiques doivent être vérifiées.</div>`:'')}
-      ${!locked?`<div class="composer-inline-help composer-context-help">${directTranslationEdit?`<strong>Vous travaillez en ${esc(localeLabel(translationView.targetLocale))}</strong><span>Complétez la traduction de la situation et de chaque réponse. Le français reste votre référence et ne sera pas modifié.</span>`:`<strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo. Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span>`}</div>
+      ${!locked?`<div class="composer-inline-help composer-context-help">${directTranslationEdit?`<strong>Vous travaillez en ${esc(localeLabel(translationView.targetLocale))}</strong><span>Complétez la traduction de la situation et de chaque réponse. Le français reste votre référence et ne sera pas modifié.</span>`:`<strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. ${hasLibrary?'Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo.':''} Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span>`}</div>
       <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${directTranslationEdit?'Enregistrement automatique de la traduction':(customized?'Enregistré':'Enregistrement automatique')}</span></span></div>
       <div class="composer-actions">
         ${!directTranslationEdit&&customized?`<button class="button button-ghost" type="button" data-reset="${esc(s.id)}">↶ ${state.project?.review_mode?'Annuler ma correction':'Annuler mes modifications'}</button>`:''}
@@ -985,15 +987,18 @@
       showMessage('La formulation Me&YouToo d’origine a été restaurée.','success');
     }catch(e){showMessage(e.message);}
   }
-  async function removeSituation(id){const ch=state.chapters[state.active],s=findSituation(id),linked=Boolean(s&&s.metadata&&s.metadata.link_group);const confirmed=await window.StudioModal.confirm({eyebrow:'Composition du diagnostic',title:linked?'Supprimer ces situations liées ?':'Supprimer cette situation ?',message:linked?'Cette situation fonctionne avec une autre mise en situation. Les deux seront retirées ensemble de ce chapitre. Cette action concerne uniquement ce brouillon.':'Cette mise en situation sera retirée de ce chapitre. Elle restera disponible dans le référentiel Me&YouToo.',type:'danger',cancelLabel:'Conserver',confirmLabel:linked?'Supprimer les situations':'Supprimer la situation'});if(!confirmed)return;try{const data=await api(`/api/projects/${projectId}/situations/${id}`,{method:'DELETE'});const deleted=new Set((data.deletedIds||[id]).map(String));ch.situations=ch.situations.filter(s=>!deleted.has(String(s.id)));render();showMessage(data.linked?'Les situations liées ont été supprimées ensemble.':'La situation a été supprimée du brouillon.','success');}catch(e){showMessage(e.message);}}
+  async function removeSituation(id){const ch=state.chapters[state.active],s=findSituation(id),linked=Boolean(s&&s.metadata&&s.metadata.link_group);const confirmed=await window.StudioModal.confirm({eyebrow:'Composition du diagnostic',title:linked?'Supprimer ces situations liées ?':'Supprimer cette situation ?',message:linked?'Cette situation fonctionne avec une autre mise en situation. Les deux seront retirées ensemble de ce chapitre. Cette action concerne uniquement ce brouillon.':'Cette mise en situation sera retirée de ce chapitre. Elle restera disponible dans le référentiel Me&YouToo.',type:'danger',cancelLabel:'Conserver',confirmLabel:linked?'Supprimer les situations':'Supprimer la situation'});if(!confirmed)return;try{const data=await api(`/api/projects/${projectId}/situations/${id}`,{method:'DELETE'});const deleted=new Set((data.deletedIds||[id]).map(String));ch.situations=ch.situations.filter(s=>!deleted.has(String(s.id)));state.libraryAvailability.clear();render();showMessage(data.linked?'Les situations liées ont été supprimées ensemble.':'La situation a été supprimée du brouillon.','success');}catch(e){showMessage(e.message);}}
 
   function currentCatalogIds(){return new Set(state.chapters.flatMap(ch=>ch.situations).flatMap(s=>[String(s.catalog_situation_id||''),String(s.source_id||''),String(s.metadata?.duplicate_of_source_id||''),canonical(s.content)]).filter(Boolean));}
+  function availableLibrarySituations(situations){
+    const existing=currentCatalogIds();
+    return (Array.isArray(situations)?situations:[]).filter(s=>![String(s.id||''),String(s.source_id||''),String(s.metadata?.duplicate_of_source_id||''),canonical(s.content)].filter(Boolean).some(k=>existing.has(k)));
+  }
   async function openLibrary(mode='add',replaceId=''){
-    const ch=state.chapters[state.active];state.libraryMode=mode;state.replaceId=replaceId;
+    const ch=state.chapters[state.active];if(!chapterHasLibrary(ch))return;state.libraryMode=mode;state.replaceId=replaceId;
     try{
       const data=await api(`/api/catalog/themes/${themeSlug}/library?chapterId=${encodeURIComponent(ch.catalog_chapter_id||ch.id)}&projectId=${encodeURIComponent(projectId)}&countryCode=${encodeURIComponent(state.country||'')}`);
-      const existing=currentCatalogIds();
-      state.library=(data.situations||[]).filter(s=>![String(s.id||''),String(s.source_id||''),String(s.metadata?.duplicate_of_source_id||''),canonical(s.content)].filter(Boolean).some(k=>existing.has(k)));
+      state.library=availableLibrarySituations(data?.situations);
       $('library-title').textContent=mode==='replace'?`Remplacer une situation · ${ch.title}`:`Ajouter une situation · ${ch.title}`;
 
       const seenGroups=new Set(),entries=[];
@@ -1042,7 +1047,7 @@
       showMessage(data.linked?'Les situations liées ont été ajoutées et enregistrées ensemble.':'La situation a été ajoutée et enregistrée dans le brouillon.','success');
     }catch(e){showMessage(e.message);}
   }
-  async function replaceSituation(projectSituationId,catalogSituationId){try{const data=await api(`/api/projects/${projectId}/situations/${projectSituationId}/replace`,{method:'PATCH',body:JSON.stringify({catalogSituationId:Number(catalogSituationId),countryCode:state.country})});closeLibrary();const refreshed=await api(`/api/projects/${projectId}/composer`);state.project=refreshed.project;state.chapters=refreshed.chapters;render();showMessage(data.linked?'La sélection liée a été remplacée et enregistrée ensemble.':'La situation a été remplacée et enregistrée.','success');}catch(e){showMessage(e.message);}}
+  async function replaceSituation(projectSituationId,catalogSituationId){try{const data=await api(`/api/projects/${projectId}/situations/${projectSituationId}/replace`,{method:'PATCH',body:JSON.stringify({catalogSituationId:Number(catalogSituationId),countryCode:state.country})});closeLibrary();const refreshed=await api(`/api/projects/${projectId}/composer`);state.project=refreshed.project;state.chapters=refreshed.chapters;state.libraryAvailability.clear();render();showMessage(data.linked?'La sélection liée a été remplacée et enregistrée ensemble.':'La situation a été remplacée et enregistrée.','success');}catch(e){showMessage(e.message);}}
 
   async function changeWholeChapter(catalogChapterId){
     const ch=state.chapters[state.active];
@@ -1124,13 +1129,14 @@
     const ch=state.chapters[state.active];if(!ch)return;
     const stereotypes=isStereotypesChapter(ch),status=chapterCountStatus(ch);
     const methodologyLocked=Boolean(stereotypes&&!isAdmin);
+    const hasLibrary=chapterHasLibrary(ch);
     const guidance=document.querySelector('.composer-customization-guidance');
     const objective=document.querySelector('.creation-objective');
     if(guidance){
       if(methodologyLocked){
         guidance.innerHTML=`<div class="composer-customization-guidance-icon" aria-hidden="true">🔒</div><div><strong>Pourquoi ce chapitre est-il non modifiable ?</strong><p>Le chapitre <strong>« Stéréotypes de genre »</strong> est issu d’un <strong>programme de recherche-action mené en entreprise auprès de plusieurs centaines de collaborateurs</strong>.</p><p>Ses situations, leurs formulations, les réponses, la sélection des situations et les profils associés ont été construits comme un <strong>ensemble méthodologique</strong>. Les modifier ferait perdre la cohérence de la mesure et la comparabilité des résultats.</p><p>Ce chapitre est donc <strong>consultable mais non modifiable par les clients</strong>, partout où il est utilisé dans le Studio Me&YouToo.</p></div>`;
       }else{
-        guidance.innerHTML=`<div class="composer-customization-guidance-icon" aria-hidden="true">✎</div><div><strong>Personnalisez le contexte, pas le sens</strong><p>Vous pouvez adapter une mise en situation ou une réponse à votre organisation : <strong>changer un prénom</strong>, utiliser votre <strong>terminologie interne</strong>, préciser un <strong>métier</strong>, un <strong>secteur d’activité</strong> ou un <strong>contexte professionnel</strong>.</p><p><strong>À conserver impérativement :</strong> le sens de la situation, l’intention pédagogique et le niveau de pertinence des réponses. Les scores restent définis par Me&YouToo.</p><p class="composer-library-guidance"><strong>Le sens ne vous convient pas ?</strong> Ne réécrivez pas la situation : utilisez <strong>Remplacer</strong> pour choisir une autre mise en situation dans la bibliothèque Me&YouToo.</p><p class="composer-customization-validation">Vos adaptations seront <strong>transmises à Me&YouToo pour validation avant toute publication</strong>.</p></div>`;
+        guidance.innerHTML=`<div class="composer-customization-guidance-icon" aria-hidden="true">✎</div><div><strong>Personnalisez le contexte, pas le sens</strong><p>Vous pouvez adapter une mise en situation ou une réponse à votre organisation : <strong>changer un prénom</strong>, utiliser votre <strong>terminologie interne</strong>, préciser un <strong>métier</strong>, un <strong>secteur d’activité</strong> ou un <strong>contexte professionnel</strong>.</p><p><strong>À conserver impérativement :</strong> le sens de la situation, l’intention pédagogique et le niveau de pertinence des réponses. Les scores restent définis par Me&YouToo.</p>${hasLibrary?'<p class="composer-library-guidance"><strong>Le sens ne vous convient pas ?</strong> Ne réécrivez pas la situation : utilisez <strong>Remplacer</strong> pour choisir une autre mise en situation dans la bibliothèque Me&YouToo.</p>':''}<p class="composer-customization-validation">Vos adaptations seront <strong>transmises à Me&YouToo pour validation avant toute publication</strong>.</p></div>`;
       }
     }
     if(objective){
@@ -1171,7 +1177,6 @@
     renderChapterChoice(ch);
 
     const libraryButton=$('library-button');
-    const hasLibrary=chapterHasLibrary(ch);
     libraryButton.hidden=Boolean((stereotypes&&!isAdmin)||state.project?.can_edit===false||!hasLibrary);
     if(!libraryButton.hidden){
       libraryButton.classList.toggle('is-disabled',status.atMax);

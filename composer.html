@@ -10,11 +10,11 @@
 <div id="composer-alert" class="composer-alert" hidden></div>
 <section class="composer composer-live" aria-live="polite">
 <aside class="composer-side creation-chapters card"><p class="eyebrow">Chapitres</p><h2 class="section-title" id="catalog-title">Chargement…</h2><p class="section-desc" id="catalog-summary"></p><div class="progress"><span id="catalog-progress" style="width:0%"></span></div><p id="catalog-count"></p><div id="chapter-nav" class="composer-chapter-nav"></div></aside>
-<div class="composer-main card"><div class="composer-main-head"><div><p class="eyebrow" id="chapter-kicker"></p><h2 class="section-title" id="chapter-title">Chargement du catalogue…</h2><p class="section-desc" id="chapter-desc"></p></div><button class="button button-secondary" id="library-button" type="button">Bibliothèque de situations</button></div><div class="composer-customization-guidance"><div class="composer-customization-guidance-icon" aria-hidden="true">✎</div><div>
+<div class="composer-main card"><div class="composer-main-head"><div><p class="eyebrow" id="chapter-kicker"></p><h2 class="section-title" id="chapter-title">Chargement du catalogue…</h2><p class="section-desc" id="chapter-desc"></p></div><button class="button button-secondary" id="library-button" type="button" hidden>Bibliothèque de situations</button></div><div class="composer-customization-guidance"><div class="composer-customization-guidance-icon" aria-hidden="true">✎</div><div>
 <strong>Personnalisez le contexte, pas le sens</strong>
 <p>Vous pouvez adapter une mise en situation ou une réponse à votre organisation : <strong>changer un prénom</strong>, utiliser votre <strong>terminologie interne</strong>, préciser un <strong>métier</strong>, un <strong>secteur d’activité</strong> ou un <strong>contexte professionnel</strong>.</p>
 <p><strong>À conserver impérativement :</strong> le sens de la situation, l’intention pédagogique et le niveau de pertinence des réponses. Les scores restent définis par Me&YouToo.</p>
-<p class="composer-library-guidance"><strong>Le sens ne vous convient pas ?</strong> Ne réécrivez pas la situation : utilisez <strong>Remplacer</strong> pour choisir une autre mise en situation dans la bibliothèque Me&YouToo.</p>
+<p class="composer-library-guidance" hidden><strong>Le sens ne vous convient pas ?</strong> Ne réécrivez pas la situation : utilisez <strong>Remplacer</strong> pour choisir une autre mise en situation dans la bibliothèque Me&YouToo.</p>
 <p class="composer-customization-validation">Vos adaptations seront <strong>transmises à Me&YouToo pour validation avant toute publication</strong>.</p>
 </div></div>
 <div class="chapter-title-translation-entry" hidden style="display:none"><button id="chapter-title-translations-button" class="button button-secondary" type="button" hidden>🌐 Vérifier ou corriger les titres traduits du chapitre</button><span class="chapter-title-translation-info">Le titre de référence est réservé à Me&YouToo. Les traductions peuvent être corrigées pour cette campagne.</span></div><div class="creation-objective"><span aria-hidden="true">💡</span><div><strong>Objectif de cette étape</strong><p>Choisissez les situations de cette partie et adaptez uniquement celles qui nécessitent une contextualisation à votre organisation.</p></div></div><div class="legal-scoring-note" id="legal-scoring-note" hidden><span aria-hidden="true">⚖️</span><div><strong>Scoring renforcé en raison du cadre légal</strong><p>Dans cette partie consacrée au harcèlement et à l’agression sexuelle, le scoring est volontairement plus sévère : les situations et les réponses sont liées à des obligations et qualifications prévues par la loi. La meilleure réponse est donc indiquée comme « Réponse correcte ».</p></div></div><div class="creation-meta-row"><span id="duration-estimate">Calcul en cours…</span><span>Les réponses et les scores garantissent la cohérence méthodologique.</span></div><div id="situation-list" class="composer-situation-list"></div></div>
@@ -39,7 +39,7 @@
 
   function loadComposerScript(){
     var script=document.createElement('script');
-    script.src='assets/js/composer.js?v=20261020-response-rating-1';
+    script.src='assets/js/composer.js?v=20261020-hide-empty-library-1';
     document.body.appendChild(script);
   }
 
