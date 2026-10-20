@@ -2835,16 +2835,19 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   }
   function librarySituationLocales(si){
     const scoped=libraryScopedLocales(si);
-    if(scoped!==null)return scoped;
     const declared=Array.isArray(si?.available_locales)?si.available_locales:[];
     const translated=(Array.isArray(si?.translations)?si.translations:[]).map(t=>t?.locale);
-    return [...new Set([...declared,...translated].map(x=>String(x||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean))];
+    // The chapter badge describes existing versions, never empty editorial targets.
+    const existing=declared.length?declared:translated;
+    return [...new Set(existing.map(catalogLocale).filter(locale=>locale&&(scoped===null||scoped.includes(locale))))];
   }
   function libraryZoneChapterLanguagesTag(ch){
-    const locales=[...new Set(currentSituations(ch).filter(si=>!si.is_default).flatMap(librarySituationLocales))];
+    const locales=[...new Set(currentSituations(ch).filter(si=>!si.is_default&&libraryMatchesCountry(ch,si)).flatMap(librarySituationLocales))];
     if(!locales.length)return '';
     const ordered=locales.includes('fr')?['fr',...locales.filter(x=>x!=='fr')]:locales;
-    return `<span class="admin-library-type-tag is-language">Langues : ${ordered.map(libraryLocaleLabel).join(' · ')}</span>`;
+    const situations=currentSituations(ch).filter(si=>!si.is_default&&libraryMatchesCountry(ch,si));
+    const counts=ordered.map(locale=>`${libraryLocaleLabel(locale)} ${situations.filter(si=>librarySituationLocales(si).includes(locale)).length}/${situations.length}`);
+    return `<span class="admin-library-type-tag is-language" title="Situations avec cette langue présente ; les traductions des réponses restent à vérifier.">Langues présentes : ${counts.join(' · ')}</span>`;
   }
   function chapterAccordion(theme,ch){
     const expanded=state.libraryExpandedChapters.has(String(ch.id));
