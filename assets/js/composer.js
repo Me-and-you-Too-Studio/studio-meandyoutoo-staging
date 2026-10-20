@@ -550,11 +550,18 @@
     const rules=chapterSituationRules(ch),count=ch?.situations?.length||0;
     return {rules,count,below:rules.min!=null&&count<rules.min,atMax:rules.max!=null&&count>=rules.max,above:rules.max!=null&&count>rules.max};
   }
+  function canRemoveSituation(s,ch=state.chapters[state.active]){
+    if(!s||!ch||state.project?.can_edit===false)return false;
+    const {rules,count}=chapterCountStatus(ch);
+    const group=s.metadata?.link_group;
+    const removing=group?ch.situations.filter(item=>item.metadata?.link_group===group).length:1;
+    return rules.min==null||count-removing>=rules.min;
+  }
   function firstInvalidIndex(limit=state.chapters.length-1){for(let i=0;i<=Math.min(limit,state.chapters.length-1);i++){const st=chapterCountStatus(state.chapters[i]);if(st.below||st.above)return i;}return -1;}
   async function showIncompleteChapterModal(index,title){
     const ch=state.chapters[index],status=chapterCountStatus(ch);if(!ch)return;
     state.active=index;history.replaceState(null,'',`composer.html?theme=${encodeURIComponent(themeSlug)}&projectId=${encodeURIComponent(projectId)}&chapter=${index}${state.country?`&countryCode=${encodeURIComponent(state.country)}`:''}`);render();window.scrollTo({top:0,behavior:'smooth'});
-    if(status.below){const goLibrary=await window.StudioModal.confirm({eyebrow:'Composition du diagnostic',title:title||`Il vous faut ${status.rules.min} situations minimum`,message:`« ${ch.title} » contient ${status.count} situation${status.count>1?'s':''}. Ajoutez-en ${status.rules.min-status.count} avant de personnaliser les profils.`,type:'info',cancelLabel:'Rester sur le chapitre',confirmLabel:'Piocher dans la bibliothèque'});if(goLibrary)openLibrary('add');return;}
+    if(status.below){await ensureLibraryAvailability(ch);if(!chapterHasLibrary(ch)){await window.StudioModal.alert({eyebrow:'Composition du diagnostic',title:'Chapitre à compléter avec Me&YouToo',message:`Ce chapitre contient ${status.count} situations sur les ${status.rules.min} requises. Aucune situation complémentaire n’est disponible pour ce périmètre. Contactez Me&YouToo pour rétablir les situations manquantes avant de poursuivre.`,type:'warning',confirmLabel:'Revenir au chapitre'});return;}const goLibrary=await window.StudioModal.confirm({eyebrow:'Composition du diagnostic',title:title||`Il vous faut ${status.rules.min} situations minimum`,message:`« ${ch.title} » contient ${status.count} situation${status.count>1?'s':''}. Ajoutez-en ${status.rules.min-status.count} avant de personnaliser les profils.`,type:'info',cancelLabel:'Rester sur le chapitre',confirmLabel:'Piocher dans la bibliothèque'});if(goLibrary)openLibrary('add');return;}
     await window.StudioModal.alert({eyebrow:'Composition du diagnostic',title:`Maximum de ${status.rules.max} situations`,message:`« ${ch.title} » contient plus de ${status.rules.max} situations. Supprimez-en une avant de personnaliser les profils.`,type:'warning',confirmLabel:'J’ai compris'});
   }
   function separatedDiffHtml(original,current){
@@ -724,7 +731,7 @@
       <div class="composer-actions">
         ${!directTranslationEdit&&customized?`<button class="button button-ghost" type="button" data-reset="${esc(s.id)}">↶ ${state.project?.review_mode?'Annuler ma correction':'Annuler mes modifications'}</button>`:''}
         ${hasLibrary?`<button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer depuis la bibliothèque</button>`:''}
-        <button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button>
+        ${canRemoveSituation(s,ch)?`<button class="button button-danger-soft" type="button" data-remove="${esc(s.id)}">Supprimer du chapitre</button>`:''}
       </div>`:canReplaceLocked?`<div class="composer-inline-help composer-context-help composer-socle-help"><strong>Situation socle Stéréotypes</strong><span>Le texte et les réponses ne se modifient pas directement. Vous pouvez toutefois remplacer cette situation par une autre situation validée de la bibliothèque Me&YouToo.</span></div><div class="composer-actions"><button class="button button-secondary" type="button" data-replace="${esc(s.id)}">Remplacer via la bibliothèque</button></div>`:''}
       </div>
     </article>`;
@@ -987,7 +994,7 @@
       showMessage('La formulation Me&YouToo d’origine a été restaurée.','success');
     }catch(e){showMessage(e.message);}
   }
-  async function removeSituation(id){const ch=state.chapters[state.active],s=findSituation(id),linked=Boolean(s&&s.metadata&&s.metadata.link_group);const confirmed=await window.StudioModal.confirm({eyebrow:'Composition du diagnostic',title:linked?'Supprimer ces situations liées ?':'Supprimer cette situation ?',message:linked?'Cette situation fonctionne avec une autre mise en situation. Les deux seront retirées ensemble de ce chapitre. Cette action concerne uniquement ce brouillon.':'Cette mise en situation sera retirée de ce chapitre. Elle restera disponible dans le référentiel Me&YouToo.',type:'danger',cancelLabel:'Conserver',confirmLabel:linked?'Supprimer les situations':'Supprimer la situation'});if(!confirmed)return;try{const data=await api(`/api/projects/${projectId}/situations/${id}`,{method:'DELETE'});const deleted=new Set((data.deletedIds||[id]).map(String));ch.situations=ch.situations.filter(s=>!deleted.has(String(s.id)));state.libraryAvailability.clear();render();showMessage(data.linked?'Les situations liées ont été supprimées ensemble.':'La situation a été supprimée du brouillon.','success');}catch(e){showMessage(e.message);}}
+  async function removeSituation(id){const ch=state.chapters[state.active],s=findSituation(id);if(!canRemoveSituation(s,ch)){showMessage('Suppression impossible : le minimum de situations du catalogue doit être conservé.');return;}const linked=Boolean(s&&s.metadata&&s.metadata.link_group);const confirmed=await window.StudioModal.confirm({eyebrow:'Composition du diagnostic',title:linked?'Supprimer ces situations liées ?':'Supprimer cette situation ?',message:linked?'Cette situation fonctionne avec une autre mise en situation. Les deux seront retirées ensemble de ce chapitre. Cette action concerne uniquement ce brouillon.':'Cette mise en situation sera retirée de ce chapitre. Elle restera disponible dans le référentiel Me&YouToo.',type:'danger',cancelLabel:'Conserver',confirmLabel:linked?'Supprimer les situations':'Supprimer la situation'});if(!confirmed)return;try{const data=await api(`/api/projects/${projectId}/situations/${id}`,{method:'DELETE'});const deleted=new Set((data.deletedIds||[id]).map(String));ch.situations=ch.situations.filter(s=>!deleted.has(String(s.id)));state.libraryAvailability.clear();render();showMessage(data.linked?'Les situations liées ont été supprimées ensemble.':'La situation a été supprimée du brouillon.','success');}catch(e){showMessage(e.message);}}
 
   function currentCatalogIds(){return new Set(state.chapters.flatMap(ch=>ch.situations).flatMap(s=>[String(s.catalog_situation_id||''),String(s.source_id||''),String(s.metadata?.duplicate_of_source_id||''),canonical(s.content)]).filter(Boolean));}
   function availableLibrarySituations(situations){
@@ -1174,6 +1181,9 @@
         ?`${status.count} situation${status.count>1?'s':''} retenue${status.count>1?'s':''} · ${status.rules.min} minimum (base du catalogue) et ${status.rules.max} maximum dans ce chapitre.`
         :`${status.count} situations retenues · consultez les réponses et scores avant de modifier votre sélection.`;
 
+    if(!effectiveChapterLocked&&!campaignReadOnly&&status.rules.min!=null&&status.count===status.rules.min){
+      $('chapter-desc').textContent+=hasLibrary?' Pour conserver ce minimum, remplacez une situation depuis la bibliothèque plutôt que de la supprimer.':` Les ${status.rules.min} situations de cette partie sont requises. Vous pouvez en adapter le contexte.`;
+    }
     renderChapterChoice(ch);
 
     const libraryButton=$('library-button');
