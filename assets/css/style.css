@@ -15767,3 +15767,9 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
     box-sizing:border-box;
   }
 }
+
+/* Keep the selected calendar view exclusive and its heading visible on entry. */
+.calendar-page .studio-year-calendar[hidden],
+.calendar-page .studio-month-calendar[hidden]{display:none!important}
+.calendar-page .calendar-commandbar{scroll-margin-top:24px}
+@media(max-width:760px){.calendar-page .calendar-commandbar{scroll-margin-top:90px}}
