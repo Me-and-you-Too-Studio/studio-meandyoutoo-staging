@@ -3378,7 +3378,20 @@ Les tags existants seront conservés. La bibliothèque complémentaire Sexisme e
       }catch(error){showError(error.message);}finally{button.disabled=false;}
     });
     $$('[data-archive-theme]').forEach(b=>b.onclick=async()=>{const theme=findTheme(b.dataset.archiveTheme);if(!theme)return;const active=!theme.active;const ok=await StudioModal.confirm({eyebrow:'Catalogue admin',title:active?'Réactiver la thématique ?':'Désactiver cette thématique ?',message:active?'La thématique redevient active.':'La thématique sera inactive pour les nouvelles compositions ; aucune situation ne sera supprimée.',type:'warning',cancelLabel:'Annuler',confirmLabel:active?'Réactiver':'Désactiver'});if(!ok)return;try{await StudioAPI.request('/api/admin/catalog/themes/'+theme.id,{method:'PATCH',body:JSON.stringify({active})});await refreshLibrary();renderLibraryAdmin();}catch(err){showError(err.message);}});
-    $$('[data-delete-theme]').forEach(b=>b.onclick=async()=>{const theme=findTheme(b.dataset.deleteTheme);if(!theme)return;const ok=await StudioModal.confirm({eyebrow:'Catalogue admin',title:'Supprimer cette thématique ?',message:'Suppression uniquement si la thématique est vide, non historique et jamais utilisée par une campagne. Retirez ses chapitres au préalable. Les catalogues sources restent inchangés.',type:'danger',cancelLabel:'Conserver',confirmLabel:'Supprimer'});if(!ok)return;try{await StudioAPI.request('/api/admin/catalog/themes/'+theme.id,{method:'DELETE'});state.libraryThemeId=null;await refreshLibrary();renderLibraryAdmin();}catch(err){showError(err.message);}});
+    $$('[data-delete-theme]').forEach(b=>b.onclick=async()=>{
+      const theme=findTheme(b.dataset.deleteTheme);if(!theme)return;
+      try{
+        b.disabled=true;
+        const preview=await StudioAPI.request(`/api/admin/catalog/themes/${theme.id}/delete-preview`);
+        if(!preview.canDelete){await StudioModal.alert({eyebrow:'Catalogue admin',title:'Suppression impossible',message:(preview.blockers||[]).map(row=>row.message).join(' ')||'Cette thématique est encore utilisée.',type:'warning',confirmLabel:'Fermer'});return;}
+        const c=preview.counts;
+        const message=`La thématique « ${preview.theme.title} » et son contenu seront supprimés définitivement : ${c.chapters} chapitre(s), ${c.situations} situation(s), ${c.answers} réponse(s) et ${c.profiles} profil(s). Les situations archivées ou placées dans les supprimées sont incluses. ${c.media} association(s) de ressources et ${c.placements} rattachement(s) seront retirés. Les contenus sources importés depuis les autres thématiques et les vidéos de la médiathèque seront conservés.`;
+        const ok=await StudioModal.confirm({eyebrow:'Catalogue admin',title:'Supprimer cette thématique et son contenu ?',message,type:'danger',cancelLabel:'Conserver',confirmLabel:'Supprimer définitivement'});
+        if(!ok)return;
+        await StudioAPI.request('/api/admin/catalog/themes/'+theme.id,{method:'DELETE',body:JSON.stringify({confirmation:preview.confirmation})});
+        state.libraryThemeId=null;await refreshLibrary();renderLibraryAdmin();
+      }catch(err){showError(err.message);}finally{b.disabled=false;}
+    });
     $$('[data-toggle-theme-active]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const theme=findTheme(b.dataset.toggleThemeActive);if(!theme)return;try{b.disabled=true;await StudioAPI.request('/api/admin/catalog/themes/'+theme.id,{method:'PATCH',body:JSON.stringify({active:!Boolean(theme.active)})});await refreshLibrary();}catch(error){b.disabled=false;showError(error.message);}});
     $$('[data-add-chapter]').forEach(b=>b.onclick=e=>{e.stopPropagation();openChapterDialog(b.dataset.addChapter);});
     $$('[data-import-chapter]').forEach(b=>b.onclick=e=>{e.stopPropagation();openChapterImport(b.dataset.importChapter);});
