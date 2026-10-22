@@ -15773,3 +15773,14 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .calendar-page .studio-month-calendar[hidden]{display:none!important}
 .calendar-page .calendar-commandbar{scroll-margin-top:24px}
 @media(max-width:760px){.calendar-page .calendar-commandbar{scroll-margin-top:90px}}
+
+/* Le Studio identity — blue badge contrasts with the white navigation surfaces.
+   Keep the supplied transparent PNG intact; never stretch or crop the badge. */
+.sidebar-head .brand { margin-bottom: 12px; }
+.sidebar-head .brand .studio-brand-logo { display:block; width:150px; max-width:100%; height:auto; object-fit:contain; }
+body.sidebar-collapsed .brand .studio-brand-logo { width:60px; height:auto; }
+.mobile-header .studio-brand-logo { display:block; width:76px; height:auto; object-fit:contain; }
+.login-card > .studio-brand-logo { display:block; width:180px; max-width:100%; height:auto; justify-self:center; object-fit:contain; }
+@media(max-width:768px) {
+  body.sidebar-collapsed .sidebar-head .brand .studio-brand-logo { width:150px; }
+}

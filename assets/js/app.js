@@ -286,7 +286,7 @@
     root.classList.toggle('sidebar-admin', adminInterface);
     root.innerHTML =
       '<div class="sidebar-head">' +
-        '<div class="brand"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&YouToo"><span class="studio-pill">Studio</span></div>' +
+        '<div class="brand"><img class="studio-brand-logo" src="assets/img/brand/logo-studio-blue.png" alt="Le Studio Me&YouToo"></div>' +
         '<button class="sidebar-collapse" type="button" data-sidebar-collapse aria-label="Réduire le menu" aria-expanded="true" title="Réduire le menu">' +
           '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>' +
         '</button>' +
