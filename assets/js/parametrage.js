@@ -1381,18 +1381,42 @@ function incompleteSocioLocale(items,reference=[],allowEmpty=false){
     field.focus({preventScroll:true});
     field.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'center'});
   }
+  function missingIntroductionDelegation(items){
+    if(isReadOnly()||isLegacyClientCampaign()||currentUser.role==='admin')return {sources:[],locales:[]};
+    const requests=introTranslationRequests(),requested=new Set(requests.map(row=>row.locale));
+    const missing=new Set(unpersonalizedIntroductions().map(normalizeLocale));
+    const sources=projectLocales().map(normalizeLocale).filter(locale=>!missing.has(locale)&&!requested.has(locale));
+    const locales=[...new Set(items.filter(item=>item.id==='intro'&&item.locale).map(item=>normalizeLocale(item.locale)))].filter(locale=>missing.has(locale));
+    return {sources,locales};
+  }
   async function showMissingSettings(items){
     if(!items.length)return;
+    const delegation=missingIntroductionDelegation(items),canDelegate=delegation.sources.length>0&&delegation.locales.length>0,onlyTranslations=canDelegate&&items.every(item=>item.id==='intro');
     const dialog=document.createElement('dialog');dialog.className='studio-modal';dialog.style.cssText='max-height:90vh;overflow:auto;';dialog.setAttribute('aria-labelledby','param-missing-title');dialog.setAttribute('aria-describedby','param-missing-description');
-    dialog.innerHTML=`<div class="studio-modal-shell"><button class="studio-modal-close" type="button" aria-label="Fermer la fenêtre" data-missing-close>×</button><div class="studio-modal-icon" aria-hidden="true">✎</div><div class="studio-modal-copy"><p class="eyebrow">Avant la transmission</p><h2 id="param-missing-title">${items.length===1?'Un élément reste à compléter':'Quelques éléments restent à compléter'}</h2><p id="param-missing-description" class="studio-modal-message">Votre campagne n’a pas encore été transmise. Complétez les points suivants pour poursuivre. Choisissez un élément pour accéder directement au champ concerné.</p><div style="display:grid;gap:10px;margin-top:18px;">${items.map((item,index)=>`<button type="button" class="button button-secondary" data-missing-index="${index}" style="display:block;text-align:left;white-space:normal;height:auto;padding:14px 16px;"><strong style="display:block;margin-bottom:5px;">${esc(item.title)} <span aria-hidden="true">→</span></strong><span style="display:block;font-weight:400;line-height:1.5;">${esc(item.message)}</span></button>`).join('')}</div></div><div class="studio-modal-actions"><button class="button button-ghost" type="button" data-missing-close>Fermer</button><button class="button button-primary" type="button" data-missing-first autofocus>Compléter ${items.length===1?'cet élément':'le premier élément'} →</button></div></div>`;
+    dialog.innerHTML=`<div class="studio-modal-shell"><button class="studio-modal-close" type="button" aria-label="Fermer la fenêtre" data-missing-close>×</button><div class="studio-modal-icon" aria-hidden="true">✎</div><div class="studio-modal-copy"><p class="eyebrow">Avant la transmission</p><h2 id="param-missing-title">${onlyTranslations?'Traductions de votre introduction':items.length===1?'Un élément reste à compléter':'Quelques éléments restent à compléter'}</h2><p id="param-missing-description" class="studio-modal-message">${onlyTranslations?'Votre introduction personnalisée est prête. Vous pouvez confier ses traductions à Me&YouToo et poursuivre sans les rédiger vous-même.':'Votre campagne n’a pas encore été transmise. Choisissez un élément pour accéder directement au champ concerné.'}</p>${canDelegate?`<div style="padding:16px;background:#edf8fa;border-radius:12px;margin-top:16px;"><p><strong>Traductions à confier à Me&YouToo :</strong> ${delegation.locales.map(locale=>esc(localeLabel(locale))).join(', ')}.</p><label for="missing-intro-source">Introduction personnalisée à traduire</label><select id="missing-intro-source">${delegation.sources.map(locale=>`<option value="${esc(locale)}" ${locale===normalizeLocale(socioContextLocale)?'selected':''}>${esc(localeLabel(locale))}</option>`).join('')}</select><button class="button button-primary" type="button" data-missing-delegate autofocus style="white-space:normal;height:auto;margin-top:12px;">Confier ces traductions à Me&YouToo et poursuivre →</button><p class="hint">Votre équipe Me&YouToo recevra la liste des langues à traduire avec votre campagne.</p><p data-missing-delegate-error role="alert" hidden></p></div>`:''}<div style="display:grid;gap:10px;margin-top:18px;">${(onlyTranslations?[]:items).map((item,index)=>`<button type="button" class="button button-secondary" data-missing-index="${index}" style="display:block;text-align:left;white-space:normal;height:auto;padding:14px 16px;"><strong style="display:block;margin-bottom:5px;">${esc(item.title)} <span aria-hidden="true">→</span></strong><span style="display:block;font-weight:400;line-height:1.5;">${esc(item.message)}</span></button>`).join('')}</div></div><div class="studio-modal-actions"><button class="button button-ghost" type="button" data-missing-close>Fermer</button><button class="button button-primary" type="button" data-missing-first ${canDelegate?'':'autofocus'}>Compléter ${items.length===1?'cet élément':'le premier élément'} →</button></div></div>`;
     document.body.appendChild(dialog);
     document.body.classList.add('studio-modal-open');
     await new Promise(resolve=>{
-      let selected=null;
+      let selected=null,continueAfterDelegation=false;
+      const delegate=dialog.querySelector('[data-missing-delegate]');
+      if(delegate)delegate.onclick=async()=>{
+        delegate.disabled=true;const error=dialog.querySelector('[data-missing-delegate-error]');error.hidden=true;
+        const sourceLocale=normalizeLocale(dialog.querySelector('#missing-intro-source').value);
+        try{
+          storeActiveLanguageContent();
+          const current=missingIntroductionDelegation(items);
+          if(!current.sources.includes(sourceLocale))throw new Error('Choisissez une introduction personnalisée comme référence.');
+          const st=reviewState();st.introRequests={...(st.introRequests||{})};
+          for(const locale of current.locales)st.introRequests[locale]={sourceLocale};
+          updateNextState();renderIntroTranslationRequests();scheduleAutosave(0);
+          if(!await flushAutosave())throw new Error(lastAutosaveError||'Les demandes n’ont pas pu être enregistrées. Réessayez.');
+          continueAfterDelegation=true;dialog.close();
+        }catch(e){error.textContent=e.message;error.hidden=false;delegate.disabled=false;}
+      };
       dialog.querySelectorAll('[data-missing-close]').forEach(button=>button.onclick=()=>dialog.close());
       dialog.querySelectorAll('[data-missing-index]').forEach(button=>button.onclick=()=>{selected=items[Number(button.dataset.missingIndex)];dialog.close();});
       dialog.querySelector('[data-missing-first]').onclick=()=>{selected=items[0];dialog.close();};
-      dialog.addEventListener('close',()=>{document.body.classList.remove('studio-modal-open');dialog.remove();if(selected)requestAnimationFrame(()=>focusSetting(selected));resolve();},{once:true});
+      dialog.addEventListener('close',()=>{document.body.classList.remove('studio-modal-open');dialog.remove();if(selected)requestAnimationFrame(()=>focusSetting(selected));if(continueAfterDelegation)requestAnimationFrame(()=>$('settings-form')?.requestSubmit());resolve();},{once:true});
       dialog.addEventListener('click',event=>{if(event.target===dialog){const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)dialog.close();}});
       dialog.showModal();
     });
