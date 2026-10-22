@@ -15776,11 +15776,25 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 
 /* Le Studio identity — blue badge contrasts with the white navigation surfaces.
    Keep the supplied transparent PNG intact; never stretch or crop the badge. */
-.sidebar-head .brand { margin-bottom: 12px; }
-.sidebar-head .brand .studio-brand-logo { display:block; width:150px; max-width:100%; height:auto; object-fit:contain; }
+.sidebar-head {
+  position:relative;
+  justify-content:center;
+  align-items:center;
+  gap:0;
+}
+.sidebar-head .brand {
+  width:100%;
+  align-items:center;
+  margin-bottom:4px;
+}
+.sidebar-head .sidebar-collapse { position:absolute; top:0; right:0; }
+body.sidebar-collapsed .sidebar-head .sidebar-collapse { position:static; }
+body.sidebar-collapsed .sidebar-head { gap:8px; }
+body.sidebar-collapsed .sidebar-head .brand { margin-bottom:4px; }
+.sidebar-head .brand .studio-brand-logo { display:block; width:120px; max-width:100%; height:auto; object-fit:contain; }
 body.sidebar-collapsed .brand .studio-brand-logo { width:60px; height:auto; }
 .mobile-header .studio-brand-logo { display:block; width:76px; height:auto; object-fit:contain; }
 .login-card > .studio-brand-logo { display:block; width:180px; max-width:100%; height:auto; justify-self:center; object-fit:contain; }
 @media(max-width:768px) {
-  body.sidebar-collapsed .sidebar-head .brand .studio-brand-logo { width:150px; }
+  body.sidebar-collapsed .sidebar-head .brand .studio-brand-logo { width:120px; }
 }
