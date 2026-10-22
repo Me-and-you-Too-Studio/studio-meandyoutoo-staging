@@ -169,6 +169,19 @@
     });
   }
 
+  function pendingIntroTranslationRequests(){
+    const allowed=(project?.locales||[]).map(reviewLocale),raw=project?.translation_review_state?.introRequests||{};
+    return Object.entries(raw).flatMap(([key,value])=>{const locale=reviewLocale(key),sourceLocale=reviewLocale(value?.sourceLocale);return allowed.includes(locale)&&allowed.includes(sourceLocale)&&locale!==sourceLocale?[{locale,sourceLocale}]:[];});
+  }
+  function introTranslationRequestPanel(){
+    let host=$('intro-translation-request-summary');
+    const requests=pendingIntroTranslationRequests();
+    if(!requests.length){host?.remove();return;}
+    if(!host){host=document.createElement('section');host.id='intro-translation-request-summary';host.className='card';document.querySelector('.validation-summary').after(host);}
+    const admin=currentUser?.role==='admin';
+    host.innerHTML=`<h2 class="section-title">${admin?'Introduction à traduire par Me&YouToo':'Traductions de votre introduction demandées à Me&YouToo'}</h2><p>${admin?'Le client a demandé de traduire son introduction personnalisée dans les langues ci-dessous. Complétez ces traductions avant de finaliser la relecture.':'Vous pouvez transmettre votre campagne. Me&YouToo recevra les demandes suivantes et traduira votre introduction personnalisée avant la validation pour diffusion.'}</p><ul>${requests.map(row=>{const query=new URLSearchParams({theme,projectId,locale:row.locale,focus:'intro'});if(admin)query.set('review','1');return `<li><strong>${esc(reviewLocaleNames[row.locale]||row.locale.toUpperCase())}</strong> · à partir de ${esc(reviewLocaleNames[row.sourceLocale]||row.sourceLocale.toUpperCase())}${admin?` · <a class="review-edit-target" href="parametrage.html?${esc(query.toString())}">Compléter la traduction →</a>`:''}</li>`;}).join('')}</ul>`;
+  }
+
   function reviewPanel(){
     let root=$('review-workflow');if(!root){root=document.createElement('section');root.id='review-workflow';root.className='card review-workflow';document.querySelector('.validation-summary').after(root);}
     const summary=project.review_summary||'Aucun commentaire de relecture pour le moment.',isAdmin=currentUser?.role==='admin',status=isAdmin&&project.status==='client_validation_required'?'En attente du retour client':statusLabel(project.status);
@@ -288,6 +301,7 @@
       };
       collectSocio(project.sociodemo||[]);
       $('validation-theme').textContent=project.theme_title||'Autodiagnostic';$('validation-campaign').value=project.campaign_name||project.title||'';$('validation-title').value=project.respondent_title||'';$('validation-launch-date').value=isoDate(project.launch_date);$('validation-close-date').value=isoDate(project.close_date);$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').textContent=socioLabels.join(', ')||'Aucune';
+      introTranslationRequestPanel();
       renderValidationQuota(quota);
       renderMonthlyCampaignAllowance();
       $('validation-back').href=`parametrage.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;
@@ -315,7 +329,7 @@
     const checks=[...document.querySelectorAll('[data-validation-check]')];if(checks.some(c=>!c.checked)){$('validation-alert').hidden=false;$('validation-alert').textContent='Confirmez les trois points avant de transmettre.';return;}
     if(!await saveValidationSettings({silent:true}))return;
     const button=$('submit-project');button.disabled=true;button.textContent='Transmission…';
-    try{const result=await api(`/api/projects/${projectId}/submit`,{method:'POST',body:'{}'});project=result.project||project;lockSubmittedState();await window.StudioModal.alert({eyebrow:'Configuration transmise',title:'Votre configuration a bien été transmise',message:'Me&YouToo va en prendre connaissance et la vérifier. Votre configuration est désormais figée pendant cette vérification. En attendant, transmettez-nous votre logo, votre charte graphique et vos éventuelles consignes de communication.',type:'success',confirmLabel:'Transmettre mes éléments graphiques'});location.href=`kit-communication.html?projectId=${encodeURIComponent(projectId)}&theme=${encodeURIComponent(theme)}`;}catch(e){button.disabled=false;button.textContent='Transmettre à Me&YouToo';$('validation-alert').hidden=false;$('validation-alert').textContent=e.message;}
+    try{const result=await api(`/api/projects/${projectId}/submit`,{method:'POST',body:'{}'});project=result.project||project;lockSubmittedState();await window.StudioModal.alert({eyebrow:'Configuration transmise',title:'Votre configuration a bien été transmise',message:(pendingIntroTranslationRequests().length?`Votre demande de traduction de l’introduction a été transmise à Me&YouToo : ${pendingIntroTranslationRequests().map(row=>reviewLocaleNames[row.locale]||row.locale.toUpperCase()).join(', ')}. `:'')+'Me&YouToo va en prendre connaissance et la vérifier. Votre configuration est désormais figée pendant cette vérification. En attendant, transmettez-nous votre logo, votre charte graphique et vos éventuelles consignes de communication.',type:'success',confirmLabel:'Transmettre mes éléments graphiques'});location.href=`kit-communication.html?projectId=${encodeURIComponent(projectId)}&theme=${encodeURIComponent(theme)}`;}catch(e){button.disabled=false;button.textContent='Transmettre à Me&YouToo';$('validation-alert').hidden=false;$('validation-alert').textContent=e.message;}
   };
   load();
 })();
