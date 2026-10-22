@@ -1166,7 +1166,10 @@
       const beforeIds=new Set(state.chapters.flatMap(ch=>ch.situations).map(s=>String(s.id)));
       const data=await api(`/api/projects/${projectId}/situations/${projectSituationId}/replace`,{method:'PATCH',body:JSON.stringify({catalogSituationId:Number(catalogSituationId),countryCode:state.country})});
       closeLibrary();
-      const refreshed=await api(`/api/projects/${projectId}/composer`);
+      const query=new URLSearchParams();
+      if(state.country)query.set('countryCode',state.country);
+      if(state.locale)query.set('locale',state.locale);
+      const refreshed=await api(`/api/projects/${projectId}/composer${query.toString()?`?${query.toString()}`:''}`);
       state.project=refreshed.project;state.chapters=refreshed.chapters;
       state.libraryAvailability.clear();render();
       showMessage(data.linked?'La sélection liée a été remplacée et enregistrée ensemble.':'La situation a été remplacée et enregistrée.','success');
