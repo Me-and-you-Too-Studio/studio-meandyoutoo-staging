@@ -1152,7 +1152,36 @@
       await afterLibrarySelection(added.map(s=>s.id));
     }catch(e){showMessage(e.message);}
   }
-  async function replaceSituation(projectSituationId,catalogSituationId){try{const beforeIds=new Set(state.chapters.flatMap(ch=>ch.situations).map(s=>String(s.id)));const data=await api(`/api/projects/${projectId}/situations/${projectSituationId}/replace`,{method:'PATCH',body:JSON.stringify({catalogSituationId:Number(catalogSituationId),countryCode:state.country})});closeLibrary();const refreshed=await api(`/api/projects/${projectId}/composer`);state.project=refreshed.project;state.chapters=refreshed.chapters;state.libraryAvailability.clear();render();showMessage(data.linked?'La sélection liée a été remplacée et enregistrée ensemble.':'La situation a été remplacée et enregistrée.','success');await afterLibrarySelection([projectSituationId,...state.chapters.flatMap(ch=>ch.situations).filter(s=>!beforeIds.has(String(s.id))).map(s=>s.id)]);}catch(e){showMessage(e.message);}}
+  async function replaceSituation(projectSituationId,catalogSituationId){
+    if(state.librarySaving)return;
+    state.librarySaving=true;
+    const drawer=$('library-drawer');
+    const buttons=[...drawer.querySelectorAll('[data-library-pick],[data-library-replace]')];
+    const previous=buttons.map(button=>({button,disabled:button.disabled,text:button.textContent}));
+    drawer.querySelector('[data-library-error]')?.remove();
+    buttons.forEach(button=>{button.disabled=true;});
+    const clicked=buttons.find(button=>(button.dataset.libraryPick||button.dataset.libraryReplace)===String(catalogSituationId));
+    if(clicked)clicked.textContent='Remplacement en cours…';
+    try{
+      const beforeIds=new Set(state.chapters.flatMap(ch=>ch.situations).map(s=>String(s.id)));
+      const data=await api(`/api/projects/${projectId}/situations/${projectSituationId}/replace`,{method:'PATCH',body:JSON.stringify({catalogSituationId:Number(catalogSituationId),countryCode:state.country})});
+      closeLibrary();
+      const refreshed=await api(`/api/projects/${projectId}/composer`);
+      state.project=refreshed.project;state.chapters=refreshed.chapters;
+      state.libraryAvailability.clear();render();
+      showMessage(data.linked?'La sélection liée a été remplacée et enregistrée ensemble.':'La situation a été remplacée et enregistrée.','success');
+      await afterLibrarySelection([projectSituationId,...state.chapters.flatMap(ch=>ch.situations).filter(s=>!beforeIds.has(String(s.id))).map(s=>s.id)]);
+    }catch(e){
+      showMessage(e.message);
+      const alert=document.createElement('div');
+      alert.className='composer-alert';alert.dataset.libraryError='';alert.setAttribute('role','alert');
+      alert.textContent=`Le remplacement n’a pas pu être terminé : ${e.message}`;
+      $('library-list').prepend(alert);alert.scrollIntoView({block:'nearest'});
+    }finally{
+      state.librarySaving=false;
+      previous.forEach(({button,disabled,text})=>{button.disabled=disabled;button.textContent=text;});
+    }
+  }
 
   async function changeWholeChapter(catalogChapterId){
     const ch=state.chapters[state.active];
