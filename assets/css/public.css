@@ -452,3 +452,31 @@ body.public-contact footer.public-contact-only .public-wrap{display:flex}
 @media(max-width:680px) {
   .public-header .brand .studio-brand-logo { width:80px; }
 }
+
+/* Navigation publique identique sur toutes les pages de découverte. */
+.public-header{flex-wrap:wrap}
+.public-header nav{min-width:0}
+.public-header nav a:focus-visible,.public-header-actions a:focus-visible{
+  outline:3px solid var(--public-green);outline-offset:3px;
+}
+.public-back{padding-top:24px}
+.public-back a{color:var(--public-green-dark);font-weight:800;text-decoration:none}
+.public-back a:hover{text-decoration:underline}
+/* Deux lignes quand l'espace manque : les six rubriques restent visibles. */
+@media(max-width:1200px){
+  .public-header{gap:10px 18px}
+  .public-header nav{display:flex;order:3;flex:1 0 100%;flex-wrap:wrap;gap:2px 8px}
+  .public-header nav a{padding:8px;font-size:.89rem}
+  .public-header .header-rdv{display:inline-flex}
+}
+@media(max-width:680px){
+  .public-header{gap:8px}
+  .public-header .brand .studio-brand-logo{width:64px}
+  .public-header-actions{gap:6px}
+  .public-header-actions .btn{padding:9px 10px;font-size:.8rem}
+  .public-header nav{gap:0 6px}
+  .public-header nav a{padding:7px 5px;font-size:.82rem}
+}
+/* Les ancres de l'accueil restent visibles sous le menu fixe. */
+body.public-site :is(#diagnostics,#fonctionnement,#mesure,#expertise,#ressources,#tarifs){scroll-margin-top:155px}
+@media(max-width:680px){body.public-site :is(#diagnostics,#fonctionnement,#mesure,#expertise,#ressources,#tarifs){scroll-margin-top:190px}}
