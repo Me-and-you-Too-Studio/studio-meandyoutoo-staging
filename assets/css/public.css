@@ -278,6 +278,7 @@ body.public-contact footer.public-contact-only .public-wrap{display:flex}
 .contact-public-lead a{color:var(--public-green-dark);font-weight:800}
 .contact-public-team{margin-bottom:30px}
 .contact-public-team .team-card{min-height:100%;border-radius:26px;border:1px solid var(--public-line);box-shadow:var(--public-shadow)}
+.contact-public-team .team-actions{margin-top:auto}
 .contact-public-email{display:flex;align-items:center;justify-content:space-between;gap:30px;padding:28px 32px;border:1px solid var(--public-line);border-radius:24px;background:linear-gradient(135deg,var(--public-yellow-soft),#fff);box-shadow:0 12px 30px rgba(39,58,100,.07)}
 .contact-public-email h2{margin:3px 0 8px;color:var(--public-brand-blue)}
 .contact-public-email p:last-child{max-width:760px;margin:0;color:var(--public-muted)}
