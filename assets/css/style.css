@@ -15798,3 +15798,15 @@ body.sidebar-collapsed .brand .studio-brand-logo { width:60px; height:auto; }
 @media(max-width:768px) {
   body.sidebar-collapsed .sidebar-head .brand .studio-brand-logo { width:100px; }
 }
+
+/* Navigation rapide des pages longues et des fenêtres de consultation. */
+.studio-back-to-top{position:fixed;right:24px;bottom:24px;z-index:120;display:inline-flex;align-items:center;gap:9px;min-height:46px;padding:11px 16px;border:1px solid #00636c;border-radius:999px;background:#007883;color:#fff;font:700 .88rem/1.2 "Asap",sans-serif;box-shadow:0 6px 22px #173a5530;cursor:pointer}
+.studio-back-to-top[hidden]{display:none!important}
+.studio-back-to-top:hover{background:#00636c}
+.studio-back-to-top>span:first-child{font-size:1.35rem;line-height:1}
+.studio-back-to-top:focus-visible{outline:3px solid #ffc000;outline-offset:3px}
+.studio-collapse-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line,#dce7ee)}
+.studio-collapse-footer .button{white-space:normal}
+[data-situation-card],[data-library-chapter],details.topic-card-accordion{scroll-margin-top:24px}
+@media(max-width:980px){.studio-back-to-top{right:14px;bottom:calc(88px + env(safe-area-inset-bottom,0px))}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}}

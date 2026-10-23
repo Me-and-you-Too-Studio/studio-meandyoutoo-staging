@@ -532,6 +532,99 @@
     },true);
     lockPreviewActions();new MutationObserver(lockPreviewActions).observe(document.body,{childList:true,subtree:true});
   }
+  function setupScrollNavigation(){
+    if(document.getElementById('studio-back-to-top'))return;
+    var button=document.createElement('button');
+    button.id='studio-back-to-top';button.className='studio-back-to-top';button.type='button';button.hidden=true;
+    button.setAttribute('aria-label','Revenir en haut de page');
+    button.innerHTML='<span aria-hidden="true">↑</span><span>Haut de page</span>';
+    document.body.appendChild(button);
+    var scrollTarget=null,frame=0;
+    var overlaySelector='dialog[open],[role="dialog"][aria-modal="true"],.composer-drawer.is-open';
+    function behavior(){return window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth';}
+    function visibleOverlay(){
+      var overlays=Array.from(document.querySelectorAll(overlaySelector));
+      return overlays.reverse().find(function(node){return node.getClientRects().length>0;})||null;
+    }
+    function scrollable(node){
+      return node.scrollHeight>node.clientHeight+1&&/auto|scroll/.test(getComputedStyle(node).overflowY);
+    }
+    function currentTarget(overlay){
+      if(!overlay)return document.scrollingElement||document.documentElement;
+      if(scrollTarget&&scrollTarget.isConnected&&overlay.contains(scrollTarget)&&scrollable(scrollTarget))return scrollTarget;
+      if(scrollable(overlay))return overlay;
+      return Array.from(overlay.querySelectorAll('*')).find(function(node){return !node.matches('textarea,select,[contenteditable]')&&scrollable(node);})||overlay;
+    }
+    function focusAndReveal(node){
+      if(!node)return;
+      node.scrollIntoView({behavior:behavior(),block:'start'});
+      var control=node.matches('summary,button,[tabindex]')?node:node.querySelector('summary,button,[tabindex]');
+      if(control)control.focus({preventScroll:true});
+    }
+    function addFooter(container,kind,label){
+      if(Array.from(container.children).some(function(child){return child.classList.contains('studio-collapse-footer');}))return;
+      var footer=document.createElement('div');footer.className='studio-collapse-footer';
+      var close=document.createElement('button');close.type='button';close.className='button button-secondary button-small';
+      close.dataset.scrollCollapse=kind;close.textContent='↑ '+label;
+      footer.appendChild(close);container.appendChild(footer);
+    }
+    function decorate(){
+      document.querySelectorAll('details.topic-card-accordion > .topic-expanded').forEach(function(node){addFooter(node,'details','Replier cette fiche');});
+      document.querySelectorAll('details.admin-library-situation-row').forEach(function(node){addFooter(node,'details','Replier cette situation');});
+      document.querySelectorAll('.composer-situation-body').forEach(function(node){addFooter(node,'composer','Replier cette situation');});
+      document.querySelectorAll('.admin-library-chapter-body').forEach(function(node){addFooter(node,'chapter','Replier ce chapitre');});
+    }
+    function update(){
+      frame=0;decorate();
+      var overlay=visibleOverlay(),parent=overlay||document.body;
+      // Un bouton placé dans le dialogue reste accessible dans la couche modale native.
+      if(button.parentNode!==parent)parent.appendChild(button);
+      var target=currentTarget(overlay),offset=target.scrollTop||0;
+      var hidden=offset<Math.min(400,Math.max(200,target.clientHeight/2));
+      if(button.hidden!==hidden)button.hidden=hidden;
+    }
+    function schedule(){if(!frame)frame=requestAnimationFrame(update);}
+    document.addEventListener('scroll',function(event){
+      var target=event.target;
+      if(target instanceof Element&&!target.matches('textarea,select,[contenteditable]')&&target.closest(overlaySelector))scrollTarget=target;
+      schedule();
+    },true);
+    window.addEventListener('resize',schedule,{passive:true});
+    document.addEventListener('toggle',schedule,true);document.addEventListener('close',schedule,true);
+    button.addEventListener('click',function(){
+      var overlay=visibleOverlay(),target=currentTarget(overlay);
+      if(overlay){
+        target.scrollTo({top:0,behavior:behavior()});
+        var heading=overlay.querySelector('h1,h2');
+        if(heading){if(!heading.hasAttribute('tabindex'))heading.setAttribute('tabindex','-1');heading.focus({preventScroll:true});}
+      }
+      else{
+        window.scrollTo({top:0,behavior:behavior()});
+        var main=document.querySelector('main');
+        if(main){if(!main.hasAttribute('tabindex'))main.setAttribute('tabindex','-1');main.focus({preventScroll:true});}
+      }
+    });
+    document.addEventListener('click',function(event){
+      var close=event.target.closest?.('[data-scroll-collapse]');if(!close)return;
+      event.preventDefault();
+      if(close.dataset.scrollCollapse==='details'){
+        var details=close.closest('details');if(!details)return;
+        details.open=false;focusAndReveal(details.querySelector('summary'));
+      }else if(close.dataset.scrollCollapse==='composer'){
+        var card=close.closest('[data-situation-card]'),toggle=card?.querySelector('[data-collapse-situation]');
+        if(toggle?.getAttribute('aria-expanded')==='true')toggle.click();
+        focusAndReveal(toggle);
+      }else if(close.dataset.scrollCollapse==='chapter'){
+        var chapter=close.closest('[data-library-chapter]'),id=chapter?.dataset.libraryChapter;
+        chapter?.querySelector('[data-toggle-library-chapter]')?.click();
+        var updated=Array.from(document.querySelectorAll('[data-library-chapter]')).find(function(node){return node.dataset.libraryChapter===id;});
+        focusAndReveal(updated);
+      }
+      schedule();
+    });
+    new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['open','hidden','aria-hidden']});
+    update();
+  }
   renderSidebar();
   enforcePageAccess();
   enforceActionAccess();
@@ -556,6 +649,7 @@
   setupMobileToggle();
   setupSidebarCollapse();
   setupActionMenus();
+  setupScrollNavigation();
   setupStudioSubscriptionAccess();
   setTimeout(trackProductActivity,0);
 })();
