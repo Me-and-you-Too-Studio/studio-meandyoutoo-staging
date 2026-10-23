@@ -724,6 +724,14 @@
     }catch(error){showMessage(`Situation enregistrée. Le contrôle des traductions n’a pas pu aboutir : ${error.message}. Vérifiez les versions linguistiques avant transmission.`);}
   }
 
+  function situationResponseFormat(s){
+    // Même priorité que l’aperçu répondant : aucun type déduit du nombre de réponses.
+    const kind=s.response_kind||s.legacy_payload?.responseKind||s.legacy_payload?.kind;
+    if(kind==='rating')return {label:'Rating · Échelle',help:'Les réponses forment une échelle et sont présentées dans leur ordre.'};
+    if(kind==='choice')return {label:'Choice · Réponses proposées',help:'Les réponses sont présentées dans un ordre aléatoire dans l’aperçu répondant.'};
+    return {label:'Format non renseigné',help:'Aucun format explicite n’est enregistré. L’aperçu répondant utilise sa règle de compatibilité pour déterminer la présentation.'};
+  }
+
   function situationHtml(s,index){
     const ch=state.chapters[state.active];
     const expanded=state.expandedSituations.has(String(s.id)),answersExpanded=state.expandedAnswers.has(String(s.id));
@@ -746,6 +754,7 @@
     // Le tag « Personnalisée » repose uniquement sur une vraie contextualisation enregistrée.
     const customized=!legacyClientImport&&Boolean(s.has_customization);
     const originTag=s.from_library?'<span class="composer-library-choice-tag">✓ Choisie dans la bibliothèque</span>':'';
+    const responseFormat=situationResponseFormat(s);
     const hasLibrary=chapterHasLibrary(ch);
     const situationText=locked
       ?`<h3>${esc(s.content)}</h3>`
@@ -768,10 +777,11 @@
     const tone=situationTone(s,index,ch);
     return `<article class="composer-situation ${tone} ${locked?'is-locked':''} ${customized?'has-customization':''} ${state.libraryFocusId===String(s.id)?'review-direct-target':''}" data-situation-card="${esc(s.id)}">
       <div class="composer-situation-head">
-        <div class="composer-situation-tags">${isAdmin?`<span class="composer-position-chip">ID situation Studio : ${esc(s.id)}</span>${s.catalog_situation_id?`<span class="composer-position-chip">ID Catalogue : ${esc(s.catalog_situation_id)}</span>`:''}${s.legacy_payload?.surveyQuestionId?`<span class="composer-position-chip">ID question moteur : ${esc(s.legacy_payload.surveyQuestionId)}</span>`:''}${s.legacy_payload?.legacyId?`<span class="composer-position-chip">ID situation Legacy : ${esc(s.legacy_payload.legacyId)}</span>`:''}`:''}${showMethodologyChip?`<span class="composer-lock-chip">🔒 Situation socle — texte non modifiable</span>`:`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}<span data-translation-badges></span>${directTranslationEdit?`<span class="composer-customized-tag">🌐 ${esc(localeLabel(translationView.targetLocale))}</span>`:(customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':'')}</div>
+        <div class="composer-situation-tags">${isAdmin?`<span class="composer-position-chip">ID situation Studio : ${esc(s.id)}</span>${s.catalog_situation_id?`<span class="composer-position-chip">ID Catalogue : ${esc(s.catalog_situation_id)}</span>`:''}${s.legacy_payload?.surveyQuestionId?`<span class="composer-position-chip">ID question moteur : ${esc(s.legacy_payload.surveyQuestionId)}</span>`:''}${s.legacy_payload?.legacyId?`<span class="composer-position-chip">ID situation Legacy : ${esc(s.legacy_payload.legacyId)}</span>`:''}`:''}${showMethodologyChip?`<span class="composer-lock-chip">🔒 Situation socle — texte non modifiable</span>`:`<span class="composer-position-chip">Situation ${index+1}</span>`}${originTag}<span class="composer-position-chip" data-response-format-badge>${esc(responseFormat.label)}</span><span data-translation-badges></span>${directTranslationEdit?`<span class="composer-customized-tag">🌐 ${esc(localeLabel(translationView.targetLocale))}</span>`:(customized?'<span class="composer-customized-tag">✎ Personnalisée</span>':'')}</div>
         <div class="composer-situation-head-actions">${isAdmin?`<button type="button" class="button button-secondary button-small" data-reuse-client-situation="${esc(s.id)}" title="Copie indépendante vers la Bibliothèque complémentaire Me&YouToo">Copier vers la bibliothèque Me&YouToo</button>`:''}<button class="button button-ghost button-small composer-collapse-situation" type="button" data-collapse-situation="${esc(s.id)}" aria-expanded="${expanded}">${expanded?'Replier':'Déplier'}</button></div>
       </div>
       <div class="composer-situation-body" id="situation-body-${esc(s.id)}"${expanded?'':' hidden'}>
+      <p class="composer-field-guidance" data-response-format><strong>Modalité de réponse : ${esc(responseFormat.label)}</strong> — ${esc(responseFormat.help)}</p>
       <div class="composer-translation-gap-alert" data-translation-alert role="status" hidden></div>
       ${linkedLabel?`<div class="composer-linked-chip">🔗 ${esc(linkedLabel)}</div>`:''}
       ${situationText}
