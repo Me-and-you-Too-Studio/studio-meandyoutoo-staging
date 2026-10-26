@@ -582,6 +582,18 @@
       var target=currentTarget(overlay),offset=target.scrollTop||0;
       var hidden=offset<Math.min(400,Math.max(200,target.clientHeight/2));
       if(button.hidden!==hidden)button.hidden=hidden;
+      // Keep the floating shortcut clear of Paramétrage's save/return actions.
+      // Reset first so the responsive CSS position is restored away from the footer.
+      button.style.bottom='';
+      if(!overlay&&!hidden){
+        var actions=document.getElementById('param-next')?.closest('.top-actions');
+        if(actions){
+          var bar=actions.getBoundingClientRect(),shortcut=button.getBoundingClientRect();
+          if(shortcut.left<bar.right&&shortcut.right>bar.left&&shortcut.top<bar.bottom&&shortcut.bottom>bar.top){
+            button.style.bottom=Math.max(parseFloat(getComputedStyle(button).bottom)||0,window.innerHeight-bar.top+12)+'px';
+          }
+        }
+      }
     }
     function schedule(){if(!frame)frame=requestAnimationFrame(update);}
     document.addEventListener('scroll',function(event){
