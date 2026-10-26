@@ -582,17 +582,22 @@
       var target=currentTarget(overlay),offset=target.scrollTop||0;
       var hidden=offset<Math.min(400,Math.max(200,target.clientHeight/2));
       if(button.hidden!==hidden)button.hidden=hidden;
-      // Keep the floating shortcut clear of Paramétrage's save/return actions.
-      // Reset first so the responsive CSS position is restored away from the footer.
+      // Keep the shortcut above visible action bars, including Composer/Profils.
+      // Reset first to restore the responsive CSS position away from the bars.
       button.style.bottom='';
       if(!overlay&&!hidden){
-        var actions=document.getElementById('param-next')?.closest('.top-actions');
-        if(actions){
-          var bar=actions.getBoundingClientRect(),shortcut=button.getBoundingClientRect();
-          if(shortcut.left<bar.right&&shortcut.right>bar.left&&shortcut.top<bar.bottom&&shortcut.bottom>bar.top){
-            button.style.bottom=Math.max(parseFloat(getComputedStyle(button).bottom)||0,window.innerHeight-bar.top+12)+'px';
+        var actions=Array.from(document.querySelectorAll('.creation-sticky-actions'));
+        var parameterActions=document.getElementById('param-next')?.closest('.top-actions');
+        if(parameterActions)actions.push(parameterActions);
+        var shortcut=button.getBoundingClientRect();
+        var bottom=parseFloat(getComputedStyle(button).bottom)||0;
+        actions.forEach(function(actionBar){
+          var bar=actionBar.getBoundingClientRect();
+          if(bar.width>0&&bar.height>0&&shortcut.left<bar.right&&shortcut.right>bar.left&&shortcut.top<bar.bottom&&shortcut.bottom>bar.top){
+            bottom=Math.max(bottom,window.innerHeight-bar.top+12);
           }
-        }
+        });
+        if(bottom>(parseFloat(getComputedStyle(button).bottom)||0))button.style.bottom=bottom+'px';
       }
     }
     function schedule(){if(!frame)frame=requestAnimationFrame(update);}
