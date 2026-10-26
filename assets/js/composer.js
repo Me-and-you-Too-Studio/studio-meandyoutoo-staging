@@ -341,11 +341,9 @@
     try{
       const knownBefore=projectCountryLocales(state.project)[country]||[];
       const work=String(state.project?.working_locale||'fr').toLowerCase().replaceAll('_','-');
-      const requestedLocale=!isLegacyClientCampaign(state.project)&&state.locale===work
-        ? work
-        : (knownBefore.includes(state.locale)?state.locale:(knownBefore.includes('fr')?'fr':(knownBefore[0]||state.locale||'fr')));
+      const requestedLocale=knownBefore.includes(state.locale)?state.locale:(knownBefore.includes('fr')?'fr':(knownBefore[0]||work));
       const data=await api(`/api/projects/${projectId}/composer?countryCode=${encodeURIComponent(country)}&locale=${encodeURIComponent(requestedLocale)}`);
-      state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);state.country=data.composer_context?.countryCode||country;
+      state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);state.country=data.composer_context?.countryCode||country;state.locale=requestedLocale;
       const allowed=projectCountryLocales(state.project)[state.country]||[];
       if(allowed.length&&!allowed.includes(state.locale)
         &&(isLegacyClientCampaign(state.project)||state.locale!==String(state.project?.working_locale||'fr').toLowerCase().replaceAll('_','-')))
@@ -644,7 +642,7 @@
 
   const normalizeLocale=loc=>String(loc||'').trim().toLowerCase().replaceAll('_','-');
   function translationViewForSituation(s){
-    const ctx=state.translationContexts.get(String(s?.id));
+    const ctx=state.translationContexts.get(`${s?.id}:${state.country||''}`);
     if(!ctx)return null;
     const referenceLocale=normalizeLocale(ctx.referenceLocale||'fr');
     const targetLocale=normalizeLocale(state.locale||referenceLocale);
@@ -659,14 +657,14 @@
     return {referenceLocale,targetLocale,reference,target,targetAnswers};
   }
   async function preloadActiveTranslationContexts(){
-    if(!isLegacyClientCampaign(state.project)||state.project?.can_edit===false)return;
+    if(state.project?.can_edit===false)return;
     const ch=state.chapters[state.active];
     if(!ch||!Array.isArray(ch.situations))return;
     await Promise.allSettled(ch.situations.map(s=>getTranslationContext(s.id)));
   }
   function translationAnswerHtml(baseAnswer,translated,referenceLocale){
     return `<div class="composer-answer ${baseAnswer.is_best?'is-best':''}">
-      <div class="translation-reference-text"><strong>${esc(localeLabel(referenceLocale))} · référence :</strong> ${esc(translated?.referenceContent||'')}</div>
+      ${referenceLocale?`<div class="translation-reference-text"><strong>${esc(localeLabel(referenceLocale))} · référence :</strong> ${esc(translated?.referenceContent||'')}</div>`:''}
       <textarea class="composer-inline-answer" data-answer-input="${esc(baseAnswer.id)}" data-original-answer="${esc(translated?.referenceContent||'')}" rows="2" placeholder="Traduction ${esc(localeLabel(state.locale))} à compléter">${esc(translated?.content||'')}</textarea>
       <span class="composer-score">Score ${Number(baseAnswer.score).toLocaleString('fr-FR')}</span>
       ${baseAnswer.is_best?`<span class="composer-best">${bestAnswerLabel()}</span>`:''}
@@ -769,7 +767,7 @@
     const submitted=submittedSituation(s.id);
     const legacyClientImport=isLegacyClientCampaign();
     const translationView=translationViewForSituation(s);
-    const directTranslationEdit=Boolean(translationView&&legacyClientImport&&state.project?.can_edit!==false&&!locked);
+    const directTranslationEdit=Boolean(translationView&&state.project?.can_edit!==false&&!locked);
     // Une traduction du catalogue Me&YouToo n'est jamais une personnalisation.
     // Le tag « Personnalisée » repose uniquement sur une vraie contextualisation enregistrée.
     const customized=!legacyClientImport&&Boolean(s.has_customization);
@@ -780,7 +778,7 @@
       ?`<h3>${esc(s.content)}</h3>`
       :directTranslationEdit
         ?`<div class="composer-inline-field">
-          <div class="composer-inline-help composer-context-help"><strong>Texte de référence</strong><span>${esc(translationView.reference.content||s.content||'')}</span></div>
+          ${legacyClientImport?`<div class="composer-inline-help composer-context-help"><strong>Texte de référence</strong><span>${esc(translationView.reference.content||s.content||'')}</span></div>`:''}
           <div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Traduction ${esc(localeLabel(translationView.targetLocale))}</label><span class="composer-context-tag">Version linguistique</span></div>
           <textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation" data-situation-input="${esc(s.id)}" data-original-situation="${esc(translationView.reference.content||'')}" rows="3" placeholder="Traduction ${esc(localeLabel(translationView.targetLocale))} à compléter">${esc(translationView.target.content||'')}</textarea>
           <small class="composer-field-guidance">Vous modifiez uniquement la version ${esc(localeLabel(translationView.targetLocale))}. La version ${esc(localeLabel(translationView.referenceLocale))} reste inchangée.</small>
@@ -792,7 +790,7 @@
           <small class="composer-field-guidance">${hasLibrary?'Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel. Si le sens ne convient pas, utilisez « Remplacer » et choisissez une autre situation dans la bibliothèque.':'Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel sans changer le sens de la situation.'}</small>
         </div>`;
     const answerRows=directTranslationEdit
-      ?(s.answers||[]).map(a=>{const ta=translationView.targetAnswers.find(item=>String(item.id)===String(a.id))||{id:a.id,referenceContent:a.content||'',content:''};return translationAnswerHtml(a,ta,translationView.referenceLocale);}).join('')
+      ?(s.answers||[]).map(a=>{const ta=translationView.targetAnswers.find(item=>String(item.id)===String(a.id))||{id:a.id,referenceContent:a.content||'',content:''};return translationAnswerHtml(a,ta,legacyClientImport?translationView.referenceLocale:'');}).join('')
       :(s.answers||[]).map(a=>{const original=(s.original_answers||[]).find(o=>String(o.id)===String(a.id)),sent=(submitted?.answers||[]).find(o=>String(o.id)===String(a.id));return answerHtml(a,!locked,original?.content||a.content,sent?.content??null);}).join('');
     const tone=situationTone(s,index,ch);
     return `<article class="composer-situation ${tone} ${locked?'is-locked':''} ${customized?'has-customization':''} ${state.libraryFocusId===String(s.id)?'review-direct-target':''}" data-situation-card="${esc(s.id)}">
@@ -807,8 +805,8 @@
       ${situationText}
       <button class="composer-toggle" type="button" data-toggle="${esc(s.id)}" aria-expanded="${answersExpanded}"><span data-toggle-label>${answersExpanded?'Masquer les réponses et les scores':'Voir les réponses et les scores'}</span> <span aria-hidden="true">⌄</span></button>
       <div class="composer-answers" id="answers-${esc(s.id)}"${answersExpanded?'':' hidden'}>${answerRows}</div>
-      ${((((state.country?(projectCountryLocales(state.project)[state.country]||[]):(state.project?.locales||[]))).length>1)?`<div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" ${legacyClientImport?'':'hidden'}>🌐 Vérifier les versions linguistiques</button></div><div class="translation-sync-warning" data-live-translation-warning ${customized?'':'hidden'}>⚠️ Vous modifiez le contenu de référence. Les autres versions linguistiques doivent être vérifiées.</div>`:'')}
-      ${!locked?`<div class="composer-inline-help composer-context-help">${directTranslationEdit?`<strong>Vous travaillez en ${esc(localeLabel(translationView.targetLocale))}</strong><span>Complétez la traduction de la situation et de chaque réponse. Le français reste votre référence et ne sera pas modifié.</span>`:`<strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. ${hasLibrary?'Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo.':''} Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span>`}</div>
+      ${((!legacyClientImport||(state.country?(projectCountryLocales(state.project)[state.country]||[]):(state.project?.locales||[])).length>1)?`<div class="composer-translation-row"><button class="button button-ghost composer-translation-button" type="button" data-translations="${esc(s.id)}" ${legacyClientImport?'':'hidden'}>🌐 Vérifier les versions linguistiques</button></div><div class="translation-sync-warning" data-live-translation-warning ${customized?'':'hidden'}>⚠️ Vous modifiez le contenu de référence. Les autres versions linguistiques doivent être vérifiées.</div>`:'')}
+      ${!locked?`<div class="composer-inline-help composer-context-help">${directTranslationEdit?`<strong>Vous travaillez en ${esc(localeLabel(translationView.targetLocale))}</strong><span>Adaptez uniquement cette version de la situation et de ses réponses, sans changer leur sens. La version de référence reste inchangée.</span>`:`<strong>Réponses : contextualisation uniquement</strong><span>Adaptez les termes au contexte de votre organisation sans changer le sens ni le niveau de pertinence. ${hasLibrary?'Si le fond ne convient pas, remplacez la situation depuis la bibliothèque Me&YouToo.':''} Les scores restent verrouillés et Me&YouToo validera les adaptations avant publication.</span>`}</div>
       <div class="composer-save-row"><span class="composer-save-status is-saved" data-save-status="${esc(s.id)}"><span class="composer-save-check" aria-hidden="true">✓</span><span data-save-text>${directTranslationEdit?'Enregistrement automatique de la traduction':(customized?'Enregistré':'Enregistrement automatique')}</span></span></div>
       <div class="composer-actions">
         ${!directTranslationEdit&&customized?`<button class="button button-ghost" type="button" data-reset="${esc(s.id)}">↶ ${state.project?.review_mode?'Annuler ma correction':'Annuler mes modifications'}</button>`:''}
@@ -901,7 +899,7 @@
     const campaignLocales=state.country?(projectCountryLocales(state.project)[state.country]||[]):projectLocales;
     document.querySelectorAll('[data-translations]').forEach(async b=>{
       const id=b.dataset.translations;
-      if(campaignLocales.length<=1){b.hidden=true;return;}
+      if(campaignLocales.length<=1&&(isLegacyClientCampaign(state.project)||state.project?.can_edit===false||!campaignLocales.some(locale=>normalizeLocale(locale)!=='fr'))){b.hidden=true;return;}
       if(!isAdmin&&state.project?.can_edit===false&&!isLegacyClientCampaign(state.project)){
         b.hidden=false;b.textContent='🌐 Consulter les versions linguistiques';
         b.title='Consultez les textes et les réponses transmis à Me&YouToo, en lecture seule.';
@@ -1047,8 +1045,10 @@
     if(answerInputs.some(input=>!String(input.value||'').trim())){setSaveStatus(card,'is-error','Non enregistré · une réponse est vide');return;}
     setSaveStatus(card,'is-saving','Enregistrement…');
     try{
+      // Refuse a source-text write if the target-language context failed to load.
+      if(!isLegacyClientCampaign(state.project)&&normalizeLocale(state.locale)!==normalizeLocale(state.project?.working_locale||'fr'))await getTranslationContext(id);
       const translationView=translationViewForSituation(s);
-      if(translationView&&isLegacyClientCampaign(state.project)&&state.project?.can_edit!==false){
+      if(translationView&&state.project?.can_edit!==false){
         await api(`/api/projects/${projectId}/situations/${id}/translations/${encodeURIComponent(translationView.targetLocale)}`,{method:'PATCH',body:JSON.stringify({content:situationText,answers})});
         await getTranslationContext(id,true);
         setSaveStatus(card,'is-saved',`${localeLabel(translationView.targetLocale)} · traduction enregistrée`);
@@ -1421,7 +1421,7 @@
     if(params.get('translate'))openTranslationModal(requestedSituation,normalizeLocale(params.get('translate'))).catch(error=>showMessage(error.message));
   }
 
-  async function load(){try{await ensureProject();const query=new URLSearchParams();if(state.country)query.set('countryCode',state.country);if(state.locale)query.set('locale',state.locale);const data=await api(`/api/projects/${projectId}/composer${query.toString()?`?${query.toString()}`:''}`);state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);const countries=campaignCountries(data.project);state.country=requestedCountry&&countries.includes(requestedCountry)?requestedCountry:(countries.length===1?countries[0]:'');const locales=projectContentLocales(data.project);if(isLegacyClientCampaign(data.project)&&!requestedLocale&&locales.includes('fr'))state.locale='fr';else if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':(locales[0]||'fr');if(state.country!==requestedCountry||state.locale!==(requestedLocale||'fr')){const q2=new URLSearchParams();if(state.country)q2.set('countryCode',state.country);if(state.locale)q2.set('locale',state.locale);const refreshed=await api(`/api/projects/${projectId}/composer?${q2.toString()}`);state.project=refreshed.project;state.chapters=refreshed.chapters;rememberComposerContext(refreshed);}const targetChapter=requestedSituation?state.chapters.findIndex(ch=>(ch.situations||[]).some(s=>String(s.id)===requestedSituation)):-1;state.active=targetChapter>=0?targetChapter:Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title||data.project.legacy_theme_title||'Campagne historique';const clientName=$('composer-client-name');if(clientName)clientName.hidden=true;renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();configureContextBack(state.project);if(state.project.can_edit)await saveStep('composer');if(state.country){await preloadActiveTranslationContexts();render();}if(requestedSituation&&state.country)requestAnimationFrame(openRequestedSituation);if(state.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!state.project.can_edit)showMessage('Campagne historique en lecture seule. Choisissez une langue ci-dessus pour consulter ses traductions.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
+  async function load(){try{await ensureProject();const query=new URLSearchParams();if(state.country)query.set('countryCode',state.country);if(state.locale)query.set('locale',state.locale);const data=await api(`/api/projects/${projectId}/composer${query.toString()?`?${query.toString()}`:''}`);state.project=data.project;state.chapters=data.chapters;rememberComposerContext(data);const countries=campaignCountries(data.project);state.country=requestedCountry&&countries.includes(requestedCountry)?requestedCountry:(countries.length===1?countries[0]:'');const locales=projectContentLocales(data.project);if(!isLegacyClientCampaign(data.project)&&!requestedLocale){const allowed=projectCountryLocales(data.project)[state.country]||data.project.locales||[];const selected=normalizeLocale(data.project.selected_locale);state.locale=allowed.includes(selected)?selected:(allowed[0]||'fr');}else if(isLegacyClientCampaign(data.project)&&!requestedLocale&&locales.includes('fr'))state.locale='fr';else if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':(locales[0]||'fr');if(state.country!==requestedCountry||state.locale!==(requestedLocale||'fr')){const q2=new URLSearchParams();if(state.country)q2.set('countryCode',state.country);if(state.locale)q2.set('locale',state.locale);const refreshed=await api(`/api/projects/${projectId}/composer?${q2.toString()}`);state.project=refreshed.project;state.chapters=refreshed.chapters;rememberComposerContext(refreshed);}const targetChapter=requestedSituation?state.chapters.findIndex(ch=>(ch.situations||[]).some(s=>String(s.id)===requestedSituation)):-1;state.active=targetChapter>=0?targetChapter:Math.min(state.active,Math.max(0,state.chapters.length-1));$('catalog-title').textContent=data.project.theme_title||data.project.legacy_theme_title||'Campagne historique';const clientName=$('composer-client-name');if(clientName)clientName.hidden=true;renderCampaignContext(state.project);renderCountryTabs(state.project);renderComposerCountryGate();configureContextBack(state.project);if(state.project.can_edit)await saveStep('composer');if(state.country){await preloadActiveTranslationContexts();render();}if(requestedSituation&&state.country)requestAnimationFrame(openRequestedSituation);if(state.project.review_mode)showMessage('✎ Correction Me&YouToo active : vous pouvez modifier les situations. La version transmise par le client reste conservée pour comparaison.','success');else if(!state.project.can_edit)showMessage('Campagne historique en lecture seule. Choisissez une langue ci-dessus pour consulter ses traductions.','success');}catch(e){if(e.message==='redirect')return;showMessage(`Impossible de charger le brouillon : ${e.message}`);$('chapter-title').textContent='Brouillon indisponible';}}
 
   $('library-button').onclick=async()=>{
     openLibrary('add');
