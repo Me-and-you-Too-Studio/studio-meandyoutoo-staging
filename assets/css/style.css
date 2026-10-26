@@ -15810,3 +15810,61 @@ body.sidebar-collapsed .brand .studio-brand-logo { width:60px; height:auto; }
 [data-situation-card],[data-library-chapter],details.topic-card-accordion{scroll-margin-top:24px}
 @media(max-width:980px){.studio-back-to-top{right:14px;bottom:calc(88px + env(safe-area-inset-bottom,0px))}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}}
+
+/* Validation — demandes de traduction de l’introduction et des données d’analyse. */
+.validation-translation-card {
+  padding: 28px;
+  margin-block: 24px;
+  min-width: 0;
+}
+.validation-translation-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.validation-translation-head .eyebrow { margin: 0 0 8px; }
+.validation-translation-head .section-title { margin: 0; }
+.validation-translation-badge {
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: #006b76;
+  background: #e9f6f7;
+  font-size: .85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.validation-translation-description { margin: 14px 0 20px; line-height: 1.6; }
+.validation-translation-list {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.validation-translation-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 20px;
+  border: 1px solid #dbe4ee;
+  border-radius: 14px;
+  background: #f7fafc;
+}
+.validation-translation-copy { display: grid; gap: 5px; min-width: 0; overflow-wrap: anywhere; }
+.validation-translation-copy strong { color: var(--navy); font-size: 1.05rem; }
+.validation-translation-copy span { font-size: .95rem; }
+.validation-translation-copy small { color: #65758c; font-size: .85rem; }
+.validation-translation-link { flex-shrink: 0; text-align: center; }
+.validation-socio-count { font-size: 1.65rem; }
+.validation-socio-details { margin-top: 12px; font-size: .9rem; font-weight: 400; }
+.validation-socio-details summary { cursor: pointer; color: #006b76; font-weight: 700; }
+.validation-socio-details ul { margin: 12px 0 0; padding-left: 20px; display: grid; gap: 8px; overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  .validation-translation-card { padding: 20px; }
+  .validation-translation-head { flex-wrap: wrap; gap: 12px; }
+  .validation-translation-row { flex-direction: column; align-items: stretch; padding: 16px; gap: 16px; }
+  .validation-translation-link { width: 100%; white-space: normal; }
+}

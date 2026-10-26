@@ -177,21 +177,25 @@
     const allowed=(project?.locales||[]).map(reviewLocale),raw=project?.translation_review_state?.socioRequests||{};
     return Object.entries(raw).flatMap(([key,value])=>{const locale=reviewLocale(key),sourceLocale=reviewLocale(value?.sourceLocale);return allowed.includes(locale)&&allowed.includes(sourceLocale)&&locale!==sourceLocale?[{locale,sourceLocale}]:[];});
   }
-  function socioTranslationRequestPanel(){
-    let host=$('socio-translation-request-summary');const requests=pendingSocioTranslationRequests();
+  function translationRequestPanel(kind,requests){
+    const intro=kind==='intro',id=`${kind}-translation-request-summary`;
+    let host=$(id);
     if(!requests.length){host?.remove();return;}
-    if(!host){host=document.createElement('section');host.id='socio-translation-request-summary';host.className='card';document.querySelector('.validation-summary').after(host);}
-    const admin=currentUser?.role==='admin';
-    host.innerHTML=`<h2 class="section-title">${admin?'Données d’analyse à traduire par Me&YouToo':'Traductions de vos données d’analyse demandées à Me&YouToo'}</h2><p>${admin?'Complétez les questions et réponses dans ces langues, puis marquez les demandes comme terminées avant de finaliser la relecture.':'Vous pouvez transmettre votre campagne. Me&YouToo traduira ces questions et réponses avant la validation pour diffusion.'}</p><ul>${requests.map(row=>{const query=new URLSearchParams({theme,projectId,locale:row.locale,focus:'socio-list'});if(admin)query.set('review','1');return `<li><strong>${esc(reviewLocaleNames[row.locale]||row.locale.toUpperCase())}</strong> · à partir de ${esc(reviewLocaleNames[row.sourceLocale]||row.sourceLocale.toUpperCase())}${admin?` · <a class="review-edit-target" href="parametrage.html?${esc(query.toString())}">Compléter la traduction →</a>`:''}</li>`;}).join('')}</ul>`;
+    const admin=currentUser?.role==='admin',section=intro?'Introduction':'Données d’analyse';
+    if(!host){host=document.createElement('section');host.id=id;document.querySelector('.validation-summary').after(host);}
+    host.className='card validation-translation-card';
+    host.setAttribute('aria-labelledby',`${id}-title`);
+    host.innerHTML=`<div class="validation-translation-head"><div><p class="eyebrow">${admin?'Traductions à réaliser':'Traductions confiées à Me&YouToo'}</p><h2 class="section-title" id="${id}-title">${intro?'Introduction à traduire':'Données d’analyse à traduire'}</h2></div><span class="validation-translation-badge">${requests.length} langue${requests.length>1?'s':''}</span></div><p class="validation-translation-description">${admin?'Complétez les traductions dans Paramétrage, puis marquez les demandes comme terminées avant de finaliser la relecture.':'Votre demande est prise en compte. Vous pouvez transmettre la campagne ; Me&YouToo réalisera ces traductions avant la validation pour diffusion.'}</p><ul class="validation-translation-list">${requests.map(row=>{
+      const target=reviewLocaleNames[row.locale]||row.locale.toUpperCase(),source=reviewLocaleNames[row.sourceLocale]||row.sourceLocale.toUpperCase();
+      const query=new URLSearchParams({theme,projectId,locale:row.locale,focus:intro?'intro':'socio-list'});
+      if(admin)query.set('review','1');
+      return `<li class="validation-translation-row"><div class="validation-translation-copy"><strong>${esc(target)}</strong><span>À partir de votre version en ${esc(source)}</span>${admin?`<small>Paramétrage → ${esc(section)} · ${esc(target)}</small>`:'<small>Prise en charge par Me&YouToo</small>'}</div>${admin?`<a class="button button-secondary button-small validation-translation-link" href="parametrage.html?${esc(query.toString())}">${intro?'Traduire l’introduction':'Traduire les données d’analyse'}<span class="sr-only"> en ${esc(target)}</span> <span aria-hidden="true">→</span></a>`:''}</li>`;
+    }).join('')}</ul>`;
   }
+  function socioTranslationRequestPanel(){translationRequestPanel('socio',pendingSocioTranslationRequests());}
   function introTranslationRequestPanel(){
     socioTranslationRequestPanel();
-    let host=$('intro-translation-request-summary');
-    const requests=pendingIntroTranslationRequests();
-    if(!requests.length){host?.remove();return;}
-    if(!host){host=document.createElement('section');host.id='intro-translation-request-summary';host.className='card';document.querySelector('.validation-summary').after(host);}
-    const admin=currentUser?.role==='admin';
-    host.innerHTML=`<h2 class="section-title">${admin?'Introduction à traduire par Me&YouToo':'Traductions de votre introduction demandées à Me&YouToo'}</h2><p>${admin?'Le client a demandé de traduire son introduction personnalisée dans les langues ci-dessous. Complétez ces traductions avant de finaliser la relecture.':'Vous pouvez transmettre votre campagne. Me&YouToo recevra les demandes suivantes et traduira votre introduction personnalisée avant la validation pour diffusion.'}</p><ul>${requests.map(row=>{const query=new URLSearchParams({theme,projectId,locale:row.locale,focus:'intro'});if(admin)query.set('review','1');return `<li><strong>${esc(reviewLocaleNames[row.locale]||row.locale.toUpperCase())}</strong> · à partir de ${esc(reviewLocaleNames[row.sourceLocale]||row.sourceLocale.toUpperCase())}${admin?` · <a class="review-edit-target" href="parametrage.html?${esc(query.toString())}">Compléter la traduction →</a>`:''}</li>`;}).join('')}</ul>`;
+    translationRequestPanel('intro',pendingIntroTranslationRequests());
   }
 
   function reviewPanel(){
@@ -337,7 +341,7 @@
         });
       };
       collectSocio(project.sociodemo||[]);
-      $('validation-theme').textContent=project.theme_title||'Autodiagnostic';$('validation-campaign').value=project.campaign_name||project.title||'';$('validation-title').value=project.respondent_title||'';$('validation-launch-date').value=isoDate(project.launch_date);$('validation-close-date').value=isoDate(project.close_date);$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').textContent=socioLabels.join(', ')||'Aucune';
+      $('validation-theme').textContent=project.theme_title||'Autodiagnostic';$('validation-campaign').value=project.campaign_name||project.title||'';$('validation-title').value=project.respondent_title||'';$('validation-launch-date').value=isoDate(project.launch_date);$('validation-close-date').value=isoDate(project.close_date);$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').innerHTML=socioLabels.length?`<span class="validation-socio-count">${socioLabels.length} question${socioLabels.length>1?'s':''}</span><details class="validation-socio-details"><summary>Voir les questions</summary><ul>${socioLabels.map(label=>`<li>${esc(label||'Question à traduire')}</li>`).join('')}</ul></details>`:'Aucune';
       introTranslationRequestPanel();
       renderValidationQuota(quota);
       renderMonthlyCampaignAllowance();
