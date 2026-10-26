@@ -234,11 +234,6 @@
     var names={fr:'Français',en:'Anglais',es:'Espagnol',de:'Allemand',it:'Italien',pt:'Portugais',br:'Portugais (Brésil)',nl:'Néerlandais','nl-be':'Néerlandais (Belgique)',pl:'Polonais',cs:'Tchèque',sk:'Slovaque',id:'Indonésien',ja:'Japonais',ko:'Coréen','ko-kr':'Coréen',zh:'Chinois traditionnel',zf:'Chinois simplifié',ar:'Arabe',ro:'Roumain',bg:'Bulgare',ru:'Russe',tr:'Turc',da:'Danois',no:'Norvégien',sv:'Suédois','sv-se':'Suédois'};
     return (names[key]||key.toUpperCase())+' ('+key.toUpperCase()+')';
   }
-  function catalogPathwayForChoices(options,selections){
-    return (options.pathways||[]).find(function(pathway){
-      return Object.entries(pathway.choiceSelections||{}).every(function(entry){return String(selections[entry[0]])===String(entry[1]);});
-    })||null;
-  }
   function chooseCatalogVariant(options,isLegalScope){
     return new Promise(function(resolve){
       var variants=Array.isArray(options.variants)?options.variants:[];
@@ -254,6 +249,10 @@
       var scopeFieldLabel=isLegalScope?'Périmètres culturels et légaux':'Périmètres de la campagne';
       dialog.innerHTML='<form method="dialog" class="studio-modal-shell version-picker-shell"><header class="version-picker-header"><div class="studio-modal-copy"><p class="eyebrow">Configuration du diagnostic</p><h2>Choisissez votre parcours, vos périmètres et vos langues</h2><p class="studio-modal-message">Les périmètres et langues proposés s’adaptent aux chapitres que vous retenez.</p><div class="version-picker-explainer"><strong>À savoir</strong><span><b>Contenu international · adaptations possibles</b> : certaines versions sont adaptées au contexte local et peuvent différer selon la langue.</span><span><b>Contenu adapté au périmètre</b> : certaines situations sont adaptées au contexte culturel ou local choisi.</span><span>Vérifiez que la situation et les réponses conviennent aux pays concernés, notamment lorsqu’elles évoquent un dispositif administratif ou juridique.</span><small>Le pays détermine le contexte de la situation. La langue détermine la langue du texte. Les choix proposés suivent les disponibilités configurées dans le catalogue.</small></div></div></header><div class="version-picker-scroll" data-version-picker-scroll><div data-choice-groups></div><div class="version-picker-section"><h3>'+esc(scopeFieldLabel)+'</h3><p class="version-picker-help" data-country-help>Sélection obligatoire : choisissez au moins un périmètre.</p><div data-country-checks class="version-check-grid"></div></div><div class="version-picker-section"><h3>Langues par périmètre</h3><p class="version-picker-help" data-locale-help>Sélection obligatoire : choisissez d’abord un périmètre, puis ajoutez au moins une langue pour chaque pays.</p><div data-locale-checks class="version-check-grid"></div></div></div><footer class="studio-modal-actions version-picker-actions"><button type="button" class="button button-secondary" data-cancel>Annuler</button><button type="button" class="button button-primary" data-confirm disabled aria-disabled="true">Continuer vers la composition</button></footer></form>';
 
+      if(options.theme&&options.theme.slug==='collegue-inclusif'){
+        dialog.querySelector('.studio-modal-message').textContent='Le pays détermine les situations adaptées culturellement. Les langues proposées sont communes à tous les chapitres choisis.';
+        dialog.querySelector('.version-picker-explainer').innerHTML='<strong>Parcours adapté par pays</strong><span>Un chapitre international, comme « Biais inconscients », complète le parcours sans remplacer les situations adaptées au pays des autres chapitres.</span><span>Pour utiliser les quatre chapitres universels et leurs langues, choisissez « Collègue inclusif — International » dans le catalogue.</span>';
+      }
       if(sharedScope){
         dialog.querySelector('h2').textContent='Choisissez les langues de votre campagne';
         dialog.querySelector('.studio-modal-message').textContent='Les mêmes situations sont proposées pour les contextes culturels France et Europe.';
@@ -275,16 +274,12 @@
         var chosen={};groupKeys.forEach(function(g,gi){var r=dialog.querySelector('input[name="choice-'+gi+'"]:checked');if(r)chosen[g]=r.value;});
         return chosen;
       }
-      function selectedPathway(){return catalogPathwayForChoices(options,selectedChoices());}
       function selectedCaps(){
-        var chosen=selectedChoices(),pathway=selectedPathway();
-        if(pathway)return pathway.error?[]:pathway.chapterCapabilities||[];
+        var chosen=selectedChoices();
         return caps.filter(function(c){return !c.choiceGroup||String(c.id)===chosen[c.choiceGroup];});
       }
       function countryLabel(code){var v=variants.find(function(x){return x.countryCode===code;});return v?v.scopeLabel:code;}
       function localesForSelectedCountry(code){
-        var pathway=selectedPathway();
-        if(pathway&&pathway.error)return [];
         var selected=selectedCaps(),allowed=null;
         selected.forEach(function(c){
           var ls=[];
@@ -315,11 +310,7 @@
             &&localesForSelectedCountry(code).length>0;
         });
       }
-      var pathwayNotice=document.createElement('p');pathwayNotice.className='version-picker-help';pathwayNotice.hidden=true;groupsRoot.after(pathwayNotice);
       function renderCountries(){
-        var pathway=selectedPathway();
-        pathwayNotice.hidden=!pathway;
-        pathwayNotice.textContent=pathway?(pathway.error||'Parcours international : les quatre chapitres utilisent le même contenu universel, disponible dans toutes les langues proposées ci-dessous. Le pays ne modifie pas ces situations.'):'';
         var previous=[].slice.call(countriesRoot.querySelectorAll('input:checked')).map(function(i){return i.value;});
         var allowed=compatibleCountries();
         countriesRoot.innerHTML=allowed.length?allowed.map(function(code){var v=variants.find(function(x){return x.countryCode===code;});return '<label class="version-check"><input type="checkbox" value="'+esc(code)+'" '+(previous.includes(code)||(sharedScope&&code===sharedScope.referenceCountryCode)?'checked':'')+' '+(sharedScope?'disabled':'')+'><span>'+esc(v?v.scopeLabel:code)+'</span></label>';}).join(''):'<div class="version-empty">Aucun périmètre n’est compatible avec ce choix de chapitres.</div>';
@@ -376,11 +367,7 @@
         if(!countries.length||!locales.length||uncovered.length){updateConfirmState();return;}
         var choiceSelections={};groupKeys.forEach(function(g,gi){var r=dialog.querySelector('input[name="choice-'+gi+'"]:checked');if(r)choiceSelections[g]=Number(r.value);});
         var firstCountry=countries[0],firstLocales=localesByCountry[firstCountry]||[];
-        var pathway=selectedPathway();
-        if(pathway){
-          if(pathway.error)return;
-          finish({culturalScope:'worldwide',countryCode:'WORLDWIDE',locale:locales[0],countryCodes:['WORLDWIDE'],locales:locales,localesByCountry:{WORLDWIDE:locales},choiceSelections:choiceSelections});
-        }else finish({culturalScope:'country',countryCode:firstCountry,locale:firstLocales[0]||locales[0],countryCodes:countries,locales:locales,localesByCountry:localesByCountry,choiceSelections:choiceSelections});
+        finish({culturalScope:firstCountry==='WORLDWIDE'?'worldwide':'country',countryCode:firstCountry,locale:firstLocales[0]||locales[0],countryCodes:countries,locales:locales,localesByCountry:localesByCountry,choiceSelections:choiceSelections});
       };
       dialog.addEventListener('close',function(){if(!settled){settled=true;resolve(null);}setTimeout(function(){dialog.remove();},0);},{once:true});dialog.showModal();
     });
