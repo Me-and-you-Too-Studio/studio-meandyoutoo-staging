@@ -1236,6 +1236,15 @@ function incompleteSocioLocale(items,reference=[],allowEmpty=false){
   }
   function renderIntroTranslationRequests(){
     renderSocioTranslationRequests();
+    let headerActions=$('intro-translation-header-actions');
+    const introLabel=$('intro-edit-title')?.closest('label');
+    if(!headerActions&&introLabel){
+      const header=document.createElement('div');
+      header.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin-bottom:8px';
+      introLabel.before(header);header.appendChild(introLabel);introLabel.style.marginBottom='0';
+      headerActions=document.createElement('span');headerActions.id='intro-translation-header-actions';header.appendChild(headerActions);
+    }
+    if(headerActions)headerActions.replaceChildren();
     let host=$('intro-translation-requests');
     if(!host){host=document.createElement('div');host.id='intro-translation-requests';$('intro')?.closest('fieldset')?.appendChild(host);}
     if(isLegacyClientCampaign()||projectLocales().length<2){host.hidden=true;return;}
@@ -1251,6 +1260,16 @@ function incompleteSocioLocale(items,reference=[],allowEmpty=false){
       const st=reviewState();st.introRequests={...(st.introRequests||{}),[locale]:{sourceLocale}};
       scheduleAutosave(0);updateNextState();renderIntroTranslationRequests();
     });
+    // Keep the existing request action beside the language being edited.
+    if(headerActions){
+      const locale=normalizeLocale(socioContextLocale);
+      const requestButton=host.querySelector(`[data-intro-request="${locale}"]`);
+      if(requestButton)headerActions.appendChild(requestButton);
+      else if(requested.has(locale)){
+        const status=document.createElement('span');status.className='status-pill';
+        status.textContent='Traduction demandée à Me&YouToo';headerActions.appendChild(status);
+      }
+    }
     host.querySelectorAll('[data-intro-request-edit]').forEach(button=>button.onclick=()=>{storeActiveLanguageContent();activateLanguage(button.dataset.introRequestEdit);renderSocioContext();renderSocio();$('intro').focus();$('intro').scrollIntoView({behavior:'smooth',block:'center'});});
     host.querySelectorAll('[data-intro-request-clear],[data-intro-request-cancel]').forEach(button=>button.onclick=()=>{
       storeActiveLanguageContent();const locale=button.dataset.introRequestClear||button.dataset.introRequestCancel;
