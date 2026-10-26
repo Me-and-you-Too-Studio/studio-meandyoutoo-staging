@@ -173,7 +173,19 @@
     const allowed=(project?.locales||[]).map(reviewLocale),raw=project?.translation_review_state?.introRequests||{};
     return Object.entries(raw).flatMap(([key,value])=>{const locale=reviewLocale(key),sourceLocale=reviewLocale(value?.sourceLocale);return allowed.includes(locale)&&allowed.includes(sourceLocale)&&locale!==sourceLocale?[{locale,sourceLocale}]:[];});
   }
+  function pendingSocioTranslationRequests(){
+    const allowed=(project?.locales||[]).map(reviewLocale),raw=project?.translation_review_state?.socioRequests||{};
+    return Object.entries(raw).flatMap(([key,value])=>{const locale=reviewLocale(key),sourceLocale=reviewLocale(value?.sourceLocale);return allowed.includes(locale)&&allowed.includes(sourceLocale)&&locale!==sourceLocale?[{locale,sourceLocale}]:[];});
+  }
+  function socioTranslationRequestPanel(){
+    let host=$('socio-translation-request-summary');const requests=pendingSocioTranslationRequests();
+    if(!requests.length){host?.remove();return;}
+    if(!host){host=document.createElement('section');host.id='socio-translation-request-summary';host.className='card';document.querySelector('.validation-summary').after(host);}
+    const admin=currentUser?.role==='admin';
+    host.innerHTML=`<h2 class="section-title">${admin?'Données d’analyse à traduire par Me&YouToo':'Traductions de vos données d’analyse demandées à Me&YouToo'}</h2><p>${admin?'Complétez les questions et réponses dans ces langues, puis marquez les demandes comme terminées avant de finaliser la relecture.':'Vous pouvez transmettre votre campagne. Me&YouToo traduira ces questions et réponses avant la validation pour diffusion.'}</p><ul>${requests.map(row=>{const query=new URLSearchParams({theme,projectId,locale:row.locale,focus:'socio-list'});if(admin)query.set('review','1');return `<li><strong>${esc(reviewLocaleNames[row.locale]||row.locale.toUpperCase())}</strong> · à partir de ${esc(reviewLocaleNames[row.sourceLocale]||row.sourceLocale.toUpperCase())}${admin?` · <a class="review-edit-target" href="parametrage.html?${esc(query.toString())}">Compléter la traduction →</a>`:''}</li>`;}).join('')}</ul>`;
+  }
   function introTranslationRequestPanel(){
+    socioTranslationRequestPanel();
     let host=$('intro-translation-request-summary');
     const requests=pendingIntroTranslationRequests();
     if(!requests.length){host?.remove();return;}
@@ -354,7 +366,7 @@
     const checks=[...document.querySelectorAll('[data-validation-check]')];if(checks.some(c=>!c.checked)){$('validation-alert').hidden=false;$('validation-alert').textContent='Confirmez les trois points avant de transmettre.';return;}
     if(!await saveValidationSettings({silent:true}))return;
     const button=$('submit-project');button.disabled=true;button.textContent='Transmission…';
-    try{const result=await api(`/api/projects/${projectId}/submit`,{method:'POST',body:'{}'});project=result.project||project;lockSubmittedState();await window.StudioModal.alert({eyebrow:'Configuration transmise',title:'Votre configuration a bien été transmise',message:(pendingIntroTranslationRequests().length?`Votre demande de traduction de l’introduction a été transmise à Me&YouToo : ${pendingIntroTranslationRequests().map(row=>reviewLocaleNames[row.locale]||row.locale.toUpperCase()).join(', ')}. `:'')+'Me&YouToo va en prendre connaissance et la vérifier. Votre configuration est désormais figée pendant cette vérification. En attendant, transmettez-nous votre logo, votre charte graphique et vos éventuelles consignes de communication.',type:'success',confirmLabel:'Transmettre mes éléments graphiques'});location.href=`kit-communication.html?projectId=${encodeURIComponent(projectId)}&theme=${encodeURIComponent(theme)}`;}catch(e){button.disabled=false;button.textContent='Transmettre à Me&YouToo';$('validation-alert').hidden=false;$('validation-alert').textContent=e.message;}
+    try{const result=await api(`/api/projects/${projectId}/submit`,{method:'POST',body:'{}'});project=result.project||project;lockSubmittedState();await window.StudioModal.alert({eyebrow:'Configuration transmise',title:'Votre configuration a bien été transmise',message:(pendingSocioTranslationRequests().length?`Votre demande de traduction des données d’analyse a été transmise à Me&YouToo : ${pendingSocioTranslationRequests().map(row=>reviewLocaleNames[row.locale]||row.locale.toUpperCase()).join(', ')}. `:'')+(pendingIntroTranslationRequests().length?`Votre demande de traduction de l’introduction a été transmise à Me&YouToo : ${pendingIntroTranslationRequests().map(row=>reviewLocaleNames[row.locale]||row.locale.toUpperCase()).join(', ')}. `:'')+'Me&YouToo va en prendre connaissance et la vérifier. Votre configuration est désormais figée pendant cette vérification. En attendant, transmettez-nous votre logo, votre charte graphique et vos éventuelles consignes de communication.',type:'success',confirmLabel:'Transmettre mes éléments graphiques'});location.href=`kit-communication.html?projectId=${encodeURIComponent(projectId)}&theme=${encodeURIComponent(theme)}`;}catch(e){button.disabled=false;button.textContent='Transmettre à Me&YouToo';$('validation-alert').hidden=false;$('validation-alert').textContent=e.message;}
   };
   load();
 })();

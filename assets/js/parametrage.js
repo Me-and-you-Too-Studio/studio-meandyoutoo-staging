@@ -468,7 +468,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
     for(const [locale,rows] of Object.entries(socioLanguageVariants))if(normalizeLocale(locale)!==normalizeLocale(ref.locale))socioLanguageVariants[locale]=orderNativeSocioRows(ref.items,rows);
   }
   function referenceCriterionFor(criterion,index){if(isLegacyClientCampaign())return null;const ref=socioReference();if(!ref.items?.length||normalizeLocale(ref.locale)===normalizeLocale(socioContextLocale))return null;const match=uniqueSocioMatch(criterion,ref.items);return match?{locale:ref.locale,criterion:match,index:ref.items.indexOf(match)}:null;}
-  function renderSocioReference(criterion,index){if(isLegacyClientCampaign())return'';const ref=referenceCriterionFor(criterion,index);if(!ref)return'';const st=reviewState(),loc=normalizeLocale(socioContextLocale),key=criterionKey(ref.criterion,ref.index),status=socioTranslationStatus(loc),rows=status.reviewPaths,todos=status.todoPaths,qPath=`q:${key}`,qTodo=todos.includes(qPath),qNeeds=!qTodo&&rows.includes(qPath),qBase=st.baselines.socio?.[loc]?.[qPath]?.text;const opts=(ref.criterion.opts||[]).map((o,j)=>{const optionKey=String(o?.source_id??`i${j}`),path=`o:${key}:${optionKey}`,todo=todos.includes(path),needs=!todo&&rows.includes(path),base=st.baselines.socio?.[loc]?.[path]?.text,label=esc(o.label);return `<li class="${needs?'has-translation-diff':''} ${todo?'is-translation-todo':''}">${label}</li>`;}).join('');const needs=rows.some(x=>(x===qPath||x.startsWith(`o:${key}:`))&&!todos.includes(x)),todo=todos.some(x=>x===qPath||x.startsWith(`o:${key}:`)),question=esc(ref.criterion.q||'');return `<aside class="socio-reference-panel">${todo?`<div class="translation-review-alert translation-todo-alert"><strong>Traduction à renseigner</strong><span>Cette donnée a été ajoutée en ${esc(localeLabel(ref.locale))}. Traduisez la question et les réponses en ${esc(localeLabel(loc))}.</span></div>`:needs?`<div class="translation-review-alert"><strong>Traduction à vérifier</strong><span>Vérifiez votre traduction à partir de la référence ci-dessous.</span><button type="button" data-review-clear="${index}">Marquer comme vérifié</button></div>`:''}<div class="socio-reference-head"><strong>Référence projet · ${esc(localeLabel(ref.locale))}</strong><span class="status-pill">${esc(String(ref.locale).toUpperCase())}</span></div><div class="socio-reference-question ${qNeeds?'has-translation-diff':''} ${qTodo?'is-translation-todo':''}">${question}</div><div class="socio-reference-label">Réponses de référence</div><ol>${opts}</ol><small>${todo?'Renseignez les champs à droite. Le statut disparaît automatiquement lorsque la traduction est complète.':'La référence actuelle est affichée ci-dessus. Vérifiez la traduction à droite après une modification de la référence.'}</small></aside>`;}
+  function renderSocioReference(criterion,index){if(isLegacyClientCampaign())return'';const ref=referenceCriterionFor(criterion,index);if(!ref)return'';const st=reviewState(),loc=normalizeLocale(socioContextLocale),key=criterionKey(ref.criterion,ref.index),status=socioTranslationStatus(loc),rows=status.reviewPaths,todos=status.todoPaths,qPath=`q:${key}`,qTodo=todos.includes(qPath),qNeeds=!qTodo&&rows.includes(qPath),qBase=st.baselines.socio?.[loc]?.[qPath]?.text;const opts=(ref.criterion.opts||[]).map((o,j)=>{const optionKey=String(o?.source_id??`i${j}`),path=`o:${key}:${optionKey}`,todo=todos.includes(path),needs=!todo&&rows.includes(path),base=st.baselines.socio?.[loc]?.[path]?.text,label=esc(o.label);return `<li class="${needs?'has-translation-diff':''} ${todo?'is-translation-todo':''}">${label}</li>`;}).join('');const needs=rows.some(x=>(x===qPath||x.startsWith(`o:${key}:`))&&!todos.includes(x)),todo=todos.some(x=>x===qPath||x.startsWith(`o:${key}:`)),question=esc(ref.criterion.q||'');return `<aside class="socio-reference-panel">${todo?`<div class="translation-review-alert translation-todo-alert"><strong>Traduction à renseigner</strong><span>Cette donnée a été ajoutée en ${esc(localeLabel(ref.locale))}. ${socioTranslationRequests().some(row=>row.locale===loc)?'La traduction de cette question et de ses réponses est confiée à Me&YouToo.':`Traduisez la question et les réponses en ${esc(localeLabel(loc))}, ou confiez-les à Me&YouToo ci-dessus.`}</span></div>`:needs?`<div class="translation-review-alert"><strong>Traduction à vérifier</strong><span>Vérifiez votre traduction à partir de la référence ci-dessous.</span><button type="button" data-review-clear="${index}">Marquer comme vérifié</button></div>`:''}<div class="socio-reference-head"><strong>Référence projet · ${esc(localeLabel(ref.locale))}</strong><span class="status-pill">${esc(String(ref.locale).toUpperCase())}</span></div><div class="socio-reference-question ${qNeeds?'has-translation-diff':''} ${qTodo?'is-translation-todo':''}">${question}</div><div class="socio-reference-label">Réponses de référence</div><ol>${opts}</ol><small>${todo?'Renseignez les champs à droite. Le statut disparaît automatiquement lorsque la traduction est complète.':'La référence actuelle est affichée ci-dessus. Vérifiez la traduction à droite après une modification de la référence.'}</small></aside>`;}
   const isAdminReview=()=>currentUser.role==='admin'&&project?.review_mode&&!isLegacyClientCampaign();
   function submittedSettings(){return project?.review_submitted_settings||project?.review_snapshot?.project||null;}
   function reviewWordDiff(original,current){
@@ -1153,15 +1153,19 @@ function incompleteSocioLocale(items,reference=[],allowEmpty=false){
   if(Array.isArray(items)&&items.length>20)return issue('','add','Les données d’analyse sont limitées à vingt critères.');
   return walk(items,reference);
 }
-  function incompleteSociodemo(){
+  function incompleteSociodemo(allowDelegation=true){
     if(isLegacyClientCampaign())return [];
     const ref=socioReference(),current=normalizeLocale(socioContextLocale),reference=normalizeLocale(ref.locale)===current?socio:ref.items||[];
-    return projectLocales().flatMap(locale=>{
+    const missing=projectLocales().flatMap(locale=>{
       const loc=normalizeLocale(locale),rows=loc===current?socio:socioForLocale(loc),issue=incompleteSocioLocale(rows,reference,optionalMinorityTheme());
       if(!issue)return [];
       const selector=issue.field==='question'?`input[data-tree-q="${issue.path}"]`:issue.field==='answer'?`input[data-tree-label="${issue.path}"]`:`button[data-tree-option-add="${issue.path}"]`;
       return [{id:issue.field==='add'?'add-socio':'socio-list',title:`Donnée d’analyse à compléter · ${localeLabel(loc)} (${loc.toUpperCase()})`,message:issue.message,locale:loc,socio:issue.field!=='add',selector,prepareSocio:true}];
     });
+    if(!allowDelegation)return missing;
+    const requests=socioTranslationRequests(),incomplete=new Set(missing.map(row=>row.locale)),requested=new Set(requests.map(row=>row.locale));
+    const delegated=new Set(requests.filter(row=>!incomplete.has(row.sourceLocale)&&!requested.has(row.sourceLocale)).map(row=>row.locale));
+    return missing.filter(row=>!delegated.has(row.locale));
   }
   // Une langue peut manquer une branche entière dans un ancien brouillon.
   // Créer uniquement ses champs vides permet de guider vers la traduction manquante.
@@ -1187,6 +1191,38 @@ function incompleteSocioLocale(items,reference=[],allowEmpty=false){
       return !normalizeIntro(text)||(Boolean(normalizeIntro(reference))&&normalizeIntro(text)===normalizeIntro(reference));
     });
   }
+  function socioTranslationRequests(){
+    const raw=reviewState().socioRequests||{},allowed=projectLocales().map(normalizeLocale);
+    return Object.entries(raw).flatMap(([key,value])=>{const locale=normalizeLocale(key),sourceLocale=normalizeLocale(value?.sourceLocale);return allowed.includes(locale)&&allowed.includes(sourceLocale)&&locale!==sourceLocale?[{locale,sourceLocale}]:[];});
+  }
+  function socioTranslationDelegation(){
+    if(isReadOnly()||isLegacyClientCampaign())return {sources:[],locales:[]};
+    const missing=incompleteSociodemo(false).map(row=>row.locale),requests=socioTranslationRequests(),requested=new Set(requests.map(row=>row.locale));
+    return {sources:projectLocales().map(normalizeLocale).filter(loc=>!missing.includes(loc)&&!requested.has(loc)),locales:missing.filter(loc=>!requested.has(loc))};
+  }
+  function requestSocioTranslations(sourceLocale,locales){
+    storeActiveLanguageContent();
+    const available=socioTranslationDelegation();
+    if(!available.sources.includes(sourceLocale))throw new Error('Complétez les questions et réponses dans la langue source avant de demander leur traduction.');
+    const st=reviewState();st.socioRequests={...(st.socioRequests||{})};
+    for(const locale of locales)if(locale!==sourceLocale)st.socioRequests[locale]={sourceLocale};
+    updateNextState();renderSocioTranslationRequests();scheduleAutosave(0);
+  }
+  function renderSocioTranslationRequests(){
+    let host=$('socio-translation-requests');
+    if(!host){host=document.createElement('div');host.id='socio-translation-requests';$('socio-list')?.before(host);}
+    if(isLegacyClientCampaign()||projectLocales().length<2){host.hidden=true;return;}
+    const requests=socioTranslationRequests(),delegation=socioTranslationDelegation(),admin=isAdminReview(),disabled=isReadOnly();
+    host.hidden=false;
+    host.innerHTML=`<div class="composer-inline-help"><strong>${admin?'Données d’analyse à traduire par Me&YouToo':'Vous ne maîtrisez pas toutes les langues du projet ?'}</strong><p>Renseignez vos questions et réponses dans la langue de référence. Confiez les autres traductions à Me&YouToo pour poursuivre sans bloquer la transmission.</p>${delegation.sources.length&&delegation.locales.length&&!admin?`<label for="socio-translation-source">Version complète à traduire</label><select id="socio-translation-source">${delegation.sources.map(loc=>`<option value="${esc(loc)}" ${loc===normalizeLocale(socioReference().locale)?'selected':''}>${esc(localeLabel(loc))}</option>`).join('')}</select><button type="button" class="button button-secondary button-small" data-socio-request>Confier les traductions à Me&YouToo</button>`:''}${requests.map(row=>`<article style="margin-top:12px"><strong>${esc(localeLabel(row.locale))}</strong> · traduction ${admin?'à réaliser':'demandée à Me&YouToo'} depuis ${esc(localeLabel(row.sourceLocale))}<div class="top-actions"><button type="button" class="button button-secondary button-small" data-socio-request-edit="${esc(row.locale)}">${admin?'Compléter la traduction':'Voir cette version'}</button>${!disabled?`<button type="button" class="button button-secondary button-small" data-socio-request-clear="${esc(row.locale)}">${admin?'Marquer la traduction comme terminée':'J’ai traduit ces données'}</button>${!admin?`<button type="button" class="button button-ghost button-small" data-socio-request-cancel="${esc(row.locale)}">Annuler la demande</button>`:''}`:''}</div></article>`).join('')}</div>`;
+    host.querySelector('[data-socio-request]')?.addEventListener('click',()=>{try{requestSocioTranslations($('socio-translation-source').value,delegation.locales);}catch(error){show(error.message);}});
+    host.querySelectorAll('[data-socio-request-edit]').forEach(button=>button.onclick=()=>{storeActiveLanguageContent();activateLanguage(button.dataset.socioRequestEdit);renderSocioContext();renderSocio();$('socio-list')?.scrollIntoView({behavior:'smooth',block:'start'});});
+    host.querySelectorAll('[data-socio-request-clear],[data-socio-request-cancel]').forEach(button=>button.onclick=()=>{
+      storeActiveLanguageContent();const locale=button.dataset.socioRequestClear||button.dataset.socioRequestCancel;
+      if(button.dataset.socioRequestClear&&incompleteSociodemo(false).some(row=>row.locale===locale)){show('Complétez d’abord les questions et réponses dans cette langue.');return;}
+      delete reviewState().socioRequests[locale];scheduleAutosave(0);updateNextState();renderSocioTranslationRequests();
+    });
+  }
   function introTranslationRequests(){
     const raw=reviewState().introRequests||{},allowed=projectLocales().map(normalizeLocale);
     return Object.entries(raw).flatMap(([key,value])=>{const locale=normalizeLocale(key),sourceLocale=normalizeLocale(value?.sourceLocale);return allowed.includes(locale)&&allowed.includes(sourceLocale)&&locale!==sourceLocale?[{locale,sourceLocale}]:[];});
@@ -1199,6 +1235,7 @@ function incompleteSocioLocale(items,reference=[],allowEmpty=false){
     return missing.filter(locale=>!delegated.has(normalizeLocale(locale)));
   }
   function renderIntroTranslationRequests(){
+    renderSocioTranslationRequests();
     let host=$('intro-translation-requests');
     if(!host){host=document.createElement('div');host.id='intro-translation-requests';$('intro')?.closest('fieldset')?.appendChild(host);}
     if(isLegacyClientCampaign()||projectLocales().length<2){host.hidden=true;return;}
@@ -1315,13 +1352,13 @@ function incompleteSocioLocale(items,reference=[],allowEmpty=false){
     return ok;
   }
   function scheduleAutosave(delay=700){
-    renderSettingsReview();
+    renderSettingsReview();renderSocioTranslationRequests();
     if(!autosaveEnabled||isReadOnly())return;
     clearTimeout(autosaveTimer);markAutosaveActiveField();autosaveStatus('Modifications en cours…','saving');
     autosaveTimer=setTimeout(()=>{autosaveTimer=null;autosaveNow();},delay);
   }
   async function flushAutosave(){clearTimeout(autosaveTimer);autosaveTimer=null;return autosaveNow();}
-  function updateNextState(){const buttons=[$('param-next'),$('param-next-top')].filter(Boolean);if(!buttons.length)return;if(isReadOnly()){buttons.forEach(button=>{button.classList.remove('is-disabled');button.setAttribute('aria-disabled','false');button.dataset.ready='true';button.title='';button.textContent='Consulter la relecture →';});return;}const state=settingsReadiness(),ready=state.introChanged&&state.launchFilled&&state.closeFilled&&state.diffusionReady&&!incompleteSociodemo().length;buttons.forEach(button=>{button.classList.toggle('is-disabled',!ready);button.setAttribute('aria-disabled',String(!ready));button.dataset.ready=ready?'true':'false';button.title=ready?'':!state.introChanged?'Personnalisez votre introduction, puis complétez les autres langues ou demandez leur traduction à Me&YouToo.':incompleteSociodemo().length?'Complétez les données d’analyse dans chaque langue active.':!state.diffusionReady?'Choisissez le slug de l’adresse de diffusion.':'Renseignez les deux dates avant de poursuivre.';});}
+  function updateNextState(){const buttons=[$('param-next'),$('param-next-top')].filter(Boolean);if(!buttons.length)return;if(isReadOnly()){buttons.forEach(button=>{button.classList.remove('is-disabled');button.setAttribute('aria-disabled','false');button.dataset.ready='true';button.title='';button.textContent='Consulter la relecture →';});return;}const state=settingsReadiness(),ready=state.introChanged&&state.launchFilled&&state.closeFilled&&state.diffusionReady&&!incompleteSociodemo().length;buttons.forEach(button=>{button.classList.toggle('is-disabled',!ready);button.setAttribute('aria-disabled',String(!ready));button.dataset.ready=ready?'true':'false';button.title=ready?'':!state.introChanged?'Personnalisez votre introduction, puis complétez les autres langues ou demandez leur traduction à Me&YouToo.':incompleteSociodemo().length?'Complétez vos données d’analyse ou confiez leurs traductions à Me&YouToo.':!state.diffusionReady?'Choisissez le slug de l’adresse de diffusion.':'Renseignez les deux dates avant de poursuivre.';});}
   function incompleteSocioSelector(criterion,path){
     if(!String(criterion?.q||'').trim())return `input[data-tree-q="${path}"]`;
     if(!Array.isArray(criterion.opts)||criterion.opts.length<2)return `button[data-tree-option-add="${path}"]`;
@@ -1392,11 +1429,17 @@ function incompleteSocioLocale(items,reference=[],allowEmpty=false){
   async function showMissingSettings(items){
     if(!items.length)return;
     const delegation=missingIntroductionDelegation(items),canDelegate=delegation.sources.length>0&&delegation.locales.length>0,onlyTranslations=canDelegate&&items.every(item=>item.id==='intro');
+    const socioDelegation=socioTranslationDelegation(),canDelegateSocio=socioDelegation.sources.length>0&&items.some(item=>item.prepareSocio);
     const defaultSource=delegation.sources.includes(normalizeLocale(socioContextLocale))?normalizeLocale(socioContextLocale):delegation.sources[0];
     const languages=new Intl.ListFormat('fr',{style:'long',type:'conjunction'});
     const translationSummary=source=>`Votre introduction personnalisée en ${String(localeLabel(source)).toLocaleLowerCase('fr')} sera traduite par Me&YouToo en ${languages.format(delegation.locales.map(locale=>String(localeLabel(locale)).toLocaleLowerCase('fr')))}.`;
     const dialog=document.createElement('dialog');dialog.className='studio-modal';dialog.style.cssText='max-height:90vh;overflow:auto;';dialog.setAttribute('aria-labelledby','param-missing-title');dialog.setAttribute('aria-describedby','param-missing-description');
     dialog.innerHTML=`<div class="studio-modal-shell"><button class="studio-modal-close" type="button" aria-label="Fermer la fenêtre" data-missing-close>×</button><div class="studio-modal-icon" aria-hidden="true">✎</div><div class="studio-modal-copy"><p class="eyebrow">Avant la transmission</p><h2 id="param-missing-title">${onlyTranslations?'Traductions de votre introduction':items.length===1?'Un élément reste à compléter':'Quelques éléments restent à compléter'}</h2><p id="param-missing-description" class="studio-modal-message">${onlyTranslations?'Votre introduction personnalisée est prête. Vous pouvez confier ses traductions à Me&YouToo et poursuivre sans les rédiger vous-même.':'Votre campagne n’a pas encore été transmise. Choisissez un élément pour accéder directement au champ concerné.'}</p>${canDelegate?`<div style="padding:16px;background:#edf8fa;border-radius:12px;margin-top:16px;"><p data-missing-translation-summary>${esc(translationSummary(defaultSource))}</p>${delegation.sources.length>1?`<label for="missing-intro-source">À partir de quelle version faut-il traduire ?</label><select id="missing-intro-source" style="display:block;width:100%;margin-top:8px;">${delegation.sources.map(locale=>`<option value="${esc(locale)}" ${locale===defaultSource?'selected':''}>${esc(localeLabel(locale))}</option>`).join('')}</select>`:''}<button class="button button-primary" type="button" data-missing-delegate autofocus style="white-space:normal;height:auto;margin-top:12px;">Confier les traductions et poursuivre →</button><p data-missing-delegate-error role="alert" hidden></p></div>`:''}<div style="display:grid;gap:10px;margin-top:18px;">${(onlyTranslations?[]:items).map((item,index)=>`<button type="button" class="button button-secondary" data-missing-index="${index}" style="display:block;text-align:left;white-space:normal;height:auto;padding:14px 16px;"><strong style="display:block;margin-bottom:5px;">${esc(item.title)} <span aria-hidden="true">→</span></strong><span style="display:block;font-weight:400;line-height:1.5;">${esc(item.message)}</span></button>`).join('')}</div></div><div class="studio-modal-actions">${onlyTranslations?'':'<button class="button button-ghost" type="button" data-missing-close>Fermer</button>'}<button class="button ${onlyTranslations?'button-ghost':'button-primary'}" type="button" data-missing-first ${canDelegate?'':'autofocus'}>${onlyTranslations?'Je préfère traduire moi-même':`Compléter ${items.length===1?'cet élément':'le premier élément'} →`}</button></div></div>`;
+    if(canDelegateSocio){
+      const box=document.createElement('div');box.className='composer-inline-help';
+      box.innerHTML=`<strong>Traductions des données d’analyse</strong><p>Votre version complète peut être traduite par Me&YouToo en ${esc(socioDelegation.locales.map(localeLabel).join(', '))}, sans bloquer la transmission.</p><label for="missing-socio-source">Version complète à traduire</label><select id="missing-socio-source">${socioDelegation.sources.map(loc=>`<option value="${esc(loc)}" ${loc===normalizeLocale(socioReference().locale)?'selected':''}>${esc(localeLabel(loc))}</option>`).join('')}</select><button type="button" class="button button-primary" data-missing-socio-delegate>Confier les traductions et poursuivre →</button><p data-missing-socio-error role="alert" hidden></p>`;
+      dialog.querySelector('.studio-modal-copy').appendChild(box);
+    }
     document.body.appendChild(dialog);
     document.body.classList.add('studio-modal-open');
     await new Promise(resolve=>{
@@ -1417,6 +1460,15 @@ function incompleteSocioLocale(items,reference=[],allowEmpty=false){
           if(!await flushAutosave())throw new Error(lastAutosaveError||'Les demandes n’ont pas pu être enregistrées. Réessayez.');
           continueAfterDelegation=true;dialog.close();
         }catch(e){error.textContent=e.message;error.hidden=false;delegate.disabled=false;}
+      };
+      const socioDelegate=dialog.querySelector('[data-missing-socio-delegate]');
+      if(socioDelegate)socioDelegate.onclick=async()=>{
+        socioDelegate.disabled=true;const error=dialog.querySelector('[data-missing-socio-error]');error.hidden=true;
+        try{
+          requestSocioTranslations(dialog.querySelector('#missing-socio-source').value,socioTranslationDelegation().locales);
+          if(!await flushAutosave())throw new Error(lastAutosaveError||'Les demandes n’ont pas pu être enregistrées.');
+          continueAfterDelegation=true;dialog.close();
+        }catch(e){error.textContent=e.message;error.hidden=false;socioDelegate.disabled=false;}
       };
       dialog.querySelectorAll('[data-missing-close]').forEach(button=>button.onclick=()=>dialog.close());
       dialog.querySelectorAll('[data-missing-index]').forEach(button=>button.onclick=()=>{selected=items[Number(button.dataset.missingIndex)];dialog.close();});
@@ -1501,7 +1553,7 @@ function incompleteSocioLocale(items,reference=[],allowEmpty=false){
     if(!await flushAutosave()){const pending=missingSettings();await showMissingSettings(pending.length?pending:[{id:'param-autosave-status',title:'Enregistrement à vérifier',message:lastAutosaveError||'Vos dernières modifications ne sont pas encore enregistrées. Vérifiez le message d’enregistrement avant de poursuivre.'}]);return;}
     const readiness=settingsReadiness();
     storeActiveLanguageContent();const campaignName=$('campaign-name').value.trim(),respondentTitle=$('respondent-title').value.trim(),primaryLocale=normalizeLocale(project?.selected_locale||(Array.isArray(project?.locales)&&project.locales[0])||'fr'),introductionHtml=reviewPrimaryIntroForSave(primaryLocale,readiness.intro,readiness.intro),launchDate=readiness.launch,closeDate=readiness.close;const rawRespondents=$('nb-respondents').value.trim(),nbRespondents=rawRespondents?Number(rawRespondents):null;
-    if(!respondentTitle)return show('Le titre visible est obligatoire.');if(currentUser.role!=='admin'&&!isLegacyClientCampaign()&&!project?.review_mode&&launchDate<iso(5))return show('La date de lancement doit être au minimum à J+5.');if(closeDate<=launchDate)return show('La date de clôture doit être postérieure à la date de lancement.');if(!socio.length&&!optionalMinorityTheme())return show('Au moins une donnée d’analyse doit être présente.');if(invalidSocio())return show('Chaque donnée et chaque sous-critère doivent avoir un intitulé et au moins deux réponses renseignées.');const incompleteResource=resultResources.find(r=>!resourceComplete(r));if(incompleteResource)return show(incompleteResource.type==='legacy_document'?`Le PDF historique « ${incompleteResource.legacyFilename} » doit être rattaché avant de pouvoir être utilisé.`:'Chaque ressource doit avoir un texte et soit une URL valide, soit un fichier PDF.');const resultButtons=resultResources.filter(resourceComplete);
+    if(!respondentTitle)return show('Le titre visible est obligatoire.');if(currentUser.role!=='admin'&&!isLegacyClientCampaign()&&!project?.review_mode&&launchDate<iso(5))return show('La date de lancement doit être au minimum à J+5.');if(closeDate<=launchDate)return show('La date de clôture doit être postérieure à la date de lancement.');if(isLegacyClientCampaign()&&!socio.length&&!optionalMinorityTheme())return show('Au moins une donnée d’analyse doit être présente.');if(isLegacyClientCampaign()&&invalidSocio())return show('Chaque donnée et chaque sous-critère doivent avoir un intitulé et au moins deux réponses renseignées.');const incompleteResource=resultResources.find(r=>!resourceComplete(r));if(incompleteResource)return show(incompleteResource.type==='legacy_document'?`Le PDF historique « ${incompleteResource.legacyFilename} » doit être rattaché avant de pouvoir être utilisé.`:'Chaque ressource doit avoir un texte et soit une URL valide, soit un fichier PDF.');const resultButtons=resultResources.filter(resourceComplete);
     try{await api(`/api/projects/${projectId}/settings`,{method:'PATCH',body:JSON.stringify({campaignName,respondentTitle,...introductionSettingsForSave(primaryLocale,introductionHtml),launchDate,closeDate,nbRespondents,sociodemo:isAdminLegacySocio()?undefined:(Array.isArray(project?.sociodemo)?project.sociodemo:socio),sociodemoLanguageVariants:isAdminLegacySocio()?undefined:(isLegacyClientCampaign()?project.sociodemo_language_variants:activeLanguageVariants(socioLanguageVariants)),translationReviewState:isLegacyClientCampaign()?project.translation_review_state:reviewState(),communicationShareUrl:readiness.shareUrl||null,resultButtons})});location.href=`validation.html?theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;}catch(error){if(error.code==='DIFFUSION_URL_TAKEN'){renderDiffusionSlugError(error.message,true);}else if(error.code==='SOCIODEMO_TRANSLATIONS_INCOMPLETE'){const missing=incompleteSociodemo();await showMissingSettings(missing.length?missing:[{id:'socio-list',title:'Données d’analyse à compléter',message:error.message}]);}else if(error.code==='INTRODUCTIONS_INCOMPLETE'){const missing=missingSettings().filter(item=>item.id==='intro');await showMissingSettings(missing.length?missing:[{id:'intro',title:'Introductions à personnaliser',message:error.message}]);}else await showMissingSettings([{id:'param-autosave-status',title:'Enregistrement à vérifier',message:error.message||'Impossible d’enregistrer la campagne pour le moment.'}]);}
   });load();
 })();
