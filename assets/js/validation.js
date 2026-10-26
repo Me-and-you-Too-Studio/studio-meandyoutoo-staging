@@ -208,8 +208,38 @@
       }catch(e){error.textContent=e.message||'La demande n’a pas pu être clôturée.';error.hidden=false;button.disabled=false;}
     });
   }
+  function pendingSituationTranslationRequests(){
+    const raw=project?.translation_review_state?.situationRequests||{};
+    const selected=new Map(currentChapters.flatMap(ch=>(ch.situations||[]).map(s=>[String(s.id),{situation:s,chapter:ch.title}])));
+    return Object.entries(raw).flatMap(([key,row])=>{
+      const situationId=String(row?.situationId||''),locale=reviewLocale(row?.locale),sourceLocale=reviewLocale(row?.sourceLocale),entry=selected.get(situationId);
+      if(!entry||key!==`${situationId}:${locale}`||locale===sourceLocale)return [];
+      const status=translationRequestStatus?.requests?.find(r=>r.kind==='situation'&&r.key===key);
+      if(currentUser?.role==='admin'&&translationRequestStatus?.supported&&!status)return [];
+      return [{key,situationId,locale,sourceLocale,chapter:entry.chapter,countryCode:status?.countryCode||entry.situation.country_code||'WORLDWIDE',complete:status?.complete===true,known:Boolean(status)}];
+    });
+  }
+  function situationTranslationRequestPanel(){
+    const requests=pendingSituationTranslationRequests(),id='situation-translation-request-summary';let host=$(id);
+    if(!requests.length){host?.remove();return;}
+    if(!host){host=document.createElement('section');host.id=id;host.className='card validation-translation-card';document.querySelector('.validation-summary').after(host);}
+    const admin=currentUser?.role==='admin';
+    host.innerHTML=`<div class="validation-translation-head"><div><p class="eyebrow">${admin?'Demandes de traduction en attente':'Traductions confiées à Me&YouToo'}</p><h2 class="section-title">Situations et réponses à traduire</h2></div><span class="validation-translation-badge">${requests.length} demande${requests.length>1?'s':''}</span></div><p class="validation-translation-description">${admin?'Traduisez la situation et toutes ses réponses, puis clôturez la demande. Les traductions doivent être terminées avant validation pour diffusion.':'Vous pouvez transmettre votre campagne. Me&YouToo traduira ces situations et leurs réponses avant la validation pour diffusion.'}</p>${admin&&translationRequestStatusError?`<p class="composer-alert" role="alert">${esc(translationRequestStatusError)}</p>`:''}<ul class="validation-translation-list">${requests.map(row=>{
+      const query=new URLSearchParams({theme,projectId,situation:row.situationId,countryCode:row.countryCode,locale:row.sourceLocale,translate:row.locale,review:'1'});
+      return `<li class="validation-translation-row"><div class="validation-translation-copy"><strong>${esc(reviewLocaleNames[row.locale]||row.locale.toUpperCase())} · ${esc(row.chapter)} · Situation #${esc(row.situationId)}</strong><span>À partir de ${esc(reviewLocaleNames[row.sourceLocale]||row.sourceLocale.toUpperCase())} · ${esc(row.countryCode==='WORLDWIDE'?'International':row.countryCode)}</span><span class="validation-translation-state ${row.complete?'is-ready':''}">${admin?(row.complete?'Traduction renseignée — à marquer comme terminée':row.known?'Traduction à compléter':'Statut à vérifier'):'Traduction demandée à Me&YouToo'}</span></div>${admin?`<div class="validation-translation-actions"><a class="button button-secondary button-small" href="composer.html?${esc(query.toString())}">${row.complete?'Revoir la traduction':'Traduire la situation et les réponses'} →</a>${row.complete&&translationRequestStatus?.editable?`<button type="button" class="button button-primary button-small" data-complete-situation-request="${esc(row.key)}">Marquer la traduction comme terminée</button>`:''}<p data-situation-request-error role="alert" hidden></p></div>`:''}</li>`;
+    }).join('')}</ul>`;
+    host.querySelectorAll('[data-complete-situation-request]').forEach(button=>button.onclick=async()=>{
+      const key=button.dataset.completeSituationRequest,error=button.parentElement.querySelector('[data-situation-request-error]');button.disabled=true;error.hidden=true;
+      try{
+        await api(`/api/admin/projects/${projectId}/situation-translation-requests/complete`,{method:'POST',body:JSON.stringify({key,expectedUpdatedAt:translationRequestStatus?.version})});
+        delete project.translation_review_state.situationRequests[key];
+        await refreshTranslationRequestStatus();introTranslationRequestPanel();
+      }catch(e){error.textContent=e.message||'Impossible de clôturer la demande.';error.hidden=false;button.disabled=false;}
+    });
+  }
   function socioTranslationRequestPanel(){translationRequestPanel('socio',pendingSocioTranslationRequests());}
   function introTranslationRequestPanel(){
+    situationTranslationRequestPanel();
     socioTranslationRequestPanel();
     translationRequestPanel('intro',pendingIntroTranslationRequests());
   }
@@ -358,7 +388,7 @@
       };
       collectSocio(project.sociodemo||[]);
       $('validation-theme').textContent=project.theme_title||'Autodiagnostic';$('validation-campaign').value=project.campaign_name||project.title||'';$('validation-title').value=project.respondent_title||'';$('validation-launch-date').value=isoDate(project.launch_date);$('validation-close-date').value=isoDate(project.close_date);$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').innerHTML=socioLabels.length?`<span class="validation-socio-count">${socioLabels.length} question${socioLabels.length>1?'s':''}</span><details class="validation-socio-details"><summary>Voir les questions</summary><ul>${socioLabels.map(label=>`<li>${esc(label||'Question à traduire')}</li>`).join('')}</ul></details>`:'Aucune';
-      if(currentUser?.role==='admin'&&(pendingIntroTranslationRequests().length||pendingSocioTranslationRequests().length))await refreshTranslationRequestStatus();
+      if(currentUser?.role==='admin'&&(pendingIntroTranslationRequests().length||pendingSocioTranslationRequests().length||Object.keys(project.translation_review_state?.situationRequests||{}).length))await refreshTranslationRequestStatus();
       introTranslationRequestPanel();
       renderValidationQuota(quota);
       renderMonthlyCampaignAllowance();
@@ -387,7 +417,7 @@
     const checks=[...document.querySelectorAll('[data-validation-check]')];if(checks.some(c=>!c.checked)){$('validation-alert').hidden=false;$('validation-alert').textContent='Confirmez les trois points avant de transmettre.';return;}
     if(!await saveValidationSettings({silent:true}))return;
     const button=$('submit-project');button.disabled=true;button.textContent='Transmission…';
-    try{const result=await api(`/api/projects/${projectId}/submit`,{method:'POST',body:'{}'});project=result.project||project;lockSubmittedState();await window.StudioModal.alert({eyebrow:'Configuration transmise',title:'Votre configuration a bien été transmise',message:(pendingSocioTranslationRequests().length?`Votre demande de traduction des données d’analyse a été transmise à Me&YouToo : ${pendingSocioTranslationRequests().map(row=>reviewLocaleNames[row.locale]||row.locale.toUpperCase()).join(', ')}. `:'')+(pendingIntroTranslationRequests().length?`Votre demande de traduction de l’introduction a été transmise à Me&YouToo : ${pendingIntroTranslationRequests().map(row=>reviewLocaleNames[row.locale]||row.locale.toUpperCase()).join(', ')}. `:'')+'Me&YouToo va en prendre connaissance et la vérifier. Votre configuration est désormais figée pendant cette vérification. En attendant, transmettez-nous votre logo, votre charte graphique et vos éventuelles consignes de communication.',type:'success',confirmLabel:'Transmettre mes éléments graphiques'});location.href=`kit-communication.html?projectId=${encodeURIComponent(projectId)}&theme=${encodeURIComponent(theme)}`;}catch(e){button.disabled=false;button.textContent='Transmettre à Me&YouToo';$('validation-alert').hidden=false;$('validation-alert').textContent=e.message;}
+    try{const result=await api(`/api/projects/${projectId}/submit`,{method:'POST',body:'{}'});project=result.project||project;lockSubmittedState();await window.StudioModal.alert({eyebrow:'Configuration transmise',title:'Votre configuration a bien été transmise',message:(pendingSituationTranslationRequests().length?'Les demandes de traduction des situations et réponses ont été transmises à Me&YouToo. ':'')+(pendingSocioTranslationRequests().length?`Votre demande de traduction des données d’analyse a été transmise à Me&YouToo : ${pendingSocioTranslationRequests().map(row=>reviewLocaleNames[row.locale]||row.locale.toUpperCase()).join(', ')}. `:'')+(pendingIntroTranslationRequests().length?`Votre demande de traduction de l’introduction a été transmise à Me&YouToo : ${pendingIntroTranslationRequests().map(row=>reviewLocaleNames[row.locale]||row.locale.toUpperCase()).join(', ')}. `:'')+'Me&YouToo va en prendre connaissance et la vérifier. Votre configuration est désormais figée pendant cette vérification. En attendant, transmettez-nous votre logo, votre charte graphique et vos éventuelles consignes de communication.',type:'success',confirmLabel:'Transmettre mes éléments graphiques'});location.href=`kit-communication.html?projectId=${encodeURIComponent(projectId)}&theme=${encodeURIComponent(theme)}`;}catch(e){button.disabled=false;button.textContent='Transmettre à Me&YouToo';$('validation-alert').hidden=false;$('validation-alert').textContent=e.message;}
   };
   load();
 })();
