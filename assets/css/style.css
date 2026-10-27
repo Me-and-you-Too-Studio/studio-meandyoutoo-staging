@@ -15658,7 +15658,7 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 
 
 /* Catalogue : sélecteur de modalité de réponse. */
-.admin-library-editor-answers [data-situation-kind]{
+.admin-library-situation-form [data-situation-kind]{
   display:block;
   width:100%;
   min-width:0;
@@ -15675,21 +15675,21 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
   font-weight:600;
   cursor:pointer;
 }
-.admin-library-editor-answers [data-situation-kind]:focus-visible{
+.admin-library-situation-form [data-situation-kind]:focus-visible{
   outline:3px solid #9ed8dc;
   outline-offset:2px;
   border-color:#087f81;
 }
-.admin-library-editor-answers [data-situation-kind]:disabled{
+.admin-library-situation-form [data-situation-kind]:disabled{
   background-color:#f3f6f8;
   color:#667684;
   cursor:default;
   opacity:1;
 }
-.admin-library-editor-answers label:has(> [data-situation-kind]){
+.admin-library-situation-form label:has(> [data-situation-kind]){
   margin-bottom:20px;
 }
-.admin-library-editor-answers label:has(> [data-situation-kind]) > small{
+.admin-library-situation-form label:has(> [data-situation-kind]) > small{
   max-width:850px;
   color:#617383;
   font-weight:400;
