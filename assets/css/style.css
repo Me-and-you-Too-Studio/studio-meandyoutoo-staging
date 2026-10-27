@@ -15695,6 +15695,13 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
   font-weight:400;
   line-height:1.5;
 }
+.admin-library-situation-form [data-situation-kind-status]{
+  display:block;
+  margin:4px 0;
+  font-size:.82rem;
+}
+.admin-library-situation-form [data-situation-kind-status][data-save-state="saved"]{color:#21834a;}
+.admin-library-situation-form [data-situation-kind-status][data-save-state="error"]{color:#b23838;}
 /* Paramétrage : différencier l'exemple d'une adresse saisie. */
 .diffusion-url-builder .diffusion-slug-input::placeholder{
   color:#78828d;

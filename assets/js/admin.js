@@ -3006,7 +3006,7 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
   }
   function situationResponseKindField(si={},readonly=false){
     const kind=String(si.kind??(si.id?'':'choice'));
-    return `<label class="admin-library-wide-label"><span>Modalité de réponse</span><select data-situation-kind data-original-kind="${esc(kind)}" ${readonly?'disabled':''}><option value="choice" ${kind==='choice'?'selected':''}>Réponses proposées — sans échelle (choice)</option><option value="rating" ${kind==='rating'?'selected':''}>Échelle (rating)</option>${!['choice','rating'].includes(kind)?`<option value="${esc(kind)}" selected>${kind?'Modalité existante : '+esc(kind):'Modalité non renseignée — à préciser'}</option>`:''}</select><small>Échelle : réponses graduées présentées dans leur ordre, par exemple de « Pas du tout d’accord » à « Tout à fait d’accord ». Les libellés et les scores restent ceux que vous renseignez.</small>${si._linked?'<small>Pour changer cette modalité, ouvrez la situation dans sa thématique d’origine.</small>':''}</label>${si.id&&!readonly?`<div class="admin-library-inline-actions"><button type="button" class="button button-secondary button-small" data-save-situation-kind>Enregistrer la modalité</button><span data-situation-kind-status role="status" aria-live="polite">Ce choix s’applique au catalogue pour les futures campagnes.</span></div>`:''}`;
+    return `<label class="admin-library-wide-label"><span>Modalité de réponse</span><select data-situation-kind data-original-kind="${esc(kind)}" ${readonly?'disabled':''}><option value="choice" ${kind==='choice'?'selected':''}>Réponses proposées — sans échelle (choice)</option><option value="rating" ${kind==='rating'?'selected':''}>Échelle (rating)</option>${!['choice','rating'].includes(kind)?`<option value="${esc(kind)}" selected>${kind?'Modalité existante : '+esc(kind):'Modalité non renseignée — à préciser'}</option>`:''}</select>${si.id&&!readonly?'<small data-situation-kind-status role="status" aria-live="polite">Enregistrement automatique · catalogue des futures campagnes.</small>':''}<small>Échelle : réponses graduées présentées dans leur ordre, par exemple de « Pas du tout d’accord » à « Tout à fait d’accord ». Les libellés et les scores restent ceux que vous renseignez.</small>${si._linked?'<small>Pour changer cette modalité, ouvrez la situation dans sa thématique d’origine.</small>':''}</label>`;
   }
   function situationAccordion(ch,si,isArchived=false,isDeleted=false){
     const answers=si.answers||[];
@@ -3226,30 +3226,30 @@ const normalizedStatus=p=>p.status==='configuration_submitted'?'review_pending':
     });
   }
   async function saveSituationResponseKind(form){
-    const field=form.querySelector('[data-situation-kind]'),button=form.querySelector('[data-save-situation-kind]'),status=form.querySelector('[data-situation-kind-status]');
-    if(!field||field.disabled||!button)return;
+    const field=form.querySelector('[data-situation-kind]'),status=form.querySelector('[data-situation-kind-status]');
+    if(!field||field.disabled||!status||field.value===field.dataset.originalKind)return;
     const kind=field.value,id=form.dataset.situationInlineForm;
     if(!id||!['choice','rating'].includes(kind)){status.textContent='Choisissez Réponses proposées ou Échelle.';return;}
-    button.disabled=true;field.disabled=true;status.textContent='Enregistrement de la modalité…';
+    field.disabled=true;status.dataset.saveState='saving';status.textContent='Enregistrement…';
     try{
       const result=await StudioAPI.request(`/api/admin/catalog/situations/${encodeURIComponent(id)}`,{method:'PATCH',body:JSON.stringify({kind})});
       if(result?.situation?.kind!==kind)throw new Error('La modalité enregistrée n’a pas été confirmée. Rechargez la fiche.');
       state.catalogThemes.forEach(theme=>(theme.chapters||[]).forEach(chapter=>(chapter.situations||[]).filter(si=>String(si.id)===String(id)).forEach(si=>{si.kind=kind;si.metadata={...(si.metadata||{}),response_kind_configured:true};})));
       field.dataset.originalKind=kind;
       document.querySelectorAll('[data-situation-details]').forEach(row=>{if(String(row.dataset.situationDetails)!==String(id))return;const badge=row.querySelector('[data-situation-kind-label]');if(badge)badge.textContent=kind==='rating'?'Échelle (rating)':'Réponses proposées (choice)';});
-      status.textContent='Modalité enregistrée : '+(kind==='rating'?'Échelle (rating).':'Réponses proposées (choice).');
-    }catch(error){status.textContent=error.message||'La modalité n’a pas pu être enregistrée.';}
-    finally{button.disabled=false;field.disabled=false;}
+      status.dataset.saveState='saved';status.textContent='✓ Enregistré';
+    }catch(error){field.value=field.dataset.originalKind;status.dataset.saveState='error';status.textContent='Enregistrement non confirmé : '+(error.message||'réessayez votre sélection.');}
+    finally{field.disabled=false;}
   }
   function bindInlineForm(form){
-    const kindSave=form.querySelector('[data-save-situation-kind]');if(kindSave)kindSave.onclick=()=>saveSituationResponseKind(form);
+    const kindField=form.querySelector('[data-situation-kind]');if(form.dataset.situationInlineForm&&kindField&&!kindField.disabled)kindField.onchange=()=>saveSituationResponseKind(form);
     if(form.dataset.situationInlineForm&&!form.querySelector('[data-save-near-text]')){
       const field=form.querySelector('[data-inline-situation-content]')?.closest('label');
       if(field){
         const actions=document.createElement('div');actions.className='admin-library-inline-actions';
         actions.innerHTML='<span data-situation-save-status role="status" aria-live="polite">Cliquez sur Enregistrer pour appliquer vos modifications.</span><button class="button button-primary" type="submit" data-save-near-text>Enregistrer la situation</button>';
         field.after(actions);
-        form.addEventListener('input',()=>{actions.querySelector('[data-situation-save-status]').textContent='Modifications non enregistrées';});
+        form.addEventListener('input',event=>{if(event.target===kindField)return;actions.querySelector('[data-situation-save-status]').textContent='Modifications non enregistrées';});
       }
     }
     form.querySelectorAll('[data-remove-inline-answer]').forEach(b=>b.onclick=()=>{const list=b.closest('[data-inline-answer-list]');if(list.children.length>minimumAnswersForList(list)){b.closest('.admin-library-answer-row').remove();renumberInlineAnswers(list);}});
