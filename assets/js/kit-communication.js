@@ -264,7 +264,8 @@
   }
 
   function templates(){
-    const name=project?.campaign_name||project?.respondent_title||project?.title||'notre campagne';
+    // Messages destinés aux collaborateurs : titre visible par les répondants, jamais le nom interne du Studio.
+    const name=project?.respondent_title||project?.title||project?.campaign_name||'notre campagne';
     const share=diffusionAvailable()?String(communication.shareUrl||communication.share_url||'').trim():'';
     const link=share||'[LIEN DE CAMPAGNE À VENIR]';
     const close=formatLongDate(project?.close_date),launch=formatLongDate(project?.launch_date);
