@@ -428,7 +428,9 @@ function radarSvg(){
   const axes=pts(r).map(p=>`<line x1="${cx}" y1="${cy}" x2="${p[0]}" y2="${p[1]}" class="rp-radar-axis"/>`).join('');
   const vals=d.chapters.map((c,i)=>radarValue(chapterResults[i],c));
   const dataPts=Array.from({length:n},(_,i)=>{const a=-Math.PI/2+i*2*Math.PI/n,rr=r*vals[i]/100;return[cx+Math.cos(a)*rr,cy+Math.sin(a)*rr]});
-  const labels=pts(r+28).map((p,i)=>`<text x="${p[0]}" y="${p[1]}" text-anchor="middle" dominant-baseline="middle" class="rp-radar-label">${esc((d.chapters[i].title||`Partie ${i+1}`).length>22?`Partie ${i+1}`:d.chapters[i].title)}</text>`).join('');
+  // Titre de la partie sur deux lignes au plus (coupe entre les mots, « … » au-delà), titre complet en infobulle.
+  const radarLines=title=>{const words=String(title||'').trim().split(/\s+/).filter(Boolean),lines=[],max=18;let line='';for(const w of words){if(!line)line=w;else if((line+' '+w).length<=max)line+=' '+w;else{lines.push(line);line=w;}}if(line)lines.push(line);if(lines.length>2){const rest=lines.slice(1).join(' ');lines.length=1;const cut=rest.lastIndexOf(' ',max-1);lines.push((cut>0?rest.slice(0,cut):rest.slice(0,max-1))+'…');}return lines.map(l=>l.length>max?l.slice(0,max-1)+'…':l);};
+  const labels=pts(r+28).map((p,i)=>{const title=d.chapters[i].title||`Partie ${i+1}`,lines=radarLines(title),dy=lines.length>1?-0.6:0;return `<text x="${p[0]}" y="${p[1]}" text-anchor="middle" dominant-baseline="middle" class="rp-radar-label"><title>${esc(title)}</title>${lines.map((l,k)=>`<tspan x="${p[0]}" dy="${k===0?dy:1.2}em">${esc(l)}</tspan>`).join('')}</text>`;}).join('');
   return `<div class="rp-radar-wrap"><h2>Vue d’ensemble</h2><p>Position de vos scores sur l’échelle propre à chaque partie.</p><svg class="rp-radar" viewBox="0 0 360 340" role="img" aria-label="Graphique radar des scores par partie">${rings}${axes}<polygon points="${dataPts.map(p=>p.join(',')).join(' ')}" class="rp-radar-data"/>${dataPts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" class="rp-radar-dot"/>`).join('')}${labels}</svg></div>`
 }
 function done(){
