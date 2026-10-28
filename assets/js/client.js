@@ -786,7 +786,12 @@
   function actions(p) {
     const st = normalizedStatus(p),
       id = p.id,
-      q = "?projectId=" + encodeURIComponent(id),
+      // La thématique évite au Composer de retomber sur « sexisme » (bibliothèque d'une autre thématique).
+      q =
+        "?" +
+        (p.theme_slug ? "theme=" + encodeURIComponent(p.theme_slug) + "&" : "") +
+        "projectId=" +
+        encodeURIComponent(id),
       more = [],
       sensitive = [];
     more.push('<a href="composer.html' + q + '">✏️ Modifier le contenu</a>');
@@ -1844,7 +1849,11 @@
                 .sort(
                   (a, b) => new Date(b.created_at) - new Date(a.created_at),
                 )[0];
-              location.href = "composer.html?projectId=" + (newest?.id || "");
+              location.href =
+                "composer.html?" +
+                (newest?.theme_slug ? "theme=" + encodeURIComponent(newest.theme_slug) + "&" : "") +
+                "projectId=" +
+                (newest?.id || "");
             });
         }),
     );
