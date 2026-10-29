@@ -16699,3 +16699,23 @@ nav.steps[hidden] { display: none; }
   .studio-journey-steps .studio-process-step { display: grid; grid-template-columns: 28px 1fr; column-gap: 10px; padding: 10px 12px; }
   .studio-journey-steps .studio-process-step span { grid-row: span 2; margin: 0; }
 }
+
+/* Visites guidées (StudioTour, app.js) : zone mise en avant et bulle d'explication. */
+.studio-tour { position: fixed; inset: 0; z-index: 1000; }
+.studio-tour.is-centered { background: rgba(27, 42, 73, .55); }
+.studio-tour-spot { position: fixed; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(27, 42, 73, .55); outline: 3px solid var(--sunny-yellow); pointer-events: none; transition: top .25s, left .25s, width .25s, height .25s; }
+.studio-tour-bubble { position: fixed; width: min(380px, calc(100vw - 24px)); padding: 20px 22px 16px; border-radius: var(--radius-md); background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lg); }
+.studio-tour.is-centered .studio-tour-bubble { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.studio-tour-count { color: var(--green-blue); font-size: .78rem; font-weight: 800; letter-spacing: .04em; }
+.studio-tour-bubble h2 { margin: 4px 0 8px; font-size: 1.15rem; }
+.studio-tour-bubble p { margin: 0; color: var(--muted); line-height: 1.5; }
+.studio-tour-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 16px; }
+.studio-tour-actions > span { display: flex; gap: 8px; }
+.studio-tour-actions .button[hidden] { display: none; }
+.studio-tour-skip { padding: 6px 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: .88rem; text-decoration: underline; cursor: pointer; }
+.help-tour-button { display: block; margin: 0 0 10px; padding: 0; border: 0; background: none; color: var(--green-blue-dark); font: inherit; font-size: .85rem; font-weight: 700; text-decoration: underline; cursor: pointer; text-align: left; }
+.help-tour-button[hidden] { display: none; }
+@media (max-width: 639px) {
+  .studio-tour-bubble, .studio-tour.is-centered .studio-tour-bubble { top: auto; left: 12px; right: 12px; bottom: 12px; width: auto; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .studio-tour-spot { transition: none; } }

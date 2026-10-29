@@ -115,10 +115,11 @@
     const checkSection=document.querySelector('[data-validation-check]')?.closest('section');
     if(checkSection)checkSection.style.background='var(--royal-blue-tint)';
   }
-  // Après la transmission, le client voit où en est sa campagne et qui agit ; l'équipe garde sa vue de relecture.
+  // Après la transmission, la frise montre où en est la campagne. L'équipe voit les phases sans « À vous d'agir »,
+  // qui s'adresse au client.
   function showSubmittedJourney(){
     const card=document.querySelector('.studio-process-card');if(!card)return;
-    const journey=currentUser?.role!=='admin'&&window.StudioJourney?.html(project?.status);
+    const journey=window.StudioJourney?.html(project?.status,null,{stepsOnly:currentUser?.role==='admin'});
     if(!journey){card.setAttribute('hidden','');return;}
     card.hidden=false;
     card.innerHTML='<p class="eyebrow">Votre parcours</p><h2 class="section-title" id="process-title">Où en est votre campagne ?</h2>'+journey;
@@ -395,7 +396,7 @@
         });
       };
       collectSocio(project.sociodemo||[]);
-      $('validation-theme').textContent=project.theme_title||'Autodiagnostic';$('validation-campaign').value=project.campaign_name||project.title||'';$('validation-title').value=project.respondent_title||'';$('validation-launch-date').value=isoDate(project.launch_date);$('validation-close-date').value=isoDate(project.close_date);$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').innerHTML=socioLabels.length?`<span class="validation-socio-count">${socioLabels.length} question${socioLabels.length>1?'s':''}</span><details class="validation-socio-details"><summary>Voir les questions</summary><ul>${socioLabels.map(label=>`<li>${esc(label||'Question à traduire')}</li>`).join('')}</ul></details>`:'Aucune';
+      $('validation-theme').textContent=project.theme_title||'Diagnostic comportemental';$('validation-campaign').value=project.campaign_name||project.title||'';$('validation-title').value=project.respondent_title||'';$('validation-launch-date').value=isoDate(project.launch_date);$('validation-close-date').value=isoDate(project.close_date);$('validation-situations').textContent=chapters.reduce((n,c)=>n+c.situations.length,0);$('validation-socio').innerHTML=socioLabels.length?`<span class="validation-socio-count">${socioLabels.length} question${socioLabels.length>1?'s':''}</span><details class="validation-socio-details"><summary>Voir les questions</summary><ul>${socioLabels.map(label=>`<li>${esc(label||'Question à traduire')}</li>`).join('')}</ul></details>`:'Aucune';
       if(currentUser?.role==='admin'&&(pendingIntroTranslationRequests().length||pendingSocioTranslationRequests().length||Object.keys(project.translation_review_state?.situationRequests||{}).length))await refreshTranslationRequestStatus();
       introTranslationRequestPanel();
       renderValidationQuota(quota);
@@ -416,6 +417,9 @@
         if(reviewCard&&journeyCard)reviewCard.before(journeyCard);
       }else{
         await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:'validation'})});
+        const processCard=document.querySelector('.studio-process-card');if(processCard)processCard.hidden=false;
+        // Visite seulement avant la transmission : après, la page devient le suivi de relecture.
+        window.StudioTour?.offer('validation');
       }
     }catch(e){$('validation-alert').hidden=false;$('validation-alert').textContent=e.message;}
   }

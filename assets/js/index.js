@@ -121,7 +121,7 @@
   // Prochaine étape : une seule action, choisie selon où en est le client.
   function nextStep(g,organization,themesTotal){
     var f=g.focusCampaign;
-    if(!g.launchedCampaigns&&!g.campaignsInPreparation)return {title:'Lancez votre première campagne',text:'Choisissez une thématique et composez votre autodiagnostic à partir des situations conçues par nos experts.',href:'bibliotheque.html',cta:'Découvrir les diagnostics'};
+    if(!g.launchedCampaigns&&!g.campaignsInPreparation)return {title:'Lancez votre première campagne',text:'Choisissez une thématique et composez votre diagnostic comportemental à partir des situations conçues par nos experts.',href:'bibliotheque.html',cta:'Découvrir les diagnostics'};
     if(!g.launchedCampaigns)return {title:'Finalisez votre campagne en préparation',text:'Encore quelques étapes avant de la diffuser à vos collaborateurs.',href:'mes-campagnes.html',cta:'Reprendre ma campagne'};
     if(f&&f.respondents/f.objective<0.75){
       var pct=Math.min(100,Math.round(f.respondents/f.objective*100)),goal=pct<50?50:75;
@@ -233,6 +233,9 @@
       }
       renderGamification(data);
       renderProjects(Array.isArray(data.recentProjects)?data.recentProjects:[]);
+      // Visite d'accueil : un client déjà accompagné (campagnes historiques) n'a pas le même point de départ qu'un nouveau.
+      var legacy=(data.recentProjects||[]).some(function(p){return p.legacy_history;});
+      if(window.StudioTour)window.StudioTour.offer(legacy?'accueil-legacy':'accueil-new');
       renderThemes(Array.isArray(data.themes)?data.themes:[]);
     }catch(error){
       recentRoot.innerHTML='<div class="composer-alert">Impossible de charger les données de l’accueil : '+esc(error.message)+'</div>';

@@ -519,7 +519,7 @@
   function renderNav(){
     const total=totalSelected();
     $('catalog-summary').textContent=`${state.chapters.length} chapitres · ${total} situations retenues`;
-    $('catalog-count').innerHTML=`<strong>${total}</strong> situations dans votre autodiagnostic`;
+    $('catalog-count').innerHTML=`<strong>${total}</strong> situations dans votre diagnostic comportemental`;
     $('catalog-progress').style.width='100%';
     $('duration-estimate').textContent=`${Math.max(3,Math.round(total*.35))} à ${Math.max(5,Math.round(total*.45))} minutes · ${total} situations`;
     $('chapter-nav').innerHTML=state.chapters.map((ch,i)=>{const blocking=firstInvalidIndex(i),blocked=blocking!==-1,st=chapterCountStatus(ch);return `<article class="creation-chapter-item ${i===state.active?'is-active':''} ${st.below||st.above?'is-incomplete':''}"><button class="creation-chapter-head" data-chapter="${i}" type="button"><span><small>Partie ${i+1}</small>${esc(ch.title)}</span><strong>${ch.situations.length}</strong></button><div class="creation-chapter-tabs"><button class="${i===state.active?'is-active':''}" data-chapter="${i}" type="button">Questions</button><button class="${blocked?'is-disabled':''}" data-profile-chapter="${i}" data-blocking-chapter="${blocking}" aria-disabled="${blocked}" type="button">Profils</button></div></article>`;}).join('');
@@ -1323,7 +1323,7 @@
       const strong=objective.querySelector('strong'),copy=objective.querySelector('p');
       if(methodologyLocked){
         if(strong)strong.textContent='Objectif de cette étape';
-        if(copy)copy.textContent='Consultez le socle méthodologique « Stéréotypes de genre ». Son contenu est conservé à l’identique dans votre autodiagnostic.';
+        if(copy)copy.textContent='Consultez le socle méthodologique « Stéréotypes de genre ». Son contenu est conservé à l’identique dans votre diagnostic comportemental.';
       }else{
         if(strong)strong.textContent='Objectif de cette étape';
         if(copy)copy.textContent='Choisissez les situations de cette partie et adaptez uniquement celles qui nécessitent une contextualisation à votre organisation.';
