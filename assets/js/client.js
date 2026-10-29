@@ -896,8 +896,11 @@
         ? '<div class="admin-ad-stats is-missing"><strong>Stats non reliées</strong><span>Ajoutez le lien stats dans la gestion de campagne pour suivre les passations.</span></div>'
         : "";
     const last = p.legacy_stats_last || null,
-      failures = Number(p.legacy_stats_failures || 0),
-      value = p.legacy_stats_read_at
+      failures = Number(p.legacy_stats_failures || 0);
+    // Stats protégées par une connexion au moteur : pas de lecture possible, saisie manuelle des crédits.
+    if (last && !last.ok && last.error_code === "AUTH")
+      return '<div class="admin-ad-stats is-manual"><div><strong>🔒 Stats protégées : saisie manuelle</strong><span>Ce client a des stats protégées par une connexion au moteur : le Studio ne peut pas les lire. Mettez à jour ses crédits utilisés à la main dans « Gestion du pack ».</span></div><a class="button button-secondary" href="#client-credits">Gestion du pack</a></div>';
+    const value = p.legacy_stats_read_at
         ? '<strong>' + fmt(p.legacy_stats_passations) + ' passation' + (Number(p.legacy_stats_passations) > 1 ? "s" : "") + '</strong><span>Lu le ' + dateTime(p.legacy_stats_read_at) + '</span>'
         : '<strong>Stats pas encore lues</strong><span>Première lecture la nuit prochaine, ou maintenant avec le bouton.</span>',
       failure = failures && last && !last.ok
@@ -912,6 +915,9 @@
       : '<span class="admin-legacy-credits-mode">Crédits utilisés calculés automatiquement : crédits attribués − crédit restant lu dans le moteur.</span>';
   }
   function legacyCreditsHtml(remaining) {
+    const protectedStats = (organization.projects || []).some((p) => p.legacy_stats_last && !p.legacy_stats_last.ok && p.legacy_stats_last.error_code === "AUTH");
+    if (protectedStats && !organization.legacy_stats_read_at)
+      return '<div class="admin-legacy-credits has-gap is-manual"><strong>🔒 Saisie manuelle nécessaire</strong><span>Les stats de ce client sont protégées par une connexion au moteur : le Studio ne peut pas les lire. Reportez ici les crédits utilisés chaque fois que vous consultez ses stats dans le moteur.</span></div>';
     if (!organization.legacy_stats_read_at)
       return '<div class="admin-legacy-credits"><strong>Moteur stats</strong><span>Aucune lecture du moteur pour l’instant : les crédits ci-dessous restent ceux saisis à la main.</span>' + legacyUsedModeHtml() + '</div>';
     const credits = organization.legacy_stats_credits_remaining,
