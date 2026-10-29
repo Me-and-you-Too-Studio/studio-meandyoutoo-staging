@@ -243,7 +243,7 @@
     const libLabel=lib===null?'Selon périmètre':String(lib);
     const fullTitle=String(t.title||'').trim();
     const short=displayTitle(t);
-    const perimeterItems=[...sc.map(x=>({type:'scope',value:x})),...co.map(x=>({type:'country',value:x}))];
+    const perimeterItems=[...sc.map(x=>({type:'scope',value:x})),...co.filter(x=>!(x==='WORLDWIDE'&&sc.some(v=>['worldwide','international','global'].includes(norm(v))))).map(x=>({type:'country',value:x}))];
     const perimeterFormatter=item=>item.type==='scope'?scopeLabel(item.value):countryLabel(item.value);
     const diagnosticLine=fullTitle&&fullTitle!==short?`<p class="topic-diagnostic-title"><span>Diagnostic</span><strong>${esc(fullTitle)}</strong></p>`:'';
     return `<details class="card topic-card topic-card-accordion" data-theme="${esc(norm(t.slug))}">
@@ -261,7 +261,7 @@
       </summary>
       <div class="topic-expanded">
         ${diagnosticLine}
-        ${sc.some(x=>['worldwide','international','global'].includes(norm(x)))||co.includes('WORLDWIDE')?`<details class="topic-detail-block"><summary><strong>ⓘ Usage international</strong></summary><p>Ce catalogue propose des contenus pour un usage international. Certaines versions sont adaptées au contexte local et peuvent différer selon la langue. Vérifiez que la situation et les réponses conviennent aux pays concernés, notamment lorsqu’elles évoquent un dispositif administratif ou juridique.</p><p>Le pays détermine le contexte de la situation. La langue détermine la langue dans laquelle elle est présentée.</p></details>`:''}
+        ${sc.some(x=>['worldwide','international','global'].includes(norm(x)))||co.includes('WORLDWIDE')?`<details class="topic-detail-block"><summary><strong>ⓘ Usage international</strong></summary><p>Ce catalogue propose des contenus pour un usage international. Certaines versions sont adaptées au contexte local et peuvent différer selon la langue. Vérifiez que la situation et les réponses conviennent aux pays concernés, notamment lorsqu’elles évoquent un dispositif administratif ou juridique.</p>${co.some(c=>c&&c!=='WORLDWIDE')?'<p>Le pays détermine le contexte de la situation. La langue détermine la langue dans laquelle elle est présentée.</p>':'<p>Ce catalogue n’a pas de pays à choisir : c’est la langue qui détermine la variante culturelle de chaque situation. Une même situation peut donc différer d’une langue à l’autre.</p>'}</details>`:''}
         ${tags.length?`<div class="topic-business-tags" aria-label="Tags métier"><strong class="topic-business-tags-label">Tags</strong>${tags.map(tag=>`<span>${esc(tag)}</span>`).join('')}</div>`:''}
         <div class="topic-expanded-grid">
           <div class="topic-detail-block"><strong>Périmètres disponibles</strong><div class="topic-chip-list">${chips(perimeterItems,perimeterFormatter,4)}</div></div>
