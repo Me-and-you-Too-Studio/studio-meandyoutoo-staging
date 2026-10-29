@@ -16665,3 +16665,7 @@ button[hidden],.button[hidden],.studio-modal [hidden]{display:none!important}
 .admin-ad-stats.is-manual { border-color: #f1d9a8; background: #fff8ea; }
 .admin-ad-stats.is-manual strong { color: #8a5a00; }
 .admin-legacy-credits.is-manual strong { color: #8a5a00; }
+.admin-manual-stats { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; margin-top: 6px; }
+.admin-manual-stats label { display: grid; gap: 3px; color: #8a5a00; font-size: .82rem; }
+.admin-manual-stats input { width: 130px; padding: 7px 9px; border: 1px solid #f1d9a8; border-radius: 9px; font: inherit; }
+.dy-source { color: var(--muted); font-size: .9rem; font-weight: 600; }

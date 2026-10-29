@@ -898,8 +898,11 @@
     const last = p.legacy_stats_last || null,
       failures = Number(p.legacy_stats_failures || 0);
     // Stats protégées par une connexion au moteur : pas de lecture possible, saisie manuelle des crédits.
-    if (last && !last.ok && last.error_code === "AUTH")
-      return '<div class="admin-ad-stats is-manual"><div><strong>🔒 Stats protégées : saisie manuelle</strong><span>Ce client a des stats protégées par une connexion au moteur : le Studio ne peut pas les lire. Mettez à jour ses crédits utilisés à la main dans « Gestion du pack ».</span></div><a class="button button-secondary" href="#client-credits">Gestion du pack</a></div>';
+    if (p.legacy_stats_protected || (last && !last.ok && last.error_code === "AUTH"))
+      return '<div class="admin-ad-stats is-manual"><div><strong>🔒 Stats protégées : saisie manuelle</strong><span>Ce client a des stats protégées par une connexion au moteur : le Studio ne peut pas les lire. Reportez ici les passations de la campagne lues dans le moteur, et les crédits utilisés dans « Gestion du pack ».</span>' +
+        (p.legacy_stats_read_at ? '<span>Dernière saisie : <b>' + fmt(p.legacy_stats_passations) + ' passation' + (Number(p.legacy_stats_passations) > 1 ? "s" : "") + '</b> · ' + dateTime(p.legacy_stats_read_at) + '</span>' : '') +
+        '<form class="admin-manual-stats" data-manual-stats="' + esc(p.id) + '"><label>Passations de la campagne<input type="number" min="0" step="1" required value="' + (p.legacy_stats_passations != null ? esc(p.legacy_stats_passations) : '') + '"></label><button class="button button-primary" type="submit">Enregistrer</button></form></div>' +
+        '<a class="button button-secondary" href="#client-credits">Gestion du pack</a></div>';
     const value = p.legacy_stats_read_at
         ? '<strong>' + fmt(p.legacy_stats_passations) + ' passation' + (Number(p.legacy_stats_passations) > 1 ? "s" : "") + '</strong><span>Lu le ' + dateTime(p.legacy_stats_read_at) + '</span>'
         : '<strong>Stats pas encore lues</strong><span>Première lecture la nuit prochaine, ou maintenant avec le bouton.</span>',
@@ -915,7 +918,7 @@
       : '<span class="admin-legacy-credits-mode">Crédits utilisés calculés automatiquement : crédits attribués − crédit restant lu dans le moteur.</span>';
   }
   function legacyCreditsHtml(remaining) {
-    const protectedStats = (organization.projects || []).some((p) => p.legacy_stats_last && !p.legacy_stats_last.ok && p.legacy_stats_last.error_code === "AUTH");
+    const protectedStats = (organization.projects || []).some((p) => p.legacy_stats_protected || (p.legacy_stats_last && !p.legacy_stats_last.ok && p.legacy_stats_last.error_code === "AUTH"));
     if (protectedStats && !organization.legacy_stats_read_at)
       return '<div class="admin-legacy-credits has-gap is-manual"><strong>🔒 Saisie manuelle nécessaire</strong><span>Les stats de ce client sont protégées par une connexion au moteur : le Studio ne peut pas les lire. Reportez ici les crédits utilisés chaque fois que vous consultez ses stats dans le moteur.</span></div>';
     if (!organization.legacy_stats_read_at)
@@ -1970,6 +1973,12 @@
       btn.disabled = true; btn.textContent = 'Lecture en cours…';
       try { await StudioAPI.request('/api/admin/projects/' + encodeURIComponent(btn.dataset.refreshStats) + '/legacy-stats/refresh', { method: 'POST' }); await load(); }
       catch (error) { btn.disabled = false; btn.textContent = 'Échec · réessayer'; btn.title = error.message || ''; }
+    });
+    $$('[data-manual-stats]').forEach((form) => form.onsubmit = async (event) => {
+      event.preventDefault();
+      const value = Number(form.querySelector('input').value);
+      try { await StudioAPI.request('/api/admin/projects/' + encodeURIComponent(form.dataset.manualStats) + '/legacy-stats/manual', { method: 'POST', body: JSON.stringify({ passations: value }) }); await load(); }
+      catch (error) { showError(error.message); }
     });
     $('[data-pack-auto]')?.addEventListener('click', async () => {
       try { await StudioAPI.request('/api/admin/organizations/' + encodeURIComponent(organization.id), { method: 'PATCH', body: JSON.stringify({ passationsUsedAuto: true }) }); await load(); }

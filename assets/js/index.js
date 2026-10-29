@@ -202,7 +202,7 @@
     var missions=axes.reduce(function(list,a){return list.concat(a.items);},[]);
     return '<article class="sp-card sp-missions">'+
       '<header class="sp-head"><span class="sp-eyebrow">Vos missions Studio</span><strong class="sp-figure">'+reached+'<small> palier'+(reached>1?'s':'')+'</small></strong></header>'+
-      (r!=null?'<p class="sp-meta">'+plural(r,'répondant')+' depuis votre première campagne <button type="button" class="admin-info-dot" data-info="'+esc(RESPONDENTS_INFO)+'" aria-label="Comprendre le nombre de répondants" aria-haspopup="dialog">i</button></p>':'')+
+      (r!=null?'<p class="sp-meta">'+plural(r,g.respondentsFromCredits?'participation':'répondant')+(g.respondentsFromCredits?' d’après les passations utilisées de votre pack':' depuis votre première campagne')+' <button type="button" class="admin-info-dot" data-info="'+esc(RESPONDENTS_INFO)+'" aria-label="Comprendre le nombre de répondants" aria-haspopup="dialog">i</button></p>':'')+
       '<ul class="sp-mission-list">'+missions.map(function(m){return '<li class="'+(m.done?'is-done':'')+'"><span class="sp-check" aria-hidden="true">'+(m.done?'✓':'')+'</span><span>'+esc(m.label)+(m.done?'':'<small>'+esc(m.hint)+'</small><i class="sp-mini-bar" aria-hidden="true"><b style="width:'+Math.min(100,m.progress)+'%"></b></i>')+'</span><span class="visually-hidden">'+(m.done?'palier franchi':'prochain palier')+'</span></li>';}).join('')+'</ul>'+
     '</article>';
   }

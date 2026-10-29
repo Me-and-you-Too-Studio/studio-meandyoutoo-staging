@@ -25,7 +25,7 @@
     var cur=active[q(now)]?q(now):q(now)-1,streak=0;while(active[cur]){streak++;cur--;}return streak;
   }
 
-  function render(campaigns){
+  function render(campaigns,passationsUsed){
     var now=new Date(),yearAgo=new Date(now.getFullYear()-1,now.getMonth(),now.getDate());
     var year=campaigns.filter(function(c){var d=day(c.launch_date);return c.status==='scheduled'||(d&&d>=yearAgo);});
     var started=campaigns.filter(function(c){return c.status!=='scheduled'&&c.launch_date;});
@@ -35,6 +35,9 @@
     }
     // Participations rapportées à la première campagne, pas à une fenêtre de 12 mois.
     var participations=started.reduce(function(s,c){return s+(Number(c.respondents)||0);},0);
+    // Aucune campagne lue (stats protégées) : on reprend les passations utilisées du pack.
+    var fromCredits=participations===0&&started.length>0&&Number(passationsUsed)>0;
+    if(fromCredits)participations=Number(passationsUsed);
     var first=started[0]?day(started[0].launch_date):null;
     var days=first?Math.max(1,Math.round((now-first)/(1000*60*60*24))):0;
     var months=first?Math.max(1,Math.round(days/30.44)):0;
@@ -64,7 +67,7 @@
       '</div>';
     }
     root.innerHTML='<div class="dy-head"><p class="eyebrow">Votre parcours avec Me&amp;YouToo</p>'+
-        '<h2><span class="dy-count">'+num(participations)+'</span> participation'+(participations>1?'s':'')+' enregistrée'+(participations>1?'s':'')+(since?' depuis votre première campagne':'')+' <button type="button" class="admin-info-dot" data-info="'+esc(INFO)+'" aria-label="Comprendre les participations" aria-haspopup="dialog">i</button></h2>'+
+        '<h2><span class="dy-count">'+num(participations)+'</span> participation'+(participations>1?'s':'')+' enregistrée'+(participations>1?'s':'')+(since?' depuis votre première campagne':'')+(fromCredits?'<small class="dy-source"> (d’après les passations utilisées de votre pack)</small>':'')+' <button type="button" class="admin-info-dot" data-info="'+esc(INFO)+'" aria-label="Comprendre les participations" aria-haspopup="dialog">i</button></h2>'+
         '<p>'+(since?'Première campagne le '+esc(since)+' · actif depuis '+months+' mois'+(perWeek?' · environ '+num(perWeek)+' participations par semaine':'')+' · ':'')+campaigns.length+' campagne'+(campaigns.length>1?'s':'')+' · '+themes+' thématique'+(themes>1?'s':'')+' explorée'+(themes>1?'s':'')+'</p>'+(streak>=2?'<p class="dy-streak">🔥 '+streak+' trimestres consécutifs avec une campagne en cours</p>':'')+'</div>'+
       (items?'<ol class="dy-timeline">'+items+'</ol>':'<p class="dy-empty">Aucune campagne sur les 12 derniers mois.</p>')+
       bench+
@@ -72,5 +75,5 @@
     root.hidden=false;
   }
 
-  StudioAPI.request('/api/me/program').then(function(data){render(Array.isArray(data.campaigns)?data.campaigns:[]);}).catch(function(){});
+  StudioAPI.request('/api/me/program').then(function(data){render(Array.isArray(data.campaigns)?data.campaigns:[],data.passationsUsed);}).catch(function(){});
 })();
