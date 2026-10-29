@@ -766,7 +766,7 @@
   function respondentsHtml(p) {
     if (p.legacy_stats_passations == null) return "";
     var count = Number(p.legacy_stats_passations) || 0;
-    return '<div class="campaign-project-respondents">👥 <strong>' + count.toLocaleString("fr-FR") + "</strong> répondant" + (count > 1 ? "s" : "") +
+    return '<div class="campaign-project-respondents">👥 <strong>' + count.toLocaleString("fr-FR") + "</strong> participation" + (count > 1 ? "s" : "") +
       (p.legacy_stats_read_at ? '<span> · mis à jour le ' + dateFr(p.legacy_stats_read_at) + "</span>" : "") + "</div>";
   }
 
