@@ -115,10 +115,11 @@
     const checkSection=document.querySelector('[data-validation-check]')?.closest('section');
     if(checkSection)checkSection.style.background='var(--royal-blue-tint)';
   }
-  // Après la transmission, le client voit où en est sa campagne et qui agit ; l'équipe garde sa vue de relecture.
+  // Après la transmission, la frise montre où en est la campagne. L'équipe voit les phases sans « À vous d'agir »,
+  // qui s'adresse au client.
   function showSubmittedJourney(){
     const card=document.querySelector('.studio-process-card');if(!card)return;
-    const journey=currentUser?.role!=='admin'&&window.StudioJourney?.html(project?.status);
+    const journey=window.StudioJourney?.html(project?.status,null,{stepsOnly:currentUser?.role==='admin'});
     if(!journey){card.setAttribute('hidden','');return;}
     card.hidden=false;
     card.innerHTML='<p class="eyebrow">Votre parcours</p><h2 class="section-title" id="process-title">Où en est votre campagne ?</h2>'+journey;
@@ -416,6 +417,7 @@
         if(reviewCard&&journeyCard)reviewCard.before(journeyCard);
       }else{
         await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:'validation'})});
+        const processCard=document.querySelector('.studio-process-card');if(processCard)processCard.hidden=false;
         // Visite seulement avant la transmission : après, la page devient le suivi de relecture.
         window.StudioTour?.offer('validation');
       }
