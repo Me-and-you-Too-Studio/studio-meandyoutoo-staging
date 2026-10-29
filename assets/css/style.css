@@ -15956,3 +15956,14 @@ button[hidden],.button[hidden],.studio-modal [hidden]{display:none!important}
     align-items: stretch;
   }
 }
+.admin-legacy-credits-mode {
+  margin-top: 4px;
+  font-size: .86rem;
+}
+.admin-legacy-credits-mode.is-manual {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: #8a5a00;
+}
