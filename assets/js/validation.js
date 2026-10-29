@@ -115,9 +115,17 @@
     const checkSection=document.querySelector('[data-validation-check]')?.closest('section');
     if(checkSection)checkSection.style.background='var(--royal-blue-tint)';
   }
+  // Après la transmission, le client voit où en est sa campagne et qui agit ; l'équipe garde sa vue de relecture.
+  function showSubmittedJourney(){
+    const card=document.querySelector('.studio-process-card');if(!card)return;
+    const journey=currentUser?.role!=='admin'&&window.StudioJourney?.html(project?.status);
+    if(!journey){card.setAttribute('hidden','');return;}
+    card.hidden=false;
+    card.innerHTML='<p class="eyebrow">Votre parcours</p><h2 class="section-title" id="process-title">Où en est votre campagne ?</h2>'+journey;
+  }
   function hideSubmittedPreparation(){
     document.querySelector('nav.steps')?.setAttribute('hidden','');
-    document.querySelector('.studio-process-card')?.setAttribute('hidden','');
+    showSubmittedJourney();
     const summary=document.querySelector('.validation-summary');if(currentUser?.role==='admin')summary?.setAttribute('hidden','');else if(summary){summary.hidden=false;const title=$('validation-summary-title'),desc=summary.querySelector('.section-desc'),badge=summary.querySelector('.validation-summary-edit-badge'),editActions=summary.querySelector('.validation-edit-actions');if(title)title.textContent='Informations de paramétrage transmises';if(desc)desc.textContent='Retrouvez ici les informations essentielles de votre campagne, conservées en lecture seule pendant la relecture.';if(badge)badge.textContent='Lecture seule';if(editActions){editActions.hidden=true;editActions.style.display='none';}}
     $('validation-credit')?.setAttribute('hidden','');
     document.querySelector('[data-validation-check]')?.closest('section')?.setAttribute('hidden','');
@@ -403,6 +411,9 @@
         lockSubmittedState();
         hideSubmittedPreparation();
         reviewPanel();
+        // La frise passe en tête, au-dessus du suivi de relecture.
+        const reviewCard=document.querySelector('.review-workflow'),journeyCard=document.querySelector('.studio-process-card:not([hidden])');
+        if(reviewCard&&journeyCard)reviewCard.before(journeyCard);
       }else{
         await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:'validation'})});
       }

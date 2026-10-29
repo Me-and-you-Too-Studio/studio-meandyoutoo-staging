@@ -16677,6 +16677,7 @@ button[hidden],.button[hidden],.studio-modal [hidden]{display:none!important}
 
 /* Frise de vie d'une campagne (StudioJourney, app.js) : cinq étapes, qui agit et la prochaine étape. */
 .studio-journey { margin: 0 0 24px; padding: 22px 24px; }
+nav.steps[hidden] { display: none; }
 .studio-journey .section-title { margin-bottom: 4px; }
 .studio-journey-steps { margin: 14px 0 0; padding: 0; list-style: none; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .studio-journey-steps .studio-process-step { min-height: 0; }
