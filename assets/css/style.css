@@ -16566,3 +16566,98 @@ button[hidden],.button[hidden],.studio-modal [hidden]{display:none!important}
   font-size: .75rem;
 }
 .notification-item.is-removing { opacity: .4; transition: opacity .2s ease; }
+
+/* Accueil : en-tête du parcours (score d'activation, chiffres clés, réussites, série). */
+.sp-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 18px 28px;
+  align-items: center;
+  background: linear-gradient(135deg, #fff 0%, var(--green-blue-soft) 100%);
+}
+.sp-score { display: flex; align-items: center; gap: 18px; }
+.sp-score h3 { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.sp-score-ring {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, #fff 78%, transparent 79% 100%),
+    conic-gradient(var(--green-blue) calc(var(--score) * 1%), var(--sunny-yellow) 0 calc(var(--score) * 1% + .6%), var(--green-blue-soft) 0);
+  animation: sp-pop .6s ease both;
+}
+.sp-score-ring strong { color: var(--royal-blue); font-size: 2rem; font-weight: 900; line-height: 1; }
+.sp-score-ring small { font-size: 1rem; }
+.sp-streak { margin: 4px 0 0; color: var(--royal-blue) !important; font-weight: 700; }
+.sp-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.sp-kpis div {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.sp-kpis dt { color: var(--muted); font-size: .8rem; }
+.sp-kpis dd { margin: 2px 0 0; color: var(--royal-blue); font-size: 1.4rem; font-weight: 900; }
+.sp-kpis dd small { color: var(--muted); font-size: .9rem; }
+.sp-badges { grid-column: 1 / -1; display: grid; gap: 8px; }
+.sp-badges ul { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.sp-badges li {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--sunny-yellow-soft);
+  border: 1px solid #f3dd94;
+  color: var(--royal-blue);
+  font-size: .82rem;
+  font-weight: 800;
+  animation: sp-pop .45s ease both;
+}
+.sp-value { padding: 8px 10px; border-radius: 10px; background: var(--green-blue-soft); color: var(--royal-blue) !important; font-size: .9rem; }
+@media (max-width: 900px) {
+  .sp-hero { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-score-ring, .sp-badges li { animation: none !important; }
+}
+/* Pages thématiques : rappel pour un diagnostic jamais exploré. */
+.theme-nudge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 0 0 20px;
+  padding: 16px 18px;
+  border: 1px solid #f3dd94;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--sunny-yellow-soft), #fff);
+  animation: sp-rise .5s ease both;
+}
+.theme-nudge > div { flex: 1 1 280px; display: grid; gap: 4px; color: var(--royal-blue); }
+.theme-nudge p { margin: 0; color: var(--muted); }
+.theme-nudge-icon { font-size: 1.6rem; }
+/* Suivi de campagne : modification de l'objectif de participation. */
+.campaign-objective { flex: 1 0 100%; display: grid; gap: 8px; }
+.campaign-objective-toggle {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--green-blue);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.campaign-objective-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.campaign-objective-form label { display: grid; gap: 4px; color: var(--muted); font-size: .86rem; }
+.campaign-objective-form input { width: 160px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font: inherit; }
+.campaign-objective-error { flex-basis: 100%; color: #a33; font-size: .86rem; }
+.campaign-objective-history summary { color: var(--muted); font-size: .86rem; cursor: pointer; }
+.campaign-objective-history ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: .86rem; }
+.dy-streak { margin-top: 6px !important; color: var(--royal-blue) !important; font-weight: 800; }

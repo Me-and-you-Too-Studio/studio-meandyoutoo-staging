@@ -7,7 +7,7 @@
 <meta name="description" content="Suivez votre campagne Me&YouToo et accédez à ses liens réels.">
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20261029-notif-1">
+<link rel="stylesheet" href="assets/css/style.css?v=20261029-activation-1">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -254,9 +254,38 @@
         (stats&&stats.readAt?'<span class="campaign-respondents-date">Mis à jour le '+dateTimeFr(stats.readAt)+'</span>':'')+
         (note?'<span class="campaign-respondents-note">'+esc(note)+'</span>':'')+
       '</div><button type="button" class="button button-secondary" id="refresh-respondents">Actualiser</button>'+
-      participationHtml(count,stats&&stats.objective);
+      participationHtml(count,stats&&stats.objective)+
+      objectiveEditorHtml(stats);
     document.getElementById('refresh-respondents').onclick=refreshRespondents;
+    bindObjectiveEditor(stats);
     fillBars(box);
+  }
+
+  // Objectif de participation : modifiable tant que la campagne n'est pas terminée, avec historique.
+  var objectiveState={canEditObjective:false,objectiveHistory:[]};
+  function objectiveEditorHtml(stats){
+    if(stats&&stats.canEditObjective!==undefined)objectiveState={canEditObjective:stats.canEditObjective,objectiveHistory:stats.objectiveHistory||[]};
+    var objective=stats&&stats.objective,history=objectiveState.objectiveHistory;
+    if(!objectiveState.canEditObjective&&!history.length)return '';
+    return '<div class="campaign-objective">'+
+      (objectiveState.canEditObjective?'<button type="button" class="campaign-objective-toggle" data-objective-toggle>'+(objective?'✏️ Modifier l’objectif de participation':'🎯 Définir un objectif de participation')+'</button>'+
+        '<form class="campaign-objective-form" data-objective-form hidden><label>Objectif de répondants<input type="number" min="1" max="1000000" step="1" required value="'+(objective||'')+'" data-objective-input></label>'+
+        '<button type="submit" class="button button-primary">Enregistrer</button><button type="button" class="button button-secondary" data-objective-cancel>Annuler</button><span class="campaign-objective-error" data-objective-error hidden></span></form>':'')+
+      (history.length?'<details class="campaign-objective-history"><summary>Historique de l’objectif</summary><ul>'+history.map(function(h){return '<li>'+dateTimeFr(h.changedAt)+' : '+(h.previous?Number(h.previous).toLocaleString('fr-FR')+' → ':'défini à ')+Number(h.value).toLocaleString('fr-FR')+' répondants</li>';}).join('')+'</ul></details>':'')+
+    '</div>';
+  }
+  function bindObjectiveEditor(stats){
+    var box=document.getElementById('campaign-respondents');if(!box)return;
+    var toggle=box.querySelector('[data-objective-toggle]'),form=box.querySelector('[data-objective-form]');
+    if(!toggle||!form)return;
+    toggle.onclick=function(){form.hidden=!form.hidden;if(!form.hidden)form.querySelector('[data-objective-input]').focus();};
+    form.querySelector('[data-objective-cancel]').onclick=function(){form.hidden=true;};
+    form.onsubmit=async function(event){
+      event.preventDefault();
+      var error=form.querySelector('[data-objective-error]'),value=Number(form.querySelector('[data-objective-input]').value);
+      try{renderRespondents(await StudioAPI.request('/api/projects/'+encodeURIComponent(projectId)+'/objective',{method:'PATCH',body:JSON.stringify({objective:value})}),'Objectif enregistré.');}
+      catch(e){error.hidden=false;error.textContent=e.message||'Impossible d’enregistrer l’objectif.';}
+    };
   }
   async function loadRespondents(id){
     try{renderRespondents(await StudioAPI.request('/api/projects/'+encodeURIComponent(id)+'/legacy-stats'));}

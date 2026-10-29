@@ -111,7 +111,7 @@
     if(percent>=25)return {title:'Votre parcours prend vie',text:plural(remaining,'passation')+' encore disponibles pour de nouvelles campagnes.',cta:''};
     return {title:'Votre parcours démarre',text:plural(remaining,'passation')+' disponibles, valables sur tous les diagnostics Me&YouToo.',cta:''};
   }
-  function packCard(organization,explored,themesTotal){
+  function packCard(organization,explored,themesTotal,g){
     if(!organization||organization.pack_unlimited)return '';
     var quota=Number(organization.passations_quota)||0;if(quota<=0)return '';
     var used=Math.min(quota,Math.max(0,Number(organization.passations_used)||0));
@@ -125,6 +125,8 @@
       '<div class="sp-bar" role="progressbar" aria-label="Utilisation du pack" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+percent+'"><span class="sp-bar-fill" data-width="'+percent+'"></span>'+ticks+'</div>'+
       '<p class="sp-meta">'+number(used)+' / '+number(quota)+' passations utilisées'+(organization.pack_expires_at?' · valable jusqu’au '+dateFr(organization.pack_expires_at):'')+'</p>'+
       '<p>'+esc(stage.text)+'</p>'+
+      // Valeur consommée : ce que les passations ont déjà permis de réaliser.
+      (g&&g.launchedCampaigns?'<p class="sp-value"><b>Ces passations ont permis :</b> '+plural(g.launchedCampaigns,'campagne')+' · '+plural(explored,'thématique')+' · '+plural(g.respondentsTotal||0,'participation')+'</p>':'')+
       '<a class="button '+(stage.cta?'button-primary sp-cta is-'+stage.cta:'button-secondary')+'" href="packs.html">Commander des passations</a>'+
     '</article>';
   }
@@ -159,17 +161,43 @@
     var items=[];
     if(reached.length)items.push({label:label(reached[reached.length-1]),done:true});
     if(next!=null)items.push({label:label(next),done:false,hint:number(value)+(unit||'')+' / '+number(next)+(unit||''),progress:Math.round(value/next*100)});
-    return {reached:reached.length,items:items};
+    return {reached:reached.length,items:items,badges:reached.map(function(s){return {step:s,label:label(s)};})};
   }
-  function missionsCard(g,themesTotal){
-    var explored=g.exploredThemes.length,r=g.respondentsTotal;
+  function missionAxes(g,themesTotal){
+    var explored=g.exploredThemes.length;
     var themeSteps=[2,3,5,8].filter(function(s){return s<themesTotal;}).concat(themesTotal>1?[themesTotal]:[]);
-    var axes=[
+    return [
       ladder(g.launchedCampaigns,[1,2,5,10,20],function(s){return s===1?'Lancer votre première campagne':'Lancer '+s+' campagnes';}),
-      ladder(r,[50,100,250,500,1000,2500,5000,10000],function(s){return 'Atteindre '+number(s)+' répondants';}),
+      ladder(g.respondentsTotal,[50,100,250,500,1000,2500,5000,10000],function(s){return 'Atteindre '+number(s)+' répondants';}),
       ladder(g.bestParticipation||0,[50,75,100],function(s){return s===100?'Atteindre 100 % de votre objectif sur une campagne':'Atteindre '+s+' % de participation sur une campagne';},' %'),
       ladder(explored,themeSteps,function(s){return s===themesTotal?'Explorer toutes les thématiques ('+s+')':s===2?'Explorer une deuxième thématique':'Explorer '+s+' thématiques';})
     ];
+  }
+
+  // En-tête du parcours : score d'activation (jamais un score d'inclusion), chiffres clés, réussites et série.
+  var ACTIVATION_INFO='Ce score mesure l’utilisation de votre Studio, pas le niveau d’inclusion de votre entreprise. Il combine quatre axes à parts égales : campagnes lancées (objectif 3), thématiques explorées (objectif 5), participation moyenne par rapport à vos objectifs (objectif 75 %, compté dès qu’un objectif est renseigné) et régularité (une campagne en cours ou lancée il y a moins de 6 mois).';
+  function heroCard(g,themesTotal){
+    var score=Math.max(0,Math.min(100,Number(g.activationScore)||0));
+    var badges=missionAxes(g,themesTotal).reduce(function(list,a){return list.concat(a.badges);},[]);
+    var short={'Lancer votre première campagne':'Première campagne'};
+    var streak=Number(g.quarterStreak)||0;
+    return '<article class="sp-card sp-hero">'+
+      '<div class="sp-score" style="--score:'+score+'"><div class="sp-score-ring" role="img" aria-label="Studio activé à '+score+' %"><strong>'+score+'<small>%</small></strong></div>'+
+        '<div><span class="sp-eyebrow">Votre parcours Studio</span><h3>Votre Studio est activé à '+score+' % <button type="button" class="admin-info-dot" data-info="'+esc(ACTIVATION_INFO)+'" aria-label="Comprendre le score d’activation" aria-haspopup="dialog">i</button></h3>'+
+        (streak>=2?'<p class="sp-streak">🔥 '+streak+' trimestres consécutifs avec une campagne en cours</p>':streak===1?'<p class="sp-streak">Une campagne en cours ce trimestre : lancez-en une le trimestre prochain pour démarrer une série.</p>':'')+'</div></div>'+
+      '<dl class="sp-kpis">'+
+        '<div><dt>Participations</dt><dd>'+number(g.respondentsTotal||0)+'</dd></div>'+
+        '<div><dt>Campagnes réalisées</dt><dd>'+number(g.launchedCampaigns)+'</dd></div>'+
+        '<div><dt>Thématiques explorées</dt><dd>'+g.exploredThemes.length+'<small> / '+themesTotal+'</small></dd></div>'+
+        '<div><dt>Participation moyenne</dt><dd>'+(g.averageParticipation==null?'—':g.averageParticipation+' %')+'</dd></div>'+
+      '</dl>'+
+      (badges.length?'<div class="sp-badges"><span class="sp-eyebrow">Vos réussites</span><ul>'+badges.map(function(b){var text=short[b.label]||b.label.replace(/^Atteindre /,'').replace(/^Lancer /,'').replace(/^Explorer /,'');return '<li>✓ '+esc(text.charAt(0).toUpperCase()+text.slice(1))+'</li>';}).join('')+'</ul></div>':'')+
+    '</article>';
+  }
+
+  function missionsCard(g,themesTotal){
+    var r=g.respondentsTotal;
+    var axes=missionAxes(g,themesTotal);
     var reached=axes.reduce(function(sum,a){return sum+a.reached;},0);
     var missions=axes.reduce(function(list,a){return list.concat(a.items);},[]);
     return '<article class="sp-card sp-missions">'+
@@ -196,7 +224,8 @@
     if(!grid||!g)return;
     var old=document.getElementById('studio-progress');if(old)old.remove();
     grid.insertAdjacentHTML('afterend','<section class="studio-progress" id="studio-progress" aria-label="Votre progression Studio">'+
-      '<div class="sp-row">'+packCard(data.organization,g.exploredThemes.length,themes.length)+nextCard(nextStep(g,data.organization,themes.length))+'</div>'+
+      (g.activationScore!=null?heroCard(g,themes.length):'')+
+      '<div class="sp-row">'+packCard(data.organization,g.exploredThemes.length,themes.length,g)+nextCard(nextStep(g,data.organization,themes.length))+'</div>'+
       '<div class="sp-row">'+missionsCard(g,themes.length)+coverageCard(g,themes)+'</div>'+
     '</section>');
     // Les jauges se remplissent à l'affichage.
