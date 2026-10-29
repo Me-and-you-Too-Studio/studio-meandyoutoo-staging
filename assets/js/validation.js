@@ -416,6 +416,8 @@
         if(reviewCard&&journeyCard)reviewCard.before(journeyCard);
       }else{
         await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:'validation'})});
+        // Visite seulement avant la transmission : après, la page devient le suivi de relecture.
+        window.StudioTour?.offer('validation');
       }
     }catch(e){$('validation-alert').hidden=false;$('validation-alert').textContent=e.message;}
   }

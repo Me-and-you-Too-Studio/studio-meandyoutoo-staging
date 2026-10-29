@@ -233,6 +233,9 @@
       }
       renderGamification(data);
       renderProjects(Array.isArray(data.recentProjects)?data.recentProjects:[]);
+      // Visite d'accueil : un client déjà accompagné (campagnes historiques) n'a pas le même point de départ qu'un nouveau.
+      var legacy=(data.recentProjects||[]).some(function(p){return p.legacy_history;});
+      if(window.StudioTour)window.StudioTour.offer(legacy?'accueil-legacy':'accueil-new');
       renderThemes(Array.isArray(data.themes)?data.themes:[]);
     }catch(error){
       recentRoot.innerHTML='<div class="composer-alert">Impossible de charger les données de l’accueil : '+esc(error.message)+'</div>';
