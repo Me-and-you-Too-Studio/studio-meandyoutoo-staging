@@ -642,7 +642,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
           confirm.textContent='Enregistrement…';
           try{await saveAdminResultResources();close();}
           catch(e){resultResources=before;throw e;}
-        }else{close();renderResultResources();}
+        }else{close();renderResultResources();scheduleAutosave(0);}
       }catch(e){error.textContent=e.message||'Enregistrement impossible.';error.hidden=false;confirm.disabled=false;confirm.textContent=editing?'Enregistrer les modifications':'Ajouter la ressource';}
     };
     [label,url,uploadFile].forEach(input=>input.oninput=()=>{error.hidden=true});
@@ -666,7 +666,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
   async function attachLegacyResourceDocument(index){
     const item=resultResources[index];if(!item||item.type!=='legacy_document'||currentUser.role!=='admin')return;
     const input=document.createElement('input');input.type='file';input.accept='application/pdf,.pdf';input.hidden=true;document.body.appendChild(input);
-    input.onchange=async()=>{const file=input.files?.[0];input.remove();if(!file)return;try{const doc=await uploadResultPdf(file,item.legacyFilename||item.title);if(doc){resultResources[index]={title:item.title,type:'document',documentId:String(doc.id),filename:doc.filename};if(isReadOnly())await saveAdminResultResources();else renderResultResources();await window.StudioModal.alert({eyebrow:'Ressource après les résultats',title:'PDF rattaché',message:'Le document est maintenant associé à cette ressource.',type:'success'});}}catch(e){await window.StudioModal.alert({title:'Ajout impossible',message:e.message,type:'error'});}};
+    input.onchange=async()=>{const file=input.files?.[0];input.remove();if(!file)return;try{const doc=await uploadResultPdf(file,item.legacyFilename||item.title);if(doc){resultResources[index]={title:item.title,type:'document',documentId:String(doc.id),filename:doc.filename};if(isReadOnly())await saveAdminResultResources();else{renderResultResources();scheduleAutosave(0);}await window.StudioModal.alert({eyebrow:'Ressource après les résultats',title:'PDF rattaché',message:'Le document est maintenant associé à cette ressource.',type:'success'});}}catch(e){await window.StudioModal.alert({title:'Ajout impossible',message:e.message,type:'error'});}};
     input.click();
   }
 
@@ -679,7 +679,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
     list.querySelectorAll('[data-result-view-pdf]').forEach(el=>el.onclick=()=>openResultPdf(resultResources[Number(el.dataset.resultViewPdf)]));
     list.querySelectorAll('[data-attach-legacy-document]').forEach(el=>el.onclick=()=>attachLegacyResourceDocument(Number(el.dataset.attachLegacyDocument)));
     list.querySelectorAll('[data-result-edit]').forEach(el=>el.onclick=()=>openResourceModal(Number(el.dataset.resultEdit)));
-    list.querySelectorAll('[data-result-remove]').forEach(el=>el.onclick=async()=>{const i=Number(el.dataset.resultRemove),ok=await window.StudioModal.confirm({eyebrow:'Ressource après les résultats',title:'Supprimer cette ressource ?',message:`« ${resultResources[i]?.title||'Cette ressource'} » ne sera plus proposée aux répondants.`,type:'danger',cancelLabel:'Conserver',confirmLabel:'Supprimer'});if(ok){const before=clone(resultResources);resultResources.splice(i,1);try{if(isReadOnly()&&currentUser.role==='admin')await saveAdminResultResources();else renderResultResources();}catch(e){resultResources=before;renderResultResources();show(e.message||'Suppression impossible.');}}});
+    list.querySelectorAll('[data-result-remove]').forEach(el=>el.onclick=async()=>{const i=Number(el.dataset.resultRemove),ok=await window.StudioModal.confirm({eyebrow:'Ressource après les résultats',title:'Supprimer cette ressource ?',message:`« ${resultResources[i]?.title||'Cette ressource'} » ne sera plus proposée aux répondants.`,type:'danger',cancelLabel:'Conserver',confirmLabel:'Supprimer'});if(ok){const before=clone(resultResources);resultResources.splice(i,1);try{if(isReadOnly()&&currentUser.role==='admin')await saveAdminResultResources();else{renderResultResources();scheduleAutosave(0);}}catch(e){resultResources=before;renderResultResources();show(e.message||'Suppression impossible.');}}});
     const add=$('add-result-resource');if(add){add.disabled=resultResources.length>=10;add.title=resultResources.length>=10?'Maximum de 10 ressources atteint':'';}
     renderResultResourcesPreview();
   }
@@ -1332,7 +1332,9 @@ function incompleteSocioLocale(items,reference=[],allowEmpty=false){
       sociodemo:isAdminLegacySocio()?undefined:(Array.isArray(project?.sociodemo)?project.sociodemo:socio),
       sociodemoLanguageVariants:isAdminLegacySocio()?undefined:(isLegacyClientCampaign()?project.sociodemo_language_variants:activeLanguageVariants(socioLanguageVariants)),
       translationReviewState:isLegacyClientCampaign()?project.translation_review_state:reviewState(),
-      communicationShareUrl:currentDiffusionUrl()||null
+      communicationShareUrl:currentDiffusionUrl()||null,
+      // Ressources de fin : enregistrées dès l'ajout (avant, seulement au passage à la transmission).
+      resultButtons:isLegacyClientCampaign()?undefined:resultResources.filter(resourceComplete)
     };
   }
   function autosaveFingerprint(payload){try{return JSON.stringify(isAdminLegacySocio()?[payload,socioLanguageVariants]:payload);}catch(_){return String(Date.now());}}
