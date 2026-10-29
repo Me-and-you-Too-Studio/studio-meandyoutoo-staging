@@ -112,9 +112,11 @@
     if(p.status==='unpublished')lifecycleActions='<a class="button button-primary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=reprogram">🚀 Reprogrammer</a><a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=archive">📦 Archiver</a>';
     if(p.status==='closed'||p.status==='completed'||p.status==='archived')lifecycleActions='<a class="button button-primary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=reprogram">🚀 Reprogrammer avec les mêmes liens</a>';
     if(currentUser.role==='admin'&&p.legacy_history&&p.status!=='draft')lifecycleActions+=(lifecycleActions?' ':'')+'<a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=mark-draft">📝 Remettre en brouillon</a>';
-    var showRespondents=!resultsRestricted&&Boolean(results)&&['scheduled','published','active','unpublished','closed','completed'].includes(p.status);
+    // Répondants visibles par tous les comptes ; seul le lien stats détaillé dépend de l'accès aux résultats.
+    var showRespondents=['scheduled','published','active','unpublished','closed','completed'].includes(p.status);
+    detailedResults=!resultsRestricted&&Boolean(results);
     var resultsHtml=resultsRestricted
-      ? '<span class="button button-locked" aria-disabled="true">🔒 Accès aux résultats non autorisé</span>'
+      ? '<span class="button button-locked" aria-disabled="true">🔒 Résultats détaillés réservés</span>'
       : results
       ? '<a class="button button-primary" href="'+esc(results)+'" target="_blank" rel="noopener">Voir les résultats ↗</a>'
       : '<span class="button button-secondary" aria-disabled="true">Résultats non disponibles</span>';
@@ -177,21 +179,23 @@
         '<article class="stat-card"><div class="stat-icon">'+ICONS.start+'</div><p class="stat-label">Date de début</p><p class="stat-value" style="font-size:1.5rem">'+dateFr(p.launch_date)+'</p></article>'+
         '<article class="stat-card"><div class="stat-icon">'+ICONS.end+'</div><p class="stat-label">Date de fin</p><p class="stat-value" style="font-size:1.5rem">'+dateFr(p.close_date)+'</p></article>'+
       '</section>'+
-      '<section class="hero-panel" style="display:flex;justify-content:space-between;gap:24px;align-items:center;flex-wrap:wrap;margin-bottom:24px"><div><h2 class="section-title campaign-section-title"><span class="campaign-section-icon">'+ICONS.results+'</span>Résultats</h2><p class="section-desc">'+(resultsRestricted?'Les résultats existent peut-être, mais votre compte n’est pas autorisé à les consulter.':results?'Le lien de résultats renseigné par Me&YouToo est disponible.':'Aucun lien de résultats n\'est encore renseigné pour cette campagne.')+'</p></div>'+resultsHtml+(showRespondents?'<div class="campaign-respondents" id="campaign-respondents" aria-live="polite"><span>Chargement du nombre de répondants…</span></div>':'')+'</section>'+
+      '<section class="hero-panel" style="display:flex;justify-content:space-between;gap:24px;align-items:center;flex-wrap:wrap;margin-bottom:24px"><div><h2 class="section-title campaign-section-title"><span class="campaign-section-icon">'+ICONS.results+'</span>Résultats</h2><p class="section-desc">'+(resultsRestricted?'Les résultats détaillés (par profil de répondants) sont réservés aux comptes autorisés. Le nombre de répondants reste visible ci-dessous.':results?'Le lien de résultats renseigné par Me&YouToo est disponible.':'Aucun lien de résultats n\'est encore renseigné pour cette campagne.')+'</p></div>'+resultsHtml+(showRespondents?'<div class="campaign-respondents" id="campaign-respondents" aria-live="polite"><span>Chargement du nombre de répondants…</span></div>':'')+'</section>'+
       '<section class="card" style="padding:26px" aria-labelledby="actions-title"><h2 class="section-title campaign-section-title" id="actions-title"><span class="campaign-section-icon">'+ICONS.actions+'</span>Actions sur la campagne</h2><p class="section-desc" style="margin-bottom:18px">'+(['unpublished','closed','completed','archived'].includes(p.status)?'Pour relancer ce thème, reprogrammez cette campagne : son contenu et ses liens seront conservés.':'Accédez uniquement aux éléments réellement associés à cette campagne.')+'</p>'+actionsHtml+'</section>';
     document.title=name+' — Suivi de campagne — Studio Me&YouToo';
     if(showRespondents)loadRespondents(p.id);
   }
 
   // Répondants lus chaque nuit sur la page stats du moteur ; « Actualiser » relit tout de suite.
-  var RESPONDENTS_INFO='Ce chiffre est mis à jour automatiquement chaque nuit. Cliquez sur « Actualiser » pour le voir dès maintenant, ou ouvrez vos résultats détaillés avec « Voir les résultats ». Un même collaborateur peut répondre plusieurs fois, le questionnaire étant anonyme : ce chiffre correspond au nombre de questionnaires complétés.';
+  var detailedResults=false;
+  function respondentsInfo(){return 'Ce chiffre est mis à jour automatiquement chaque nuit. Cliquez sur « Actualiser » pour le voir dès maintenant'+(detailedResults?', ou ouvrez vos résultats détaillés avec « Voir les résultats »':'')+'. Un même collaborateur peut répondre plusieurs fois, le questionnaire étant anonyme : ce chiffre correspond au nombre de questionnaires complétés.';}
   function dateTimeFr(v){if(!v)return '';var d=new Date(v);return Number.isNaN(d.getTime())?'':d.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}
   function renderRespondents(stats,note){
     var box=document.getElementById('campaign-respondents');if(!box)return;
+    if(stats&&stats.linked===false){box.hidden=true;return;}
     var count=stats&&stats.passations!=null?Number(stats.passations):null;
     box.innerHTML='<div class="campaign-respondents-value">'+
         (count==null?'<strong>Répondants : bientôt disponible</strong>':'<strong>'+count.toLocaleString('fr-FR')+'</strong> répondant'+(count>1?'s':''))+
-        ' <button type="button" class="admin-info-dot" data-info="'+esc(RESPONDENTS_INFO)+'" aria-label="Comprendre le nombre de répondants" aria-haspopup="dialog">i</button>'+
+        ' <button type="button" class="admin-info-dot" data-info="'+esc(respondentsInfo())+'" aria-label="Comprendre le nombre de répondants" aria-haspopup="dialog">i</button>'+
         (stats&&stats.readAt?'<span class="campaign-respondents-date">Mis à jour le '+dateTimeFr(stats.readAt)+'</span>':'')+
         (note?'<span class="campaign-respondents-note">'+esc(note)+'</span>':'')+
       '</div><button type="button" class="button button-secondary" id="refresh-respondents">Actualiser</button>';
@@ -205,7 +209,7 @@
     var btn=document.getElementById('refresh-respondents');if(btn){btn.disabled=true;btn.textContent='Actualisation…';}
     try{
       var stats=await StudioAPI.request('/api/projects/'+encodeURIComponent(projectId)+'/legacy-stats/refresh',{method:'POST'});
-      renderRespondents(stats,stats.recent?'Chiffre déjà à jour : il a été actualisé il y a moins de 5 minutes.':stats.refreshed?'':'Actualisation impossible pour le moment. Vos résultats détaillés restent accessibles avec « Voir les résultats ».');
+      renderRespondents(stats,stats.recent?'Chiffre déjà à jour : il a été actualisé il y a moins de 5 minutes.':stats.refreshed?'':'Actualisation impossible pour le moment. Réessayez un peu plus tard.'+(detailedResults?' Vos résultats détaillés restent accessibles avec « Voir les résultats ».':''));
     }catch(e){if(btn){btn.disabled=false;btn.textContent='Actualiser';}}
   }
 
