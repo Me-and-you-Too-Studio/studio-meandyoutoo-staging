@@ -745,7 +745,8 @@
 
   function extraBadges(p) {
     var parts = [];
-    if (p && p.legacy_history)
+    // Provenance interne : visible des administrateurs uniquement, jamais du client.
+    if (p && p.legacy_history && currentUser.role === "admin")
       parts.push('<span class="campaign-context-tag">Import Me&YouToo</span>');
     if (p.reprogrammed_at || p.reprogrammedAt)
       parts.push(
@@ -759,6 +760,14 @@
     if (isEndingSoon(p)) parts.push('<span class="campaign-signal-tag signal-ending">⏰ Fin proche</span>');
     if (hasResults(p)) parts.push('<span class="campaign-signal-tag signal-results">📊 Résultats disponibles</span>');
     return parts.join("");
+  }
+
+  // Répondants lus chaque nuit sur la page stats du moteur (absents si le compte n'a pas accès aux résultats).
+  function respondentsHtml(p) {
+    if (p.legacy_stats_passations == null) return "";
+    var count = Number(p.legacy_stats_passations) || 0;
+    return '<div class="campaign-project-respondents">👥 <strong>' + count.toLocaleString("fr-FR") + "</strong> répondant" + (count > 1 ? "s" : "") +
+      (p.legacy_stats_read_at ? '<span> · mis à jour le ' + dateFr(p.legacy_stats_read_at) + "</span>" : "") + "</div>";
   }
 
   function cardHtml(p) {
@@ -785,12 +794,13 @@
       " · " +
       esc(campaignDates(p)) +
       "<br>" +
-      (p.legacy_history && p.legacy_slug ? "Slug historique : " + esc(p.legacy_slug) + "<br>" : "") +
+      (p.legacy_history && p.legacy_slug && currentUser.role === "admin" ? "Slug historique : " + esc(p.legacy_slug) + "<br>" : "") +
       "Lien de diffusion : " +
       esc(links.shareText) +
       " · Résultats : " +
       esc(links.resultsText) +
       "</div>" +
+      respondentsHtml(p) +
       '<div class="campaign-tag-row">' +
       '<span class="campaign-topic-tag">' +
       esc(themeLabel(p)) +
@@ -848,7 +858,7 @@
     var dialog = document.createElement("dialog");
     dialog.id = "legacy-pdf-dialog";
     dialog.className = "admin-dialog campaign-rename-dialog";
-    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Import Me&amp;YouToo</p><h2>PDF associés à cet autodiagnostic</h2><p>Ouvrez le document que vous souhaitez vérifier.</p><div class="legacy-pdf-list">' + resources.map(function (resource, index) { return '<button type="button" class="button button-secondary" data-legacy-pdf-index="' + index + '">📄 ' + esc(resource.title || resource.filename || ("PDF " + (index + 1))) + '</button>'; }).join("") + '</div><div class="top-actions"><button class="button button-ghost" value="cancel">Fermer</button></div></form>';
+    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Documents de la campagne</p><h2>PDF associés à cet autodiagnostic</h2><p>Ouvrez le document que vous souhaitez vérifier.</p><div class="legacy-pdf-list">' + resources.map(function (resource, index) { return '<button type="button" class="button button-secondary" data-legacy-pdf-index="' + index + '">📄 ' + esc(resource.title || resource.filename || ("PDF " + (index + 1))) + '</button>'; }).join("") + '</div><div class="top-actions"><button class="button button-ghost" value="cancel">Fermer</button></div></form>';
     document.body.append(dialog);
     dialog.querySelectorAll("[data-legacy-pdf-index]").forEach(function (button) { button.onclick = function () { openLegacyPdf(projectId, resources[Number(button.dataset.legacyPdfIndex)]).catch(function (error) { StudioModal.alert({ title: "PDF indisponible", message: error.message || "Impossible d’ouvrir ce PDF.", confirmLabel: "Fermer" }); }); }; });
     dialog.addEventListener("close", function () { dialog.remove(); });
