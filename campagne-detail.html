@@ -7,7 +7,7 @@
 <meta name="description" content="Suivez votre campagne Me&YouToo et accédez à ses liens réels.">
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20261029-respondents-1">
+<link rel="stylesheet" href="assets/css/style.css?v=20261029-gamification-2">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -115,6 +115,7 @@
     // Répondants visibles par tous les comptes ; seul le lien stats détaillé dépend de l'accès aux résultats.
     var showRespondents=['scheduled','published','active','unpublished','closed','completed'].includes(p.status);
     detailedResults=!resultsRestricted&&Boolean(results);
+    currentProject=p;resultsUrl=detailedResults?results:'';
     var resultsHtml=resultsRestricted
       ? '<span class="button button-locked" aria-disabled="true">🔒 Résultats détaillés réservés</span>'
       : results
@@ -173,6 +174,7 @@
     root.innerHTML=''+
       '<div class="topbar compact-topbar"><div><p class="eyebrow"><a href="mes-campagnes.html">Mes campagnes</a></p><div class="badge-row">'+clientBadge+'<span class="badge '+statusClass(p.status)+'">'+esc(campaignDisplayStatus(p))+'</span><span class="tag-chip">'+esc(themeLabel(p))+'</span></div><h1 class="page-title">'+esc(name)+'</h1><p class="lead">Suivez les informations réelles de cette campagne et accédez aux éléments disponibles.</p></div><div class="top-actions">'+adminBack+adminInfo+adminSettings+(respondentPreview?'<a class="button button-secondary" href="'+respondentPreview+'" target="_blank" rel="noopener" title="Voir le parcours répondant avec le contenu réel enregistré pour cette campagne">👁 Aperçu répondant</a>':'')+(can('manage_kit')?'<a class="button button-primary" href="kit-communication.html'+q+'">Kit de communication</a>':'')+'</div></div>'+
       scheduleNote+
+      (campaignEnded(p)?'<section class="campaign-celebration" id="campaign-celebration" hidden aria-live="polite"></section>':'')+
       '<section class="stats-grid" aria-label="Informations de la campagne">'+
         '<article class="stat-card"><div class="stat-icon">'+ICONS.status+'</div><p class="stat-label">Statut</p><p class="stat-value" style="font-size:1.5rem">'+esc(campaignDisplayStatus(p))+'</p></article>'+
         '<article class="stat-card"><div class="stat-icon">'+ICONS.theme+'</div><p class="stat-label">Thématique</p><p class="stat-value" style="font-size:1.35rem">'+esc(themeLabel(p))+'</p></article>'+
@@ -183,6 +185,59 @@
       '<section class="card" style="padding:26px" aria-labelledby="actions-title"><h2 class="section-title campaign-section-title" id="actions-title"><span class="campaign-section-icon">'+ICONS.actions+'</span>Actions sur la campagne</h2><p class="section-desc" style="margin-bottom:18px">'+(['unpublished','closed','completed','archived'].includes(p.status)?'Pour relancer ce thème, reprogrammez cette campagne : son contenu et ses liens seront conservés.':'Accédez uniquement aux éléments réellement associés à cette campagne.')+'</p>'+actionsHtml+'</section>';
     document.title=name+' — Suivi de campagne — Studio Me&YouToo';
     if(showRespondents)loadRespondents(p.id);
+    if(campaignEnded(p))loadCelebration(p);
+  }
+
+  var currentProject=null,resultsUrl='';
+  function campaignEnded(p){
+    if(p.status==='closed'||p.status==='completed')return true;
+    return p.status==='unpublished'&&Boolean(p.close_date)&&new Date(String(p.close_date).slice(0,10)+'T23:59:59')<new Date();
+  }
+  function isLive(p){return p&&(p.status==='published'||p.status==='active');}
+  function kitHref(p){return 'kit-communication.html?projectId='+encodeURIComponent(p.id)+(p.theme_slug?'&theme='+encodeURIComponent(p.theme_slug):'');}
+  function participation(respondents,objective){return objective>0&&respondents!=null?Math.round(respondents/objective*100):null;}
+
+  // Jauge de participation : répondants sur l'objectif déclaré au paramétrage, repères 50 / 75 / 100 %.
+  function participationHtml(count,objective){
+    if(count==null||!objective)return '';
+    var pct=participation(count,objective),shown=Math.min(100,pct),left=function(goal){return Math.max(0,Math.ceil(objective*goal/100)-count);};
+    var message=pct>=100?'Objectif atteint ✓ Bravo, votre campagne a touché toutes les personnes visées.'
+      :pct>=75?'75 % atteint 🔥 Plus que '+left(100).toLocaleString('fr-FR')+' répondants pour atteindre votre objectif.'
+      :pct>=50?'50 % atteint 🎯 Encore '+left(75).toLocaleString('fr-FR')+' répondants pour passer à 75 %.'
+      :'Encore '+left(50).toLocaleString('fr-FR')+' répondants pour atteindre 50 % de votre objectif.';
+    var ticks=[[50,'🎯'],[75,'🔥'],[100,'✓']].map(function(t){return '<i class="cp-tick'+(pct>=t[0]?' is-reached':'')+'" style="left:'+t[0]+'%"><b>'+t[1]+' '+t[0]+' %</b></i>';}).join('');
+    return '<div class="campaign-participation'+(pct>=100?' is-complete':'')+'">'+
+      '<div class="campaign-participation-head"><strong>'+pct+' %</strong><span>de votre objectif de '+objective.toLocaleString('fr-FR')+' répondants</span></div>'+
+      '<div class="cp-bar" role="progressbar" aria-label="Participation" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+shown+'"><span class="cp-bar-fill" data-width="'+shown+'"></span>'+ticks+'</div>'+
+      '<p>'+esc(message)+'</p>'+
+      (isLive(currentProject)&&pct<75&&can('manage_kit')?'<a class="button button-primary cp-cta" href="'+kitHref(currentProject)+'">Relancer mes collaborateurs →</a>':'')+
+    '</div>';
+  }
+  function fillBars(root){setTimeout(function(){(root||document).querySelectorAll('.cp-bar-fill').forEach(function(bar){bar.style.width=bar.dataset.width+'%';});},60);}
+
+  // Fin de campagne : moment de satisfaction, puis la suite du programme.
+  async function loadCelebration(p){
+    var box=document.getElementById('campaign-celebration');if(!box)return;
+    try{
+      var data=await StudioAPI.request('/api/me/program?projectId='+encodeURIComponent(p.id));
+      var campaigns=Array.isArray(data.campaigns)?data.campaigns:[];
+      var self=campaigns.find(function(c){return String(c.id)===String(p.id);});
+      if(!self||self.respondents==null)return;
+      var index=campaigns.indexOf(self),previous=campaigns.slice(0,index).reverse().find(function(c){return c.respondents!=null&&c.objective;});
+      var pct=participation(self.respondents,self.objective),prevPct=previous?participation(previous.respondents,previous.objective):null;
+      var total=campaigns.reduce(function(sum,c){return sum+(Number(c.respondents)||0);},0);
+      var facts=['<li><strong>'+Number(self.respondents).toLocaleString('fr-FR')+'</strong><span>répondants</span></li>'];
+      if(pct!=null)facts.push('<li><strong>'+pct+' %</strong><span>de votre objectif atteint</span></li>');
+      if(pct!=null&&prevPct!=null){var diff=pct-prevPct;facts.push('<li><strong>'+(diff>=0?'+':'')+diff+' pts</strong><span>de participation par rapport à « '+esc(previous.name)+' »</span></li>');}
+      facts.push('<li><strong>'+total.toLocaleString('fr-FR')+'</strong><span>répondants depuis votre arrivée sur Studio</span></li>');
+      var confetti='';for(var i=0;i<18;i++)confetti+='<i style="--x:'+(Math.round(Math.random()*100))+'%;--d:'+(Math.random()*0.6).toFixed(2)+'s;--r:'+Math.round(Math.random()*360)+'deg"></i>';
+      box.innerHTML='<div class="cc-confetti" aria-hidden="true">'+confetti+'</div>'+
+        '<p class="cc-eyebrow">Campagne terminée</p><h2>Bravo, votre campagne est terminée 🎉</h2>'+
+        '<ul class="cc-facts">'+facts.join('')+'</ul>'+
+        '<div class="cc-actions">'+(resultsUrl?'<a class="button button-secondary" href="'+esc(resultsUrl)+'" target="_blank" rel="noopener">Voir mes résultats ↗</a>':'')+'</div>'+
+        '<div class="cc-next"><div><strong>Et maintenant ?</strong><span>Continuez votre programme avec une nouvelle thématique : votre pack est valable sur tous les diagnostics Me&amp;YouToo.</span></div><a class="button button-primary cc-cta" href="bibliotheque.html">Découvrir les diagnostics →</a></div>';
+      box.hidden=false;
+    }catch(e){}
   }
 
   // Répondants lus chaque nuit sur la page stats du moteur ; « Actualiser » relit tout de suite.
@@ -198,8 +253,10 @@
         ' <button type="button" class="admin-info-dot" data-info="'+esc(respondentsInfo())+'" aria-label="Comprendre le nombre de répondants" aria-haspopup="dialog">i</button>'+
         (stats&&stats.readAt?'<span class="campaign-respondents-date">Mis à jour le '+dateTimeFr(stats.readAt)+'</span>':'')+
         (note?'<span class="campaign-respondents-note">'+esc(note)+'</span>':'')+
-      '</div><button type="button" class="button button-secondary" id="refresh-respondents">Actualiser</button>';
+      '</div><button type="button" class="button button-secondary" id="refresh-respondents">Actualiser</button>'+
+      participationHtml(count,stats&&stats.objective);
     document.getElementById('refresh-respondents').onclick=refreshRespondents;
+    fillBars(box);
   }
   async function loadRespondents(id){
     try{renderRespondents(await StudioAPI.request('/api/projects/'+encodeURIComponent(id)+'/legacy-stats'));}
