@@ -23,7 +23,7 @@
 </div>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20261019-client-preview-1"></script>
-<script src="assets/js/app.js?v=20261029-notif-1"></script>
+<script src="assets/js/app.js?v=20261029-parcours-1"></script>
 <script src="assets/js/content-adjustment.js?v=20260903-nested-adjustment-1"></script>
 <script>
 (function(){
@@ -55,13 +55,16 @@
     d.setDate(d.getDate()+1);
     return d.toLocaleDateString('fr-FR');
   }
-  function statusLabel(s){return {draft:'Brouillon',configuration_submitted:'À relire par Me&YouToo',review_pending:'À relire par Me&YouToo',in_review:'En cours de relecture',client_validation_required:'Votre validation est requise',ready_to_publish:'Prête à publier',scheduled:'Programmée',published:'Publiée',active:'Publiée',unpublished:'Dépubliée',closed:'Terminée',completed:'Terminée',archived:'Archivée'}[s]||s||'Statut inconnu';}
+  function statusLabel(s){return window.StudioStatus.label(s);}
   function statusClass(s){if(s==='published'||s==='active')return 'badge-success';if(s==='scheduled')return 'badge-info';if(s==='unpublished'||s==='closed'||s==='completed'||s==='archived')return 'badge-muted';return 'badge-info';}
-  function campaignDisplayStatus(p){
-    if(p&&p.status==='archived')return 'Archivée';
-    if(p&&p.close_date){var end=new Date(String(p.close_date).slice(0,10)+'T23:59:59');if(!Number.isNaN(end.getTime())&&end<new Date())return 'Terminée';}
-    return statusLabel(p&&p.status);
+  // Statut affiché : une campagne dont la date de fin est passée est présentée comme terminée.
+  function campaignDisplayKey(p){
+    if(p&&p.status==='archived')return 'archived';
+    if(p&&p.close_date){var end=new Date(String(p.close_date).slice(0,10)+'T23:59:59');if(!Number.isNaN(end.getTime())&&end<new Date())return 'closed';}
+    if(p&&p.status==='published'&&p.launch_date&&new Date(String(p.launch_date).slice(0,10)+'T00:00:00')<=new Date())return 'active';
+    return p&&p.status;
   }
+  function campaignDisplayStatus(p){return statusLabel(campaignDisplayKey(p));}
   function themeLabel(p){
     var raw=String(p.theme_title||p.theme_slug||'').trim();
     var slug=String(p.theme_slug||raw).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-');
@@ -176,12 +179,12 @@
       scheduleNote+
       (campaignEnded(p)?'<section class="campaign-celebration" id="campaign-celebration" hidden aria-live="polite"></section>':'')+
       '<section class="stats-grid" aria-label="Informations de la campagne">'+
-        '<article class="stat-card"><div class="stat-icon">'+ICONS.status+'</div><p class="stat-label">Statut</p><p class="stat-value" style="font-size:1.5rem">'+esc(campaignDisplayStatus(p))+'</p></article>'+
-        '<article class="stat-card"><div class="stat-icon">'+ICONS.theme+'</div><p class="stat-label">Thématique</p><p class="stat-value" style="font-size:1.35rem">'+esc(themeLabel(p))+'</p></article>'+
+        '<article class="stat-card"><div class="stat-icon">'+ICONS.status+'</div><p class="stat-label">Statut '+window.StudioStatus.dot(campaignDisplayKey(p))+'</p><p class="stat-value" style="font-size:1.5rem">'+esc(campaignDisplayStatus(p))+'</p></article>'+
+        '<article class="stat-card"><div class="stat-icon">'+ICONS.theme+'</div><p class="stat-label">Thématique '+window.StudioGlossary.dot('thematique')+'</p><p class="stat-value" style="font-size:1.35rem">'+esc(themeLabel(p))+'</p></article>'+
         '<article class="stat-card"><div class="stat-icon">'+ICONS.start+'</div><p class="stat-label">Date de début</p><p class="stat-value" style="font-size:1.5rem">'+dateFr(p.launch_date)+'</p></article>'+
         '<article class="stat-card"><div class="stat-icon">'+ICONS.end+'</div><p class="stat-label">Date de fin</p><p class="stat-value" style="font-size:1.5rem">'+dateFr(p.close_date)+'</p></article>'+
       '</section>'+
-      '<section class="hero-panel" style="display:flex;justify-content:space-between;gap:24px;align-items:center;flex-wrap:wrap;margin-bottom:24px"><div><h2 class="section-title campaign-section-title"><span class="campaign-section-icon">'+ICONS.results+'</span>Résultats</h2><p class="section-desc">'+(resultsRestricted?'Les résultats détaillés (par profil de répondants) sont réservés aux comptes autorisés. Le nombre de répondants reste visible ci-dessous.':results?'Le lien de résultats renseigné par Me&YouToo est disponible.':'Aucun lien de résultats n\'est encore renseigné pour cette campagne.')+'</p></div>'+resultsHtml+(showRespondents?'<div class="campaign-respondents" id="campaign-respondents" aria-live="polite"><span>Chargement du nombre de répondants…</span></div>':'')+'</section>'+
+      '<section class="hero-panel" style="display:flex;justify-content:space-between;gap:24px;align-items:center;flex-wrap:wrap;margin-bottom:24px"><div><h2 class="section-title campaign-section-title"><span class="campaign-section-icon">'+ICONS.results+'</span>Résultats '+window.StudioGlossary.dot('resultats')+'</h2><p class="section-desc">'+(resultsRestricted?'Les résultats détaillés (par profil de répondants) sont réservés aux comptes autorisés. Le nombre de répondants reste visible ci-dessous.':results?'Le lien de résultats renseigné par Me&YouToo est disponible.':'Aucun lien de résultats n\'est encore renseigné pour cette campagne.')+'</p></div>'+resultsHtml+(showRespondents?'<div class="campaign-respondents" id="campaign-respondents" aria-live="polite"><span>Chargement du nombre de répondants…</span></div>':'')+'</section>'+
       '<section class="card" style="padding:26px" aria-labelledby="actions-title"><h2 class="section-title campaign-section-title" id="actions-title"><span class="campaign-section-icon">'+ICONS.actions+'</span>Actions sur la campagne</h2><p class="section-desc" style="margin-bottom:18px">'+(['unpublished','closed','completed','archived'].includes(p.status)?'Pour relancer ce thème, reprogrammez cette campagne : son contenu et ses liens seront conservés.':'Accédez uniquement aux éléments réellement associés à cette campagne.')+'</p>'+actionsHtml+'</section>';
     document.title=name+' — Suivi de campagne — Studio Me&YouToo';
     if(showRespondents)loadRespondents(p.id);
