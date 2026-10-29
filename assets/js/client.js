@@ -2505,7 +2505,24 @@
     addClientUser = $("#add-client-user"),
     userDialogEl = $("#user-dialog"),
     publishDialogEl = $("#publish-dialog");
-  if (refreshClient) refreshClient.onclick = load;
+  // « Actualiser » : relit les stats du moteur de chaque campagne reliée (une à la fois), puis recharge le dossier.
+  if (refreshClient) refreshClient.onclick = async () => {
+    const label = refreshClient.textContent;
+    const linked = (organization?.projects || []).filter((p) => String(p.communication_results_url || "").startsWith("https://stats.meandyoutoo.app/") && !p.legacy_stats_protected && !["draft", "archived"].includes(p.status));
+    refreshClient.disabled = true;
+    try {
+      for (const [index, p] of linked.entries()) {
+        refreshClient.textContent = "Lecture des stats " + (index + 1) + "/" + linked.length + "…";
+        try { await StudioAPI.request("/api/admin/projects/" + encodeURIComponent(p.id) + "/legacy-stats/refresh", { method: "POST" }); } catch (e) {}
+      }
+      refreshClient.textContent = "Mise à jour…";
+      await load();
+      refreshClient.textContent = "✓ À jour";
+    } finally {
+      refreshClient.disabled = false;
+      setTimeout(() => { refreshClient.textContent = label; }, 2500);
+    }
+  };
   if (addClientUser) addClientUser.onclick = () => openUser();
   const closeUser = () => userDialogEl?.close();
   const closeUserBtn = $("#close-user-dialog"),
