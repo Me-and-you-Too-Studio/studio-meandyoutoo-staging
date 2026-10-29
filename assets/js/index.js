@@ -99,6 +99,24 @@
     topicsRoot.innerHTML=intro+cards+more;
   }
 
+  // Jauge du pack : passations utilisées (recalculées depuis le moteur stats) sur le pack attribué.
+  function renderPackGauge(organization){
+    var grid=document.querySelector('.stats-grid');
+    if(!grid||!organization||organization.pack_unlimited)return;
+    var quota=Number(organization.passations_quota)||0;
+    if(quota<=0)return;
+    var used=Math.min(quota,Math.max(0,Number(organization.passations_used)||0));
+    var percent=Math.round(used/quota*100);
+    var remaining=organization.passations_remaining==null?quota-used:Number(organization.passations_remaining);
+    var old=document.getElementById('dashboard-pack-gauge');if(old)old.remove();
+    grid.insertAdjacentHTML('afterend',
+      '<section class="card dashboard-pack-gauge" id="dashboard-pack-gauge" aria-label="Utilisation de votre pack">'+
+        '<div class="dashboard-pack-gauge-head"><strong>Votre pack</strong><span>'+number(used)+' / '+number(quota)+' passations utilisées · '+percent+' %</span></div>'+
+        '<div class="dashboard-pack-gauge-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+percent+'"><span style="width:'+percent+'%"></span></div>'+
+        '<p>'+number(remaining)+' passation'+(remaining>1?'s':'')+' disponible'+(remaining>1?'s':'')+(organization.pack_expires_at?' jusqu’au '+dateFr(organization.pack_expires_at):'')+', valables sur tous les diagnostics Me&YouToo.</p>'+
+      '</section>');
+  }
+
   async function load(){
     try{
       var data=await window.StudioAPI.request('/api/me/dashboard');
@@ -111,6 +129,7 @@
       if(data.organization&&data.organization.pack_expires_at){
         document.getElementById('remaining-passations-note').textContent='Disponibles jusqu’au '+dateFr(data.organization.pack_expires_at)+' · commander';
       }
+      renderPackGauge(data.organization);
       renderProjects(Array.isArray(data.recentProjects)?data.recentProjects:[]);
       renderThemes(Array.isArray(data.themes)?data.themes:[]);
     }catch(error){
