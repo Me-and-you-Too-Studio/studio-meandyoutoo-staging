@@ -16672,3 +16672,5 @@ button[hidden],.button[hidden],.studio-modal [hidden]{display:none!important}
 .admin-manual-stats-edit { padding: 0; border: 0; background: none; color: var(--green-blue); font: inherit; font-weight: 700; cursor: pointer; }
 .admin-manual-stats-saved { color: #1d7a4a !important; font-weight: 800; animation: sp-pop .35s ease both; }
 .admin-ad-stats.is-manual > div > strong:first-child { color: var(--royal-blue); }
+/* Le formulaire de saisie manuelle reste fermé tant qu'on ne clique pas sur « Corriger ». */
+.admin-manual-stats[hidden], .campaign-objective-form[hidden] { display: none !important; }
