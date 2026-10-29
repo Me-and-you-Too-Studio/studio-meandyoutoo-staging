@@ -15967,3 +15967,69 @@ button[hidden],.button[hidden],.studio-modal [hidden]{display:none!important}
   gap: 8px;
   color: #8a5a00;
 }
+/* Répondants d'une campagne côté client (lus chaque nuit sur la page stats du moteur). */
+.campaign-respondents {
+  flex: 1 0 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e2ebf0;
+  border-radius: 12px;
+  background: #fff;
+}
+.campaign-respondents-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.campaign-respondents-value strong {
+  font-size: 1.35rem;
+  color: #17355f;
+}
+.campaign-respondents-date,
+.campaign-respondents-note {
+  flex-basis: 100%;
+  color: #60778a;
+  font-size: .86rem;
+}
+@media (max-width: 640px) {
+  .campaign-respondents {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+/* Jauge du pack sur l'accueil client. */
+.dashboard-pack-gauge {
+  margin: 0 0 28px;
+  padding: 18px 20px;
+}
+.dashboard-pack-gauge-head {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-bottom: 10px;
+}
+.dashboard-pack-gauge-head span,
+.dashboard-pack-gauge p {
+  color: #60778a;
+}
+.dashboard-pack-gauge-bar {
+  height: 12px;
+  border-radius: 999px;
+  background: #e8f0f4;
+  overflow: hidden;
+}
+.dashboard-pack-gauge-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #0d7a80;
+}
+.dashboard-pack-gauge p {
+  margin: 10px 0 0;
+  font-size: .92rem;
+}
