@@ -890,6 +890,7 @@
   }
   // Passations lues chaque nuit sur la page stats du moteur (lecture seule, côté API).
   const PUBLISHED_STATUSES = new Set(["scheduled", "published", "active", "unpublished", "closed", "completed"]);
+  let manualStatsSaved = null; // campagne dont la saisie manuelle vient d'être enregistrée (message vert)
   function legacyStatsHtml(p) {
     if (!String(p.communication_results_url || "").trim())
       return PUBLISHED_STATUSES.has(p.status)
@@ -898,11 +899,17 @@
     const last = p.legacy_stats_last || null,
       failures = Number(p.legacy_stats_failures || 0);
     // Stats protégées par une connexion au moteur : pas de lecture possible, saisie manuelle des crédits.
-    if (p.legacy_stats_protected || (last && !last.ok && last.error_code === "AUTH"))
-      return '<div class="admin-ad-stats is-manual"><div><strong>🔒 Stats protégées : saisie manuelle</strong><span>Ce client a des stats protégées par une connexion au moteur : le Studio ne peut pas les lire. Reportez ici les passations de la campagne lues dans le moteur, et les crédits utilisés dans « Gestion du pack ».</span>' +
-        (p.legacy_stats_read_at ? '<span>Dernière saisie : <b>' + fmt(p.legacy_stats_passations) + ' passation' + (Number(p.legacy_stats_passations) > 1 ? "s" : "") + '</b> · ' + dateTime(p.legacy_stats_read_at) + '</span>' : '') +
-        '<form class="admin-manual-stats" data-manual-stats="' + esc(p.id) + '"><label>Passations de la campagne<input type="number" min="0" step="1" required value="' + (p.legacy_stats_passations != null ? esc(p.legacy_stats_passations) : '') + '"></label><button class="button button-primary" type="submit">Enregistrer</button></form></div>' +
+    if (p.legacy_stats_protected || (last && !last.ok && last.error_code === "AUTH")) {
+      // Chiffre saisi mis en avant ; le champ ne s'ouvre que pour une première saisie ou via « Corriger ».
+      const hasValue = p.legacy_stats_read_at && p.legacy_stats_passations != null,
+        saved = String(manualStatsSaved) === String(p.id);
+      return '<div class="admin-ad-stats is-manual"><div>' +
+        (hasValue ? '<strong>' + fmt(p.legacy_stats_passations) + ' passation' + (Number(p.legacy_stats_passations) > 1 ? "s" : "") + '</strong><span>🔒 Saisie manuelle du ' + dateTime(p.legacy_stats_read_at) + ' <button type="button" class="admin-manual-stats-edit" data-manual-stats-edit="' + esc(p.id) + '">✏️ Corriger</button></span>' : '<strong>🔒 Stats protégées : saisie manuelle</strong>') +
+        (saved ? '<span class="admin-manual-stats-saved" role="status">✓ Enregistré : ' + fmt(p.legacy_stats_passations) + ' passation' + (Number(p.legacy_stats_passations) > 1 ? "s" : "") + '</span>' : '') +
+        '<span>Stats protégées par une connexion au moteur : reportez les passations lues dans le moteur, et les crédits utilisés dans « Gestion du pack ».</span>' +
+        '<form class="admin-manual-stats" data-manual-stats="' + esc(p.id) + '"' + (hasValue ? ' hidden' : '') + '><label>Passations de la campagne<input type="number" min="0" step="1" required value="' + (p.legacy_stats_passations != null ? esc(p.legacy_stats_passations) : '') + '"></label><button class="button button-primary" type="submit">Enregistrer</button>' + (hasValue ? '<button class="button button-secondary" type="button" data-manual-stats-cancel>Annuler</button>' : '') + '</form></div>' +
         '<a class="button button-secondary" href="#client-credits">Gestion du pack</a></div>';
+    }
     const value = p.legacy_stats_read_at
         ? '<strong>' + fmt(p.legacy_stats_passations) + ' passation' + (Number(p.legacy_stats_passations) > 1 ? "s" : "") + '</strong><span>Lu le ' + dateTime(p.legacy_stats_read_at) + '</span>'
         : '<strong>Stats pas encore lues</strong><span>Première lecture la nuit prochaine, ou maintenant avec le bouton.</span>',
@@ -1977,8 +1984,20 @@
     $$('[data-manual-stats]').forEach((form) => form.onsubmit = async (event) => {
       event.preventDefault();
       const value = Number(form.querySelector('input').value);
-      try { await StudioAPI.request('/api/admin/projects/' + encodeURIComponent(form.dataset.manualStats) + '/legacy-stats/manual', { method: 'POST', body: JSON.stringify({ passations: value }) }); await load(); }
+      try {
+        await StudioAPI.request('/api/admin/projects/' + encodeURIComponent(form.dataset.manualStats) + '/legacy-stats/manual', { method: 'POST', body: JSON.stringify({ passations: value }) });
+        manualStatsSaved = form.dataset.manualStats;
+        await load();
+        setTimeout(() => { manualStatsSaved = null; document.querySelectorAll('.admin-manual-stats-saved').forEach((el) => el.remove()); }, 6000);
+      }
       catch (error) { showError(error.message); }
+    });
+    $$('[data-manual-stats-edit]').forEach((btn) => btn.onclick = () => {
+      const form = document.querySelector('[data-manual-stats="' + btn.dataset.manualStatsEdit + '"]');
+      if (!form) return;
+      form.hidden = false;
+      form.querySelector('input').focus();
+      form.querySelector('[data-manual-stats-cancel]')?.addEventListener('click', () => { form.hidden = true; }, { once: true });
     });
     $('[data-pack-auto]')?.addEventListener('click', async () => {
       try { await StudioAPI.request('/api/admin/organizations/' + encodeURIComponent(organization.id), { method: 'PATCH', body: JSON.stringify({ passationsUsedAuto: true }) }); await load(); }
