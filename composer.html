@@ -4,7 +4,7 @@
 </style></head>
 <body class="creation-editor-page"><a class="skip-link" href="#contenu">Aller au contenu</a><header class="mobile-header"><img class="studio-brand-logo" src="assets/img/brand/logo-studio-blue.png" alt="Le Studio Me&amp;YouToo"><button class="icon-button" aria-label="Ouvrir le menu" aria-expanded="false" data-menu-toggle><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button></header>
 <div class="app-shell"><aside class="sidebar" aria-label="Navigation principale" id="sidebar-root"></aside>
-<main class="main" id="contenu"><a class="composer-context-back" id="composer-top-back" href="mes-campagnes.html">← Mes campagnes</a><div class="topbar compact-topbar"><div><p class="eyebrow"><span id="theme-link">Thématique</span></p><p id="composer-client-name" class="section-desc" hidden></p><h1 class="page-title" id="composer-page-title">Composer et personnaliser votre diagnostic comportemental</h1><div class="step-time-badge"><span aria-hidden="true">⏱</span> Temps moyen : 10 minutes</div><p class="lead" id="composer-page-lead">Composez votre autodiagnostic à partir des contenus Me&YouToo et contextualisez, si nécessaire, certaines formulations à votre organisation.</p><div id="composer-campaign-context" class="theme-availability-tags" hidden></div><div id="composer-country-tabs" class="composer-country-tabs" hidden></div></div></div>
+<main class="main" id="contenu"><a class="composer-context-back" id="composer-top-back" href="mes-campagnes.html">← Mes campagnes</a><div class="topbar compact-topbar"><div><p class="eyebrow"><span id="theme-link">Thématique</span></p><p id="composer-client-name" class="section-desc" hidden></p><h1 class="page-title" id="composer-page-title">Composer et personnaliser votre diagnostic comportemental</h1><div class="step-time-badge"><span aria-hidden="true">⏱</span> Temps moyen : 10 minutes</div><p class="lead" id="composer-page-lead">Composez votre diagnostic comportemental à partir des contenus Me&YouToo et contextualisez, si nécessaire, certaines formulations à votre organisation.</p><div id="composer-campaign-context" class="theme-availability-tags" hidden></div><div id="composer-country-tabs" class="composer-country-tabs" hidden></div></div></div>
 <nav class="steps" aria-label="Étapes de composition"><span class="step"><span class="step-num">1</span>Choisir</span><span class="step" aria-current="step"><span class="step-num">2</span>Composer</span><span class="step"><span class="step-num">3</span>Personnaliser</span><a class="step step-link" id="composer-settings-step" href="parametrage.html"><span class="step-num">4</span>Paramétrer</a><span class="step"><span class="step-num">5</span>Transmettre</span></nav>
 <div id="composer-readonly-banner" class="composer-alert" data-tone="success" hidden><strong>🔒 Campagne en lecture seule.</strong> Vous pouvez revoir le contenu de cette campagne, mais aucune modification directe n’est possible après transmission. <button id="composer-adjustment-link" class="button button-secondary button-small" type="button" data-content-adjustment="situation">Demander un ajustement</button></div>
 <div id="composer-alert" class="composer-alert" hidden></div>
@@ -21,9 +21,9 @@
 </section>
 <div class="creation-sticky-actions"><a class="button button-ghost" id="composer-theme-back" href="mes-campagnes.html">← Mes campagnes</a><div class="creation-sticky-progress"><strong id="sticky-part-label">Partie en cours</strong><span id="sticky-step-copy">Questions → Profils</span></div><a class="button button-primary" id="composer-next" href="personnalisation.html">Personnaliser les profils de cette partie →</a></div>
 </main></div><nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
-<div class="composer-drawer-backdrop" id="library-backdrop" hidden></div><aside class="composer-drawer" id="library-drawer" aria-hidden="true"><div class="composer-drawer-head"><div><p class="eyebrow">Bibliothèque de situations Me&YouToo</p><h2 id="library-title">Situations complémentaires</h2></div><button class="icon-button" id="library-close" aria-label="Fermer">×</button></div><div class="composer-library-search"><label for="library-search">Rechercher dans cette bibliothèque complémentaire</label><input id="library-search" type="search" placeholder="Ex. réunion, chantier, recrutement, management…"><small>La recherche reste limitée aux situations autorisées pour cet autodiagnostic.</small></div><div id="library-list" class="composer-library-list"></div></aside>
+<div class="composer-drawer-backdrop" id="library-backdrop" hidden></div><aside class="composer-drawer" id="library-drawer" aria-hidden="true"><div class="composer-drawer-head"><div><p class="eyebrow">Bibliothèque de situations Me&YouToo</p><h2 id="library-title">Situations complémentaires</h2></div><button class="icon-button" id="library-close" aria-label="Fermer">×</button></div><div class="composer-library-search"><label for="library-search">Rechercher dans cette bibliothèque complémentaire</label><input id="library-search" type="search" placeholder="Ex. réunion, chantier, recrutement, management…"><small>La recherche reste limitée aux situations autorisées pour ce diagnostic comportemental.</small></div><div id="library-list" class="composer-library-list"></div></aside>
 <script src="assets/js/api.js?v=20261019-client-preview-1"></script>
-<script src="assets/js/app.js?v=20261029-visites-1"></script>
+<script src="assets/js/app.js?v=20261029-termes-1"></script>
 <script src="assets/js/project-context.js?v=20260929-project-identity-1"></script>
 <script src="assets/js/content-adjustment.js?v=20260903-nested-adjustment-1"></script>
 <script>
@@ -39,132 +39,4 @@
 
   function loadComposerScript(){
     var script=document.createElement('script');
-    script.src='assets/js/composer.js?v=20261023-response-format-1';
-    document.body.appendChild(script);
-  }
-
-  function applyReadOnly(project){
-    document.body.dataset.campaignReadOnly='true';
-    window.STUDIO_COMPOSER_READ_ONLY=true;
-
-    var banner=document.getElementById('composer-readonly-banner');
-    if(banner)banner.hidden=false;
-    var title=document.getElementById('composer-page-title');
-    var lead=document.getElementById('composer-page-lead');
-    if(title)title.textContent='Revoir le contenu de votre campagne';
-    if(lead)lead.textContent='Consultez les situations, les réponses et les scores. Le contenu est verrouillé après transmission.';
-    var guidance=document.querySelector('.composer-customization-guidance');
-    if(guidance)guidance.style.display='none';
-    var objective=document.querySelector('.creation-objective');
-    if(objective){
-      var strong=objective.querySelector('strong');
-      var p=objective.querySelector('p');
-      if(strong)strong.textContent='Consultation du contenu';
-      if(p)p.textContent='Parcourez les chapitres et ouvrez les réponses pour revoir exactement le contenu de la campagne.';
-    }
-    var themeLink=document.getElementById('theme-link');
-    if(themeLink){
-      themeLink.textContent=project.theme_title||project.theme_slug||'Thématique';
-      themeLink.href=project.theme_slug?'theme-'+encodeURIComponent(project.theme_slug)+'.html?theme='+encodeURIComponent(project.theme_slug)+'&projectId='+encodeURIComponent(project.id):'bibliotheque.html';
-    }
-    var back=document.getElementById('composer-theme-back');
-    if(back)back.href='campagne-detail.html?projectId='+encodeURIComponent(project.id);
-    var next=document.getElementById('composer-next');
-    if(next){
-      next.hidden=false;
-      next.href='personnalisation.html?theme='+encodeURIComponent(project.theme_slug||'')+'&projectId='+encodeURIComponent(project.id);
-      next.textContent='Revoir les profils →';
-    }
-    var sticky=document.getElementById('sticky-step-copy');
-    if(sticky)sticky.textContent='Lecture seule';
-
-    function lockRenderedControls(){
-      var library=document.getElementById('library-button');
-      if(library)library.style.display='none';
-
-      document.querySelectorAll('[data-situation-input],[data-answer-input]').forEach(function(input){
-        input.readOnly=true;
-        input.setAttribute('aria-readonly','true');
-        input.style.pointerEvents='none';
-        input.style.background='var(--surface-soft)';
-        input.style.borderColor='var(--line)';
-      });
-      document.querySelectorAll('.composer-actions,.composer-save-row,.composer-inline-help,.composer-context-tag,.composer-field-guidance').forEach(function(el){
-        el.style.display='none';
-      });
-      document.querySelectorAll('[data-replace],[data-remove],[data-reset],[data-library-pick]').forEach(function(el){
-        el.style.display='none';
-        el.disabled=true;
-      });
-      document.querySelectorAll('[data-situation-card]').forEach(function(card){
-        card.style.background='var(--royal-blue-tint)';
-        card.style.borderColor='var(--line)';
-      });
-    }
-
-    document.addEventListener('click',function(event){
-      if(!document.body.dataset.campaignReadOnly)return;
-      if(event.target.closest('[data-replace],[data-remove],[data-reset],[data-library-pick],#library-button')){
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      }
-    },true);
-
-    lockRenderedControls();
-    var observer=new MutationObserver(lockRenderedControls);
-    var list=document.getElementById('situation-list');
-    var nav=document.getElementById('chapter-nav');
-    if(list)observer.observe(list,{childList:true,subtree:true});
-    if(nav)observer.observe(nav,{childList:true,subtree:true});
-  }
-
-  if(!projectId||!originalRequest){
-    loadComposerScript();
-    return;
-  }
-
-  originalRequest('/api/projects/'+encodeURIComponent(projectId)+'/composer').then(function(data){
-    var project=data&&data.project;
-    if(!project){
-      loadComposerScript();
-      return;
-    }
-    if(project.can_edit===false){
-      window.StudioAPI.request=function(path,options){
-        var method=String(options&&options.method||'GET').toUpperCase();
-        var ownProjectPath='/api/projects/'+encodeURIComponent(projectId);
-        var requestPath=String(path||'');
-
-        // En lecture seule uniquement, on neutralise le PATCH d'étape afin de
-        // laisser le contenu se charger sans autoriser d'autres écritures.
-        if(method==='PATCH'&&requestPath===ownProjectPath+'/progress'){
-          return Promise.resolve({project:project,readOnly:true});
-        }
-
-        // Une campagne programmée ou publiée reste non modifiable, mais le
-        // client doit pouvoir envoyer la demande ciblée prévue à cet effet.
-        if(method==='POST'&&requestPath===ownProjectPath+'/review/request-adjustment'){
-          return originalRequest.call(window.StudioAPI,path,options);
-        }
-
-        // Toutes les autres écritures concernant cette campagne restent bloquées.
-        if(method!=='GET'&&requestPath.indexOf(ownProjectPath)===0){
-          return Promise.reject(new Error('Campagne en lecture seule. Utilisez « Demander un ajustement » pour signaler un changement.'));
-        }
-        return originalRequest.call(window.StudioAPI,path,options);
-      };
-      applyReadOnly(project);
-    }else{
-      var themeLink=document.getElementById('theme-link');
-      if(themeLink){
-        themeLink.textContent=project.theme_title||project.theme_slug||'Thématique';
-        themeLink.href=project.theme_slug?'theme-'+encodeURIComponent(project.theme_slug)+'.html?theme='+encodeURIComponent(project.theme_slug)+'&projectId='+encodeURIComponent(project.id):'bibliotheque.html';
-      }
-    }
-    loadComposerScript();
-  }).catch(function(){
-    loadComposerScript();
-  });
-})();
-</script>
-<script src="assets/js/preview-launcher.js?v=20261019-client-wording-1"></script></body></html>
+    script.src='assets/js/composer.js?v=20261029-termes-1"assets/js/preview-launcher.js?v=20261019-client-wording-1"></script></body></html>

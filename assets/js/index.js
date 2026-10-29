@@ -121,7 +121,7 @@
   // Prochaine étape : une seule action, choisie selon où en est le client.
   function nextStep(g,organization,themesTotal){
     var f=g.focusCampaign;
-    if(!g.launchedCampaigns&&!g.campaignsInPreparation)return {title:'Lancez votre première campagne',text:'Choisissez une thématique et composez votre autodiagnostic à partir des situations conçues par nos experts.',href:'bibliotheque.html',cta:'Découvrir les diagnostics'};
+    if(!g.launchedCampaigns&&!g.campaignsInPreparation)return {title:'Lancez votre première campagne',text:'Choisissez une thématique et composez votre diagnostic comportemental à partir des situations conçues par nos experts.',href:'bibliotheque.html',cta:'Découvrir les diagnostics'};
     if(!g.launchedCampaigns)return {title:'Finalisez votre campagne en préparation',text:'Encore quelques étapes avant de la diffuser à vos collaborateurs.',href:'mes-campagnes.html',cta:'Reprendre ma campagne'};
     if(f&&f.respondents/f.objective<0.75){
       var pct=Math.min(100,Math.round(f.respondents/f.objective*100)),goal=pct<50?50:75;

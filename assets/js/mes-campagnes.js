@@ -537,7 +537,7 @@
       visible.push(
         '<button class="campaign-btn" type="button" data-project-action="view-legacy-pdf" data-project-id="' +
           id +
-          '" title="Ouvrir le PDF historique associé à cet autodiagnostic">📄 Voir le PDF importé</button>',
+          '" title="Ouvrir le PDF historique associé à cette campagne">📄 Voir le PDF importé</button>',
       );
     }
     if (p.status !== "draft") {
@@ -800,7 +800,7 @@
       projectContextDisclosure(p) +
       themeWarning +
       (["unpublished", "closed", "completed", "archived"].includes(p.status)
-        ? '<div class="campaign-reprogram-hint"><strong>Relancer ce même autodiagnostic</strong><span>Utilisez « Reprogrammer » pour conserver le contenu et les mêmes liens. Il n’est pas nécessaire de reconstruire une campagne sur ce thème.</span></div>'
+        ? '<div class="campaign-reprogram-hint"><strong>Relancer cette même campagne</strong><span>Utilisez « Reprogrammer » pour conserver le contenu et les mêmes liens. Il n’est pas nécessaire de reconstruire une campagne sur ce thème.</span></div>'
         : "") +
       secondaryActions(p) +
       "</div>" +
@@ -836,13 +836,13 @@
     var resources = (Array.isArray(data.resources) ? data.resources : []).filter(function (item) {
       return String(item && item.type || "").toLowerCase() === "document" && (item.documentId || item.document_id);
     });
-    if (!resources.length) throw new Error("Aucun PDF historique consultable n’est actuellement rattaché à cet autodiagnostic.");
+    if (!resources.length) throw new Error("Aucun PDF historique consultable n’est actuellement rattaché à cette campagne.");
     if (resources.length === 1) { await openLegacyPdf(projectId, resources[0]); return; }
     document.getElementById("legacy-pdf-dialog")?.remove();
     var dialog = document.createElement("dialog");
     dialog.id = "legacy-pdf-dialog";
     dialog.className = "admin-dialog campaign-rename-dialog";
-    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Documents de la campagne</p><h2>PDF associés à cet autodiagnostic</h2><p>Ouvrez le document que vous souhaitez vérifier.</p><div class="legacy-pdf-list">' + resources.map(function (resource, index) { return '<button type="button" class="button button-secondary" data-legacy-pdf-index="' + index + '">📄 ' + esc(resource.title || resource.filename || ("PDF " + (index + 1))) + '</button>'; }).join("") + '</div><div class="top-actions"><button class="button button-ghost" value="cancel">Fermer</button></div></form>';
+    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Documents de la campagne</p><h2>PDF associés à cette campagne</h2><p>Ouvrez le document que vous souhaitez vérifier.</p><div class="legacy-pdf-list">' + resources.map(function (resource, index) { return '<button type="button" class="button button-secondary" data-legacy-pdf-index="' + index + '">📄 ' + esc(resource.title || resource.filename || ("PDF " + (index + 1))) + '</button>'; }).join("") + '</div><div class="top-actions"><button class="button button-ghost" value="cancel">Fermer</button></div></form>';
     document.body.append(dialog);
     dialog.querySelectorAll("[data-legacy-pdf-index]").forEach(function (button) { button.onclick = function () { openLegacyPdf(projectId, resources[Number(button.dataset.legacyPdfIndex)]).catch(function (error) { StudioModal.alert({ title: "PDF indisponible", message: error.message || "Impossible d’ouvrir ce PDF.", confirmLabel: "Fermer" }); }); }; });
     dialog.addEventListener("close", function () { dialog.remove(); });
@@ -894,14 +894,14 @@
         type: "danger",
         title: "Supprimer « " + campaignName(p) + " » ?",
         message:
-          "Cet autodiagnostic, son contenu personnalisé et ses fichiers seront définitivement supprimés. Cette action ne peut pas être annulée.",
-        cancelLabel: "Conserver cet AD",
+          "Cette campagne, son contenu personnalisé et ses fichiers seront définitivement supprimés. Cette action ne peut pas être annulée.",
+        cancelLabel: "Conserver la campagne",
         confirmLabel: "Supprimer définitivement",
       });
       if (!ok) return;
       await StudioAPI.request("/api/projects/" + id, { method: "DELETE" });
       await StudioModal.alert({
-        eyebrow: "Autodiagnostic supprimé",
+        eyebrow: "Campagne supprimée",
         title: "La suppression est terminée",
         message: "« " + campaignName(p) + " » a été retiré de votre espace.",
         type: "success",
@@ -911,8 +911,8 @@
     }
     if (action === "archive") {
       var ok2 = await StudioModal.confirm({
-        title: "Archiver cet autodiagnostic ?",
-        message: "Il sera déplacé dans vos archives et restera reprogrammable.",
+        title: "Archiver cette campagne ?",
+        message: "Elle sera déplacée dans vos archives et restera reprogrammable.",
         confirmLabel: "Archiver",
       });
       if (!ok2) return;
@@ -1007,7 +1007,7 @@
         );
       var ok3 = await StudioModal.confirm({
         eyebrow: "Réutiliser une campagne existante",
-        title: "Reprogrammer cet autodiagnostic ?",
+        title: "Reprogrammer cette campagne ?",
         message:
           "Vous n’avez pas besoin de reconstruire une campagne sur le même thème. Le contenu, l’URL de passation et l’URL de résultats seront conservés ; vous choisirez seulement de nouvelles dates.",
         confirmLabel: "Reprogrammer avec les mêmes liens",
@@ -1026,7 +1026,7 @@
           "Le thème réel de cette campagne est absent. Clonage impossible sans corriger les données du projet.",
         );
       var ok4 = await StudioModal.confirm({
-        title: "Cloner cet autodiagnostic ?",
+        title: "Cloner cette campagne ?",
         message:
           "Une copie indépendante sera créée et recevra de nouveaux liens après publication.",
         confirmLabel: "Cloner",

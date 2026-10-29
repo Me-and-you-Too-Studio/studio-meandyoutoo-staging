@@ -28,6 +28,7 @@
     archived:{label:'Archivée',info:'La campagne est rangée dans vos archives. Vous pouvez la restaurer à tout moment.'}
   };
   var GLOSSARY={
+    diagnostic:{title:'Diagnostic comportemental',text:'L’outil Me&YouToo que vous choisissez dans le catalogue, par thématique, puis composez et personnalisez dans le Studio. Diffusé à vos collaborateurs dans une campagne, il prend pour eux la forme d’un autodiagnostic anonyme.'},
     autodiagnostic:{title:'Qu’est-ce qu’un autodiagnostic ?',text:'Un questionnaire anonyme composé de situations concrètes de la vie au travail. Chaque collaborateur choisit ce qu’il ferait, puis découvre un profil et des pistes pour progresser. Ce n’est ni un test de connaissances ni une évaluation individuelle.'},
     thematique:{title:'Thématique',text:'Le sujet D&I de la campagne : sexisme, handicap, origines, management inclusif… Chaque thématique a son propre catalogue de situations conçues par nos experts.'},
     passation:{title:'Passation',text:'Un questionnaire complété par un collaborateur. Chaque passation est décomptée de votre pack, quelle que soit la thématique.'},
@@ -36,7 +37,7 @@
     objectif:{title:'Objectif de répondants',text:'Le nombre de collaborateurs que vous souhaitez toucher. Il sert à calculer votre taux de participation et à savoir quand relancer.'},
     relecture:{title:'Relecture Me&YouToo',text:'Avant toute diffusion, l’équipe Me&YouToo vérifie vos contenus, vos traductions et vos paramètres. C’est une garantie de qualité pour vos collaborateurs.'},
     resultats:{title:'Résultats',text:'Les résultats anonymes et agrégés de votre campagne, accessibles par le lien que Me&YouToo renseigne. Ils montrent comment vos collaborateurs réagissent aux situations, pour orienter vos prochaines actions.'},
-    chapitre:{title:'Chapitre',text:'Un ensemble de situations sur un même sujet. Votre autodiagnostic est composé d’un ou plusieurs chapitres.'},
+    chapitre:{title:'Chapitre',text:'Un ensemble de situations sur un même sujet. Votre diagnostic comportemental est composé d’un ou plusieurs chapitres.'},
     situation:{title:'Situation',text:'Une scène de la vie au travail, avec plusieurs réponses possibles. Le collaborateur choisit celle qui lui ressemble le plus.'},
     profil:{title:'Profil de restitution',text:'Le texte que chaque répondant découvre à la fin de son autodiagnostic : il l’aide à comprendre ses réponses et lui propose des pistes de progression.'}
   };
@@ -106,14 +107,14 @@
   var NEXT_STEPS_TEXT='Choisissez une thématique dans le catalogue, puis suivez les 5 étapes de création : choisir, composer, personnaliser, paramétrer, transmettre. Me&YouToo relit tout avant la mise en ligne.';
   var TOURS={
     'accueil-legacy':{key:'accueil',steps:[
-      {title:'Bienvenue dans votre Studio',text:'Vos campagnes déjà diffusées avec Me&YouToo sont ici, avec leur participation. Le Studio vous permet maintenant de créer vous-même vos prochains autodiagnostics.'},
+      {title:'Bienvenue dans votre Studio',text:'Vos campagnes déjà diffusées avec Me&YouToo sont ici, avec leur participation. Le Studio vous permet maintenant de lancer vous-même vos prochains diagnostics comportementaux.'},
       {target:'#dashboard-recent-campaigns',title:'Vos campagnes',text:'Retrouvez vos campagnes passées et en cours. Dans « Mes campagnes », vous suivez la participation, consultez vos résultats et pouvez relancer une campagne avec les mêmes liens.'},
       {target:'.sp-pack, .stat-link',title:'Votre pack de passations',text:'Une passation correspond à un questionnaire complété. Votre pack est valable sur toutes les thématiques Me&YouToo.'},
       {target:'.sp-coverage',title:'Les thématiques à explorer',text:'Voici les thématiques déjà abordées avec vos équipes et celles qui restent à découvrir. Chacune a ses situations conçues par nos experts.'},
       {target:'.topbar .button-primary, .top-actions .button-primary',title:'Lancer une nouvelle thématique',text:NEXT_STEPS_TEXT}
     ]},
     'accueil-new':{key:'accueil',steps:[
-      {title:'Bienvenue dans votre Studio',text:'Ici, vous créez vos autodiagnostics : des questionnaires anonymes faits de situations concrètes de la vie au travail. Chaque collaborateur choisit ce qu’il ferait, puis découvre un profil et des pistes pour progresser.'},
+      {title:'Bienvenue dans votre Studio',text:'Ici, vous créez vos campagnes à partir des diagnostics comportementaux Me&YouToo. Vos collaborateurs y répondent sous forme d’autodiagnostic : un questionnaire anonyme fait de situations concrètes de la vie au travail, à la fin duquel chacun découvre un profil et des pistes pour progresser.'},
       {target:'.sp-next',title:'Votre prochaine étape',text:'Le Studio vous indique toujours l’action du moment. Commencez par là.'},
       {target:'.topbar .button-primary, .top-actions .button-primary',title:'Créer votre première campagne',text:NEXT_STEPS_TEXT},
       {target:'.sp-pack, .stat-link',title:'Votre pack de passations',text:'Une passation correspond à un questionnaire complété. Votre pack est valable sur toutes les thématiques Me&YouToo.'},
@@ -132,7 +133,7 @@
     ]},
     'composer':{key:'creation-composer',auto:true,steps:[
       {target:'nav.steps',title:'Les 5 étapes de création',text:'Vous êtes à l’étape « Composer ». Votre travail est enregistré au fur et à mesure : vous pouvez vous arrêter et reprendre plus tard depuis « Mes campagnes ».'},
-      {target:'.composer-chapter-nav',title:'Les chapitres',text:'Votre autodiagnostic est composé d’un ou plusieurs chapitres. Ouvrez-en un pour voir ses situations.'},
+      {target:'.composer-chapter-nav',title:'Les chapitres',text:'Votre diagnostic comportemental est composé d’un ou plusieurs chapitres. Ouvrez-en un pour voir ses situations.'},
       {target:'.composer-situation-list',title:'Les situations',text:'Dépliez une situation pour la lire avec ses réponses. Certaines forment un socle méthodologique et restent verrouillées ; d’autres peuvent être adaptées à votre organisation (prénom, métier, vocabulaire interne).'},
       {target:'.creation-sticky-actions',title:'Passer à l’étape suivante',text:'Quand votre sélection vous convient, continuez vers la personnalisation des profils.'}
     ]},
