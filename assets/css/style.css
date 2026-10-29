@@ -16528,3 +16528,41 @@ button[hidden],.button[hidden],.studio-modal [hidden]{display:none!important}
   border-radius: inherit;
   background: var(--green-blue);
 }
+
+/* Photo du compte : toujours un cercle, même quand la zone du profil est étroite. */
+.avatar {
+  flex: 0 0 auto;
+  align-self: center;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+/* Page Notifications : suppression personnelle d'une notification. */
+.notification-item-delete {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--muted);
+  font-size: .85rem;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+.notification-item-delete:hover,
+.notification-item-delete:focus-visible {
+  border-color: #e3a3a3;
+  background: #fff4f4;
+}
+/* Menu de la cloche : bouton de suppression à côté de « marquer comme lu ». */
+.notification-item:has(.notification-item-delete) {
+  grid-template-columns: 34px minmax(0, 1fr) 28px 28px;
+}
+.notification-item .notification-item-delete {
+  width: 25px;
+  height: 25px;
+  margin-top: 4px;
+  font-size: .75rem;
+}
+.notification-item.is-removing { opacity: .4; transition: opacity .2s ease; }
