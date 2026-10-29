@@ -18,6 +18,12 @@
   function day(v){return v?new Date(String(v).slice(0,10)+'T12:00:00'):null;}
   function month(v){var d=day(v);return d?d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'Date à venir';}
   function pct(c){return c.objective&&c.respondents!=null?Math.round(c.respondents/c.objective*100):null;}
+  // Série d'activité métier (pas de connexions) : trimestres consécutifs avec une campagne en diffusion.
+  function quarterStreak(campaigns,now){
+    var q=function(d){return d.getFullYear()*4+Math.floor(d.getMonth()/3);},active={};
+    campaigns.forEach(function(c){var s=day(c.launch_date);if(!s||s>now)return;var e=day(c.close_date);e=e&&e<now?e:now;for(var i=q(s);i<=q(e);i++)active[i]=true;});
+    var cur=active[q(now)]?q(now):q(now)-1,streak=0;while(active[cur]){streak++;cur--;}return streak;
+  }
 
   function render(campaigns){
     var now=new Date(),yearAgo=new Date(now.getFullYear()-1,now.getMonth(),now.getDate());
@@ -34,6 +40,7 @@
     var months=first?Math.max(1,Math.round(days/30.44)):0;
     var perWeek=days>=14?Math.round(participations/days*7):null;
     var since=first?first.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'';
+    var streak=quarterStreak(started,now);
     var themes=new Set(started.map(function(c){return c.theme_slug||c.theme_title;}).filter(Boolean)).size;
     var items=year.map(function(c){
       var p=pct(c),upcoming=c.status==='scheduled';
@@ -58,7 +65,7 @@
     }
     root.innerHTML='<div class="dy-head"><p class="eyebrow">Votre parcours avec Me&amp;YouToo</p>'+
         '<h2><span class="dy-count">'+num(participations)+'</span> participation'+(participations>1?'s':'')+' enregistrée'+(participations>1?'s':'')+(since?' depuis votre première campagne':'')+' <button type="button" class="admin-info-dot" data-info="'+esc(INFO)+'" aria-label="Comprendre les participations" aria-haspopup="dialog">i</button></h2>'+
-        '<p>'+(since?'Première campagne le '+esc(since)+' · actif depuis '+months+' mois'+(perWeek?' · environ '+num(perWeek)+' participations par semaine':'')+' · ':'')+campaigns.length+' campagne'+(campaigns.length>1?'s':'')+' · '+themes+' thématique'+(themes>1?'s':'')+' explorée'+(themes>1?'s':'')+'</p></div>'+
+        '<p>'+(since?'Première campagne le '+esc(since)+' · actif depuis '+months+' mois'+(perWeek?' · environ '+num(perWeek)+' participations par semaine':'')+' · ':'')+campaigns.length+' campagne'+(campaigns.length>1?'s':'')+' · '+themes+' thématique'+(themes>1?'s':'')+' explorée'+(themes>1?'s':'')+'</p>'+(streak>=2?'<p class="dy-streak">🔥 '+streak+' trimestres consécutifs avec une campagne en cours</p>':'')+'</div>'+
       (items?'<ol class="dy-timeline">'+items+'</ol>':'<p class="dy-empty">Aucune campagne sur les 12 derniers mois.</p>')+
       bench+
       '<div class="dy-next"><span>Gardez la dynamique : planifiez votre prochaine campagne.</span><a class="button button-primary sp-cta is-pulse" href="bibliotheque.html">Choisir une thématique →</a></div>';
