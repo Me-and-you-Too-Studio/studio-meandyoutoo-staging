@@ -215,7 +215,7 @@
   }
   function fillBars(root){setTimeout(function(){(root||document).querySelectorAll('.cp-bar-fill').forEach(function(bar){bar.style.width=bar.dataset.width+'%';});},60);}
 
-  // Fin de campagne : moment de satisfaction, puis la suite du programme.
+  // Fin de campagne : moment de satisfaction, puis la suite du parcours.
   async function loadCelebration(p){
     var box=document.getElementById('campaign-celebration');if(!box)return;
     try{
@@ -235,7 +235,7 @@
         '<p class="cc-eyebrow">Campagne terminée</p><h2>Bravo, votre campagne est terminée 🎉</h2>'+
         '<ul class="cc-facts">'+facts.join('')+'</ul>'+
         '<div class="cc-actions">'+(resultsUrl?'<a class="button button-secondary" href="'+esc(resultsUrl)+'" target="_blank" rel="noopener">Voir mes résultats ↗</a>':'')+'</div>'+
-        '<div class="cc-next"><div><strong>Et maintenant ?</strong><span>Continuez votre programme avec une nouvelle thématique : votre pack est valable sur tous les diagnostics Me&amp;YouToo.</span></div><a class="button button-primary cc-cta" href="bibliotheque.html">Découvrir les diagnostics →</a></div>';
+        '<div class="cc-next"><div><strong>Et maintenant ?</strong><span>Continuez votre parcours avec une nouvelle thématique : votre pack est valable sur tous les diagnostics Me&amp;YouToo.</span></div><a class="button button-primary cc-cta" href="bibliotheque.html">Découvrir les diagnostics →</a></div>';
       box.hidden=false;
     }catch(e){}
   }

@@ -16512,3 +16512,19 @@ button[hidden],.button[hidden],.studio-modal [hidden]{display:none!important}
 @media (prefers-reduced-motion: reduce) {
   .dei-year, .dy-item.is-upcoming .dy-dot { animation: none !important; }
 }
+/* Missions : barre de progression vers le prochain palier. */
+.sp-mission-list li > span:nth-child(2) { flex: 1; }
+.sp-mini-bar {
+  display: block;
+  height: 5px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: var(--green-blue-soft);
+  overflow: hidden;
+}
+.sp-mini-bar b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green-blue);
+}
