@@ -16674,3 +16674,27 @@ button[hidden],.button[hidden],.studio-modal [hidden]{display:none!important}
 .admin-ad-stats.is-manual > div > strong:first-child { color: var(--royal-blue); }
 /* Le formulaire de saisie manuelle reste fermé tant qu'on ne clique pas sur « Corriger ». */
 .admin-manual-stats[hidden], .campaign-objective-form[hidden] { display: none !important; }
+
+/* Frise de vie d'une campagne (StudioJourney, app.js) : cinq étapes, qui agit et la prochaine étape. */
+.studio-journey { margin: 0 0 24px; padding: 22px 24px; }
+.studio-journey .section-title { margin-bottom: 4px; }
+.studio-journey-steps { margin: 14px 0 0; padding: 0; list-style: none; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.studio-journey-steps .studio-process-step { min-height: 0; }
+.studio-journey-next { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 16px; padding: 14px 16px; border-radius: var(--radius-sm); background: var(--royal-blue-tint); }
+.studio-journey-next .button { white-space: nowrap; }
+.studio-journey-next p { flex: 1 1 280px; margin: 0; color: var(--ink); line-height: 1.45; }
+.studio-journey-owner { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: .78rem; font-weight: 800; white-space: nowrap; }
+.is-client .studio-journey-owner { background: var(--sunny-yellow-soft); color: var(--warning); }
+.is-team .studio-journey-owner { background: var(--green-blue-soft); color: var(--green-blue-dark); }
+.is-auto .studio-journey-owner { background: var(--royal-blue-soft); color: var(--royal-blue); }
+.studio-journey-mini { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 12px 0 0; color: var(--muted); font-size: .82rem; font-weight: 600; }
+.studio-journey-mini ol { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.studio-journey-mini li { width: 22px; height: 6px; border-radius: 3px; background: var(--line); }
+.studio-journey-mini li.is-done { background: #0d8791; }
+.studio-journey-mini li.is-current { background: #e0a322; }
+@media (max-width: 700px) {
+  .studio-journey { padding: 18px 16px; }
+  .studio-journey-steps { grid-template-columns: 1fr; }
+  .studio-journey-steps .studio-process-step { display: grid; grid-template-columns: 28px 1fr; column-gap: 10px; padding: 10px 12px; }
+  .studio-journey-steps .studio-process-step span { grid-row: span 2; margin: 0; }
+}

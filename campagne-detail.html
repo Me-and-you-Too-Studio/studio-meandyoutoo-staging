@@ -7,7 +7,7 @@
 <meta name="description" content="Suivez votre campagne Me&YouToo et accédez à ses liens réels.">
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20261029-saisie-manuelle-4">
+<link rel="stylesheet" href="assets/css/style.css?v=20261029-parcours-3">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -23,7 +23,7 @@
 </div>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20261019-client-preview-1"></script>
-<script src="assets/js/app.js?v=20261029-parcours-1"></script>
+<script src="assets/js/app.js?v=20261029-parcours-3"></script>
 <script src="assets/js/content-adjustment.js?v=20260903-nested-adjustment-1"></script>
 <script>
 (function(){
@@ -176,6 +176,7 @@
 
     root.innerHTML=''+
       '<div class="topbar compact-topbar"><div><p class="eyebrow"><a href="mes-campagnes.html">Mes campagnes</a></p><div class="badge-row">'+clientBadge+'<span class="badge '+statusClass(p.status)+'">'+esc(campaignDisplayStatus(p))+'</span><span class="tag-chip">'+esc(themeLabel(p))+'</span></div><h1 class="page-title">'+esc(name)+'</h1><p class="lead">Suivez les informations réelles de cette campagne et accédez aux éléments disponibles.</p></div><div class="top-actions">'+adminBack+adminInfo+adminSettings+(respondentPreview?'<a class="button button-secondary" href="'+respondentPreview+'" target="_blank" rel="noopener" title="Voir le parcours répondant avec le contenu réel enregistré pour cette campagne">👁 Aperçu répondant</a>':'')+(can('manage_kit')?'<a class="button button-primary" href="kit-communication.html'+q+'">Kit de communication</a>':'')+'</div></div>'+
+      journeyHtml(p)+
       scheduleNote+
       (campaignEnded(p)?'<section class="campaign-celebration" id="campaign-celebration" hidden aria-live="polite"></section>':'')+
       '<section class="stats-grid" aria-label="Informations de la campagne">'+
@@ -192,6 +193,24 @@
   }
 
   var currentProject=null,resultsUrl='';
+  // Où en est la campagne, qui agit, et le bouton de l'action du moment quand elle revient au client.
+  function journeyHtml(p){
+    var key=campaignDisplayKey(p),q='?theme='+encodeURIComponent(p.theme_slug||'')+'&projectId='+encodeURIComponent(p.id),action=null;
+    var resume={composer:'composer.html',personnalisation:'personnalisation.html',parametrage:'parametrage.html',validation:'validation.html'};
+    if(key==='draft'&&can('edit_campaigns'))action={href:(resume[p.current_step]||'composer.html')+q,label:'Reprendre la création'};
+    else if(key==='client_validation_required')action={href:'validation.html'+q,label:'Valider les corrections'};
+    else if(['configuration_submitted','review_pending','in_review'].includes(key))action={href:'validation.html'+q,label:'Suivre la relecture'};
+    else if(['ready_to_publish','scheduled','published','active'].includes(key)&&can('manage_kit'))action={href:kitHref(p),label:'Ouvrir le kit de communication'};
+    else if(['closed','completed','archived','unpublished'].includes(key)&&can('create_campaigns'))action={href:'bibliotheque.html',label:'Choisir une nouvelle thématique'};
+    var actions=[].concat(action||[]),lifecycle='mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=';
+    if(can('manage_schedule')){
+      // Mêmes règles que les actions de la campagne : on reprogramme une campagne arrêtée, on prolonge une campagne encore publiée.
+      if(['unpublished','closed','completed','archived'].includes(p.status))actions.push({href:lifecycle+'reprogram',label:'Reprogrammer avec les mêmes liens'});
+      else if(['scheduled','published','active'].includes(p.status)&&['scheduled','published','active','closed'].includes(key))actions.push({href:lifecycle+'extend',label:'Prolonger'});
+    }
+    var html=window.StudioJourney.html(key,actions);
+    return html?'<section class="card studio-journey" aria-labelledby="journey-title"><h2 class="section-title" id="journey-title">Où en est votre campagne ?</h2>'+html+'</section>':'';
+  }
   function campaignEnded(p){
     if(p.status==='closed'||p.status==='completed')return true;
     return p.status==='unpublished'&&Boolean(p.close_date)&&new Date(String(p.close_date).slice(0,10)+'T23:59:59')<new Date();
