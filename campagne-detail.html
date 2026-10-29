@@ -132,7 +132,7 @@
         '<div class="action-bar">'+
           '<a class="button button-secondary" href="'+content+'">Modifier le contenu</a>'+
           (can('manage_kit')?'<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>':'')+
-          (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
+          (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir le lien répondant ↗</a>':'')+
         '</div>';
     }else if(isReadOnly){
       actionsHtml=
@@ -145,7 +145,7 @@
           (can('manage_kit')?'<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>':'')+
           (can('edit_campaigns')?'<button class="button button-primary" type="button" data-content-adjustment="multiple">Demander un ajustement</button>':'<span class="button button-locked" aria-disabled="true">🔒 Demander un ajustement</span>')+
           lifecycleActions+
-          (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
+          (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir le lien répondant ↗</a>':'')+
         '</div>';
     }else{
       actionsHtml=
@@ -157,7 +157,7 @@
           (can('manage_kit')?'<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>':'')+
           (can('edit_campaigns')?'<button class="button button-primary" type="button" data-content-adjustment="multiple">Demander un ajustement</button>':'<span class="button button-locked" aria-disabled="true">🔒 Demander un ajustement</span>')+
           lifecycleActions+
-          (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir la campagne ↗</a>':'')+
+          (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir le lien répondant ↗</a>':'')+
         '</div>';
     }
 

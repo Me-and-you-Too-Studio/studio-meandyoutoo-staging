@@ -16033,3 +16033,15 @@ button[hidden],.button[hidden],.studio-modal [hidden]{display:none!important}
   margin: 10px 0 0;
   font-size: .92rem;
 }
+/* Répondants sur les cartes de « Mes campagnes ». */
+.campaign-project-respondents {
+  margin: 8px 0 2px;
+  color: #17355f;
+}
+.campaign-project-respondents strong {
+  font-size: 1.05rem;
+}
+.campaign-project-respondents span {
+  color: #60778a;
+  font-size: .86rem;
+}
