@@ -286,7 +286,8 @@
     const summary=$('#calendar-month-summary');if(summary)summary.innerHTML='';
     const root=$('#calendar-year'),year=state.cursor.getFullYear(),campaigns=filteredCampaigns(),tasks=filteredTasksForCalendar();
     const selectedOrg=$('#calendar-org-filter')?.value||'';
-    const showCampaignDates=Boolean(selectedOrg);
+    // Un client voit toujours ses campagnes ; l'admin, celles du client choisi dans le filtre.
+    const showCampaignDates=Boolean(selectedOrg)||!isAdmin;
     const visibleDei=filteredDeiEvents();
     root.classList.toggle('has-selected-client',showCampaignDates);
     root.innerHTML=Array.from({length:12},(_,m)=>{
@@ -323,7 +324,7 @@
     root.innerHTML=`${logo}<div class="calendar-client-identity-copy"><strong>${esc(org.name||'Client')}</strong><span>${rows.length} campagne${rows.length>1?'s':''} · ${drafts} brouillon${drafts>1?'s':''} · ${ongoing} en cours · ${completed} terminée${completed>1?'s':''}</span>${dateSummary}</div>`;
     root.hidden=false;
   }
-  function renderDataQuality(){const box=$('#calendar-data-quality');box.hidden=!state.missingDates;$('#calendar-missing-count').textContent=`${state.missingDates} campagne${state.missingDates>1?'s':''} sans dates`;}
+  function renderDataQuality(){const box=$('#calendar-data-quality');box.hidden=!state.missingDates;box.style.display=state.missingDates?'':'none';$('#calendar-missing-count').textContent=`${state.missingDates} campagne${state.missingDates>1?'s':''} sans dates`;}
   function renderTaskCount(){const n=state.tasks.filter(t=>t.status!=='done').length;$('#task-open-count').textContent=n;}
   function renderTasks(focusId){
     const root=$('#calendar-task-list'),now=iso(today);let rows=state.tasks.slice();
