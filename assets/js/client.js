@@ -905,16 +905,22 @@
         : "";
     return '<div class="admin-ad-stats' + (failure ? " is-failing" : "") + '"><div>' + value + failure + '</div><button class="button button-secondary" type="button" data-refresh-stats="' + esc(p.id) + '">Actualiser les stats</button></div>';
   }
+  function legacyUsedModeHtml() {
+    if (organization.pack_unlimited) return "";
+    return organization.passations_used_manual
+      ? '<span class="admin-legacy-credits-mode is-manual">Crédits utilisés corrigés à la main : la synchronisation ne les modifie plus. <button class="button button-secondary" type="button" data-pack-auto>Revenir au calcul automatique</button></span>'
+      : '<span class="admin-legacy-credits-mode">Crédits utilisés calculés automatiquement : crédits attribués − crédit restant lu dans le moteur.</span>';
+  }
   function legacyCreditsHtml(remaining) {
     if (!organization.legacy_stats_read_at)
-      return '<div class="admin-legacy-credits"><strong>Moteur stats</strong><span>Aucune lecture du moteur pour l’instant : les crédits ci-dessous restent ceux saisis à la main.</span></div>';
+      return '<div class="admin-legacy-credits"><strong>Moteur stats</strong><span>Aucune lecture du moteur pour l’instant : les crédits ci-dessous restent ceux saisis à la main.</span>' + legacyUsedModeHtml() + '</div>';
     const credits = organization.legacy_stats_credits_remaining,
       gap = credits == null || organization.pack_unlimited ? null : Number(credits) - remaining,
-      warning = gap ? '<span class="admin-legacy-credits-gap">Écart de ' + fmt(Math.abs(gap)) + ' crédit' + (Math.abs(gap) > 1 ? "s" : "") + ' avec le Studio (' + fmt(remaining) + ' restants saisis ici).</span>' : "";
+      warning = gap ? '<span class="admin-legacy-credits-gap">Écart de ' + fmt(Math.abs(gap)) + ' crédit' + (Math.abs(gap) > 1 ? "s" : "") + ' avec le Studio (' + fmt(remaining) + ' restants dans le Studio).</span>' : "";
     return '<div class="admin-legacy-credits' + (warning ? " has-gap" : "") + '"><strong>Moteur stats</strong><span>' +
       (credits == null ? "Crédit non affiché par le moteur" : fmt(credits) + " crédits restants") +
       (organization.legacy_stats_pack_ends_on ? " · fin du pack le " + date(organization.legacy_stats_pack_ends_on) : "") +
-      " · lu le " + dateTime(organization.legacy_stats_read_at) + "</span>" + warning + "</div>";
+      " · lu le " + dateTime(organization.legacy_stats_read_at) + "</span>" + warning + legacyUsedModeHtml() + "</div>";
   }
   function card(p) {
     const st = normalizedStatus(p),
@@ -1252,7 +1258,7 @@
       orgUsers(organization).map(userRow).join("") ||
       '<div class="admin-empty admin-empty-with-action"><strong>Aucun compte utilisateur</strong><span>Ajoutez le premier accès pour ce client directement depuis son dossier.</span><button class="button button-primary" type="button" data-add-client-user-empty>+ Ajouter un accès</button></div>';
     $("#client-credits").innerHTML =
-      '<div class="admin-pack-heading"><div><span class="eyebrow">Gestion du pack</span><h2>Crédits et validité</h2><p>Renseignez manuellement les crédits et les dates tant que la synchronisation automatique du moteur n’est pas connectée.</p></div><span id="client-pack-status" class="admin-pack-status ' + (organization.pack_unlimited ? 'is-unlimited' : '') + '">' + (organization.pack_unlimited ? 'Pack illimité' : fmt(rem) + ' restants') + '</span></div>' +
+      '<div class="admin-pack-heading"><div><span class="eyebrow">Gestion du pack</span><h2>Crédits et validité</h2><p>Les crédits utilisés sont recalculés à chaque lecture du moteur stats. Une correction à la main reste possible et prend le dessus.</p></div><span id="client-pack-status" class="admin-pack-status ' + (organization.pack_unlimited ? 'is-unlimited' : '') + '">' + (organization.pack_unlimited ? 'Pack illimité' : fmt(rem) + ' restants') + '</span></div>' +
       legacyCreditsHtml(rem) +
       '<label>Crédits attribués<input id="client-quota" type="number" min="0" value="' +
       (organization.passations_quota || 0) +
@@ -1958,6 +1964,10 @@
       btn.disabled = true; btn.textContent = 'Lecture en cours…';
       try { await StudioAPI.request('/api/admin/projects/' + encodeURIComponent(btn.dataset.refreshStats) + '/legacy-stats/refresh', { method: 'POST' }); await load(); }
       catch (error) { btn.disabled = false; btn.textContent = 'Échec · réessayer'; btn.title = error.message || ''; }
+    });
+    $('[data-pack-auto]')?.addEventListener('click', async () => {
+      try { await StudioAPI.request('/api/admin/organizations/' + encodeURIComponent(organization.id), { method: 'PATCH', body: JSON.stringify({ passationsUsedAuto: true }) }); await load(); }
+      catch (error) { showError(error.message); }
     });
     $$('[data-admin-folder-filter]').forEach((btn) => btn.onclick = () => { activeFolder = btn.dataset.adminFolderFilter; render(); });
     $('[data-admin-folder-create]')?.addEventListener('click', async () => { const name = await askFolderValue("Nouveau dossier"); if (!name) return; await StudioAPI.request('/api/campaign-folders', { method: 'POST', body: JSON.stringify({ organizationId: organization.id, name }) }); await load(); });
