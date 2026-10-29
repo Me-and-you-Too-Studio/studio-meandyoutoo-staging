@@ -40,7 +40,7 @@
   let project=null,currentUser=null,studioSubscription=null,reviewEvents=[],currentChapters=[];
   let translationChanges=[],translationChangesError='',translationChangesSupported=false;
   const date=v=>{if(!v)return 'À définir';const raw=String(v),day=raw.slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(day))return 'À définir';const parsed=new Date(day+'T12:00:00');return Number.isNaN(parsed.getTime())?'À définir':parsed.toLocaleDateString('fr-FR');};
-  const statusLabel=status=>({configuration_submitted:'À relire par Me&YouToo',review_pending:'À relire par Me&YouToo',in_review:'En cours de relecture',client_validation_required:'Votre validation est requise',ready_to_publish:'Configuration validée · En préparation',scheduled:'Campagne programmée',published:'Campagne publiée',active:'Campagne publiée',unpublished:'Campagne dépubliée',closed:'Campagne terminée',completed:'Campagne terminée',archived:'Campagne archivée'}[status]||'Configuration verrouillée');
+  const statusLabel=status=>status&&status!=='draft'?window.StudioStatus.label(status):'Configuration verrouillée';
   const isoDate=value=>String(value||'').slice(0,10);
   let lastQuotaRefresh=0;
   function showValidationError(message){const box=$('validation-alert');box.hidden=false;box.dataset.tone='';box.textContent=message;box.scrollIntoView({behavior:'smooth',block:'center'});}

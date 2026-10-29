@@ -2,6 +2,67 @@
    Toute modification du menu latéral ou de la navigation mobile se fait UNIQUEMENT ici :
    les pages HTML ne contiennent qu'un conteneur vide (#sidebar-root / #bottom-nav-root)
    que ce script remplit au chargement, comme un header/menu partagé. */
+
+/* Vocabulaire du parcours client : un seul nom par statut sur tous les écrans,
+   et un lexique commun pour les points « i ». Toute évolution de libellé se fait ici. */
+(function(){
+  function esc(value){
+    return String(value??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
+  }
+  var SUBMITTED={label:'Transmise à Me&YouToo',info:'Vous avez transmis votre configuration. L’équipe Me&YouToo va la relire pour garantir la qualité des contenus et des traductions. Vous n’avez rien à faire pour l’instant.'};
+  var LIVE={label:'En diffusion',info:'Vos collaborateurs peuvent répondre. Suivez la participation et relancez-les si besoin avec le kit de communication.'};
+  var ENDED={label:'Terminée',info:'La diffusion est terminée. Consultez vos résultats, puis lancez une nouvelle thématique pour poursuivre votre parcours : votre pack est valable sur tous les diagnostics.'};
+  var STATUSES={
+    draft:{label:'Brouillon',info:'Votre campagne est en cours de création. Reprenez-la à l’étape où vous l’avez laissée : rien n’est encore transmis à Me&YouToo.'},
+    configuration_submitted:SUBMITTED,
+    review_pending:SUBMITTED,
+    in_review:{label:'En relecture chez Me&YouToo',info:'L’équipe Me&YouToo relit votre configuration. Si des ajustements sont nécessaires, elle vous les propose et vous pourrez les valider.'},
+    client_validation_required:{label:'À vous de valider',adminLabel:'En attente du client',info:'Me&YouToo vous propose des corrections. Validez-les pour que la campagne puisse être programmée.'},
+    ready_to_publish:{label:'Validée, en préparation',info:'Tout est validé. Me&YouToo prépare la mise en ligne de la campagne aux dates prévues.'},
+    scheduled:{label:'Programmée',info:'La campagne s’ouvrira automatiquement à sa date de début. En attendant, préparez votre communication avec le kit.'},
+    published:{label:'Publiée',info:'La campagne est validée et en ligne. Vos collaborateurs pourront répondre pendant sa période de diffusion.'},
+    active:LIVE,
+    unpublished:{label:'Dépubliée',info:'La campagne a été retirée avant sa date de fin. Vous pouvez la reprogrammer en conservant son contenu et ses liens.'},
+    closed:ENDED,
+    completed:ENDED,
+    archived:{label:'Archivée',info:'La campagne est rangée dans vos archives. Vous pouvez la restaurer à tout moment.'}
+  };
+  var GLOSSARY={
+    autodiagnostic:{title:'Qu’est-ce qu’un autodiagnostic ?',text:'Un questionnaire anonyme composé de situations concrètes de la vie au travail. Chaque collaborateur choisit ce qu’il ferait, puis découvre un profil et des pistes pour progresser. Ce n’est ni un test de connaissances ni une évaluation individuelle.'},
+    thematique:{title:'Thématique',text:'Le sujet D&I de la campagne : sexisme, handicap, origines, management inclusif… Chaque thématique a son propre catalogue de situations conçues par nos experts.'},
+    passation:{title:'Passation',text:'Un questionnaire complété par un collaborateur. Chaque passation est décomptée de votre pack, quelle que soit la thématique.'},
+    pack:{title:'Votre pack',text:'Votre réserve de passations. Elle est valable sur tous les diagnostics Me&YouToo : utilisez-la pour explorer de nouvelles thématiques avec vos équipes.'},
+    participation:{title:'Participations et répondants',text:'Un même collaborateur peut répondre plusieurs fois, le questionnaire étant anonyme : ce chiffre correspond au nombre de questionnaires complétés, pas à un nombre de personnes. Chiffres mis à jour chaque nuit.'},
+    objectif:{title:'Objectif de répondants',text:'Le nombre de collaborateurs que vous souhaitez toucher. Il sert à calculer votre taux de participation et à savoir quand relancer.'},
+    relecture:{title:'Relecture Me&YouToo',text:'Avant toute diffusion, l’équipe Me&YouToo vérifie vos contenus, vos traductions et vos paramètres. C’est une garantie de qualité pour vos collaborateurs.'},
+    resultats:{title:'Résultats',text:'Les résultats anonymes et agrégés de votre campagne, accessibles par le lien que Me&YouToo renseigne. Ils montrent comment vos collaborateurs réagissent aux situations, pour orienter vos prochaines actions.'},
+    chapitre:{title:'Chapitre',text:'Un ensemble de situations sur un même sujet. Votre autodiagnostic est composé d’un ou plusieurs chapitres.'},
+    situation:{title:'Situation',text:'Une scène de la vie au travail, avec plusieurs réponses possibles. Le collaborateur choisit celle qui lui ressemble le plus.'},
+    profil:{title:'Profil de restitution',text:'Le texte que chaque répondant découvre à la fin de son autodiagnostic : il l’aide à comprendre ses réponses et lui propose des pistes de progression.'}
+  };
+  function dot(title,text){
+    return '<button type="button" class="admin-info-dot" data-info-title="'+esc(title)+'" data-info="'+esc(text)+'" aria-label="Comprendre : '+esc(title)+'">i</button>';
+  }
+  window.StudioStatus={
+    // asAdmin : vue équipe Me&YouToo, où « À vous de valider » n’aurait pas de sens.
+    label:function(status,asAdmin){var s=STATUSES[status];return s?(asAdmin&&s.adminLabel)||s.label:(status||'Statut inconnu');},
+    info:function(status){return STATUSES[status]?STATUSES[status].info:'';},
+    dot:function(status){return STATUSES[status]?dot(STATUSES[status].label,STATUSES[status].info):'';}
+  };
+  window.StudioGlossary={
+    text:function(term){return GLOSSARY[term]?GLOSSARY[term].text:'';},
+    dot:function(term){return GLOSSARY[term]?dot(GLOSSARY[term].title,GLOSSARY[term].text):'';}
+  };
+  // Les libellés statiques portent data-glossary="terme" : le point « i » est ajouté ici.
+  function decorate(){
+    document.querySelectorAll('[data-glossary]:not([data-glossary-ready])').forEach(function(el){
+      el.setAttribute('data-glossary-ready','');
+      el.insertAdjacentHTML('beforeend',' '+window.StudioGlossary.dot(el.getAttribute('data-glossary')));
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',decorate);else decorate();
+})();
+
 (function(){
   if (!localStorage.getItem('studio_token') && location.pathname.split('/').pop() !== 'login.html') {
     location.href='login.html';

@@ -54,13 +54,13 @@
         <div class="calendar-filterbar">
           <select id="calendar-org-filter" hidden><option value="">Tous les clients</option></select>
           <label class="calendar-filter-control">
-            <span class="calendar-filter-label">Statut <span class="admin-info-dot" tabindex="0" data-info="Publiée : la campagne est validée et disponible mais sa période de diffusion n’est pas forcément commencée. En cours : la date du jour se situe entre la date de début et la date de fin. Terminée : la période de diffusion est achevée. Une campagne publiée sans dates reste Publiée.">i</span></span>
+            <span class="calendar-filter-label">Statut <span class="admin-info-dot" tabindex="0" data-info="Publiée : la campagne est validée et disponible mais sa période de diffusion n’est pas forcément commencée. En diffusion : la date du jour se situe entre la date de début et la date de fin. Terminée : la période de diffusion est achevée. Une campagne publiée sans dates reste Publiée.">i</span></span>
             <select id="calendar-status-filter">
               <option value="">Tous les statuts</option>
               <option value="draft">Brouillons</option>
-              <option value="configuration_submitted">À relire</option>
+              <option value="configuration_submitted">Transmises à Me&amp;YouToo</option>
               <option value="published">Publiées</option>
-              <option value="active">En cours</option>
+              <option value="active">En diffusion</option>
               <option value="completed">Terminées</option>
             </select>
           </label>
@@ -132,7 +132,7 @@
   </dialog>
 
   <script src="assets/js/api.js?v=20261019-client-preview-1"></script>
-  <script src="assets/js/app.js?v=20261029-notif-1"></script>
-  <script src="assets/js/calendrier.js?v=20261029-campagnes-client-1"></script>
+  <script src="assets/js/app.js?v=20261029-parcours-1"></script>
+  <script src="assets/js/calendrier.js?v=20261029-parcours-1"></script>
 </body>
 </html>

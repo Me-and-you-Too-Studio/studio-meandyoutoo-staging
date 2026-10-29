@@ -20,20 +20,7 @@
   }
 
   function statusLabel(status){
-    return {
-      draft:'Brouillon',
-      configuration_submitted:'Configuration transmise',
-      review_pending:'À relire par Me&YouToo',
-      in_review:'En cours de relecture',
-      client_validation_required:'Votre validation est requise',
-      ready_to_publish:'Prête à publier',
-      scheduled:'Programmée',
-      published:'Publiée',
-      active:'En cours',
-      closed:'Terminée',
-      completed:'Terminée',
-      archived:'Archivée'
-    }[status]||status||'Statut inconnu';
+    return window.StudioStatus.label(status);
   }
 
   function statusClass(status){

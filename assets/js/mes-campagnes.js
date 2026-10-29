@@ -61,25 +61,7 @@
   }
 
   function statusLabel(status) {
-    return (
-      {
-        draft: "Brouillon",
-        configuration_submitted: "Transmise à Me&YouToo",
-        review_pending: "À relire par Me&YouToo",
-        in_review: "En cours de relecture",
-        client_validation_required: "À valider",
-        ready_to_publish: "Prête à publier",
-        published: "Publiée",
-        scheduled: "Programmée",
-        active: "En cours de diffusion",
-        unpublished: "Dépubliée",
-        closed: "Terminée",
-        completed: "Terminée",
-        archived: "Archivée",
-      }[status] ||
-      status ||
-      "Statut inconnu"
-    );
+    return window.StudioStatus.label(status);
   }
 
   function statusVisual(status) {
@@ -767,7 +749,7 @@
     if (p.legacy_stats_passations == null) return "";
     var count = Number(p.legacy_stats_passations) || 0;
     return '<div class="campaign-project-respondents">👥 <strong>' + count.toLocaleString("fr-FR") + "</strong> participation" + (count > 1 ? "s" : "") +
-      (p.legacy_stats_read_at ? '<span> · mis à jour le ' + dateFr(p.legacy_stats_read_at) + "</span>" : "") + "</div>";
+      (p.legacy_stats_read_at ? '<span> · mis à jour le ' + dateFr(p.legacy_stats_read_at) + "</span>" : "") + " " + window.StudioGlossary.dot("participation") + "</div>";
   }
 
   function cardHtml(p) {
@@ -810,6 +792,7 @@
       '">' +
       esc(statusLabel(statusKey(p))) +
       "</span>" +
+      window.StudioStatus.dot(statusKey(p)) +
       (folderById(p.folder_id) ? '<span class="campaign-folder-tag">📁 ' + esc(folderById(p.folder_id).name) + '</span>' : "") +
       extraBadges(p) +
       "</div>" +
@@ -1221,9 +1204,9 @@
     if (key === "results") return "Résultats disponibles";
     if (key === "startingSoon") return "Début proche";
     if (key === "endingSoon") return "Fin proche";
-    if (key === "validation") return "À valider";
-    if (key === "review") return "En validation";
-    if (key === "ongoing") return "En cours de diffusion";
+    if (key === "validation") return "À vous de valider";
+    if (key === "review") return "En relecture";
+    if (key === "ongoing") return "En diffusion";
     if (key === "finished") return "Terminées";
     return statusLabel(key);
   }
