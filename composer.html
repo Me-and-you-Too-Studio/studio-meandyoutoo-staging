@@ -39,4 +39,132 @@
 
   function loadComposerScript(){
     var script=document.createElement('script');
-    script.src='assets/js/composer.js?v=20261029-termes-1"assets/js/preview-launcher.js?v=20261019-client-wording-1"></script></body></html>
+    script.src='assets/js/composer.js?v=20261029-termes-1';
+    document.body.appendChild(script);
+  }
+
+  function applyReadOnly(project){
+    document.body.dataset.campaignReadOnly='true';
+    window.STUDIO_COMPOSER_READ_ONLY=true;
+
+    var banner=document.getElementById('composer-readonly-banner');
+    if(banner)banner.hidden=false;
+    var title=document.getElementById('composer-page-title');
+    var lead=document.getElementById('composer-page-lead');
+    if(title)title.textContent='Revoir le contenu de votre campagne';
+    if(lead)lead.textContent='Consultez les situations, les réponses et les scores. Le contenu est verrouillé après transmission.';
+    var guidance=document.querySelector('.composer-customization-guidance');
+    if(guidance)guidance.style.display='none';
+    var objective=document.querySelector('.creation-objective');
+    if(objective){
+      var strong=objective.querySelector('strong');
+      var p=objective.querySelector('p');
+      if(strong)strong.textContent='Consultation du contenu';
+      if(p)p.textContent='Parcourez les chapitres et ouvrez les réponses pour revoir exactement le contenu de la campagne.';
+    }
+    var themeLink=document.getElementById('theme-link');
+    if(themeLink){
+      themeLink.textContent=project.theme_title||project.theme_slug||'Thématique';
+      themeLink.href=project.theme_slug?'theme-'+encodeURIComponent(project.theme_slug)+'.html?theme='+encodeURIComponent(project.theme_slug)+'&projectId='+encodeURIComponent(project.id):'bibliotheque.html';
+    }
+    var back=document.getElementById('composer-theme-back');
+    if(back)back.href='campagne-detail.html?projectId='+encodeURIComponent(project.id);
+    var next=document.getElementById('composer-next');
+    if(next){
+      next.hidden=false;
+      next.href='personnalisation.html?theme='+encodeURIComponent(project.theme_slug||'')+'&projectId='+encodeURIComponent(project.id);
+      next.textContent='Revoir les profils →';
+    }
+    var sticky=document.getElementById('sticky-step-copy');
+    if(sticky)sticky.textContent='Lecture seule';
+
+    function lockRenderedControls(){
+      var library=document.getElementById('library-button');
+      if(library)library.style.display='none';
+
+      document.querySelectorAll('[data-situation-input],[data-answer-input]').forEach(function(input){
+        input.readOnly=true;
+        input.setAttribute('aria-readonly','true');
+        input.style.pointerEvents='none';
+        input.style.background='var(--surface-soft)';
+        input.style.borderColor='var(--line)';
+      });
+      document.querySelectorAll('.composer-actions,.composer-save-row,.composer-inline-help,.composer-context-tag,.composer-field-guidance').forEach(function(el){
+        el.style.display='none';
+      });
+      document.querySelectorAll('[data-replace],[data-remove],[data-reset],[data-library-pick]').forEach(function(el){
+        el.style.display='none';
+        el.disabled=true;
+      });
+      document.querySelectorAll('[data-situation-card]').forEach(function(card){
+        card.style.background='var(--royal-blue-tint)';
+        card.style.borderColor='var(--line)';
+      });
+    }
+
+    document.addEventListener('click',function(event){
+      if(!document.body.dataset.campaignReadOnly)return;
+      if(event.target.closest('[data-replace],[data-remove],[data-reset],[data-library-pick],#library-button')){
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    },true);
+
+    lockRenderedControls();
+    var observer=new MutationObserver(lockRenderedControls);
+    var list=document.getElementById('situation-list');
+    var nav=document.getElementById('chapter-nav');
+    if(list)observer.observe(list,{childList:true,subtree:true});
+    if(nav)observer.observe(nav,{childList:true,subtree:true});
+  }
+
+  if(!projectId||!originalRequest){
+    loadComposerScript();
+    return;
+  }
+
+  originalRequest('/api/projects/'+encodeURIComponent(projectId)+'/composer').then(function(data){
+    var project=data&&data.project;
+    if(!project){
+      loadComposerScript();
+      return;
+    }
+    if(project.can_edit===false){
+      window.StudioAPI.request=function(path,options){
+        var method=String(options&&options.method||'GET').toUpperCase();
+        var ownProjectPath='/api/projects/'+encodeURIComponent(projectId);
+        var requestPath=String(path||'');
+
+        // En lecture seule uniquement, on neutralise le PATCH d'étape afin de
+        // laisser le contenu se charger sans autoriser d'autres écritures.
+        if(method==='PATCH'&&requestPath===ownProjectPath+'/progress'){
+          return Promise.resolve({project:project,readOnly:true});
+        }
+
+        // Une campagne programmée ou publiée reste non modifiable, mais le
+        // client doit pouvoir envoyer la demande ciblée prévue à cet effet.
+        if(method==='POST'&&requestPath===ownProjectPath+'/review/request-adjustment'){
+          return originalRequest.call(window.StudioAPI,path,options);
+        }
+
+        // Toutes les autres écritures concernant cette campagne restent bloquées.
+        if(method!=='GET'&&requestPath.indexOf(ownProjectPath)===0){
+          return Promise.reject(new Error('Campagne en lecture seule. Utilisez « Demander un ajustement » pour signaler un changement.'));
+        }
+        return originalRequest.call(window.StudioAPI,path,options);
+      };
+      applyReadOnly(project);
+    }else{
+      var themeLink=document.getElementById('theme-link');
+      if(themeLink){
+        themeLink.textContent=project.theme_title||project.theme_slug||'Thématique';
+        themeLink.href=project.theme_slug?'theme-'+encodeURIComponent(project.theme_slug)+'.html?theme='+encodeURIComponent(project.theme_slug)+'&projectId='+encodeURIComponent(project.id):'bibliotheque.html';
+      }
+    }
+    loadComposerScript();
+  }).catch(function(){
+    loadComposerScript();
+  });
+})();
+</script>
+<script src="assets/js/preview-launcher.js?v=20261019-client-wording-1"></script></body></html>
