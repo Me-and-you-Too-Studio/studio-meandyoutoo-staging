@@ -888,6 +888,34 @@
       : '';
     return primary + clone + kit + manage + '<details class="campaign-more" name="admin-campaign-actions-' + id + '"><summary>Autres actions</summary><div class="campaign-more-menu">' + more.join("") + sensitiveGroup + '</div></details>';
   }
+  // Passations lues chaque nuit sur la page stats du moteur (lecture seule, côté API).
+  const PUBLISHED_STATUSES = new Set(["scheduled", "published", "active", "unpublished", "closed", "completed"]);
+  function legacyStatsHtml(p) {
+    if (!String(p.communication_results_url || "").trim())
+      return PUBLISHED_STATUSES.has(p.status)
+        ? '<div class="admin-ad-stats is-missing"><strong>Stats non reliées</strong><span>Ajoutez le lien stats dans la gestion de campagne pour suivre les passations.</span></div>'
+        : "";
+    const last = p.legacy_stats_last || null,
+      failures = Number(p.legacy_stats_failures || 0),
+      value = p.legacy_stats_read_at
+        ? '<strong>' + fmt(p.legacy_stats_passations) + ' passation' + (Number(p.legacy_stats_passations) > 1 ? "s" : "") + '</strong><span>Lu le ' + dateTime(p.legacy_stats_read_at) + '</span>'
+        : '<strong>Stats pas encore lues</strong><span>Première lecture la nuit prochaine, ou maintenant avec le bouton.</span>',
+      failure = failures && last && !last.ok
+        ? '<span class="admin-ad-stats-error">Dernière lecture en échec' + (failures > 1 ? " (" + failures + " fois de suite)" : "") + ' : ' + esc(last.error_message || "erreur inconnue") + '</span>'
+        : "";
+    return '<div class="admin-ad-stats' + (failure ? " is-failing" : "") + '"><div>' + value + failure + '</div><button class="button button-secondary" type="button" data-refresh-stats="' + esc(p.id) + '">Actualiser les stats</button></div>';
+  }
+  function legacyCreditsHtml(remaining) {
+    if (!organization.legacy_stats_read_at)
+      return '<div class="admin-legacy-credits"><strong>Moteur stats</strong><span>Aucune lecture du moteur pour l’instant : les crédits ci-dessous restent ceux saisis à la main.</span></div>';
+    const credits = organization.legacy_stats_credits_remaining,
+      gap = credits == null || organization.pack_unlimited ? null : Number(credits) - remaining,
+      warning = gap ? '<span class="admin-legacy-credits-gap">Écart de ' + fmt(Math.abs(gap)) + ' crédit' + (Math.abs(gap) > 1 ? "s" : "") + ' avec le Studio (' + fmt(remaining) + ' restants saisis ici).</span>' : "";
+    return '<div class="admin-legacy-credits' + (warning ? " has-gap" : "") + '"><strong>Moteur stats</strong><span>' +
+      (credits == null ? "Crédit non affiché par le moteur" : fmt(credits) + " crédits restants") +
+      (organization.legacy_stats_pack_ends_on ? " · fin du pack le " + date(organization.legacy_stats_pack_ends_on) : "") +
+      " · lu le " + dateTime(organization.legacy_stats_read_at) + "</span>" + warning + "</div>";
+  }
   function card(p) {
     const st = normalizedStatus(p),
       theme = p.theme_title || p.legacy_theme_title || "Thématique",
@@ -965,7 +993,7 @@
       date(p.launch_date) +
       "<br>Fin : " +
       date(p.close_date) +
-      '</div><div class="admin-ad-actions">' +
+      '</div>' + legacyStatsHtml(p) + '<div class="admin-ad-actions">' +
       actions(p) +
       "</div>" + adminCommentPanel('project', p.id) + "</article>"
     );
@@ -1225,6 +1253,7 @@
       '<div class="admin-empty admin-empty-with-action"><strong>Aucun compte utilisateur</strong><span>Ajoutez le premier accès pour ce client directement depuis son dossier.</span><button class="button button-primary" type="button" data-add-client-user-empty>+ Ajouter un accès</button></div>';
     $("#client-credits").innerHTML =
       '<div class="admin-pack-heading"><div><span class="eyebrow">Gestion du pack</span><h2>Crédits et validité</h2><p>Renseignez manuellement les crédits et les dates tant que la synchronisation automatique du moteur n’est pas connectée.</p></div><span id="client-pack-status" class="admin-pack-status ' + (organization.pack_unlimited ? 'is-unlimited' : '') + '">' + (organization.pack_unlimited ? 'Pack illimité' : fmt(rem) + ' restants') + '</span></div>' +
+      legacyCreditsHtml(rem) +
       '<label>Crédits attribués<input id="client-quota" type="number" min="0" value="' +
       (organization.passations_quota || 0) +
       '"></label><label>Crédits utilisés<input id="client-used" type="number" min="0" value="' +
@@ -1925,6 +1954,11 @@
     const viewClient=$('#view-client-space');if(viewClient){viewClient.disabled=!organization?.id;viewClient.onclick=openClientPreview;}
     const createCampaign=$('#create-client-campaign');if(createCampaign){createCampaign.disabled=!organization?.id;createCampaign.onclick=openClientCampaignCreation;}
     $('#admin-theme-filter')?.addEventListener('change', (event) => { activeTheme = event.target.value; applyFilter(); });
+    $$('[data-refresh-stats]').forEach((btn) => btn.onclick = async () => {
+      btn.disabled = true; btn.textContent = 'Lecture en cours…';
+      try { await StudioAPI.request('/api/admin/projects/' + encodeURIComponent(btn.dataset.refreshStats) + '/legacy-stats/refresh', { method: 'POST' }); await load(); }
+      catch (error) { btn.disabled = false; btn.textContent = 'Échec · réessayer'; btn.title = error.message || ''; }
+    });
     $$('[data-admin-folder-filter]').forEach((btn) => btn.onclick = () => { activeFolder = btn.dataset.adminFolderFilter; render(); });
     $('[data-admin-folder-create]')?.addEventListener('click', async () => { const name = await askFolderValue("Nouveau dossier"); if (!name) return; await StudioAPI.request('/api/campaign-folders', { method: 'POST', body: JSON.stringify({ organizationId: organization.id, name }) }); await load(); });
     $$('[data-admin-folder-manage]').forEach((btn) => btn.onclick = async () => {
