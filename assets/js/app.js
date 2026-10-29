@@ -63,7 +63,7 @@
   ];
   var OWNERS={client:'À vous d’agir',team:'Chez Me&YouToo',auto:'Automatique'};
   var IN_REVIEW={step:1,owner:'team',next:'Me&YouToo relit votre configuration. Vous serez prévenu par notification et par e-mail dès qu’une action vous sera demandée.'};
-  var FINISHED={step:4,owner:'client',next:'Consultez vos résultats, puis lancez une nouvelle thématique : votre pack est valable sur tous les diagnostics Me&YouToo.'};
+  var FINISHED={step:4,owner:'client',next:'Consultez vos résultats. Vous pouvez ensuite relancer cette campagne avec les mêmes contenus et les mêmes liens, ou explorer une nouvelle thématique : votre pack est valable sur tous les diagnostics Me&YouToo.'};
   var JOURNEY={
     draft:{step:0,owner:'client',next:'Terminez la composition, la personnalisation et le paramétrage, puis transmettez votre configuration à Me&YouToo.'},
     configuration_submitted:IN_REVIEW,
@@ -73,14 +73,14 @@
     ready_to_publish:{step:2,owner:'team',next:'Me&YouToo prépare la mise en ligne aux dates prévues. Profitez-en pour préparer l’annonce à vos collaborateurs.'},
     scheduled:{step:2,owner:'auto',next:'La campagne s’ouvrira automatiquement à sa date de début. Préparez son annonce avec le kit de communication.'},
     published:{step:3,owner:'client',next:'Annoncez la campagne à vos collaborateurs avec le kit de communication.'},
-    active:{step:3,owner:'client',next:'Suivez la participation et relancez vos collaborateurs avec le kit de communication si besoin.'},
+    active:{step:3,owner:'client',next:'Suivez la participation et relancez vos collaborateurs avec le kit de communication si besoin. Il vous faut plus de temps ? Prolongez la campagne.'},
     unpublished:{step:4,owner:'client',next:'La campagne a été retirée. Reprogrammez-la pour la relancer avec les mêmes liens, ou lancez une nouvelle thématique.'},
     closed:FINISHED,
     completed:FINISHED,
     archived:FINISHED
   };
   window.StudioJourney={
-    // Frise complète : étapes, puis « qui agit » et la prochaine étape, avec un bouton facultatif {href,label}.
+    // Frise complète : étapes, puis « qui agit » et la prochaine étape, avec des boutons facultatifs [{href,label}] (le premier est principal).
     html:function(status,action,options){
       var j=JOURNEY[status];if(!j)return '';
       var done=j.step===4&&status!=='unpublished';
@@ -90,7 +90,7 @@
       }).join('')+'</ol>';
       if(options&&options.stepsOnly)return steps;
       return steps+'<div class="studio-journey-next is-'+j.owner+'"><span class="studio-journey-owner">'+esc(OWNERS[j.owner])+'</span><p><strong>Prochaine étape :</strong> '+esc(j.next)+'</p>'+
-        (action?'<a class="button button-primary" href="'+esc(action.href)+'">'+esc(action.label)+' →</a>':'')+'</div>';
+        [].concat(action||[]).map(function(a,i){return '<a class="button '+(i?'button-secondary':'button-primary')+'" href="'+esc(a.href)+'">'+esc(a.label)+(i?'':' →')+'</a>';}).join('')+'</div>';
     },
     // Version courte pour les cartes : progression en cinq segments et qui agit.
     mini:function(status){

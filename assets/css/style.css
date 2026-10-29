@@ -16681,6 +16681,7 @@ button[hidden],.button[hidden],.studio-modal [hidden]{display:none!important}
 .studio-journey-steps { margin: 14px 0 0; padding: 0; list-style: none; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .studio-journey-steps .studio-process-step { min-height: 0; }
 .studio-journey-next { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 16px; padding: 14px 16px; border-radius: var(--radius-sm); background: var(--royal-blue-tint); }
+.studio-journey-next .button { white-space: nowrap; }
 .studio-journey-next p { flex: 1 1 280px; margin: 0; color: var(--ink); line-height: 1.45; }
 .studio-journey-owner { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: .78rem; font-weight: 800; white-space: nowrap; }
 .is-client .studio-journey-owner { background: var(--sunny-yellow-soft); color: var(--warning); }

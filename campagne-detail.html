@@ -7,7 +7,7 @@
 <meta name="description" content="Suivez votre campagne Me&YouToo et accédez à ses liens réels.">
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20261029-parcours-2">
+<link rel="stylesheet" href="assets/css/style.css?v=20261029-parcours-3">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -23,7 +23,7 @@
 </div>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20261019-client-preview-1"></script>
-<script src="assets/js/app.js?v=20261029-parcours-2"></script>
+<script src="assets/js/app.js?v=20261029-parcours-3"></script>
 <script src="assets/js/content-adjustment.js?v=20260903-nested-adjustment-1"></script>
 <script>
 (function(){
@@ -202,7 +202,13 @@
     else if(['configuration_submitted','review_pending','in_review'].includes(key))action={href:'validation.html'+q,label:'Suivre la relecture'};
     else if(['ready_to_publish','scheduled','published','active'].includes(key)&&can('manage_kit'))action={href:kitHref(p),label:'Ouvrir le kit de communication'};
     else if(['closed','completed','archived','unpublished'].includes(key)&&can('create_campaigns'))action={href:'bibliotheque.html',label:'Choisir une nouvelle thématique'};
-    var html=window.StudioJourney.html(key,action);
+    var actions=[].concat(action||[]),lifecycle='mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=';
+    if(can('manage_schedule')){
+      // Mêmes règles que les actions de la campagne : on reprogramme une campagne arrêtée, on prolonge une campagne encore publiée.
+      if(['unpublished','closed','completed','archived'].includes(p.status))actions.push({href:lifecycle+'reprogram',label:'Reprogrammer avec les mêmes liens'});
+      else if(['scheduled','published','active'].includes(p.status)&&['scheduled','published','active','closed'].includes(key))actions.push({href:lifecycle+'extend',label:'Prolonger'});
+    }
+    var html=window.StudioJourney.html(key,actions);
     return html?'<section class="card studio-journey" aria-labelledby="journey-title"><h2 class="section-title" id="journey-title">Où en est votre campagne ?</h2>'+html+'</section>':'';
   }
   function campaignEnded(p){
