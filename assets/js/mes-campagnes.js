@@ -796,6 +796,7 @@
       (folderById(p.folder_id) ? '<span class="campaign-folder-tag">📁 ' + esc(folderById(p.folder_id).name) + '</span>' : "") +
       extraBadges(p) +
       "</div>" +
+      window.StudioJourney.mini(statusKey(p)) +
       projectContextDisclosure(p) +
       themeWarning +
       (["unpublished", "closed", "completed", "archived"].includes(p.status)

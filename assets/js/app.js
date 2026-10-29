@@ -53,11 +53,64 @@
     text:function(term){return GLOSSARY[term]?GLOSSARY[term].text:'';},
     dot:function(term){return GLOSSARY[term]?dot(GLOSSARY[term].title,GLOSSARY[term].text):'';}
   };
+  // Frise de vie d'une campagne : cinq grandes étapes, qui agit maintenant et ce qui vient ensuite.
+  var JOURNEY_STEPS=[
+    {label:'Création',hint:'Composer, personnaliser, paramétrer'},
+    {label:'Relecture',hint:'Vérification par Me&YouToo'},
+    {label:'Mise en ligne',hint:'Programmation aux dates prévues'},
+    {label:'Diffusion',hint:'Vos collaborateurs répondent'},
+    {label:'Résultats',hint:'Analyser et poursuivre'}
+  ];
+  var OWNERS={client:'À vous d’agir',team:'Chez Me&YouToo',auto:'Automatique'};
+  var IN_REVIEW={step:1,owner:'team',next:'Me&YouToo relit votre configuration. Vous serez prévenu par notification et par e-mail dès qu’une action vous sera demandée.'};
+  var FINISHED={step:4,owner:'client',next:'Consultez vos résultats, puis lancez une nouvelle thématique : votre pack est valable sur tous les diagnostics Me&YouToo.'};
+  var JOURNEY={
+    draft:{step:0,owner:'client',next:'Terminez la composition, la personnalisation et le paramétrage, puis transmettez votre configuration à Me&YouToo.'},
+    configuration_submitted:IN_REVIEW,
+    review_pending:IN_REVIEW,
+    in_review:IN_REVIEW,
+    client_validation_required:{step:1,owner:'client',next:'Me&YouToo vous propose des corrections : validez-les pour passer à la mise en ligne.'},
+    ready_to_publish:{step:2,owner:'team',next:'Me&YouToo prépare la mise en ligne aux dates prévues. Profitez-en pour préparer l’annonce à vos collaborateurs.'},
+    scheduled:{step:2,owner:'auto',next:'La campagne s’ouvrira automatiquement à sa date de début. Préparez son annonce avec le kit de communication.'},
+    published:{step:3,owner:'client',next:'Annoncez la campagne à vos collaborateurs avec le kit de communication.'},
+    active:{step:3,owner:'client',next:'Suivez la participation et relancez vos collaborateurs avec le kit de communication si besoin.'},
+    unpublished:{step:4,owner:'client',next:'La campagne a été retirée. Reprogrammez-la pour la relancer avec les mêmes liens, ou lancez une nouvelle thématique.'},
+    closed:FINISHED,
+    completed:FINISHED,
+    archived:FINISHED
+  };
+  window.StudioJourney={
+    // Frise complète : étapes, puis « qui agit » et la prochaine étape, avec un bouton facultatif {href,label}.
+    html:function(status,action,options){
+      var j=JOURNEY[status];if(!j)return '';
+      var done=j.step===4&&status!=='unpublished';
+      var steps='<ol class="studio-process-steps studio-journey-steps">'+JOURNEY_STEPS.map(function(s,i){
+        var state=i<j.step||(done&&i===j.step)?'is-done':i===j.step?'is-current':'';
+        return '<li class="studio-process-step '+state+'"'+(i===j.step?' aria-current="step"':'')+'><span aria-hidden="true">'+(state==='is-done'?'✓':i+1)+'</span><strong>'+esc(s.label)+'</strong><small>'+esc(s.hint)+'</small></li>';
+      }).join('')+'</ol>';
+      if(options&&options.stepsOnly)return steps;
+      return steps+'<div class="studio-journey-next is-'+j.owner+'"><span class="studio-journey-owner">'+esc(OWNERS[j.owner])+'</span><p><strong>Prochaine étape :</strong> '+esc(j.next)+'</p>'+
+        (action?'<a class="button button-primary" href="'+esc(action.href)+'">'+esc(action.label)+' →</a>':'')+'</div>';
+    },
+    // Version courte pour les cartes : progression en cinq segments et qui agit.
+    mini:function(status){
+      var j=JOURNEY[status];if(!j)return '';
+      var done=j.step===4&&status!=='unpublished';
+      return '<div class="studio-journey-mini is-'+j.owner+'"><ol aria-hidden="true">'+JOURNEY_STEPS.map(function(s,i){return '<li class="'+(i<j.step||(done&&i===j.step)?'is-done':i===j.step?'is-current':'')+'"></li>';}).join('')+'</ol>'+
+        '<span>Phase '+(j.step+1)+'/5 · '+esc(JOURNEY_STEPS[j.step].label)+'</span><span class="studio-journey-owner">'+esc(OWNERS[j.owner])+'</span></div>';
+    }
+  };
+
   // Les libellés statiques portent data-glossary="terme" : le point « i » est ajouté ici.
   function decorate(){
     document.querySelectorAll('[data-glossary]:not([data-glossary-ready])').forEach(function(el){
       el.setAttribute('data-glossary-ready','');
       el.insertAdjacentHTML('beforeend',' '+window.StudioGlossary.dot(el.getAttribute('data-glossary')));
+    });
+    // data-journey="statut" : étapes de la frise seules, pour les pages statiques.
+    document.querySelectorAll('[data-journey]:not([data-journey-ready])').forEach(function(el){
+      el.setAttribute('data-journey-ready','');
+      el.innerHTML=window.StudioJourney.html(el.getAttribute('data-journey'),null,{stepsOnly:true});
     });
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',decorate);else decorate();
