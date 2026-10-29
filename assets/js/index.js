@@ -99,17 +99,17 @@
     topicsRoot.innerHTML=intro+cards+more;
   }
 
-  // ── Gamification : mesure l'activation du programme Studio, jamais le niveau d'inclusion. ──
+  // ── Gamification : mesure l'activation du parcours Studio, jamais le niveau d'inclusion. ──
   var RESPONDENTS_INFO='Un même collaborateur peut répondre plusieurs fois, le questionnaire étant anonyme : les répondants correspondent au nombre de questionnaires complétés. Chiffres mis à jour chaque nuit.';
   function plural(n,word){return number(n)+' '+word+(Number(n)>1?'s':'');}
 
   // Paliers du pack : un pack consommé est une réussite, jamais présenté en rouge.
   function packStage(percent,remaining,explored,themesTotal){
-    if(percent>=90)return {title:'Votre pack est presque entièrement utilisé',text:'Plus que '+plural(remaining,'passation')+'. Commandez dès maintenant pour ne pas interrompre votre programme.',cta:'urgent'};
+    if(percent>=90)return {title:'Votre pack est presque entièrement utilisé',text:'Plus que '+plural(remaining,'passation')+'. Commandez dès maintenant pour ne pas interrompre votre parcours.',cta:'urgent'};
     if(percent>=80)return {title:'Votre pack est utilisé à '+percent+' %',text:'Il vous reste '+plural(remaining,'passation')+'. Anticipez vos prochaines campagnes.',cta:'pulse'};
     if(percent>=50)return {title:'Déjà la moitié de votre pack utilisée',text:'Vous avez activé '+explored+' thématique'+(explored>1?'s':'')+' sur les '+themesTotal+' disponibles.',cta:''};
-    if(percent>=25)return {title:'Votre programme prend vie',text:plural(remaining,'passation')+' encore disponibles pour de nouvelles campagnes.',cta:''};
-    return {title:'Votre programme démarre',text:plural(remaining,'passation')+' disponibles, valables sur tous les diagnostics Me&YouToo.',cta:''};
+    if(percent>=25)return {title:'Votre parcours prend vie',text:plural(remaining,'passation')+' encore disponibles pour de nouvelles campagnes.',cta:''};
+    return {title:'Votre parcours démarre',text:plural(remaining,'passation')+' disponibles, valables sur tous les diagnostics Me&YouToo.',cta:''};
   }
   function packCard(organization,explored,themesTotal){
     if(!organization||organization.pack_unlimited)return '';
@@ -141,7 +141,7 @@
     var quota=Number(organization&&organization.passations_quota)||0,used=Number(organization&&organization.passations_used)||0;
     if(organization&&!organization.pack_unlimited&&quota>0&&used/quota>=0.8)return {title:'Anticipez votre prochaine commande',text:'Votre pack est presque utilisé : sécurisez vos prochaines campagnes.',href:'packs.html',cta:'Commander des passations'};
     if(g.exploredThemes.length<themesTotal)return {title:'Explorez une nouvelle thématique',text:'Vous avez exploré '+g.exploredThemes.length+' thématique'+(g.exploredThemes.length>1?'s':'')+' sur '+themesTotal+'. Votre pack est valable sur tous les diagnostics.',href:'bibliotheque.html',cta:'Découvrir les diagnostics'};
-    return {title:'Lancez votre prochaine campagne',text:'Votre programme est complet : gardez la dynamique avec une nouvelle vague.',href:'bibliotheque.html',cta:'Composer une campagne'};
+    return {title:'Lancez votre prochaine campagne',text:'Vous avez exploré toutes les thématiques : gardez la dynamique avec une nouvelle vague.',href:'bibliotheque.html',cta:'Composer une campagne'};
   }
   function nextCard(step){
     return '<article class="sp-card sp-next">'+
@@ -152,21 +152,30 @@
     '</article>';
   }
 
-  function missionsCard(g){
-    var explored=g.exploredThemes.length,r=g.respondentsTotal,best=g.bestParticipation;
-    var missions=[
-      {label:'Lancer votre première campagne',done:g.launchedCampaigns>=1},
-      r==null?null:{label:'Atteindre 50 répondants',done:r>=50,hint:number(Math.min(r,50))+' / 50'},
-      {label:'Explorer une deuxième thématique',done:explored>=2,hint:Math.min(explored,2)+' / 2'},
-      best==null?null:{label:'Atteindre 75 % de participation sur une campagne',done:best>=75,hint:best?'meilleure campagne : '+best+' %':''},
-      r==null?null:{label:'Atteindre 1 000 répondants',done:r>=1000,hint:number(Math.min(r,1000))+' / 1 000'},
-      {label:'Explorer 5 thématiques',done:explored>=5,hint:Math.min(explored,5)+' / 5'}
-    ].filter(Boolean);
-    var done=missions.filter(function(m){return m.done;}).length;
+  // Missions en échelles progressives : pour chaque axe, le dernier palier franchi puis le prochain.
+  function ladder(value,steps,label,unit){
+    if(value==null)return {reached:0,items:[]};
+    var reached=steps.filter(function(s){return value>=s;}),next=steps.find(function(s){return value<s;});
+    var items=[];
+    if(reached.length)items.push({label:label(reached[reached.length-1]),done:true});
+    if(next!=null)items.push({label:label(next),done:false,hint:number(value)+(unit||'')+' / '+number(next)+(unit||''),progress:Math.round(value/next*100)});
+    return {reached:reached.length,items:items};
+  }
+  function missionsCard(g,themesTotal){
+    var explored=g.exploredThemes.length,r=g.respondentsTotal;
+    var themeSteps=[2,3,5,8].filter(function(s){return s<themesTotal;}).concat(themesTotal>1?[themesTotal]:[]);
+    var axes=[
+      ladder(g.launchedCampaigns,[1,2,5,10,20],function(s){return s===1?'Lancer votre première campagne':'Lancer '+s+' campagnes';}),
+      ladder(r,[50,100,250,500,1000,2500,5000,10000],function(s){return 'Atteindre '+number(s)+' répondants';}),
+      ladder(g.bestParticipation||0,[50,75,100],function(s){return s===100?'Atteindre 100 % de votre objectif sur une campagne':'Atteindre '+s+' % de participation sur une campagne';},' %'),
+      ladder(explored,themeSteps,function(s){return s===themesTotal?'Explorer toutes les thématiques ('+s+')':s===2?'Explorer une deuxième thématique':'Explorer '+s+' thématiques';})
+    ];
+    var reached=axes.reduce(function(sum,a){return sum+a.reached;},0);
+    var missions=axes.reduce(function(list,a){return list.concat(a.items);},[]);
     return '<article class="sp-card sp-missions">'+
-      '<header class="sp-head"><span class="sp-eyebrow">Vos missions Studio</span><strong class="sp-figure">'+done+'/'+missions.length+'</strong></header>'+
-      (r!=null?'<p class="sp-meta">'+plural(r,'répondant')+' depuis le début de votre programme <button type="button" class="admin-info-dot" data-info="'+esc(RESPONDENTS_INFO)+'" aria-label="Comprendre le nombre de répondants" aria-haspopup="dialog">i</button></p>':'')+
-      '<ul class="sp-mission-list">'+missions.map(function(m){return '<li class="'+(m.done?'is-done':'')+'"><span class="sp-check" aria-hidden="true">'+(m.done?'✓':'')+'</span><span>'+esc(m.label)+(m.done||!m.hint?'':'<small>'+esc(m.hint)+'</small>')+'</span><span class="visually-hidden">'+(m.done?'accomplie':'à accomplir')+'</span></li>';}).join('')+'</ul>'+
+      '<header class="sp-head"><span class="sp-eyebrow">Vos missions Studio</span><strong class="sp-figure">'+reached+'<small> palier'+(reached>1?'s':'')+'</small></strong></header>'+
+      (r!=null?'<p class="sp-meta">'+plural(r,'répondant')+' depuis votre première campagne <button type="button" class="admin-info-dot" data-info="'+esc(RESPONDENTS_INFO)+'" aria-label="Comprendre le nombre de répondants" aria-haspopup="dialog">i</button></p>':'')+
+      '<ul class="sp-mission-list">'+missions.map(function(m){return '<li class="'+(m.done?'is-done':'')+'"><span class="sp-check" aria-hidden="true">'+(m.done?'✓':'')+'</span><span>'+esc(m.label)+(m.done?'':'<small>'+esc(m.hint)+'</small><i class="sp-mini-bar" aria-hidden="true"><b style="width:'+Math.min(100,m.progress)+'%"></b></i>')+'</span><span class="visually-hidden">'+(m.done?'palier franchi':'prochain palier')+'</span></li>';}).join('')+'</ul>'+
     '</article>';
   }
 
@@ -176,7 +185,7 @@
     return '<article class="sp-card sp-coverage">'+
       '<header class="sp-head"><span class="sp-eyebrow">Votre couverture D&amp;I</span><strong class="sp-figure">'+count+'<small> / '+themes.length+'</small></strong></header>'+
       '<h3>'+plural(count,'thématique')+' explorée'+(count>1?'s':'')+' sur '+themes.length+'</h3>'+
-      '<p class="sp-meta">Votre pack est valable sur tous les diagnostics Me&amp;YouToo : chaque nouvelle thématique enrichit votre programme.</p>'+
+      '<p class="sp-meta">Votre pack est valable sur tous les diagnostics Me&amp;YouToo : chaque nouvelle thématique enrichit votre parcours.</p>'+
       '<div class="sp-theme-grid">'+themes.map(function(t){var slug=String(t.slug||'').replace(/[^a-z0-9-]/g,''),on=explored.has(t.slug);
         return '<a class="sp-theme'+(on?' is-explored':'')+'" href="'+themePage(slug)+'"><span class="sp-theme-state" aria-hidden="true">'+(on?'✓':'+')+'</span><span>'+esc(t.title)+'</span><small>'+(on?'Explorée':'À explorer')+'</small></a>';}).join('')+'</div>'+
     '</article>';
@@ -188,7 +197,7 @@
     var old=document.getElementById('studio-progress');if(old)old.remove();
     grid.insertAdjacentHTML('afterend','<section class="studio-progress" id="studio-progress" aria-label="Votre progression Studio">'+
       '<div class="sp-row">'+packCard(data.organization,g.exploredThemes.length,themes.length)+nextCard(nextStep(g,data.organization,themes.length))+'</div>'+
-      '<div class="sp-row">'+missionsCard(g)+coverageCard(g,themes)+'</div>'+
+      '<div class="sp-row">'+missionsCard(g,themes.length)+coverageCard(g,themes)+'</div>'+
     '</section>');
     // Les jauges se remplissent à l'affichage.
     setTimeout(function(){document.querySelectorAll('#studio-progress .sp-bar-fill').forEach(function(bar){bar.style.width=bar.dataset.width+'%';});},60);

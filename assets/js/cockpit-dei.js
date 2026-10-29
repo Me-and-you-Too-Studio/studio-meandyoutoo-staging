@@ -27,7 +27,7 @@
       root.innerHTML='<div class="dy-head"><p class="eyebrow">Votre année avec Me&amp;YouToo</p><h2>Votre frise démarre avec votre première campagne</h2><p>Chaque campagne lancée viendra s’ajouter ici, avec sa participation.</p></div><a class="button button-primary sp-cta is-pulse" href="bibliotheque.html">Découvrir les diagnostics →</a>';
       root.hidden=false;return;
     }
-    // Participations rapportées au lancement du programme (première campagne), pas à une fenêtre de 12 mois.
+    // Participations rapportées à la première campagne, pas à une fenêtre de 12 mois.
     var participations=started.reduce(function(s,c){return s+(Number(c.respondents)||0);},0);
     var first=started[0]?day(started[0].launch_date):null;
     var days=first?Math.max(1,Math.round((now-first)/(1000*60*60*24))):0;
@@ -56,9 +56,9 @@
         '<article class="'+(progress>=0?'is-progress':'')+'"><span>Depuis votre première campagne</span><strong>'+(progress>=0?'+':'')+progress+' pts</strong><small>de participation</small></article>'+
       '</div>';
     }
-    root.innerHTML='<div class="dy-head"><p class="eyebrow">Votre programme avec Me&amp;YouToo</p>'+
-        '<h2><span class="dy-count">'+num(participations)+'</span> participation'+(participations>1?'s':'')+' enregistrée'+(participations>1?'s':'')+(since?' depuis le lancement de votre programme':'')+' <button type="button" class="admin-info-dot" data-info="'+esc(INFO)+'" aria-label="Comprendre les participations" aria-haspopup="dialog">i</button></h2>'+
-        '<p>'+(since?'Lancement de votre première campagne le '+esc(since)+' · programme actif depuis '+months+' mois'+(perWeek?' · environ '+num(perWeek)+' participations par semaine':'')+' · ':'')+campaigns.length+' campagne'+(campaigns.length>1?'s':'')+' · '+themes+' thématique'+(themes>1?'s':'')+' explorée'+(themes>1?'s':'')+'</p></div>'+
+    root.innerHTML='<div class="dy-head"><p class="eyebrow">Votre parcours avec Me&amp;YouToo</p>'+
+        '<h2><span class="dy-count">'+num(participations)+'</span> participation'+(participations>1?'s':'')+' enregistrée'+(participations>1?'s':'')+(since?' depuis votre première campagne':'')+' <button type="button" class="admin-info-dot" data-info="'+esc(INFO)+'" aria-label="Comprendre les participations" aria-haspopup="dialog">i</button></h2>'+
+        '<p>'+(since?'Première campagne le '+esc(since)+' · actif depuis '+months+' mois'+(perWeek?' · environ '+num(perWeek)+' participations par semaine':'')+' · ':'')+campaigns.length+' campagne'+(campaigns.length>1?'s':'')+' · '+themes+' thématique'+(themes>1?'s':'')+' explorée'+(themes>1?'s':'')+'</p></div>'+
       (items?'<ol class="dy-timeline">'+items+'</ol>':'<p class="dy-empty">Aucune campagne sur les 12 derniers mois.</p>')+
       bench+
       '<div class="dy-next"><span>Gardez la dynamique : planifiez votre prochaine campagne.</span><a class="button button-primary sp-cta is-pulse" href="bibliotheque.html">Choisir une thématique →</a></div>';
