@@ -581,7 +581,8 @@
     { href: 'bibliotheque.html', label: 'Catalogue', icon: '<path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M8 8v8M16 8v8"/>' },
     { href: 'notifications.html?audience=client', label: 'Notifications', notificationBadge: true, icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>' },
     { href: 'cockpit-dei.html?audience=client', label: 'Cockpit DEI', permission:'view_dei_cockpit', icon: '<path d="M4 19v-6M10 19V9M16 19V5M22 19H2"/><path d="m4 9 5-3 5 2 6-5"/>' },
-    { href: 'ressources.html', label: 'Ressources', icon: '<path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/>' }
+    { href: 'ressources.html', label: 'Ressources', icon: '<path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/>' },
+    { href: 'offres.html', label: 'Nos offres', icon: '<path d="M20 12v8H4v-8M2 7h20v5H2zM12 20V7"/><path d="M12 7H8a2 2 0 1 1 0-4c3 0 4 4 4 4zM12 7h4a2 2 0 1 0 0-4c-3 0-4 4-4 4z"/>' }
   ];
 
   var NAV_ADMIN = [
@@ -590,6 +591,7 @@
     { href: 'admin.html?tab=clients&filter=pack', label: 'Demandes de passations', icon: '<path d="M3 7h18v12H3z"/><path d="M6 7V5h12v2"/>' },
     { href: 'admin.html?tab=accounts', label: 'Comptes & accès', icon: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 3-7 6-7"/><path d="M16 11v6M13 14h6"/>' },
     { href: 'admin.html?tab=library', label: 'Catalogue', icon: '<path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M8 8v8M16 8v8"/>' },
+    { href: 'offres.html', label: 'Offres & demandes', icon: '<path d="M20 12v8H4v-8M2 7h20v5H2zM12 20V7"/><path d="M12 7H8a2 2 0 1 1 0-4c3 0 4 4 4 4zM12 7h4a2 2 0 1 0 0-4c-3 0-4 4-4 4z"/>' },
     { href: 'admin.html?tab=media', label: 'Médiathèque', icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/>' },
     { href: 'notifications.html', label: 'Notifications', icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>' }
   ];
