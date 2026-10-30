@@ -1,5 +1,6 @@
 /* Vitrine des offres Me&YouToo : site public (avec public.css) et Studio (avec style.css). */
 .offers-section{--of-ink:#273a64;--of-muted:#54607e;--of-line:#e2e7f1;--of-teal:#007883;--of-teal-soft:#e6f4f5;--of-yellow-soft:#fff6dd;}
+.offer-dialog{--of-ink:#273a64;--of-muted:#54607e;--of-line:#ccd6e4;--of-teal:#007883;--of-teal-soft:#e6f4f5;--of-yellow-soft:#fff6dd;color:var(--of-ink);}
 [data-offers-root]{--of-ink:#273a64;--of-muted:#54607e;--of-line:#e2e7f1;--of-teal:#007883;--of-teal-soft:#e6f4f5;--of-yellow-soft:#fff6dd;color:var(--of-ink);}
 .offers-section .offers-heading{max-width:760px;margin-bottom:24px}
 .offers-section .offers-heading p:not(.kicker){color:var(--of-muted)}
@@ -35,7 +36,8 @@
 .offer-dialog form{display:flex;flex-direction:column;gap:12px;padding:24px;max-height:85vh;overflow:auto}
 .offer-dialog h2{margin:0 0 4px}
 .offer-field{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:.9rem;flex:1}
-.offer-field input,.offer-field textarea,.offer-field select{font:inherit;font-weight:400;border:1px solid var(--of-line);border-radius:10px;padding:9px 11px}
+.offer-field input,.offer-field textarea,.offer-field select{font:inherit;font-weight:400;border:1px solid var(--of-line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--of-ink)}
+.offer-field input:focus,.offer-field textarea:focus,.offer-field select:focus{outline:3px solid rgba(0,120,131,.12);border-color:var(--of-teal)}
 .offer-field-row{display:flex;gap:12px;flex-wrap:wrap}
 .offer-check{display:flex;gap:8px;align-items:center;font-size:.9rem}
 .offer-form-error{color:#b42318;margin:0}
