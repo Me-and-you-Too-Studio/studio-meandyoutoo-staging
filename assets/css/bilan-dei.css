@@ -18,10 +18,14 @@ body{margin:0;background:#e9edf4;color:var(--blue);font:14px/1.5 "Segoe UI",syst
 .bl-page h3{margin:22px 0 8px;font-size:16px;color:var(--teal)}
 .bl-page h3 small{color:var(--muted);font-weight:400;font-size:13px;margin-left:6px}
 .bl-note{color:var(--muted);font-size:13px;margin:6px 0}
+.bl-complete{margin:14px 0 4px;padding:12px 14px;border-radius:12px;background:var(--teal-soft);border-left:4px solid var(--teal);break-inside:avoid}
+.bl-complete p{margin:4px 0 0;font-size:13px;color:var(--blue)}
 /* Couverture */
 .bl-cover{min-height:250mm;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(160deg,#fff 55%,var(--blue-soft))}
 .bl-cover-logos{display:flex;justify-content:space-between;align-items:center;gap:20px}
 .bl-cover-logos img{max-height:56px;max-width:45%;object-fit:contain}
+.bl-client-logo-wrap{display:flex;justify-content:center;align-items:center;margin:10mm 0 6mm}
+.bl-client-logo{max-height:150px;max-width:75%;object-fit:contain}
 .bl-eyebrow{margin:0;text-transform:uppercase;letter-spacing:.12em;font-weight:700;color:var(--teal)}
 .bl-cover h1{margin:4px 0;font-size:96px;line-height:1;color:var(--blue)}
 .bl-org{margin:8px 0 0;font-size:28px;font-weight:700}
@@ -58,7 +62,7 @@ body{margin:0;background:#e9edf4;color:var(--blue);font:14px/1.5 "Segoe UI",syst
 .bl-table td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 .bl-table tr{break-inside:avoid}
 .bl-table small{color:var(--muted)}
-.bl-actions{table-layout:fixed}.bl-actions th:nth-child(1){width:13%}.bl-actions th:nth-child(2){width:40%}.bl-actions th:nth-child(3){width:26%}.bl-actions th:nth-child(4){width:8%}.bl-actions th:nth-child(5){width:13%}
+.bl-actions{table-layout:fixed}.bl-actions th:nth-child(1){width:12%}.bl-actions th:nth-child(2){width:37%}.bl-actions th:nth-child(3){width:23%}.bl-actions th:nth-child(4){width:15%}.bl-actions th:nth-child(5){width:13%}
 .bl-docs{display:block;margin-top:2px;color:var(--muted);font-size:11.5px}
 .bl-st{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;white-space:nowrap;background:var(--blue-soft)}
 .bl-st.st-done{background:var(--ok-soft);color:var(--ok)}
@@ -73,7 +77,9 @@ body{margin:0;background:#e9edf4;color:var(--blue);font:14px/1.5 "Segoe UI",syst
 .bl-cta img{width:80px;background:#fff;border-radius:10px;padding:6px}
 .bl-cta p{margin:6px 0 0;font-size:13px;opacity:.92}
 .bl-cta .bl-cta-link{font-weight:700;color:var(--yellow);opacity:1}
-.bl-footer{text-align:center;color:var(--muted);font-size:12px;padding-bottom:24px}
+.bl-cta a{color:var(--yellow)}
+.bl-footer a{color:var(--teal)}
+.bl-footer{margin-top:18px;text-align:center;color:var(--muted);font-size:12px;padding-bottom:24px}
 @media (max-width:640px){.bl-page{padding:20px 16px}.bl-kpis{grid-template-columns:repeat(2,1fr)}.bl-frise{grid-template-columns:repeat(3,minmax(0,1fr))}.bl-cover h1{font-size:64px}.bl-cover{min-height:0;gap:40px}.bl-actions th:nth-child(3),.bl-actions td:nth-child(3){display:none}}
 @page{size:A4;margin:12mm}
 @media print{
@@ -90,3 +96,10 @@ body{margin:0;background:#e9edf4;color:var(--blue);font:14px/1.5 "Segoe UI",syst
 .bl-plan-count{font-weight:700;color:var(--teal);font-size:12.5px;white-space:nowrap}
 .bl-reco{margin-top:8px;font-size:12.5px}
 .bl-reco em{font-style:normal;margin-left:4px}
+/* Export PDF direct (html2pdf) : même rendu que l'impression, une page A4 par section */
+body.is-exporting{background:#fff}
+body.is-exporting .bl-doc{max-width:none;width:190mm;margin:0;padding:0}
+body.is-exporting .bl-page{box-shadow:none;border-radius:0;padding:2mm 2mm 0;margin:0;break-after:auto}
+body.is-exporting .bl-cover{min-height:270mm}
+body.is-exporting .bl-footer{padding:4mm 0 0}
+@media print{.bl-page:last-child{break-after:auto}}

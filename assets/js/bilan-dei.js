@@ -58,7 +58,8 @@
 
     // 1. Couverture
     html+='<section class="bl-page bl-cover">'+
-      '<div class="bl-cover-logos"><img src="assets/img/brand/logo-studio-blue.png" alt="Le Studio Me&amp;YouToo">'+(logo?'<img class="bl-client-logo" src="'+esc(logo)+'" alt="'+esc(org)+'" onerror="this.remove()">':'')+'</div>'+
+      '<div class="bl-cover-logos"><img src="assets/img/brand/logo-studio-blue.png" alt="Le Studio Me&amp;YouToo"></div>'+
+      (logo?'<div class="bl-client-logo-wrap"><img class="bl-client-logo" data-src="'+esc(logo)+'" alt="'+esc(org)+'"></div>':'')+
       '<div class="bl-cover-title"><p class="bl-eyebrow">Bilan diversité &amp; inclusion</p><h1>'+year+'</h1>'+(org?'<p class="bl-org">'+esc(org)+'</p>':'')+
       '<p class="bl-cover-intro">Actions menées, personnes touchées, objectifs et perspectives : la synthèse de l’année, prête à partager avec la direction, le CSE ou dans le rapport RSE.</p></div>'+
       '<p class="bl-cover-foot">Généré le '+esc(generated)+(year>=new Date().getFullYear()?' · année en cours : les chiffres évolueront jusqu’au 31 décembre':'')+'</p></section>';
@@ -75,6 +76,8 @@
     }).join('')+(participation!=null?'<div class="bl-kpi"><strong>'+participation+' %</strong><span>participation moyenne aux diagnostics</span></div>':'')+'</div>'+
       (ind.planned?'<p class="bl-note">'+(ind.planned>1?num(ind.planned)+' autres actions en cours ou prévues':'1 autre action en cours ou prévue')+' sur l’année.</p>':'')+
       (pind&&(pind.actions||pind.peopleReached)?'<p class="bl-note">Les variations sont calculées par rapport à votre année '+(year-1)+'.</p>':'')+
+      // Le bilan ne reflète que ce qui est saisi : on invite à compléter le Cockpit puis à le télécharger à nouveau.
+      '<div class="bl-complete"><strong>📝 Un bilan aussi complet que votre Cockpit</strong><p>Ce bilan reprend les actions enregistrées dans votre Cockpit DEI. Pour qu’il reflète tout ce que vous avez fait, ajoutez-y toutes vos actions de l’année, y compris celles menées en interne ou avec d’autres prestataires (événements, réseaux, enquêtes, formations…), puis téléchargez à nouveau votre bilan : il se met à jour automatiquement.</p></div>'+
       formatsBlock(d,list)+themesBlock(list)+
       '<h3>La frise de l’année</h3>'+frise(d,list)+'</section>';
 
@@ -108,7 +111,7 @@
       var inQ=list.filter(function(i){return Math.floor((Number(String(i.date).slice(5,7))-1)/3)+1===q;});
       html+='<h3>'+q+(q===1?'er':'e')+' trimestre <small>'+plural(inQ.length,'action')+'</small></h3>';
       if(!inQ.length){html+='<p class="bl-note">Aucune action ce trimestre.</p>';return;}
-      html+='<table class="bl-table bl-actions"><thead><tr><th>Date</th><th>Action</th><th>Thématiques et public</th><th>Pers.</th><th>Statut</th></tr></thead><tbody>'+inQ.map(function(i){
+      html+='<table class="bl-table bl-actions"><thead><tr><th>Date</th><th>Action</th><th>Thématiques et public</th><th>Participations</th><th>Statut</th></tr></thead><tbody>'+inQ.map(function(i){
         var k=kindOf(d,i.kind);
         var sub=[k.label,i.provider?'par '+i.provider:''].filter(Boolean).join(' · ');
         var docs=i.documents.length?'<span class="bl-docs">📎 '+i.documents.map(function(x){return esc(x.filename);}).join(', ')+'</span>':'';
@@ -127,9 +130,14 @@
     notices.forEach(function(n){html+='<div class="bl-notice"><strong>'+esc(n.title)+'</strong><p>'+esc(n.text)+'</p></div>';});
     html+='<h3>Temps forts à ne pas manquer</h3><ul class="bl-list">'+EVENTS.map(function(e){return '<li><span>'+esc(e[0])+'</span> '+esc(e[1])+'</li>';}).join('')+'</ul>'+
       '<div class="bl-cta"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&amp;YouToo"><div><strong>Construire votre plan '+(year+1)+' avec Me&amp;YouToo</strong>'+
-      '<p>Diagnostics comportementaux, conférences, formations, ateliers, vidéos et e-learning : nous vous aidons à bâtir une année D&amp;I continue, au plus près de vos enjeux. Demandez un accompagnement depuis votre Cockpit DEI ou écrivez-nous.</p><p class="bl-cta-link">meandyoutoo.app</p></div></div></section>';
-    doc.innerHTML=html+'<footer class="bl-footer">Bilan généré avec le Studio Me&amp;YouToo · '+esc(org)+' · '+year+'</footer>';
-    document.getElementById('bl-print').disabled=false;
+      '<p>Diagnostics comportementaux, conférences, formations, ateliers, vidéos et e-learning : nous vous aidons à bâtir une année D&amp;I continue, au plus près de vos enjeux. Demandez un accompagnement depuis votre Cockpit DEI ou écrivez-nous.</p><p class="bl-cta-link"><a href="mailto:contact@meandyoutoo.app">contact@meandyoutoo.app</a> · <a href="https://meandyoutoo.app/fr/">meandyoutoo.app</a></p></div></div>';
+    // Pied de page dans la dernière section : pas de page presque vide en fin de PDF.
+    doc.innerHTML=html+'<footer class="bl-footer">Bilan généré avec le Studio Me&amp;YouToo · '+esc(org)+' · '+year+' · Contact : <a href="mailto:contact@meandyoutoo.app">contact@meandyoutoo.app</a></footer></section>';
+    state.org=org;
+    // Logo du client chargé en image intégrée : il apparaît aussi dans le PDF téléchargé.
+    var img=doc.querySelector('.bl-client-logo');
+    (img?inlineImage(img.getAttribute('data-src')).then(function(src){img.src=src;},function(){img.parentNode.remove();}):Promise.resolve())
+      .then(function(){document.getElementById('bl-print').disabled=false;});
   }
 
   function deltaText(value,before){
@@ -187,6 +195,28 @@
       (meta?'<p class="bl-obj-meta">'+meta+'</p>':'')+'<div class="bl-bar"><i style="width:'+pct+'%"></i></div><p class="bl-obj-figure">'+esc(figure)+'</p></li>';
   }
 
-  document.getElementById('bl-print').addEventListener('click',function(){window.print();});
+  var state={org:''};
+  function inlineImage(url){
+    if(/^data:/.test(url))return Promise.resolve(url);
+    return fetch(url).then(function(r){if(!r.ok)throw new Error('logo');return r.blob();}).then(function(b){return new Promise(function(ok,ko){var fr=new FileReader();fr.onload=function(){ok(fr.result);};fr.onerror=ko;fr.readAsDataURL(b);});});
+  }
+  // Téléchargement direct du PDF (mise en page A4), sans passer par la fenêtre d'impression.
+  function slug(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'');}
+  document.getElementById('bl-print').addEventListener('click',function(){
+    var btn=this;
+    if(!window.html2pdf){window.print();return;}
+    btn.disabled=true;var label=btn.textContent;btn.textContent='Préparation du PDF…';
+    document.body.classList.add('is-exporting');
+    window.html2pdf().set({
+      margin:[10,10,12,10],filename:['Bilan-DI',year,slug(state.org)].filter(Boolean).join('-')+'.pdf',
+      image:{type:'jpeg',quality:0.95},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      // Saut de page avant chaque section (jamais après : pas de page blanche quand une section remplit sa page).
+      pagebreak:{mode:['css'],before:'.bl-page + .bl-page',avoid:['tr','.bl-objs li','.bl-plan','.bl-cta','.bl-kpis','.bl-notice','.bl-complete','h3']}
+    }).from(doc).save().catch(function(){window.print();}).then(function(){
+      document.body.classList.remove('is-exporting');btn.disabled=false;btn.textContent=label;
+    });
+  });
   start();
 })();

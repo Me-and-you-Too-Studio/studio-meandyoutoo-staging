@@ -227,7 +227,7 @@
     if(p.current)(dg.restitutions||[]).forEach(function(c){
       var btn=isClient?(c.requested?'<span class="dp-sent">Demande envoyée ✓</span>':'<button type="button" class="dr-link" data-restitution="'+esc(c.id)+'">Demander la restitution</button>')
         :(canEdit?'<button type="button" class="dr-link" data-restitution-add="'+esc(c.id)+'">Saisir la restitution</button>':'');
-      alerts.unshift('<li class="is-restitution"><span class="dp-ico" aria-hidden="true">🎤</span><div><strong>Diagnostic « '+esc(c.name)+' » terminé'+(c.closeDate?' le '+esc(shortDate(c.closeDate)):'')+'</strong><small>Conférence de restitution : notre experte en statistiques analyse vos résultats, les situe par rapport à un benchmark anonyme d’autres entreprises et vous recommande des actions ciblées.</small></div>'+btn+'</li>');
+      alerts.unshift('<li class="is-restitution"><span class="dp-ico" aria-hidden="true">🎤</span><div><strong>Diagnostic « '+esc(c.name)+' » terminé'+(c.closeDate?' le '+esc(shortDate(c.closeDate)):'')+'</strong><small>Conférence de restitution : notre experte inclusion & diversité et en statistiques analyse vos résultats, les situe par rapport à un benchmark anonyme d’autres entreprises et vous recommande des actions ciblées.</small></div>'+btn+'</li>');
     });
     if((a.uncoveredThemes||[]).length)alerts.push('<li><span class="dp-ico" aria-hidden="true">🧭</span><div><strong>Thématiques non travaillées depuis 12 mois</strong><small>'+esc(a.uncoveredThemes.join(', '))+'</small></div><a class="dr-link" href="'+(isAdmin?'offres.html':'offres.html')+'">Voir nos offres</a></li>');
     var attCard='<article class="dp-card"><header><h3>🔎 Points d’attention</h3></header>'+(alerts.length?'<ul class="dp-list">'+alerts.join('')+'</ul>':'<p class="dr-empty">Rien à signaler, belle dynamique 👍</p>')+'</article>';
@@ -253,7 +253,7 @@
   async function requestRestitution(id){
     var dg=state.data.diagnostics||{},c=(dg.restitutions||[]).find(function(x){return String(x.id)===String(id);});if(!c)return;
     var message=await window.StudioModal.prompt({eyebrow:'Conférence de restitution',title:'Restitution du diagnostic « '+c.name+' »',
-      message:'Notre experte en statistiques analyse vos résultats, les situe par rapport à un benchmark anonyme d’autres entreprises et vous propose des recommandations d’actions ciblées. Nous revenons vers vous pour fixer une date et vous adresser une proposition.',
+      message:'Notre experte inclusion & diversité et en statistiques analyse vos résultats, les situe par rapport à un benchmark anonyme d’autres entreprises et vous propose des recommandations d’actions ciblées. Nous revenons vers vous pour fixer une date et vous adresser une proposition.',
       inputLabel:'Vos attentes ou contraintes (facultatif)',placeholder:'Ex. : restitution au CODIR en janvier, en présentiel…',confirmLabel:'Demander la restitution'});
     if(message===null)return;
     try{var r=await StudioAPI.request('/api/offer-requests',{method:'POST',body:JSON.stringify({offerId:dg.restitutionOffer&&dg.restitutionOffer.id,source:'restitution',
