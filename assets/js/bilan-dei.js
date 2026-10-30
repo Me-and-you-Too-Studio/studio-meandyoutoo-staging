@@ -87,6 +87,19 @@
         d.campaigns.map(function(c){var rate=Number(c.objective)>0&&c.respondents!=null?Math.round(Number(c.respondents)/Number(c.objective)*100):null;
           return '<tr><td>'+esc(c.name)+'</td><td>'+esc(c.theme_title||'—')+'</td><td>'+esc(fmtDate(c.launch_date))+(c.close_date?' → '+esc(fmtDate(c.close_date)):'')+'</td><td>'+(c.respondents!=null?num(c.respondents)+(rate!=null?' ('+rate+' %)':''):'—')+'</td></tr>';}).join('')+'</tbody></table>';
     }
+    // Plans d'actions issus des restitutions : recommandations de Me&YouToo et leur avancement.
+    var plans=((d.diagnostics||{}).plans||[]).filter(function(pl){
+      var y=String(year);return String(pl.campaign.closeDate||'').slice(0,4)===y||pl.actions.some(function(x){return String(x.action_date).slice(0,4)===y;})||(pl.restitution&&String(pl.restitution.action_date).slice(0,4)===y);
+    }).filter(function(pl){return pl.total;});
+    if(plans.length){
+      html+='<h3>Plans d’actions issus des diagnostics</h3>'+plans.map(function(pl){
+        var pct=Math.round(pl.done/pl.total*100);
+        return '<div class="bl-plan"><div class="bl-obj-head"><strong>Diagnostic « '+esc(pl.campaign.name)+' »</strong><span class="bl-plan-count">'+pl.done+' réalisée'+(pl.done>1?'s':'')+' sur '+pl.total+' recommandation'+(pl.total>1?'s':'')+'</span></div>'+
+          (pl.restitution?'<p class="bl-obj-meta">Restitution des résultats le '+esc(fmtDate(pl.restitution.action_date))+', avec les recommandations de Me&amp;YouToo.</p>':'')+
+          '<div class="bl-bar"><i style="width:'+pct+'%"></i></div><ul class="bl-list bl-reco">'+pl.actions.map(function(x){
+            return '<li><span>'+esc(fmtDate(x.action_date))+'</span> '+esc(x.title)+' <em class="bl-st st-'+esc(x.status)+'">'+esc(STATUS[x.status]||x.status)+'</em></li>';}).join('')+'</ul></div>';
+      }).join('');
+    }
     html+='</section>';
 
     // 5. Détail des actions par trimestre

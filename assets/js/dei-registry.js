@@ -52,7 +52,7 @@
   // Actions du registre + campagnes de diagnostic, dans un même format d'affichage.
   function items(){
     var d=state.data,t=today();
-    var actions=d.actions.map(function(a){return {type:'action',id:a.id,kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,notes:a.notes,meayt:a.led_by_meayt,documents:a.documents||[],offerId:a.offer_id,provider:a.provider_name,raw:a};});
+    var actions=d.actions.map(function(a){return {type:'action',id:a.id,kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,notes:a.notes,meayt:a.led_by_meayt,documents:a.documents||[],offerId:a.offer_id,provider:a.provider_name,recommended:a.recommended,campaignId:a.campaign_id,raw:a};});
     var campaigns=d.campaigns.map(function(c){return {type:'campaign',id:c.id,kind:'diagnostic',title:c.name,date:c.launch_date,end:c.close_date,status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':'in_progress',theme:c.theme_title,people:c.respondents,documents:[]};});
     return actions.concat(campaigns).sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
   }
@@ -149,17 +149,19 @@
   }
   function kpi(value,label,hint,cls){return '<article class="dr-kpi '+(cls||'')+'"><strong>'+value+'</strong><span>'+label+'</span><small>'+hint+'</small></article>';}
 
+  function campaignName(id){var c=((state.data.diagnostics||{}).campaigns||[]).find(function(x){return String(x.id)===String(id);});return c?c.name:'';}
+  function recoTip(id){var n=campaignName(id);return 'Recommandée lors de la restitution'+(n?' du diagnostic « '+n+' »':' de votre diagnostic');}
   function row(it){
     var k=kind(it.kind),st=(state.data.statuses||{})[it.status]||it.status,canEdit=state.data.canEdit&&it.type==='action';
     var when=fmtDate(it.date)+(it.end&&it.end!==it.date?' → '+fmtDate(it.end):'');
-    var meta=[it.theme,it.audience,it.people!=null?num(it.people)+(it.type==='campaign'?' participations':' personnes touchées'):'',it.provider?'avec '+it.provider:''].filter(Boolean).map(esc).join(' · ');
+    var meta=[it.theme,it.audience,it.people!=null?num(it.people)+(it.type==='campaign'?' participations':' personnes touchées'):'',it.provider?'avec '+it.provider:'',it.recommended?recoTip(it.campaignId):''].filter(Boolean).map(esc).join(' · ');
     var docs=(it.documents||[]).map(function(doc){return '<span class="dr-doc"><button type="button" class="dr-link" data-download="'+esc(it.id)+':'+esc(doc.id)+'" data-filename="'+esc(doc.filename)+'">📎 '+esc(doc.filename)+'</button>'+(canEdit?'<button type="button" class="dr-x" data-doc-delete="'+esc(it.id)+':'+esc(doc.id)+'" aria-label="Retirer '+esc(doc.filename)+'">×</button>':'')+'</span>';}).join('');
     var tools=it.type==='campaign'
       ?'<a class="dr-link" href="campagne-detail.html?projectId='+encodeURIComponent(it.id)+(organizationId?'':'')+'">Voir la campagne →</a>'
       :((canEdit?'<button type="button" class="button button-ghost" data-edit="'+esc(it.id)+'">Modifier</button><label class="button button-ghost dr-upload">Joindre un document<input type="file" accept="application/pdf,image/png,image/jpeg" data-upload="'+esc(it.id)+'" hidden></label><button type="button" class="button button-ghost" data-delete="'+esc(it.id)+'">Supprimer</button>':'')+
         (isClient?'<button type="button" class="dr-link" data-accompany="'+esc(it.id)+'">Être accompagné sur cette action →</button>':''));
     return '<article class="dr-row" id="dr-'+esc(it.type+'-'+it.id)+'"><div class="dr-row-icon" aria-hidden="true">'+esc(k.icon)+'</div><div class="dr-row-main">'+
-      '<p class="dr-row-kind">'+esc(it.type==='campaign'?'Diagnostic comportemental · Studio':k.label)+(it.meayt?' <span class="dr-badge is-meayt">Animée par Me&amp;YouToo</span>':'')+' <span class="dr-badge st-'+esc(it.status)+'">'+esc(st)+'</span></p>'+
+      '<p class="dr-row-kind">'+esc(it.type==='campaign'?'Diagnostic comportemental · Studio':k.label)+(it.meayt?' <span class="dr-badge is-meayt">Animée par Me&amp;YouToo</span>':'')+(it.recommended?' <span class="dr-badge is-reco">Recommandée par Me&amp;YouToo</span>':'')+' <span class="dr-badge st-'+esc(it.status)+'">'+esc(st)+'</span></p>'+
       '<h4>'+esc(it.title)+'</h4><p class="dr-row-when">'+esc(when)+'</p>'+(meta?'<p class="dr-row-meta">'+meta+'</p>':'')+(it.notes?'<p class="dr-row-notes">'+esc(it.notes)+'</p>':'')+
       (docs?'<div class="dr-docs">'+docs+'</div>':'')+'<div class="dr-row-tools">'+tools+'</div></div></article>';
   }
@@ -202,7 +204,7 @@
       return '<div class="dp-q"><div class="dp-q-bars" aria-hidden="true"><i class="is-done" style="height:'+h(q.done)+'%"></i><i class="is-planned" style="height:'+h(q.planned)+'%"></i><i class="is-late" style="height:'+h(q.late)+'%"></i></div>'+
         '<strong>T'+q.quarter+'</strong><small>'+q.done+' réalisée'+(q.done>1?'s':'')+(q.planned?' · '+q.planned+' en cours ou prévue'+(q.planned>1?'s':''):'')+(q.late?' · <b>'+q.late+' en retard</b>':'')+'</small></div>';
     }).join('')+'</div><ul class="dp-legend"><li class="is-done">Réalisées</li><li class="is-planned">En cours ou prévues</li><li class="is-late">En retard</li></ul></article>';
-    if(!p.current)return '<section class="dp-grid">'+objCard+qCard+'</section>';
+    if(!p.current)return '<section class="dp-grid">'+plansView()+objCard+qCard+'</section>';
     // Échéances
     var up=(p.upcoming||[]).slice(0,8).map(function(u){
       var link=u.type==='action'?'<button type="button" class="dr-link" data-focus="action-'+esc(u.id)+'">Voir</button>'
@@ -220,9 +222,44 @@
       (canEdit&&m.year===state.year?'<button type="button" class="dr-link" data-add-month="'+(m.month-1)+'">Planifier</button>':'')+(isClient?'<button type="button" class="dr-link" data-month="'+(m.month-1)+'" data-month-year="'+m.year+'">Être accompagné</button>':'')+'</li>');});
     // Rappels réglementaires (ex. loi VSS) : renvoient vers l'objectif proposé de l'année concernée.
     (a.notices||[]).forEach(function(n){alerts.unshift('<li class="is-notice"><span class="dp-ico" aria-hidden="true">⚖️</span><div><strong>'+esc(n.title)+'</strong><small>'+esc(n.text)+'</small></div><button type="button" class="dr-link" data-year="'+esc(n.year)+'">Voir les objectifs '+esc(n.year)+'</button></li>');});
+    // Diagnostic terminé sans restitution : on propose la conférence de restitution (vendue à part).
+    var dg=state.data.diagnostics||{};
+    if(p.current)(dg.restitutions||[]).forEach(function(c){
+      var btn=isClient?(c.requested?'<span class="dp-sent">Demande envoyée ✓</span>':'<button type="button" class="dr-link" data-restitution="'+esc(c.id)+'">Demander la restitution</button>')
+        :(canEdit?'<button type="button" class="dr-link" data-restitution-add="'+esc(c.id)+'">Saisir la restitution</button>':'');
+      alerts.unshift('<li class="is-restitution"><span class="dp-ico" aria-hidden="true">🎤</span><div><strong>Diagnostic « '+esc(c.name)+' » terminé'+(c.closeDate?' le '+esc(shortDate(c.closeDate)):'')+'</strong><small>Conférence de restitution : notre experte en statistiques analyse vos résultats, les situe par rapport à un benchmark anonyme d’autres entreprises et vous recommande des actions ciblées.</small></div>'+btn+'</li>');
+    });
     if((a.uncoveredThemes||[]).length)alerts.push('<li><span class="dp-ico" aria-hidden="true">🧭</span><div><strong>Thématiques non travaillées depuis 12 mois</strong><small>'+esc(a.uncoveredThemes.join(', '))+'</small></div><a class="dr-link" href="'+(isAdmin?'offres.html':'offres.html')+'">Voir nos offres</a></li>');
     var attCard='<article class="dp-card"><header><h3>🔎 Points d’attention</h3></header>'+(alerts.length?'<ul class="dp-list">'+alerts.join('')+'</ul>':'<p class="dr-empty">Rien à signaler, belle dynamique 👍</p>')+'</article>';
-    return '<section class="dp-grid">'+objCard+qCard+upCard+attCard+'</section>';
+    return '<section class="dp-grid">'+plansView()+objCard+qCard+upCard+attCard+'</section>';
+  }
+  // Plans d'actions issus des diagnostics : la restitution, puis les actions recommandées et leur avancement.
+  function plansView(){
+    var plans=((state.data.diagnostics||{}).plans||[]).filter(function(pl){return pl.total||pl.restitution;}),canEdit=state.data.canEdit;
+    if(!plans.length)return '';
+    return '<article class="dp-card dp-wide dp-plans"><header><h3>🧭 Plans d’actions issus de vos diagnostics</h3></header>'+plans.slice(0,3).map(function(pl){
+      var pct=pl.total?Math.round(pl.done/pl.total*100):0;
+      var acts=pl.actions.map(function(x){return '<li><span class="dp-ico" aria-hidden="true">'+esc(kind(x.kind).icon)+'</span><div><strong>'+esc(x.title)+'</strong><small>'+esc(fmtDate(x.action_date))+(x.theme?' · '+esc(x.theme):'')+'</small></div>'+
+        '<span class="dr-badge st-'+esc(x.status)+'">'+esc((state.data.statuses||{})[x.status]||x.status)+'</span>'+
+        (isClient&&x.status!=='done'?'<button type="button" class="dr-link" data-reco-help="'+esc(x.id)+'" data-title="'+esc(x.title)+'">Être accompagné</button>':'')+'</li>';}).join('');
+      return '<section class="dp-plan"><div class="dp-plan-head"><div><strong>Diagnostic « '+esc(pl.campaign.name)+' »</strong><small>'+
+        (pl.restitution?'Restitution '+(pl.restitution.status==='done'?'le ':'prévue le ')+esc(fmtDate(pl.restitution.action_date)):'Restitution à planifier')+'</small></div>'+
+        (pl.total?'<span class="dp-plan-count">'+pl.done+' réalisée'+(pl.done>1?'s':'')+' sur '+pl.total+' recommandation'+(pl.total>1?'s':'')+'</span>':'')+'</div>'+
+        (pl.total?'<div class="dp-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i style="width:'+pct+'%"></i></div><ul class="dp-list">'+acts+'</ul>':'<p class="dr-empty">Les recommandations de la restitution apparaîtront ici.</p>')+
+        (isAdmin&&canEdit?'<button type="button" class="button button-ghost" data-reco-add="'+esc(pl.campaign.id)+'">＋ Ajouter une recommandation</button>':'')+'</section>';
+    }).join('')+'</article>';
+  }
+  // Demande de conférence de restitution : même circuit que les offres (notification, e-mail, transaction HubSpot).
+  async function requestRestitution(id){
+    var dg=state.data.diagnostics||{},c=(dg.restitutions||[]).find(function(x){return String(x.id)===String(id);});if(!c)return;
+    var message=await window.StudioModal.prompt({eyebrow:'Conférence de restitution',title:'Restitution du diagnostic « '+c.name+' »',
+      message:'Notre experte en statistiques analyse vos résultats, les situe par rapport à un benchmark anonyme d’autres entreprises et vous propose des recommandations d’actions ciblées. Nous revenons vers vous pour fixer une date et vous adresser une proposition.',
+      inputLabel:'Vos attentes ou contraintes (facultatif)',placeholder:'Ex. : restitution au CODIR en janvier, en présentiel…',confirmLabel:'Demander la restitution'});
+    if(message===null)return;
+    try{var r=await StudioAPI.request('/api/offer-requests',{method:'POST',body:JSON.stringify({offerId:dg.restitutionOffer&&dg.restitutionOffer.id,source:'restitution',
+        message:'Restitution du diagnostic « '+c.name+' »'+(message?' — '+message:''),context:{campaignId:String(c.id),campaign:c.name}})});
+      window.StudioModal.alert({eyebrow:'Conférence de restitution',title:'Demande transmise',type:'success',message:r.message||'Votre demande a bien été transmise.'});load();}
+    catch(e){window.StudioModal.alert({title:'Envoi impossible',message:e.message});}
   }
   function objectiveDialog(objective,preset){
     var p=state.data.pilotage,o=objective||preset||{metric:'strategic'};
@@ -284,6 +321,10 @@
       '<div class="dr-field-row"><label class="dr-field"><span>Public visé</span><input name="audience" maxlength="200" value="'+esc(a.audience||'')+'" placeholder="Ex. : managers du siège, nouveaux arrivants…"></label><label class="dr-field dr-field-small"><span>Personnes touchées</span><input type="number" min="0" name="peopleReached" value="'+esc(a.people_reached??'')+'"></label></div>'+
       '<div class="dr-field-row dr-provider-pick"><label class="dr-field"><span>Prestataire</span><select name="providerId">'+providerOptions(currentProvider)+'</select></label><button type="button" class="button button-ghost" data-new-provider>＋ Nouveau prestataire</button></div>'+
       '<label class="dr-field"><span>Notes</span><textarea name="notes" rows="3" maxlength="4000">'+esc(a.notes||'')+'</textarea></label>'+
+      // Côté Me&YouToo : rattacher l'action à un diagnostic (restitution, recommandation issue de la restitution).
+      (isAdmin?'<div class="dr-field-row dr-reco-pick"><label class="dr-field"><span>Diagnostic lié</span><select name="campaignId"><option value="">— Aucun —</option>'+
+        ((d.diagnostics||{}).campaigns||[]).map(function(c){return '<option value="'+esc(c.id)+'"'+(String(c.id)===String(a.campaign_id||'')?' selected':'')+'>'+esc(c.name+' ('+String(c.launch_date).slice(0,7).split('-').reverse().join('/')+')')+'</option>';}).join('')+
+        '</select></label><label class="dr-check"><input type="checkbox" name="recommended"'+(a.recommended?' checked':'')+'> Recommandée par Me&amp;YouToo à la restitution</label></div>':'')+
       '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
     document.body.appendChild(dlg);
     var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
@@ -299,7 +340,8 @@
     form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
       if(!form.checkValidity()){form.reportValidity();return;}
       var f=new FormData(form),body=withOrg({kind:f.get('kind'),title:f.get('title'),actionDate:f.get('actionDate'),endDate:f.get('endDate'),status:f.get('status'),
-        theme:readMulti(form,'theme'),peopleReached:f.get('peopleReached'),audience:f.get('audience'),notes:f.get('notes'),providerId:f.get('providerId')});
+        theme:readMulti(form,'theme'),peopleReached:f.get('peopleReached'),audience:f.get('audience'),notes:f.get('notes'),providerId:f.get('providerId'),offerId:a.offer_id||null});
+      if(isAdmin){body.campaignId=f.get('campaignId');body.recommended=f.get('recommended')==='on';}
       try{
         await StudioAPI.request('/api/dei/actions'+(action?'/'+encodeURIComponent(action.id):'')+(action?qs():''),{method:action?'PATCH':'POST',body:JSON.stringify(body)});
         dlg.close();var y=Number(String(body.actionDate).slice(0,4));if(y&&y!==state.year)state.year=y;load();
@@ -372,6 +414,13 @@
       var open=function(){var la=state.data.actions.find(function(x){return String(x.id)===lid;});if(la)editDialog(la);};
       if(ly&&ly!==state.year){state.year=ly;load().then(open);}else open();
     }
+    else if(t.hasAttribute('data-restitution'))requestRestitution(t.getAttribute('data-restitution'));
+    else if(t.hasAttribute('data-restitution-add')){
+      var rc=((state.data.diagnostics||{}).restitutions||[]).find(function(x){return String(x.id)===t.getAttribute('data-restitution-add');}),ro=(state.data.diagnostics||{}).restitutionOffer;
+      if(rc)editDialog(null,null,{kind:'conference',title:'Restitution des résultats — '+rc.name,theme:rc.theme||'',campaign_id:rc.id,offer_id:ro&&ro.id,led_by_meayt:true,status:'planned',action_date:today()});
+    }
+    else if(t.hasAttribute('data-reco-add')){var cid=t.getAttribute('data-reco-add');editDialog(null,null,{campaign_id:cid,recommended:true,led_by_meayt:false,action_date:today()});}
+    else if(t.hasAttribute('data-reco-help'))accompany({actionId:t.getAttribute('data-reco-help'),recommended:true},'Accompagnement : '+t.getAttribute('data-title'));
     else if(t.hasAttribute('data-provider-add'))providerDialog(null);
     else if(t.hasAttribute('data-provider-edit'))providerDialog((state.data.providers||[]).find(function(p){return String(p.id)===t.getAttribute('data-provider-edit');}));
     else if(t.hasAttribute('data-provider-delete'))removeProvider(t.getAttribute('data-provider-delete'));

@@ -140,3 +140,16 @@
 .dr-pill-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dr-pill[data-tip]::after{content:attr(data-tip);position:absolute;left:0;bottom:calc(100% + 6px);background:#1b2a49;color:#fff;font-size:.78rem;font-weight:600;line-height:1.35;padding:6px 10px;border-radius:8px;white-space:normal;width:max-content;max-width:260px;box-shadow:0 6px 18px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .15s;z-index:20}
 .dr-pill[data-tip]:hover::after,.dr-pill[data-tip]:focus-visible::after{opacity:1}
+/* Après un diagnostic : restitution et plan d'actions recommandées */
+.dp-wide{grid-column:1/-1}
+.dp-plan{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-top:1px solid var(--royal-blue-tint,#f5f7fb)}
+.dp-plan:first-of-type{border-top:0;padding-top:0}
+.dp-plan>.button{align-self:flex-start}
+.dp-plan-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 12px}
+.dp-plan-head strong{display:block}
+.dp-plan-head small{color:var(--muted,#54607e);font-size:.82rem}
+.dp-plan-count{font-weight:700;color:var(--green-blue-dark,#00636c);font-size:.88rem}
+.dp-list li.is-restitution{background:var(--green-blue-soft,#e6f4f5);border-radius:10px;padding:8px 10px;border-bottom:0;margin-bottom:4px}
+.dp-sent{font-size:.85rem;font-weight:700;color:var(--green-blue-dark,#00636c);white-space:nowrap}
+.dr-badge.is-reco{background:var(--sunny-yellow,#ffc000);color:#1b2a49}
+.dr-reco-pick{align-items:flex-end}
