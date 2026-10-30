@@ -102,7 +102,7 @@
       fetch('https://api-eu1.hsforms.com/submissions/v3/integration/submit/'+HUBSPOT_PORTAL_ID+'/'+PUBLIC_FORM_GUID,{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({fields:fields,context:{pageUri:location.href,pageName:document.title+' — '+o.title},
           legalConsentOptions:{consent:{consentToProcess:true,text:'J’accepte que Me&YouToo utilise ces informations pour répondre à ma demande.'}}})})
-      .then(function(res){if(!res.ok)throw new Error();ok.hidden=false;form.querySelectorAll('input,textarea').forEach(function(el){el.disabled=true;});submit.hidden=true;})
+      .then(function(res){if(!res.ok)throw new Error();ok.hidden=false;form.querySelectorAll('input,textarea').forEach(function(el){el.disabled=true;});submit.style.display="none";})
       .catch(function(){err.innerHTML='L’envoi n’a pas abouti. Vous pouvez nous écrire depuis la <a href="contact.html">page Contact</a>.';err.hidden=false;submit.disabled=false;submit.textContent='Envoyer ma demande';});
     };
     dlg.showModal();form.elements.firstname.focus();
