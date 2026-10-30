@@ -76,7 +76,7 @@
     var nowY=new Date().getFullYear(),nowM=new Date().getMonth();
     var frise='<div class="dr-frise" role="list">'+byMonth.map(function(its,m){
       var past=state.year<nowY||(state.year===nowY&&m<nowM),current=state.year===nowY&&m===nowM;
-      var body=its.map(function(it){var k=kind(it.kind);return '<button type="button" class="dr-pill st-'+esc(it.status)+'" data-focus="'+esc(it.type+'-'+it.id)+'" title="'+esc(it.title)+'"><span aria-hidden="true">'+esc(k.icon)+'</span> '+esc(it.title)+'</button>';}).join('');
+      var body=its.map(function(it){var k=kind(it.kind);return '<button type="button" class="dr-pill st-'+esc(it.status)+'" data-focus="'+esc(it.type+'-'+it.id)+'" data-tip="'+esc(it.title)+'"><span class="dr-pill-text"><span aria-hidden="true">'+esc(k.icon)+'</span> '+esc(it.title)+'</span></button>';}).join('');
       var empty=!its.length?(isClient?'<button type="button" class="dr-help" data-month="'+m+'">'+(past?'Mois sans action':'Rien de prévu')+'<span>Être accompagné →</span></button>':(canEdit?'<button type="button" class="dr-help" data-add-month="'+m+'">'+(past?'Mois sans action':'Rien de prévu')+'<span>＋ Ajouter</span></button>':'<span class="dr-none">—</span>')):'';
       return '<div class="dr-month'+(current?' is-current':'')+(past&&!its.length?' is-gap':'')+'" role="listitem"><p class="dr-month-name">'+MONTHS[m]+'</p>'+body+empty+'</div>';
     }).join('')+'</div>';

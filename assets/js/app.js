@@ -121,6 +121,16 @@
       {target:'.sp-pack, .stat-link',title:'Votre pack de passations',text:'Une passation correspond à un questionnaire complété. Votre pack est valable sur toutes les thématiques Me&YouToo.'},
       {target:'.help-card',title:'Besoin d’aide ?',text:'Contactez Me&YouToo à tout moment. Vous pouvez aussi revoir cette visite depuis ce bloc.'}
     ]},
+    'cockpit':{key:'cockpit-dei',auto:true,steps:[
+      {target:'#dei-tabs',title:'Votre Cockpit DEI',text:'Pilotez et archivez toutes vos actions diversité & inclusion, année après année. Trois rubriques : la vue d’ensemble, le détail des actions et vos prestataires.'},
+      {target:'.dr-kpis',title:'Votre année en chiffres',text:'Actions menées, personnes touchées, formats et thématiques, mois sans action : tout se calcule à partir de vos actions et de vos campagnes de diagnostic.'},
+      {target:'.dp-grid .dp-card',title:'Vos objectifs',text:'Fixez jusqu’à 5 objectifs : un enjeu stratégique (thématiques et publics visés) ou un objectif chiffré. Les objectifs « Proposé par Me&YouToo » vous aident à anticiper, comme la loi VSS.'},
+      {target:'.dp-grid .dp-card:nth-child(3)',title:'Les prochaines échéances',text:'Les 60 prochains jours : actions prévues, campagnes, tâches et temps forts D&I. « Préparer » crée l’action en un clic.'},
+      {target:'.dp-grid .dp-card:nth-child(4)',title:'Les points d’attention',text:'Actions à mettre à jour, mois sans rien de prévu, thématiques non travaillées : le Cockpit vous signale où agir.'},
+      {target:'.dr-frise',title:'La frise de l’année',text:'Chaque action à sa date. Sur un mois vide, demandez à être accompagné. Le bouton « Ouvrir dans le calendrier » affiche tout au jour près.'},
+      {target:'[data-add]',title:'Ajouter une action',text:'Conférence, formation, baromètre, réseau interne, politique RH… notez tout ce que vous menez, avec Me&YouToo ou d’autres, et joignez vos documents.'},
+      {target:'[data-tab="prestataires"]',title:'Vos prestataires',text:'Gardez les coordonnées des intervenants avec qui vous travaillez et reliez-les à vos actions.'}
+    ]},
     'mes-campagnes':{key:'mes-campagnes',auto:true,steps:[
       {target:'.campaign-pilot-kpi',parent:true,title:'Vos campagnes en un coup d’œil',text:'Cliquez sur un compteur pour n’afficher que les campagnes concernées : brouillons, en relecture, en diffusion, terminées.'},
       {target:'.campaign-project-card .campaign-status-tag',title:'Le statut de la campagne',text:'Le point « i » à côté du statut explique ce qu’il veut dire et qui doit agir.'},
@@ -167,7 +177,7 @@
       {target:'nav.steps',title:'Dernière étape : transmettre',text:'Vérifiez votre configuration, puis transmettez-la. Me&YouToo la relit avant la mise en ligne et vous prévient par notification et par e-mail.'}
     ]}
   };
-  var PAGE_TOURS={'bibliotheque.html':'catalogue','kit-communication.html':'kit','mes-campagnes.html':'mes-campagnes','campagne-detail.html':'campagne-detail','composer.html':'composer','personnalisation.html':'personnalisation','parametrage.html':'parametrage'};
+  var PAGE_TOURS={'cockpit-dei.html':'cockpit','bibliotheque.html':'catalogue','kit-communication.html':'kit','mes-campagnes.html':'mes-campagnes','campagne-detail.html':'campagne-detail','composer.html':'composer','personnalisation.html':'personnalisation','parametrage.html':'parametrage'};
   var tourState=null,registeredTour=null,tourShownThisPage=false;
   function tourUser(){try{return window.StudioAPI&&StudioAPI.user()||JSON.parse(localStorage.getItem('studio_user')||'null');}catch(e){return null;}}
   function seenKey(tour){var u=tourUser();return 'studio_tour_seen_v1:'+(u&&u.id||'anonyme')+':'+tour.key;}
