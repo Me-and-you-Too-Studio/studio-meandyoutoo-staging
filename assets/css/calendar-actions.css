@@ -1,0 +1,13 @@
+/* Actions du Cockpit DEI dans la page Calendrier (vue mois et frise annuelle). */
+.studio-calendar-event.is-dei-action{background:#eef3ff;border-left:3px solid #4f46e5;color:#1e1b4b;text-decoration:none}
+.studio-calendar-event.is-dei-action.st-done{background:#e6f4f5;border-left-color:#007883;color:#00454b}
+.studio-calendar-event.is-dei-action.st-in_progress{background:#fff6dd;border-left-color:#d99a00;color:#5c4100}
+.studio-calendar-event.is-dei-action span{background:currentColor}
+.cal-tl-row-actions .cal-tl-label strong{color:#4f46e5}
+.cal-tl-action{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#4f46e5;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);z-index:2}
+.cal-tl-action.st-done{background:#007883}
+.cal-tl-action.st-in_progress{background:#d99a00}
+.cal-tl-action.is-band{width:auto;height:18px;margin:-9px 0 0;border-radius:9px;padding:0 6px;display:flex;align-items:center;overflow:hidden;color:#fff;font-size:.7rem;font-weight:700;text-decoration:none;white-space:nowrap}
+.cal-tl-action.is-band span{overflow:hidden;text-overflow:ellipsis}
+.cal-tl-action:hover,.cal-tl-action:focus-visible{transform:scale(1.15);outline:none}
+.cal-tl-action.is-band:hover,.cal-tl-action.is-band:focus-visible{transform:none;filter:brightness(1.1)}

@@ -29,7 +29,7 @@
   // Onglets du cockpit (mémorisés dans l'adresse : #apercu, #actions, #prestataires).
   var TABS={apercu:'Vue d’ensemble',actions:'Actions',prestataires:'Prestataires'};
   var tabsEl=document.getElementById('dei-tabs'),yearEl=document.getElementById('dei-year');
-  var state={year:Number(params.get('year'))||new Date().getFullYear(),data:null,tab:TABS[location.hash.slice(1)]?location.hash.slice(1):'apercu'};
+  var state={year:Number(params.get('year'))||new Date().getFullYear(),data:null,tab:TABS[location.hash.slice(1)]?location.hash.slice(1):'apercu',focus:/^action-\d+$/.test(params.get('focus')||'')?params.get('focus'):null};
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function num(v){return new Intl.NumberFormat('fr-FR').format(Number(v)||0);}
@@ -83,7 +83,10 @@
     if(state.tab==='prestataires'){root.innerHTML=providersView();return;}
     root.innerHTML=state.tab==='actions'
       ?head+'<div class="dr-list">'+rows+'</div>'
-      :head+cards+'<h3 class="dr-sub">Frise de l’année</h3>'+frise;
+      :head+cards+'<div class="dr-sub-row"><h3 class="dr-sub">Frise de l’année</h3><a class="button button-ghost" href="'+(isAdmin?'calendrier.html':'calendrier.html?audience=client')+'">Ouvrir dans le calendrier →</a></div>'+frise;
+    // Arrivée depuis le calendrier (?focus=action-12) : on montre l'action une seule fois.
+    if(state.focus&&state.tab==='actions'){var target=document.getElementById('dr-'+state.focus);state.focus=null;
+      if(target)setTimeout(function(){target.scrollIntoView({block:'center'});target.classList.add('is-focus');setTimeout(function(){target.classList.remove('is-focus');},2000);},200);}
   }
   function renderTabs(){
     if(!tabsEl)return;

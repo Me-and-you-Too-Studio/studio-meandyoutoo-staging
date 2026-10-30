@@ -92,3 +92,5 @@
 .dr-other{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.85rem}
 .dr-other input{flex:1;font:inherit;font-weight:400;border:1px solid var(--line,#e2e7f1);border-radius:10px;padding:8px 10px;background:#fff}
 .dr-field-small{flex:0 0 160px;min-width:140px}
+.dr-sub-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 12px}
+.dr-sub-row .dr-sub{margin:0}
