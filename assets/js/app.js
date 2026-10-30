@@ -167,7 +167,7 @@
     ]}
   };
   var PAGE_TOURS={'bibliotheque.html':'catalogue','kit-communication.html':'kit','mes-campagnes.html':'mes-campagnes','campagne-detail.html':'campagne-detail','composer.html':'composer','personnalisation.html':'personnalisation','parametrage.html':'parametrage'};
-  var tourState=null,registeredTour=null;
+  var tourState=null,registeredTour=null,tourShownThisPage=false;
   function tourUser(){try{return window.StudioAPI&&StudioAPI.user()||JSON.parse(localStorage.getItem('studio_user')||'null');}catch(e){return null;}}
   function seenKey(tour){var u=tourUser();return 'studio_tour_seen_v1:'+(u&&u.id||'anonyme')+':'+tour.key;}
   function hasSeen(tour){try{return localStorage.getItem(seenKey(tour))==='1';}catch(e){return true;}}
@@ -218,7 +218,7 @@
     if(!steps.length)return false;
     var root=document.createElement('div');root.className='studio-tour';
     root.innerHTML='<div class="studio-tour-spot" aria-hidden="true"></div><div class="studio-tour-bubble" role="dialog" aria-modal="true" aria-labelledby="studio-tour-title"><span class="studio-tour-count"></span><h2 id="studio-tour-title"></h2><p></p><div class="studio-tour-actions"><button type="button" class="studio-tour-skip" data-tour-skip>Passer la visite</button><span><button type="button" class="button button-secondary" data-tour-prev>← Précédent</button><button type="button" class="button button-primary" data-tour-next>Suivant →</button></span></div></div>';
-    document.body.appendChild(root);
+    hideNewsBubble();document.body.appendChild(root);tourShownThisPage=true;
     tourState={tour:tour,steps:steps,index:0,root:root,el:null,returnFocus:document.activeElement};
     root.querySelector('[data-tour-skip]').onclick=closeTour;
     root.querySelector('[data-tour-prev]').onclick=function(){showStep(tourState.index-1);};
@@ -301,6 +301,71 @@
     if(id)placeTutorial(id);
   }
 
+  // Nouveautés : une bulle discrète en bas de l'écran présente ce qui a changé depuis la dernière visite,
+  // et le bouton « Nouveautés » du bloc d'aide garde l'historique. Ajouter une entrée en tête de liste suffit
+  // (id unique, jamais réutilisé) ; une fois la bulle fermée, toutes les nouveautés affichées sont marquées vues.
+  var NEWS=[
+    {id:'2026-10-relancer',date:'2026-10-30',title:'Relancez une campagne terminée',text:'Depuis la page d’une campagne terminée, reprogrammez-la avec les mêmes liens ou lancez une nouvelle thématique. Une campagne en cours peut aussi être prolongée.',href:'mes-campagnes.html',cta:'Voir mes campagnes'},
+    {id:'2026-10-frise',date:'2026-10-30',title:'Où en est votre campagne ?',text:'Chaque campagne affiche maintenant ses 5 phases, de la création aux résultats, et indique qui doit agir : vous, Me&YouToo ou personne.',href:'mes-campagnes.html',cta:'Voir mes campagnes'},
+    {id:'2026-10-visites',date:'2026-10-30',title:'Des visites guidées à chaque étape',text:'Une courte visite vous présente chaque écran la première fois. Pour la revoir, cliquez sur « Revoir la visite de cette page » dans le bloc d’aide.'},
+    {id:'2026-10-lexique',date:'2026-10-30',title:'Un point « i » pour chaque terme',text:'Passation, thématique, relecture… Cliquez sur les points « i » pour obtenir une définition simple, là où vous en avez besoin.'}
+  ];
+  var newsBubble=null;
+  function newsKey(){var u=tourUser();return 'studio_news_seen_v1:'+(u&&u.id||'anonyme');}
+  function newsSeen(){try{return JSON.parse(localStorage.getItem(newsKey())||'[]');}catch(e){return NEWS.map(function(n){return n.id;});}}
+  function unseenNews(){var seen=newsSeen();return NEWS.filter(function(n){return seen.indexOf(n.id)<0;});}
+  function markNewsSeen(items){try{var seen=newsSeen();items.forEach(function(n){if(seen.indexOf(n.id)<0)seen.push(n.id);});localStorage.setItem(newsKey(),JSON.stringify(seen));}catch(e){}refreshNewsBadge();}
+  function newsDate(n){try{return new Date(n.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});}catch(e){return n.date;}}
+  function refreshNewsBadge(){
+    var count=unseenNews().length;
+    document.querySelectorAll('[data-news-count]').forEach(function(b){b.textContent=count;b.hidden=!count;});
+  }
+  function hideNewsBubble(){if(newsBubble){newsBubble.remove();newsBubble=null;}}
+  function showNewsBubble(items){
+    hideNewsBubble();if(!items.length)return;
+    var index=0,el=document.createElement('aside');el.className='studio-news';el.setAttribute('aria-live','polite');el.setAttribute('aria-label','Nouveautés du Studio');
+    document.body.appendChild(el);newsBubble=el;
+    function close(){markNewsSeen(items);hideNewsBubble();}
+    function render(){
+      var n=items[index],last=index===items.length-1,here=n.href&&n.href===(location.pathname.split('/').pop()||'accueil.html');
+      el.innerHTML='<button type="button" class="studio-news-close" aria-label="Fermer les nouveautés" data-news-close>×</button>'+
+        '<span class="studio-news-pill">Nouveau</span>'+(items.length>1?'<span class="studio-news-count">'+(index+1)+' / '+items.length+'</span>':'')+
+        '<h2>'+esc(n.title)+'</h2><p>'+esc(n.text)+'</p>'+
+        '<div class="studio-news-actions">'+(n.href&&!here?'<a class="studio-news-link" href="'+esc(n.href)+'" data-news-go>'+esc(n.cta||'Découvrir')+' →</a>':'<span></span>')+
+        '<button type="button" class="button '+(last?'button-primary':'button-secondary')+'" data-news-next>'+(last?'Compris':'Suivant')+'</button></div>';
+      el.querySelector('[data-news-close]').onclick=close;
+      el.querySelector('[data-news-next]').onclick=function(){if(last)close();else{index++;render();el.querySelector('[data-news-next]').focus();}};
+      var go=el.querySelector('[data-news-go]');if(go)go.onclick=function(){markNewsSeen(items);};
+    }
+    render();
+  }
+  function openNewsList(){
+    hideNewsBubble();
+    var unseen=unseenNews().map(function(n){return n.id;});
+    var dialog=document.createElement('dialog');dialog.className='studio-modal studio-news-dialog';dialog.setAttribute('aria-labelledby','studio-news-title');
+    dialog.innerHTML='<div class="studio-news-shell"><button type="button" class="studio-modal-close" aria-label="Fermer" data-news-dialog-close>×</button><p class="eyebrow">Le Studio évolue</p><h2 id="studio-news-title">Nouveautés</h2><ul class="studio-news-list">'+
+      NEWS.map(function(n){return '<li><span class="studio-news-meta">'+(unseen.indexOf(n.id)>=0?'<span class="studio-news-pill">Nouveau</span>':'')+esc(newsDate(n))+'</span><strong>'+esc(n.title)+'</strong><p>'+esc(n.text)+'</p>'+(n.href?'<a href="'+esc(n.href)+'">'+esc(n.cta||'Découvrir')+' →</a>':'')+'</li>';}).join('')+
+      '</ul></div>';
+    document.body.appendChild(dialog);
+    dialog.querySelector('[data-news-dialog-close]').onclick=function(){dialog.close();};
+    dialog.addEventListener('click',function(e){if(e.target===dialog)dialog.close();});
+    dialog.addEventListener('close',function(){dialog.remove();});
+    dialog.showModal();markNewsSeen(NEWS);
+  }
+  window.StudioNews={open:openNewsList,list:NEWS};
+  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-news-open]');if(b){e.preventDefault();openNewsList();}});
+  // La bulle n'apparaît que sur l'espace client, jamais pendant une visite guidée, ni sur une page où une visite
+  // vient d'être montrée : elle attendra la page suivante pour ne pas tout montrer d'un coup.
+  function autoNews(){
+    var u=tourUser();if(!u||isTeamView())return;
+    refreshNewsBadge();setTimeout(refreshNewsBadge,600);
+    setTimeout(function(){
+      if(tourShownThisPage||tourState||!document.querySelector('.help-card'))return;
+      if(document.querySelector('dialog[open]'))return;
+      showNewsBubble(unseenNews());
+    },4500);
+  }
+
   // Les libellés statiques portent data-glossary="terme" : le point « i » est ajouté ici.
   function decorate(){
     document.querySelectorAll('[data-glossary]:not([data-glossary-ready])').forEach(function(el){
@@ -313,7 +378,7 @@
       el.innerHTML=window.StudioJourney.html(el.getAttribute('data-journey'),null,{stepsOnly:true});
     });
   }
-  function init(){decorate();autoOffer();autoTutorial();}
+  function init(){decorate();autoOffer();autoTutorial();autoNews();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 
@@ -612,7 +677,7 @@
       '</div>' +
       '<nav class="nav">' + mainNavigation.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
       '<div class="sidebar-footer">' +
-        (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><strong>Besoin d’aide&nbsp;?</strong><p>Une question sur votre campagne, vos contenus ou le fonctionnement du Studio&nbsp;?</p><button type="button" class="help-tour-button" data-tour-replay hidden>Revoir la visite de cette page</button><a class="button button-primary" href="contact-client.html">Contacter Me&YouToo</a></div>') +
+        (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><strong>Besoin d’aide&nbsp;?</strong><p>Une question sur votre campagne, vos contenus ou le fonctionnement du Studio&nbsp;?</p><button type="button" class="help-tour-button" data-tour-replay hidden>Revoir la visite de cette page</button><button type="button" class="help-tour-button help-news-button" data-news-open>Nouveautés du Studio <span class="help-news-count" data-news-count hidden></span></button><a class="button button-primary" href="contact-client.html">Contacter Me&YouToo</a></div>') +
         switchButton +
         '<div class="profile"><div class="profile-person"><div class="avatar">' + avatarHtml + '</div><strong class="profile-person-name">' + (CURRENT_USER ? ((CURRENT_USER.firstName || '') + ' ' + (CURRENT_USER.lastName || '')).trim() || CURRENT_USER.email : 'Compte') + '</strong></div><div class="profile-copy">' + clientLogoHtml + '<small>' + roleLabel + ' · ' + (CURRENT_USER ? (CURRENT_USER.organizationName || 'Me&YouToo') : '') + '</small><button class="sidebar-logout" type="button" data-logout>Se déconnecter</button></div></div>' +
       '</div>';
