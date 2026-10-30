@@ -186,8 +186,8 @@
     var qCard='<article class="dp-card"><header><h3>📊 Prévu / réalisé par trimestre</h3></header><div class="dp-quarters">'+p.quarters.map(function(q){
       var h=function(n){return Math.round(n/maxQ*100);};
       return '<div class="dp-q"><div class="dp-q-bars" aria-hidden="true"><i class="is-done" style="height:'+h(q.done)+'%"></i><i class="is-planned" style="height:'+h(q.planned)+'%"></i><i class="is-late" style="height:'+h(q.late)+'%"></i></div>'+
-        '<strong>T'+q.quarter+'</strong><small>'+q.done+' réalisée'+(q.done>1?'s':'')+(q.planned?' · '+q.planned+' prévue'+(q.planned>1?'s':''):'')+(q.late?' · <b>'+q.late+' en retard</b>':'')+'</small></div>';
-    }).join('')+'</div><ul class="dp-legend"><li class="is-done">Réalisées</li><li class="is-planned">Prévues</li><li class="is-late">En retard</li></ul></article>';
+        '<strong>T'+q.quarter+'</strong><small>'+q.done+' réalisée'+(q.done>1?'s':'')+(q.planned?' · '+q.planned+' en cours ou prévue'+(q.planned>1?'s':''):'')+(q.late?' · <b>'+q.late+' en retard</b>':'')+'</small></div>';
+    }).join('')+'</div><ul class="dp-legend"><li class="is-done">Réalisées</li><li class="is-planned">En cours ou prévues</li><li class="is-late">En retard</li></ul></article>';
     if(!p.current)return '<section class="dp-grid">'+objCard+qCard+'</section>';
     // Échéances
     var up=(p.upcoming||[]).slice(0,8).map(function(u){
