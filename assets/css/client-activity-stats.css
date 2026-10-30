@@ -50,3 +50,5 @@
 .cas-timeline time{color:var(--muted,#54607e);font-size:.82rem}.cas-timeline small{color:var(--muted,#54607e)}
 .cas-empty-chart{padding:26px;text-align:center;color:var(--muted,#54607e);background:var(--royal-blue-tint,#f5f7fb);border-radius:var(--radius-sm,12px)}
 @media (max-width:900px){.cas-grid-2{grid-template-columns:1fr}.cas-tabs{width:100%}.cas-tabs button{flex:1;padding:10px}}
+main.cas-stats-mode > :not(.admin-client-page-head):not(.cas-tabs):not(.cas-panel):not(#client-alert){display:none!important}
+.cas-panel[hidden]{display:none!important}

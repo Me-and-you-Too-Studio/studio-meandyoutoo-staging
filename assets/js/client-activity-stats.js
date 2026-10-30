@@ -19,12 +19,12 @@
   head.insertAdjacentElement('afterend',tabs);
   var panel=document.createElement('section');
   panel.className='cas-panel';panel.id='client-activity-stats';panel.hidden=true;panel.setAttribute('role','tabpanel');
-  main.appendChild(panel);
-  var folderParts=function(){return Array.prototype.filter.call(main.children,function(el){return el!==head&&el!==tabs&&el!==panel&&el.id!=='client-alert';});};
+  tabs.insertAdjacentElement('afterend',panel);
   var loaded=false;
   function show(tab){
     tabs.querySelectorAll('[data-cas-tab]').forEach(function(b){b.setAttribute('aria-selected',String(b.dataset.casTab===tab));});
-    folderParts().forEach(function(el){if(tab==='stats'){el.dataset.casHidden=el.hidden?'1':'';el.hidden=true;}else if(el.dataset.casHidden!==undefined){el.hidden=el.dataset.casHidden==='1';delete el.dataset.casHidden;}});
+    // Masquage par classe CSS : le dossier client, qui réaffiche ses blocs en se chargeant, ne peut pas l'annuler.
+    main.classList.toggle('cas-stats-mode',tab==='stats');
     panel.hidden=tab!=='stats';
     if(tab==='stats'&&!loaded)load();
     try{history.replaceState(null,'',tab==='stats'?location.pathname+location.search+'#stats':location.pathname+location.search);}catch(e){}
