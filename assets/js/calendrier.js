@@ -442,6 +442,9 @@
       const data=await StudioAPI.request('/api/admin/organizations');state.organizations=data.organizations||[];const select=$('#calendar-org-filter'),taskOrg=$('#task-org');select.hidden=false;const opts=state.organizations.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'fr')).map(o=>`<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');select.innerHTML='<option value="">Tous les clients</option>'+opts;taskOrg.innerHTML='<option value="">Tâche interne générale</option>'+opts;
       if(taskOrgField){taskOrgField.hidden=false;taskOrgField.style.display='';}
       if(taskVisibilityField){taskVisibilityField.hidden=true;taskVisibilityField.style.display='none';}
+      // Ouvert depuis un dossier ou un Cockpit client (?organizationId=…) : le calendrier s'affiche directement sur ce client.
+      const fromUrl=new URLSearchParams(location.search).get('organizationId');
+      if(fromUrl&&state.organizations.some(o=>String(o.id)===String(fromUrl))){select.value=fromUrl;$('#calendar-status-filter').value='';}
     }catch(e){setAlert(e.message);}
   }
   async function load(){
