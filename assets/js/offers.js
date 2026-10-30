@@ -8,6 +8,9 @@
   try{user=window.StudioAPI&&StudioAPI.user?StudioAPI.user():null;}catch(e){}
   var isAdmin=mode==='studio'&&Boolean(user&&user.role==='admin')&&new URLSearchParams(location.search).get('audience')!=='client';
   var isClient=mode==='studio'&&Boolean(user&&user.role==='client');
+  // Formulaire HubSpot « Studio Me&YouToo – Demande d'information offre » (visiteurs non connectés).
+  // Tant que le GUID est vide, le bouton public renvoie vers la page Contact.
+  var HUBSPOT_PORTAL_ID='139575435',PUBLIC_FORM_GUID='167becb7-4700-4c9f-aa77-a92641d721da';
   var state={offers:[],categories:{},catalogues:{},hubspotCategories:[],filter:''};
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -25,7 +28,7 @@
     var meta=[o.format,o.duration].filter(Boolean).map(esc).join(' · ');
     var url=safeUrl(o.url),catalogue=safeUrl(o.catalogue_url);
     var ask=mode==='public'
-      ?'<a class="'+cls('primary')+' offer-ask" href="contact.html">Demander des informations</a>'
+      ?(PUBLIC_FORM_GUID?'<button type="button" class="'+cls('primary')+' offer-ask" data-offer-public="'+esc(o.id)+'">Demander des informations</button>':'<a class="'+cls('primary')+' offer-ask" href="contact.html">Demander des informations</a>')
       :(isClient?'<button type="button" class="button button-primary offer-ask" data-offer-ask="'+esc(o.id)+'">Demander des informations</button>':'');
     var adminTools=isAdmin?'<div class="offer-admin"><span class="offer-status '+(o.published?'is-on':'is-off')+'">'+(o.published?'Publiée':'Masquée')+'</span>'+(o.hubspot_category?'<span class="offer-status is-hs" title="Catégorie de produit HubSpot">HubSpot : '+esc(o.hubspot_category)+'</span>':'')+'<button type="button" class="button button-ghost" data-offer-edit="'+esc(o.id)+'">Modifier</button><button type="button" class="button button-ghost" data-offer-archive="'+esc(o.id)+'">Retirer</button></div>':'';
     return '<article class="offer-card cat-'+esc(o.category)+(isAdmin&&!o.published?' is-hidden-offer':'')+'">'+
@@ -70,6 +73,39 @@
       var r=await StudioAPI.request('/api/offer-requests',{method:'POST',body:JSON.stringify({offerId:o.id,source:'offers',message:message})});
       await window.StudioModal.alert({eyebrow:o.title,title:'Demande transmise',type:'success',message:r.message||'Votre demande a bien été transmise.'});
     }catch(e){await window.StudioModal.alert({title:'Envoi impossible',message:e.message||'Réessayez dans quelques instants.'});}
+  }
+
+  // ── Demande publique : envoi direct au formulaire HubSpot (consentement géré par HubSpot) ──
+  var PRIVATE_DOMAINS=['gmail.com','googlemail.com','hotmail.com','hotmail.fr','outlook.com','outlook.fr','live.com','live.fr','yahoo.com','yahoo.fr','icloud.com','me.com','mac.com','orange.fr','wanadoo.fr','free.fr','sfr.fr','laposte.net','proton.me','protonmail.com','gmx.com','gmx.fr'];
+  function askPublic(id){
+    var o=state.offers.find(function(x){return String(x.id)===String(id);});if(!o)return;
+    var dlg=document.createElement('dialog');dlg.className='offer-dialog';
+    dlg.innerHTML='<form novalidate><p class="offer-cat">Demande d’information</p><h2>'+esc(o.title)+'</h2>'+
+      '<div class="offer-field-row"><label class="offer-field"><span>Prénom *</span><input name="firstname" required autocomplete="given-name"></label><label class="offer-field"><span>Nom *</span><input name="lastname" required autocomplete="family-name"></label></div>'+
+      '<label class="offer-field"><span>E-mail professionnel *</span><input name="email" type="email" required autocomplete="email"></label>'+
+      '<label class="offer-field"><span>Entreprise *</span><input name="company" required autocomplete="organization"></label>'+
+      '<label class="offer-field"><span>Votre besoin</span><textarea name="message_ou_besoins_specifiques" rows="3" placeholder="Public visé, période envisagée, nombre de participants…"></textarea></label>'+
+      '<label class="offer-check"><input type="checkbox" name="consent" required> J’accepte que Me&amp;YouToo utilise ces informations pour répondre à ma demande. *</label>'+
+      '<p class="offer-form-error" hidden></p><p class="offer-form-ok" hidden>Merci ! Votre demande a bien été transmise à l’équipe Me&amp;YouToo, qui revient vers vous rapidement.</p>'+
+      '<div class="offer-dialog-actions"><button type="button" class="'+cls('secondary')+'" data-close>Fermer</button><button type="submit" class="'+cls('primary')+'">Envoyer ma demande</button></div></form>';
+    document.body.appendChild(dlg);
+    var form=dlg.querySelector('form'),err=dlg.querySelector('.offer-form-error'),ok=dlg.querySelector('.offer-form-ok'),submit=form.querySelector('[type=submit]');
+    dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
+    dlg.addEventListener('close',function(){dlg.remove();});
+    form.onsubmit=function(ev){ev.preventDefault();err.hidden=true;
+      if(!form.checkValidity()){form.reportValidity();return;}
+      var email=String(form.elements.email.value||'').trim().toLowerCase();
+      if(PRIVATE_DOMAINS.indexOf(email.split('@')[1]||'')>=0){err.textContent='Merci d’utiliser votre adresse e-mail professionnelle.';err.hidden=false;form.elements.email.focus();return;}
+      var fields=['firstname','lastname','email','company','message_ou_besoins_specifiques'].map(function(n){return {name:n,value:String(form.elements[n].value||'').trim()};}).filter(function(f){return f.value;});
+      if(o.hubspot_category)fields.push({name:'offre_d_interet_studio',value:o.hubspot_category});
+      submit.disabled=true;submit.textContent='Envoi…';
+      fetch('https://api-eu1.hsforms.com/submissions/v3/integration/submit/'+HUBSPOT_PORTAL_ID+'/'+PUBLIC_FORM_GUID,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({fields:fields,context:{pageUri:location.href,pageName:document.title+' — '+o.title},
+          legalConsentOptions:{consent:{consentToProcess:true,text:'J’accepte que Me&YouToo utilise ces informations pour répondre à ma demande.'}}})})
+      .then(function(res){if(!res.ok)throw new Error();ok.hidden=false;form.querySelectorAll('input,textarea').forEach(function(el){el.disabled=true;});submit.hidden=true;})
+      .catch(function(){err.innerHTML='L’envoi n’a pas abouti. Vous pouvez nous écrire depuis la <a href="contact.html">page Contact</a>.';err.hidden=false;submit.disabled=false;submit.textContent='Envoyer ma demande';});
+    };
+    dlg.showModal();form.elements.firstname.focus();
   }
 
   // ── Gestion admin ──
@@ -125,6 +161,7 @@
     var t=ev.target.closest('button');if(!t)return;
     if(t.hasAttribute('data-offer-filter')){state.filter=t.getAttribute('data-offer-filter');render();}
     else if(t.hasAttribute('data-offer-ask'))ask(t.getAttribute('data-offer-ask'));
+    else if(t.hasAttribute('data-offer-public'))askPublic(t.getAttribute('data-offer-public'));
     else if(t.hasAttribute('data-offer-new'))edit(null);
     else if(t.hasAttribute('data-offer-edit'))edit(t.getAttribute('data-offer-edit'));
     else if(t.hasAttribute('data-offer-archive'))archive(t.getAttribute('data-offer-archive'));
