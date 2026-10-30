@@ -8,7 +8,7 @@
   try{user=window.StudioAPI&&StudioAPI.user?StudioAPI.user():null;}catch(e){}
   var isAdmin=mode==='studio'&&Boolean(user&&user.role==='admin')&&new URLSearchParams(location.search).get('audience')!=='client';
   var isClient=mode==='studio'&&Boolean(user&&user.role==='client');
-  var state={offers:[],categories:{},catalogues:{},filter:''};
+  var state={offers:[],categories:{},catalogues:{},hubspotCategories:[],filter:''};
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   // Le site public n’a que public.css (.btn), le Studio a style.css (.button).
@@ -27,7 +27,7 @@
     var ask=mode==='public'
       ?'<a class="'+cls('primary')+' offer-ask" href="contact.html">Demander des informations</a>'
       :(isClient?'<button type="button" class="button button-primary offer-ask" data-offer-ask="'+esc(o.id)+'">Demander des informations</button>':'');
-    var adminTools=isAdmin?'<div class="offer-admin"><span class="offer-status '+(o.published?'is-on':'is-off')+'">'+(o.published?'Publiée':'Masquée')+'</span><button type="button" class="button button-ghost" data-offer-edit="'+esc(o.id)+'">Modifier</button><button type="button" class="button button-ghost" data-offer-archive="'+esc(o.id)+'">Retirer</button></div>':'';
+    var adminTools=isAdmin?'<div class="offer-admin"><span class="offer-status '+(o.published?'is-on':'is-off')+'">'+(o.published?'Publiée':'Masquée')+'</span>'+(o.hubspot_category?'<span class="offer-status is-hs" title="Catégorie de produit HubSpot">HubSpot : '+esc(o.hubspot_category)+'</span>':'')+'<button type="button" class="button button-ghost" data-offer-edit="'+esc(o.id)+'">Modifier</button><button type="button" class="button button-ghost" data-offer-archive="'+esc(o.id)+'">Retirer</button></div>':'';
     return '<article class="offer-card cat-'+esc(o.category)+(isAdmin&&!o.published?' is-hidden-offer':'')+'">'+
       '<p class="offer-cat"><span aria-hidden="true">'+esc(cat.icon)+'</span> '+esc(cat.label)+'</p>'+
       '<h3>'+esc(o.title)+'</h3>'+(o.summary?'<p class="offer-summary">'+esc(o.summary)+'</p>':'')+
@@ -58,7 +58,7 @@
   }
 
   function fail(){root.innerHTML='<p class="offer-empty">Nos offres sont momentanément indisponibles. <a href="https://meandyoutoo.app/fr/" target="_blank" rel="noopener">Les découvrir sur meandyoutoo.app ↗</a></p>';}
-  function refresh(){return load().then(function(d){state.offers=d.offers||[];state.categories=d.categories||{};state.catalogues=d.catalogues||{};render();}).catch(fail);}
+  function refresh(){return load().then(function(d){state.offers=d.offers||[];state.categories=d.categories||{};state.catalogues=d.catalogues||{};state.hubspotCategories=d.hubspotCategories||[];render();}).catch(fail);}
 
   async function ask(id){
     var o=state.offers.find(function(x){return String(x.id)===String(id);});if(!o)return;
@@ -88,7 +88,8 @@
       field('summary','Description courte',o.summary||'',{area:true})+
       '<div class="offer-field-row">'+field('format','Format',o.format||'',{placeholder:'Présentiel ou distanciel'})+field('duration','Durée',o.duration||'',{placeholder:'3 h à 7 h'})+'</div>'+
       field('themes','Thématiques (séparées par des virgules)',(o.themes||[]).join(', '),{placeholder:'sexisme, handicap'})+
-      field('url','Lien « En savoir plus » (https://…)',o.url||'')+field('catalogueUrl','Lien du catalogue (https://…)',o.catalogue_url||'')+
+      field('url','Lien « En savoir plus » (https://…)',o.url||'')+
+      '<label class="offer-field"><span>Catégorie de produit HubSpot (transaction)</span><select name="hubspotCategory"><option value="">— Aucune —</option>'+state.hubspotCategories.map(function(c){return '<option value="'+esc(c)+'"'+(c===o.hubspot_category?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select></label>'+field('catalogueUrl','Lien du catalogue (https://…)',o.catalogue_url||'')+
       '<label class="offer-check"><input type="checkbox" name="published"'+(o.published!==false?' checked':'')+'> Publiée (visible sur le site public et chez les clients)</label>'+
       '<p class="offer-form-error" hidden></p><div class="offer-dialog-actions"><button type="button" class="button button-ghost" value="cancel">Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
     document.body.appendChild(dlg);
@@ -97,7 +98,7 @@
     dlg.addEventListener('close',function(){dlg.remove();});
     form.onsubmit=async function(ev){ev.preventDefault();
       var f=new FormData(form),body={title:f.get('title'),category:f.get('category'),summary:f.get('summary'),format:f.get('format'),duration:f.get('duration'),
-        themes:String(f.get('themes')||''),url:f.get('url'),catalogueUrl:f.get('catalogueUrl'),published:f.get('published')==='on',position:o.position||0};
+        themes:String(f.get('themes')||''),url:f.get('url'),catalogueUrl:f.get('catalogueUrl'),hubspotCategory:f.get('hubspotCategory'),published:f.get('published')==='on',position:o.position||0};
       try{await StudioAPI.request(id?'/api/admin/offers/'+encodeURIComponent(id):'/api/admin/offers',{method:id?'PATCH':'POST',body:JSON.stringify(body)});dlg.close();refresh();}
       catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
     };
