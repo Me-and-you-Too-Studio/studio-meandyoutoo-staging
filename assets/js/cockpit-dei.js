@@ -9,6 +9,14 @@
     if(link)link.href=adminView?'calendrier.html':'calendrier.html?audience=client';
   });
 
+  // Mode admin (cockpit-dei.html?organizationId=…) : on saisit le registre d'un client ; le parcours ne concerne que le compte connecté.
+  var adminOrganizationId=isAdmin?new URLSearchParams(location.search).get('organizationId'):null;
+  if(adminOrganizationId){
+    var banner=document.getElementById('dei-admin-banner');
+    if(banner){banner.hidden=false;banner.innerHTML='Vous consultez le Cockpit DEI de ce client en tant que Me&amp;YouToo : les actions que vous ajoutez sont marquées « Animée par Me&amp;YouToo ». <a href="client.html?organizationId='+encodeURIComponent(adminOrganizationId)+'">← Retour au dossier client</a>';}
+    return;
+  }
+
   // ── Votre année avec Me&YouToo : frise des campagnes et comparaison avec ses propres campagnes. ──
   var root=document.getElementById('dei-year');
   if(!root||!window.StudioAPI)return;
