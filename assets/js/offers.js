@@ -83,7 +83,7 @@
     dlg.innerHTML='<form novalidate><p class="offer-cat">Demande d’information</p><h2>'+esc(o.title)+'</h2>'+
       '<div class="offer-field-row"><label class="offer-field"><span>Prénom *</span><input name="firstname" required autocomplete="given-name"></label><label class="offer-field"><span>Nom *</span><input name="lastname" required autocomplete="family-name"></label></div>'+
       '<label class="offer-field"><span>E-mail professionnel *</span><input name="email" type="email" required autocomplete="email"></label>'+
-      '<label class="offer-field"><span>Entreprise *</span><input name="company" required autocomplete="organization"></label>'+
+      '<div class="offer-field-row"><label class="offer-field"><span>Entreprise *</span><input name="company" required autocomplete="organization"></label><label class="offer-field"><span>Intitulé du poste *</span><input name="jobtitle" required autocomplete="organization-title"></label></div>'+
       '<label class="offer-field"><span>Votre besoin</span><textarea name="message_ou_besoins_specifiques" rows="3" placeholder="Public visé, période envisagée, nombre de participants…"></textarea></label>'+
       '<label class="offer-check"><input type="checkbox" name="consent" required> J’accepte que Me&amp;YouToo utilise ces informations pour répondre à ma demande. *</label>'+
       '<p class="offer-form-error" hidden></p><p class="offer-form-ok" hidden>Merci ! Votre demande a bien été transmise à l’équipe Me&amp;YouToo, qui revient vers vous rapidement.</p>'+
@@ -96,7 +96,7 @@
       if(!form.checkValidity()){form.reportValidity();return;}
       var email=String(form.elements.email.value||'').trim().toLowerCase();
       if(PRIVATE_DOMAINS.indexOf(email.split('@')[1]||'')>=0){err.textContent='Merci d’utiliser votre adresse e-mail professionnelle.';err.hidden=false;form.elements.email.focus();return;}
-      var fields=['firstname','lastname','email','company','message_ou_besoins_specifiques'].map(function(n){return {name:n,value:String(form.elements[n].value||'').trim()};}).filter(function(f){return f.value;});
+      var fields=['firstname','lastname','email','company','jobtitle','message_ou_besoins_specifiques'].map(function(n){return {name:n,value:String(form.elements[n].value||'').trim()};}).filter(function(f){return f.value;});
       if(o.hubspot_category)fields.push({name:'offre_d_interet_studio',value:o.hubspot_category});
       submit.disabled=true;submit.textContent='Envoi…';
       fetch('https://api-eu1.hsforms.com/submissions/v3/integration/submit/'+HUBSPOT_PORTAL_ID+'/'+PUBLIC_FORM_GUID,{method:'POST',headers:{'Content-Type':'application/json'},
