@@ -202,21 +202,41 @@
   }
   // Téléchargement direct du PDF (mise en page A4), sans passer par la fenêtre d'impression.
   function slug(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'');}
-  document.getElementById('bl-print').addEventListener('click',function(){
+  // Chaque section est capturée seule (indépendamment de la taille de la fenêtre et du défilement),
+  // puis découpée en pages A4 entre deux éléments (ligne de tableau, paragraphe, carte…), jamais au milieu.
+  var MARGIN=10,PAGE_W=190,PAGE_H=275;
+  var BREAKS='tr,li,h2,h3,p,table,.bl-kpis,.bl-tags,.bl-frise,.bl-month,.bl-plan,.bl-cta,.bl-notice,.bl-complete,.bl-footer,.bl-cover-title,.bl-cover-foot';
+  async function buildPdf(){
+    var pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait'}),first=true,scrolled=window.scrollY;
+    window.scrollTo(0,0);
+    var sections=[].slice.call(doc.querySelectorAll('.bl-page'));
+    for(var s=0;s<sections.length;s++){
+      var sec=sections[s],box=sec.getBoundingClientRect();
+      var canvas=await window.html2canvas(sec,{scale:2,useCORS:true,backgroundColor:'#ffffff',scrollX:0,scrollY:0,windowWidth:document.documentElement.clientWidth});
+      var k=canvas.width/box.width,perMm=canvas.width/PAGE_W,pageH=PAGE_H*perMm;
+      var cuts=[].slice.call(sec.querySelectorAll(BREAKS)).map(function(e){return Math.round((e.getBoundingClientRect().top-box.top)*k);})
+        .filter(function(y){return y>0;}).sort(function(a,b){return a-b;});
+      for(var y=0;y<canvas.height-4;){
+        var end=Math.min(canvas.height,y+pageH);
+        if(end<canvas.height){var ok=cuts.filter(function(c){return c>y+pageH*0.25&&c<=end;});if(ok.length)end=ok[ok.length-1];}
+        var part=document.createElement('canvas');part.width=canvas.width;part.height=end-y;
+        part.getContext('2d').drawImage(canvas,0,y,canvas.width,end-y,0,0,canvas.width,end-y);
+        if(!first)pdf.addPage();first=false;
+        pdf.addImage(part.toDataURL('image/jpeg',0.92),'JPEG',MARGIN,MARGIN,PAGE_W,(end-y)/perMm);
+        y=end;
+      }
+    }
+    window.scrollTo(0,scrolled);
+    return pdf;
+  }
+  document.getElementById('bl-print').addEventListener('click',async function(){
     var btn=this;
-    if(!window.html2pdf){window.print();return;}
+    if(!window.html2canvas||!window.jspdf){window.print();return;}
     btn.disabled=true;var label=btn.textContent;btn.textContent='Préparation du PDF…';
     document.body.classList.add('is-exporting');
-    window.html2pdf().set({
-      margin:[10,10,12,10],filename:['Bilan-DI',year,slug(state.org)].filter(Boolean).join('-')+'.pdf',
-      image:{type:'jpeg',quality:0.95},
-      html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-      // Saut de page avant chaque section (jamais après : pas de page blanche quand une section remplit sa page).
-      pagebreak:{mode:['css'],before:'.bl-page + .bl-page',avoid:['tr','.bl-objs li','.bl-plan','.bl-cta','.bl-kpis','.bl-notice','.bl-complete','h3']}
-    }).from(doc).save().catch(function(){window.print();}).then(function(){
-      document.body.classList.remove('is-exporting');btn.disabled=false;btn.textContent=label;
-    });
+    try{(await buildPdf()).save(['Bilan-DI',year,slug(state.org)].filter(Boolean).join('-')+'.pdf');}
+    catch(e){window.print();}
+    finally{document.body.classList.remove('is-exporting');btn.disabled=false;btn.textContent=label;}
   });
   start();
 })();
