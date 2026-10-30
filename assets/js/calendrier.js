@@ -6,6 +6,15 @@
   const canManageTasks=isAdmin||Boolean(user.permissions&&user.permissions.manage_tasks);
   const state={view:'year',cursor:new Date(),campaigns:[],tasks:[],organizations:[],missingDates:0,taskFilter:'todo'};
   const statusLabel=status=>status?window.StudioStatus.label(status,isAdmin):'';
+  // Même règle que la page campagne : le statut affiché tient compte des dates de diffusion.
+  function displayStatus(p){
+    const s=p.status||'draft';if(s==='archived')return s;
+    const start=parseDate(p.launch_date),end=parseDate(p.close_date),now=new Date();
+    if(['published','active','scheduled'].includes(s)&&end&&end<now)return 'closed';
+    if(['published','scheduled'].includes(s)&&start&&start<=now)return 'active';
+    return s;
+  }
+  const campaignStatusLabel=p=>statusLabel(displayStatus(p));
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function organizationLogoSrc(o){const raw=o?.logo_url||o?.logo_data||'';return raw&&raw.startsWith('/')?StudioAPI.base()+raw:raw;}
   const iso=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;};
@@ -185,7 +194,7 @@
     const p=campaignById(trigger.dataset.campaignId);
     if(!p)return;
     const pop=ensureCampaignPopover();
-    const status=statusLabel(p.status)||p.status||'Campagne';
+    const status=campaignStatusLabel(p)||'Campagne';
     const details=[p.theme_title,p.organization_name].filter(Boolean).join(' · ');
     pop.innerHTML=`<div class="calendar-dei-popover-head"><span class="calendar-dei-popover-date">${esc(campaignDatesLabel(p))}</span><button type="button" class="calendar-dei-popover-close" aria-label="Fermer">×</button></div><strong class="calendar-dei-popover-title">${esc(campaignName(p))}</strong><span class="calendar-dei-popover-category">${esc(status)}${details?' · '+esc(details):''}</span><a class="button button-primary calendar-dei-popover-cta" href="campagne-detail.html?id=${encodeURIComponent(p.id)}">Voir la campagne →</a>`;
     pop.hidden=false;
@@ -241,7 +250,7 @@
       const a=start||end,b=end||start;
       return a<=periodEnd&&b>=periodStart;
     };
-    return state.campaigns.filter(p=>matchesStatus(p)&&(!org||String(p.organization_id)===String(org))&&(!q||[campaignName(p),p.organization_name,p.theme_title,statusLabel(p.status)].some(v=>String(v||'').toLowerCase().includes(q))));
+    return state.campaigns.filter(p=>matchesStatus(p)&&(!org||String(p.organization_id)===String(org))&&(!q||[campaignName(p),p.organization_name,p.theme_title,campaignStatusLabel(p)].some(v=>String(v||'').toLowerCase().includes(q))));
   }
   function filteredTasksForCalendar(){
     if(!$('#calendar-show-tasks').checked)return[];
@@ -301,11 +310,56 @@
       const activeDeiFilter=$('#calendar-dei-filter')?.value||'all';
       const monthHighlights=monthDei.filter(e=>e.allMonth||e.yearHighlight||(activeDeiFilter!=='all'&&activeDeiFilter!=='none'));
       const highlightHtml=monthHighlights.length?`<div class="studio-year-highlights">${monthHighlights.map(e=>{const dateLabel=deiYearRangeLabel(e,year);return `<div class="studio-year-highlight is-${esc(e.category)}"><span class="studio-year-highlight-date">${esc(dateLabel)}</span><span class="studio-year-highlight-copy"><strong>${esc(e.title)}</strong>${e.recommendation?`<small>Diagnostic recommandé : ${esc(e.recommendation)}</small>`:''}</span></div>`;}).join('')}</div>`:'';
-      const campaignRows=showCampaignDates?active.slice().sort((a,b)=>String(a.launch_date||a.close_date||'').localeCompare(String(b.launch_date||b.close_date||''))):[];
-      const campaignsHtml=campaignRows.length?`<div class="studio-year-client-campaigns">${campaignRows.slice(0,4).map(p=>`<div class="studio-year-client-campaign"><div class="studio-year-client-campaign-head"><strong>${esc(campaignName(p))}</strong><span class="studio-year-campaign-status is-${esc(p.status||'draft')}">${esc(statusLabel(p.status)||p.status||'Brouillon')}</span></div><div class="studio-year-client-campaign-dates">${esc(campaignDatesLabel(p))}</div></div>`).join('')}${campaignRows.length>4?`<div class="studio-year-client-campaign-more">+${campaignRows.length-4} autre${campaignRows.length-4>1?'s':''} campagne${campaignRows.length-4>1?'s':''}</div>`:''}</div>`:'';
-      return `<button class="studio-year-month ${deiCount?'has-dei-events':''} ${monthHighlights.length?'has-dei-month':''} ${showCampaignDates?'has-client-dates':''}" type="button" data-month="${m}"><strong>${start.toLocaleDateString('fr-FR',{month:'long'})}</strong>${highlightHtml}${campaignsHtml}<span class="studio-year-active">${active.length} campagne${active.length>1?'s':''} active${active.length>1?'s':''}</span><div><small><b>${starts}</b> démarrage${starts>1?'s':''}</small><small><b>${ends}</b> fin${ends>1?'s':''}</small><small><b>${taskCount}</b> tâche${taskCount>1?'s':''}</small>${deiCount?`<small class="studio-year-dei"><b>${deiCount}</b> événement${deiCount>1?'s':''} DEI</small>`:''}</div></button>`;
+      // Les campagnes en cours sont sur la frise : le mois ne montre que ce qui y change (démarrages et clôtures).
+      const inMonth=v=>{const d=parseDate(v);return d&&d.getFullYear()===year&&d.getMonth()===m;};
+      const changes=showCampaignDates?[...campaigns.filter(p=>inMonth(p.launch_date)).map(p=>({p,kind:'Démarrage',d:parseDate(p.launch_date)})),...campaigns.filter(p=>inMonth(p.close_date)).map(p=>({p,kind:'Clôture',d:parseDate(p.close_date)}))].sort((a,b)=>a.d-b.d):[];
+      const campaignsHtml=changes.length?`<div class="studio-year-client-campaigns">${changes.slice(0,4).map(c=>`<div class="studio-year-client-campaign is-${c.kind==='Démarrage'?'start':'end'}"><div class="studio-year-client-campaign-head"><strong>${esc(campaignName(c.p))}</strong></div><div class="studio-year-client-campaign-dates">${esc(c.kind)} · ${esc(dayLabel(c.d))}</div></div>`).join('')}${changes.length>4?`<div class="studio-year-client-campaign-more">+${changes.length-4} autre${changes.length-4>1?'s':''}</div>`:''}</div>`:'';
+      return `<button class="studio-year-month ${deiCount?'has-dei-events':''} ${monthHighlights.length?'has-dei-month':''} ${showCampaignDates?'has-client-dates':''}" type="button" data-month="${m}"><strong>${start.toLocaleDateString('fr-FR',{month:'long'})}</strong>${highlightHtml}${campaignsHtml}<span class="studio-year-active">${active.length?`${active.length} campagne${active.length>1?'s':''} en cours`:'Aucune campagne en cours'}</span><div>${starts&&!showCampaignDates?`<small><b>${starts}</b> démarrage${starts>1?'s':''}</small>`:''}${ends&&!showCampaignDates?`<small><b>${ends}</b> clôture${ends>1?'s':''}</small>`:''}${taskCount?`<small><b>${taskCount}</b> tâche${taskCount>1?'s':''}</small>`:''}${deiCount?`<small class="studio-year-dei"><b>${deiCount}</b> événement${deiCount>1?'s':''} DEI</small>`:''}</div></button>`;
     }).join('');
     root.querySelectorAll('[data-month]').forEach(b=>b.onclick=()=>openMonth(year,Number(b.dataset.month)));
+  }
+  // Frise annuelle : une ligne par campagne, de son lancement à sa clôture, avec les temps forts DEI
+  // et les tâches sur le même axe. En vue Année seulement, et pour l'admin quand un client est choisi.
+  function renderTimeline(){
+    const root=$('#calendar-timeline');if(!root)return;
+    const year=state.cursor.getFullYear(),selectedOrg=$('#calendar-org-filter')?.value||'';
+    if(state.view!=='year'||(isAdmin&&!selectedOrg)){root.hidden=true;root.innerHTML='';return;}
+    root.hidden=false;
+    const y0=new Date(year,0,1),y1=new Date(year+1,0,1),span=y1-y0;
+    const pct=d=>Math.max(0,Math.min(100,(d-y0)/span*100));
+    const rows=filteredCampaigns().filter(p=>p.launch_date||p.close_date).sort((a,b)=>String(a.launch_date||a.close_date).localeCompare(String(b.launch_date||b.close_date)));
+    const names={};rows.forEach(p=>{const n=campaignName(p);names[n]=(names[n]||0)+1;});
+    const now=new Date(),todayLine=now.getFullYear()===year?`<i class="cal-tl-today" style="left:${pct(now).toFixed(2)}%" aria-hidden="true"></i>`:'';
+    const tasks=filteredTasksForCalendar().filter(t=>t.status!=='done'&&t.due_date&&parseDate(t.due_date).getFullYear()===year);
+    const taskMarker=t=>`<button type="button" class="cal-tl-task${t.priority==='high'?' is-high':''}" style="left:${pct(parseDate(t.due_date)).toFixed(2)}%" data-open-task="${esc(t.id)}" title="Tâche · ${esc(dayLabel(parseDate(t.due_date)))} · ${esc(t.title)}" aria-label="Tâche du ${esc(dayLabel(parseDate(t.due_date)))} : ${esc(t.title)}"></button>`;
+    const axis=Array.from({length:12},(_,m)=>`<span>${esc(shortMonthLabel(year,m))}</span>`).join('');
+    const rowHtml=rows.map(p=>{
+      const start=parseDate(p.launch_date)||parseDate(p.close_date),end=parseDate(p.close_date)||start,key=displayStatus(p);
+      const endPlus=new Date(end.getFullYear(),end.getMonth(),end.getDate()+1);
+      const left=pct(start),width=Math.max(pct(endPlus)-left,0.8);
+      const daysLeft=Math.ceil((endPlus-now)/864e5);
+      const note=key==='active'&&daysLeft<=15?`Clôture dans ${daysLeft} jour${daysLeft>1?'s':''}`:key==='active'?`Encore ${daysLeft} jours`:key==='scheduled'?`Démarre le ${dayLabel(start)}`:key==='closed'?`Clôturée le ${dayLabel(end)}`:campaignStatusLabel(p);
+      const sub=[p.theme_title&&p.theme_title.toLowerCase()!==campaignName(p).toLowerCase()?p.theme_title:'',isAdmin&&!selectedOrg?p.organization_name:'',names[campaignName(p)]>1?`n° ${p.id}`:''].filter(Boolean).join(' · ');
+      const href=`campagne-detail.html?id=${encodeURIComponent(p.id)}`;
+      const rowTasks=tasks.filter(t=>String(t.project_id||'')===String(p.id));
+      return `<div class="cal-tl-row"><a class="cal-tl-label" href="${href}"><strong>${esc(campaignName(p))}</strong><small>${esc(campaignDatesLabel(p))}${sub?' · '+esc(sub):''}</small></a><div class="cal-tl-track">${todayLine}<a class="cal-tl-bar is-${esc(key)}${start<y0?' is-cut-start':''}${endPlus>y1?' is-cut-end':''}" href="${href}" data-campaign-id="${esc(p.id)}" style="left:${left.toFixed(2)}%;width:${width.toFixed(2)}%" aria-label="${esc(campaignName(p))} : ${esc(campaignStatusLabel(p))}">${width>=12?`<span>${esc(campaignStatusLabel(p))}</span>`:''}</a>${rowTasks.map(taskMarker).join('')}</div><span class="cal-tl-note is-${esc(key)}">${esc(note)}</span></div>`;
+    }).join('');
+    const rowIds=rows.map(p=>String(p.id));
+    const teamTasks=tasks.filter(t=>!rowIds.includes(String(t.project_id||'')));
+    const teamRow=teamTasks.length?`<div class="cal-tl-row cal-tl-row-tasks"><div class="cal-tl-label"><strong>Tâches de l’équipe</strong><small>Hors campagne</small></div><div class="cal-tl-track">${todayLine}${teamTasks.map(taskMarker).join('')}</div><span class="cal-tl-note"></span></div>`:'';
+    const dei=filteredDeiEvents().filter(e=>deiEventAppliesToYear(e,year));
+    const deiMarks=dei.map(e=>{
+      const range=eventRangeForYear(e,year),m=(e.month||1)-1;
+      const from=range?new Date(year,m,range[0]):e.allMonth?new Date(year,m,1):new Date(year,m,e.day||1);
+      const to=range?new Date(year,m,range[1]+1):e.allMonth?new Date(year,m+1,1):null;
+      const index=deiEvents.indexOf(e),dateKey=iso(from);
+      return to?`<button type="button" class="cal-tl-dei is-band is-${esc(e.category)}" style="left:${pct(from).toFixed(2)}%;width:${(pct(to)-pct(from)).toFixed(2)}%" data-dei-event="${index}" data-dei-date="${dateKey}" aria-haspopup="dialog" aria-label="${esc(e.title)}"><span>${esc(e.short||e.title)}</span></button>`:`<button type="button" class="cal-tl-dei is-${esc(e.category)}" style="left:${pct(from).toFixed(2)}%" data-dei-event="${index}" data-dei-date="${dateKey}" aria-haspopup="dialog" aria-label="${esc(e.title)}"></button>`;
+    }).join('');
+    const deiRow=dei.length?`<div class="cal-tl-row cal-tl-row-dei"><div class="cal-tl-label"><strong>Temps forts DEI</strong><small>Le bon moment pour lancer une thématique</small></div><div class="cal-tl-track">${todayLine}${deiMarks}</div><span class="cal-tl-note"></span></div>`:'';
+    const empty=rows.length?'':`<div class="cal-tl-empty"><strong>Aucune campagne datée en ${year}.</strong> <a href="bibliotheque.html">Choisir une thématique →</a></div>`;
+    root.innerHTML=`<header class="cal-tl-head"><div><h3>Vos campagnes en ${year}</h3><p>Chaque barre va du lancement à la clôture. Cliquez sur une campagne pour l’ouvrir.</p></div><ul class="cal-tl-legend"><li class="is-scheduled">Programmée</li><li class="is-active">En diffusion</li><li class="is-closed">Terminée</li><li class="is-task">Tâche</li></ul></header><div class="cal-tl-grid"><div class="cal-tl-row cal-tl-axis" aria-hidden="true"><span class="cal-tl-label"></span><div class="cal-tl-track">${axis}</div><span class="cal-tl-note"></span></div>${rowHtml}${teamRow}${deiRow}</div>${empty}`;
+    bindCampaignPopovers(root);bindDeiPopovers(root);
+    root.querySelectorAll('[data-open-task]').forEach(b=>b.onclick=()=>switchToTasks(Number(b.dataset.openTask)));
   }
   function renderSelectedClientIdentity(){
     const root=$('#calendar-client-identity');if(!root)return;
@@ -346,7 +400,7 @@
     }
     if(focusId){const row=root.querySelector(`[data-task-id="${focusId}"]`);row?.scrollIntoView({behavior:'smooth',block:'center'});row?.classList.add('is-focused');}
   }
-  function render(){updateHeading();renderSelectedClientIdentity();renderDataQuality();renderTaskCount();if(state.view==='month')renderMonth();else renderYear();renderTasks();}
+  function render(){updateHeading();renderSelectedClientIdentity();renderDataQuality();renderTaskCount();if(state.view==='month')renderMonth();else renderYear();renderTimeline();renderTasks();}
   async function loadOrganizations(){
     const taskOrgField=$('#task-org-field'),taskVisibilityField=$('#task-visibility-field');
     if(!isAdmin){
@@ -368,7 +422,7 @@
     const clientOrder=isAdmin?String(a.organization_name||'').trim().localeCompare(String(b.organization_name||'').trim(),'fr',options):0;
     return clientOrder||String(campaignName(a)).localeCompare(String(campaignName(b)),'fr',options);
   });select.innerHTML='<option value="">Aucune campagne</option>'+rows.map(p=>`<option value="${p.id}">${isAdmin&&p.organization_name?esc(p.organization_name)+' — ':''}${esc(campaignName(p))}</option>`).join('');}
-  function setView(view){state.view=view;$$('[data-calendar-view]').forEach(b=>b.classList.toggle('is-active',b.dataset.calendarView===view));$('#calendar-month').hidden=view!=='month';$('#calendar-year').hidden=view!=='year';updateHeading();}
+  function setView(view){state.view=view;$$('[data-calendar-view]').forEach(b=>b.classList.toggle('is-active',b.dataset.calendarView===view));$('#calendar-month').hidden=view!=='month';$('#calendar-year').hidden=view!=='year';if(view!=='year')$('#calendar-timeline').hidden=true;updateHeading();}
   function openMonth(year,month){
     state.cursor=new Date(year,month,1);
     setView('month');
