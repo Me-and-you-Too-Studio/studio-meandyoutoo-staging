@@ -1,0 +1,47 @@
+/* Vitrine des offres Me&YouToo : site public (avec public.css) et Studio (avec style.css). */
+.offers-section{--of-ink:#273a64;--of-muted:#54607e;--of-line:#e2e7f1;--of-teal:#007883;--of-teal-soft:#e6f4f5;--of-yellow-soft:#fff6dd;}
+[data-offers-root]{--of-ink:#273a64;--of-muted:#54607e;--of-line:#e2e7f1;--of-teal:#007883;--of-teal-soft:#e6f4f5;--of-yellow-soft:#fff6dd;color:var(--of-ink);}
+.offers-section .offers-heading{max-width:760px;margin-bottom:24px}
+.offers-section .offers-heading p:not(.kicker){color:var(--of-muted)}
+.offer-catalogues{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 16px;padding:12px 16px;border-radius:12px;background:var(--of-yellow-soft);font-weight:600}
+.offer-catalogues a{color:var(--of-teal);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.offer-filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}
+.offer-chip{border:1px solid var(--of-line);background:#fff;color:var(--of-ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:.9rem;font-weight:600;cursor:pointer}
+.offer-chip:hover{border-color:var(--of-teal)}
+.offer-chip.is-current{background:var(--of-ink);border-color:var(--of-ink);color:#fff}
+.offer-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
+.offer-card{display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid var(--of-line);border-radius:16px;padding:20px;box-shadow:0 6px 18px rgba(39,58,100,.06);border-top:4px solid var(--of-teal)}
+.offer-card.cat-conference,.offer-card.cat-formation{border-top-color:#ffc000}
+.offer-card.cat-atelier,.offer-card.cat-conseil{border-top-color:#273a64}
+.offer-card.cat-elearning,.offer-card.cat-video,.offer-card.cat-microlearning{border-top-color:#8a6fd1}
+.offer-card h3{margin:0;font-size:1.08rem;line-height:1.3;color:var(--of-ink)}
+.offer-cat{margin:0;font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--of-teal)}
+.offer-summary{margin:0;color:var(--of-muted);font-size:.95rem;line-height:1.5}
+.offer-meta{margin:0;font-size:.85rem;font-weight:600;color:var(--of-ink)}
+.offer-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:auto;padding-top:8px}
+.offer-actions .btn,.offer-actions .button{font-size:.88rem}
+.offer-link{color:var(--of-teal);font-weight:700;font-size:.88rem;text-decoration:none}
+.offer-link:hover{text-decoration:underline}
+.offer-empty{color:var(--of-muted)}
+.offer-admin-bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:16px;color:var(--of-muted);font-size:.9rem}
+.offer-admin{display:flex;flex-wrap:wrap;align-items:center;gap:6px;border-top:1px dashed var(--of-line);padding-top:10px;margin-top:4px}
+.offer-status{font-size:.75rem;font-weight:700;border-radius:999px;padding:3px 10px}
+.offer-status.is-on{background:var(--of-teal-soft);color:var(--of-teal)}
+.offer-status.is-off{background:#f1f2f6;color:var(--of-muted)}
+.offer-card.is-hidden-offer{opacity:.65}
+.offer-dialog{border:0;border-radius:16px;padding:0;width:min(560px,calc(100vw - 32px));box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.offer-dialog::backdrop{background:rgba(27,42,73,.45)}
+.offer-dialog form{display:flex;flex-direction:column;gap:12px;padding:24px;max-height:85vh;overflow:auto}
+.offer-dialog h2{margin:0 0 4px}
+.offer-field{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:.9rem;flex:1}
+.offer-field input,.offer-field textarea,.offer-field select{font:inherit;font-weight:400;border:1px solid var(--of-line);border-radius:10px;padding:9px 11px}
+.offer-field-row{display:flex;gap:12px;flex-wrap:wrap}
+.offer-check{display:flex;gap:8px;align-items:center;font-size:.9rem}
+.offer-form-error{color:#b42318;margin:0}
+.offer-dialog-actions{display:flex;justify-content:flex-end;gap:8px}
+.offer-requests-title{margin:32px 0 12px;font-size:1.2rem}
+.offer-table-wrap{overflow-x:auto}
+.offer-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;font-size:.9rem}
+.offer-table th,.offer-table td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--of-line);vertical-align:top}
+.offer-table th{background:#f5f7fb;font-size:.8rem;text-transform:uppercase;letter-spacing:.03em}
+@media (max-width:600px){.offer-grid{grid-template-columns:1fr}.offer-card{padding:16px}}
