@@ -48,6 +48,9 @@
       catalogues='<div class="offer-catalogues"><span>📘 Nos catalogues 2026 :</span>'+
         (safeUrl(state.catalogues.conferences)?'<a href="'+esc(state.catalogues.conferences)+'" target="_blank" rel="noopener">Conférences ↗</a>':'')+
         (safeUrl(state.catalogues.formations)?'<a href="'+esc(state.catalogues.formations)+'" target="_blank" rel="noopener">Formations ↗</a>':'')+'</div>';
+    }else if(mode==='public'){
+      // Les catalogues sont réservés aux clients connectés : l'API publique ne les transmet pas.
+      catalogues='<div class="offer-catalogues"><span>📘 Nos catalogues détaillés de conférences et de formations sont réservés à nos clients.</span><a href="login.html">Se connecter à l’espace client →</a></div>';
     }
     var adminBar=isAdmin?'<div class="offer-admin-bar"><button type="button" class="button button-primary" data-offer-new>＋ Ajouter une offre</button><span>Les offres masquées n’apparaissent ni sur le site public ni chez les clients.</span></div>':'';
     root.innerHTML=adminBar+catalogues+chips+'<div class="offer-grid">'+(list.map(card).join('')||'<p class="offer-empty">Aucune offre dans cette catégorie.</p>')+'</div>'+(isAdmin?'<div id="offer-requests"></div>':'');
