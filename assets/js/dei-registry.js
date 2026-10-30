@@ -83,7 +83,7 @@
     if(state.tab==='prestataires'){root.innerHTML=providersView();return;}
     root.innerHTML=state.tab==='actions'
       ?head+'<div class="dr-list">'+rows+'</div>'
-      :head+cards+'<div class="dr-sub-row"><h3 class="dr-sub">Frise de l’année</h3><a class="button button-ghost" href="'+(isAdmin?'calendrier.html':'calendrier.html?audience=client')+'">Ouvrir dans le calendrier →</a></div>'+frise;
+      :head+cards+pilotageView()+'<div class="dr-sub-row"><h3 class="dr-sub">Frise de l’année</h3><a class="button button-ghost" href="'+(isAdmin?'calendrier.html':'calendrier.html?audience=client')+'">Ouvrir dans le calendrier →</a></div>'+frise;
     // Arrivée depuis le calendrier (?focus=action-12) : on montre l'action une seule fois.
     if(state.focus&&state.tab==='actions'){var target=document.getElementById('dr-'+state.focus);state.focus=null;
       if(target)setTimeout(function(){target.scrollIntoView({block:'center'});target.classList.add('is-focus');setTimeout(function(){target.classList.remove('is-focus');},2000);},200);}
@@ -162,8 +162,82 @@
   }
 
   // ── Saisie ──
-  function editDialog(action,month){
-    var d=state.data,a=action||{kind:'formation',status:'planned',action_date:(state.year+'-'+String((month??new Date().getMonth())+1).padStart(2,'0')+'-15'),led_by_meayt:isAdmin};
+  // ── Tableau de pilotage : objectifs, trimestres, échéances, points d'attention ──
+  var EVENT_ICONS={action:'🗓️',campaign_start:'🚀',campaign_end:'🏁',task:'✅',event:'📣'};
+  function shortDate(v){var d=new Date(String(v).slice(0,10)+'T12:00:00');return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}
+  function pilotageView(){
+    var p=state.data.pilotage;if(!p)return '';
+    var canEdit=state.data.canEdit;
+    // Objectifs
+    var objs=p.objectives.map(function(o){
+      var custom=o.metric==='custom',title=custom?o.label:(o.metricLabel+(o.label?' — '+o.label:''));
+      var pct=custom?(o.done?100:0):(o.value==null||!o.target?0:Math.min(100,Math.round(o.value/o.target*100)));
+      var reached=custom?o.done:(o.value!=null&&o.target&&o.value>=o.target);
+      var figure=custom?(o.done?'Atteint':'À atteindre'):(o.value==null?'Pas encore mesurable':num(o.value)+' / '+num(o.target)+(o.unit==='%'?' %':' '+o.unit));
+      return '<li class="dp-obj'+(reached?' is-reached':'')+'"><div class="dp-obj-head"><strong>'+esc(title)+'</strong><span>'+esc(figure)+(reached?' ✓':'')+'</span></div>'+
+        '<div class="dp-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i style="width:'+pct+'%"></i></div>'+
+        (canEdit?'<div class="dp-obj-tools">'+(custom?'<label class="dr-check"><input type="checkbox" data-obj-done="'+esc(o.id)+'"'+(o.done?' checked':'')+'> Atteint</label>':'')+'<button type="button" class="dr-link" data-obj-edit="'+esc(o.id)+'">Modifier</button><button type="button" class="dr-link" data-obj-delete="'+esc(o.id)+'">Retirer</button></div>':'')+'</li>';
+    }).join('');
+    var objCard='<article class="dp-card"><header><h3>🎯 Objectifs '+state.year+'</h3>'+(canEdit&&p.objectives.length<p.maxObjectives?'<button type="button" class="button button-ghost" data-obj-add>＋ Fixer un objectif</button>':'')+'</header>'+
+      (objs?'<ul class="dp-objs">'+objs+'</ul>':'<p class="dr-empty">Fixez 3 à 5 objectifs pour l’année : la progression se calcule toute seule à partir de vos actions et de vos diagnostics.</p>'+
+        (canEdit?'<div class="dp-suggest">'+[['actions_done',12,'12 actions réalisées'],['active_quarters',4,'Une action chaque trimestre'],['themes',5,'Couvrir 5 thématiques'],['people_reached',1000,'1 000 personnes touchées']].map(function(s){return '<button type="button" class="dr-chip-btn" data-obj-suggest="'+s[0]+':'+s[1]+'">＋ '+s[2]+'</button>';}).join('')+'</div>':''))+'</article>';
+    // Trimestres
+    var maxQ=Math.max(1,Math.max.apply(null,p.quarters.map(function(q){return q.done+q.planned+q.late;})));
+    var qCard='<article class="dp-card"><header><h3>📊 Prévu / réalisé par trimestre</h3></header><div class="dp-quarters">'+p.quarters.map(function(q){
+      var h=function(n){return Math.round(n/maxQ*100);};
+      return '<div class="dp-q"><div class="dp-q-bars" aria-hidden="true"><i class="is-done" style="height:'+h(q.done)+'%"></i><i class="is-planned" style="height:'+h(q.planned)+'%"></i><i class="is-late" style="height:'+h(q.late)+'%"></i></div>'+
+        '<strong>T'+q.quarter+'</strong><small>'+q.done+' réalisée'+(q.done>1?'s':'')+(q.planned?' · '+q.planned+' prévue'+(q.planned>1?'s':''):'')+(q.late?' · <b>'+q.late+' en retard</b>':'')+'</small></div>';
+    }).join('')+'</div><ul class="dp-legend"><li class="is-done">Réalisées</li><li class="is-planned">Prévues</li><li class="is-late">En retard</li></ul></article>';
+    if(!p.current)return '<section class="dp-grid">'+objCard+qCard+'</section>';
+    // Échéances
+    var up=(p.upcoming||[]).slice(0,8).map(function(u){
+      var link=u.type==='action'?'<button type="button" class="dr-link" data-focus="action-'+esc(u.id)+'">Voir</button>'
+        :(u.type==='campaign_start'||u.type==='campaign_end')?'<a class="dr-link" href="campagne-detail.html?projectId='+encodeURIComponent(u.id)+'">Voir</a>'
+        :u.type==='task'?'<a class="dr-link" href="calendrier.html'+(isAdmin?'':'?audience=client')+'">Voir</a>'
+        :(canEdit?'<button type="button" class="dr-link" data-prepare="'+esc(u.date)+'" data-theme="'+esc(u.theme||'')+'" data-title="'+esc(u.title)+'">Préparer</button>':(isClient?'<button type="button" class="dr-link" data-event-help="'+esc(u.title)+'">Être accompagné</button>':''));
+      var kindLabel={action:'Action prévue',campaign_start:'Lancement de campagne',campaign_end:'Clôture de campagne',task:'Tâche',event:'Temps fort D&I'}[u.type]||'';
+      return '<li><span class="dp-date">'+esc(shortDate(u.date))+'</span><span class="dp-ico" aria-hidden="true">'+EVENT_ICONS[u.type]+'</span><div><strong>'+esc(u.title)+'</strong><small>'+esc(kindLabel)+'</small></div>'+link+'</li>';
+    }).join('');
+    var upCard='<article class="dp-card"><header><h3>⏰ Prochaines échéances (60 jours)</h3></header>'+(up?'<ul class="dp-list">'+up+'</ul>':'<p class="dr-empty">Rien de prévu dans les 60 prochains jours.</p>')+'</article>';
+    // Points d'attention
+    var a=p.attention||{},alerts=[];
+    (a.late||[]).forEach(function(l){alerts.push('<li class="is-warn"><span class="dp-ico" aria-hidden="true">⚠️</span><div><strong>'+esc(l.title)+'</strong><small>Prévue le '+esc(fmtDate(l.date))+' : est-elle réalisée ?</small></div>'+(canEdit?'<button type="button" class="dr-link" data-late-edit="'+esc(l.id)+'" data-year-of="'+esc(String(l.date).slice(0,4))+'">Mettre à jour</button>':'')+'</li>');});
+    (a.emptyMonths||[]).forEach(function(m){alerts.push('<li><span class="dp-ico" aria-hidden="true">🕳️</span><div><strong>Rien de prévu en '+MONTHS_LONG[m.month-1]+' '+m.year+'</strong><small>Un mois sans action casse la dynamique.</small></div>'+
+      (canEdit&&m.year===state.year?'<button type="button" class="dr-link" data-add-month="'+(m.month-1)+'">Planifier</button>':'')+(isClient?'<button type="button" class="dr-link" data-month="'+(m.month-1)+'" data-month-year="'+m.year+'">Être accompagné</button>':'')+'</li>');});
+    if((a.uncoveredThemes||[]).length)alerts.push('<li><span class="dp-ico" aria-hidden="true">🧭</span><div><strong>Thématiques non travaillées depuis 12 mois</strong><small>'+esc(a.uncoveredThemes.join(', '))+'</small></div><a class="dr-link" href="'+(isAdmin?'offres.html':'offres.html')+'">Voir nos offres</a></li>');
+    var attCard='<article class="dp-card"><header><h3>🔎 Points d’attention</h3></header>'+(alerts.length?'<ul class="dp-list">'+alerts.join('')+'</ul>':'<p class="dr-empty">Rien à signaler, belle dynamique 👍</p>')+'</article>';
+    return '<section class="dp-grid">'+objCard+qCard+upCard+attCard+'</section>';
+  }
+  function objectiveDialog(objective,preset){
+    var p=state.data.pilotage,o=objective||preset||{metric:'actions_done'};
+    var opts=Object.keys(p.metrics).map(function(k){return '<option value="'+k+'"'+(k===o.metric?' selected':'')+'>'+esc(p.metrics[k].label)+'</option>';}).join('');
+    var dlg=document.createElement('dialog');dlg.className='dr-dialog';
+    dlg.innerHTML='<form><h2>'+(objective?'Modifier l’objectif':'Nouvel objectif '+state.year)+'</h2>'+
+      '<label class="dr-field"><span>Type d’objectif</span><select name="metric">'+opts+'</select></label>'+
+      '<label class="dr-field" data-when="target"><span>Cible</span><input type="number" min="1" name="target" value="'+esc(o.target??'')+'"></label>'+
+      '<label class="dr-field"><span data-label-text>Précision (facultatif)</span><input name="label" maxlength="160" value="'+esc(o.label||'')+'" placeholder="Ex. : au siège et en régions"></label>'+
+      '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
+    document.body.appendChild(dlg);
+    var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
+    function sync(){var custom=form.elements.metric.value==='custom';dlg.querySelector('[data-when="target"]').hidden=custom;dlg.querySelector('[data-label-text]').textContent=custom?'Objectif *':'Précision (facultatif)';}
+    form.elements.metric.onchange=sync;sync();
+    dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
+    dlg.addEventListener('close',function(){dlg.remove();});
+    form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
+      var f=new FormData(form),body=withOrg({year:state.year,metric:f.get('metric'),target:f.get('target'),label:f.get('label'),done:Boolean(objective&&objective.done)});
+      try{await StudioAPI.request('/api/dei/objectives'+(objective?'/'+encodeURIComponent(objective.id)+qs():''),{method:objective?'PATCH':'POST',body:JSON.stringify(body)});dlg.close();load();}
+      catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
+    };
+    dlg.showModal();
+  }
+  async function saveObjective(o,changes){
+    try{await StudioAPI.request('/api/dei/objectives/'+encodeURIComponent(o.id)+qs(),{method:'PATCH',body:JSON.stringify(withOrg(Object.assign({metric:o.metric,target:o.target,label:o.label,done:o.done},changes)))});load();}
+    catch(e){window.StudioModal.alert({title:'Enregistrement impossible',message:e.message});}
+  }
+  function findObjective(id){return state.data.pilotage.objectives.find(function(o){return String(o.id)===String(id);});}
+
+  function editDialog(action,month,preset){
+    var d=state.data,a=action||Object.assign({kind:'formation',status:'planned',action_date:(state.year+'-'+String((month??new Date().getMonth())+1).padStart(2,'0')+'-15'),led_by_meayt:isAdmin},preset||{});
     // Types regroupés par famille ; le diagnostic Studio s'ajoute tout seul via les campagnes, mais reste saisissable.
     var groups=d.groups||{};
     var kinds=Object.keys(groups).map(function(g){
@@ -258,8 +332,20 @@
     else if(t.hasAttribute('data-delete'))remove(t.getAttribute('data-delete'));
     else if(t.hasAttribute('data-download'))download(t.getAttribute('data-download'),t.getAttribute('data-filename'));
     else if(t.hasAttribute('data-doc-delete'))removeDoc(t.getAttribute('data-doc-delete'));
-    else if(t.hasAttribute('data-month')){var m=Number(t.getAttribute('data-month'));accompany({year:state.year,month:m+1},'Une action D&I en '+MONTHS_LONG[m]+' '+state.year);}
+    else if(t.hasAttribute('data-month')){var m=Number(t.getAttribute('data-month')),my=Number(t.getAttribute('data-month-year'))||state.year;accompany({year:my,month:m+1},'Une action D&I en '+MONTHS_LONG[m]+' '+my);}
     else if(t.hasAttribute('data-accompany')){var a=state.data.actions.find(function(x){return String(x.id)===t.getAttribute('data-accompany');});if(a)accompany({actionId:a.id,kind:a.kind},'Accompagnement : '+a.title);}
+    else if(t.hasAttribute('data-obj-add'))objectiveDialog(null);
+    else if(t.hasAttribute('data-obj-suggest')){var sg=t.getAttribute('data-obj-suggest').split(':');objectiveDialog(null,{metric:sg[0],target:Number(sg[1])});}
+    else if(t.hasAttribute('data-obj-edit'))objectiveDialog(findObjective(t.getAttribute('data-obj-edit')));
+    else if(t.hasAttribute('data-obj-delete')){var ob=findObjective(t.getAttribute('data-obj-delete'));if(ob)window.StudioModal.confirm({eyebrow:'Objectifs',title:'Retirer cet objectif ?',message:'Il disparaît du tableau de pilotage. Vos actions ne sont pas touchées.',confirmLabel:'Retirer'}).then(function(ok){if(ok)StudioAPI.request('/api/dei/objectives/'+encodeURIComponent(ob.id)+qs(),{method:'DELETE'}).then(load).catch(function(e){window.StudioModal.alert({title:'Action impossible',message:e.message});});});}
+    else if(t.hasAttribute('data-prepare')){var pd=t.getAttribute('data-prepare');editDialog(null,Number(pd.slice(5,7))-1,{title:t.getAttribute('data-title'),theme:t.getAttribute('data-theme'),action_date:pd,kind:'evenement'});}
+    else if(t.hasAttribute('data-event-help'))accompany({event:t.getAttribute('data-event-help')},'Préparer : '+t.getAttribute('data-event-help'));
+    else if(t.hasAttribute('data-late-edit')){
+      // Une action en retard peut dater de l'année précédente : on charge son année avant d'ouvrir la fiche.
+      var lid=t.getAttribute('data-late-edit'),ly=Number(t.getAttribute('data-year-of'));
+      var open=function(){var la=state.data.actions.find(function(x){return String(x.id)===lid;});if(la)editDialog(la);};
+      if(ly&&ly!==state.year){state.year=ly;load().then(open);}else open();
+    }
     else if(t.hasAttribute('data-provider-add'))providerDialog(null);
     else if(t.hasAttribute('data-provider-edit'))providerDialog((state.data.providers||[]).find(function(p){return String(p.id)===t.getAttribute('data-provider-edit');}));
     else if(t.hasAttribute('data-provider-delete'))removeProvider(t.getAttribute('data-provider-delete'));
@@ -271,6 +357,9 @@
   });
   if(tabsEl)tabsEl.addEventListener('click',function(ev){var t=ev.target.closest('[data-tab]');if(t)setTab(t.getAttribute('data-tab'));});
   window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(TABS[h]&&h!==state.tab&&state.data){state.tab=h;render();}});
-  root.addEventListener('change',function(ev){var t=ev.target;if(t.matches('[data-upload]'))upload(t.getAttribute('data-upload'),t.files&&t.files[0]);});
+  root.addEventListener('change',function(ev){var t=ev.target;
+    if(t.matches('[data-upload]'))upload(t.getAttribute('data-upload'),t.files&&t.files[0]);
+    else if(t.matches('[data-obj-done]')){var o=findObjective(t.getAttribute('data-obj-done'));if(o)saveObjective(o,{done:t.checked});}
+  });
   load();
 })();
