@@ -131,6 +131,22 @@
       {target:'.hero-panel',title:'Résultats et participation',text:'Suivez le nombre de répondants, mis à jour chaque nuit, et votre objectif de participation. Les résultats s’ouvrent ici dès qu’ils sont disponibles.'},
       {target:'#actions-title',parent:true,title:'Actions sur la campagne',text:'Aperçu répondant, kit de communication, prolongation ou reprogrammation : tout ce que vous pouvez faire sur cette campagne.'}
     ]},
+    'catalogue':{key:'catalogue',auto:true,steps:[
+      {target:'.library-filters',title:'Le catalogue Me&YouToo',text:'Toutes les thématiques disponibles avec votre pack. Filtrez par pays ou par langue, ou cherchez un sujet.'},
+      {target:'.topics-grid .topic-card',title:'Une thématique',text:'Chaque carte présente une thématique et son nombre de situations. Ouvrez-la pour découvrir ses chapitres avant de choisir : rien n’est créé tant que vous ne commencez pas.'}
+    ]},
+    'theme':{key:'theme',auto:true,steps:[
+      {target:'.hero-panel',title:'Découvrir la thématique',text:'Consultez librement ce diagnostic comportemental. Aucune campagne n’est créée tant que vous ne cliquez pas sur « Choisir ce thème et commencer ».'},
+      {target:'.table-card',title:'Les chapitres',text:'Chaque chapitre regroupe des situations sur un même sujet. « Obligatoire » : c’est le socle méthodologique, conservé tel quel. « Sélection personnalisable » : vous choisirez les situations à garder.'},
+      {target:'#theme-video-showcase',title:'Les vidéos intégrées',text:'Certaines thématiques intègrent des vidéos que vos collaborateurs découvriront dans l’autodiagnostic.'},
+      {target:'[data-start-theme]',title:'Choisir ce thème et commencer',text:'Vous choisirez ensuite les pays et les langues de votre campagne, puis vous composerez votre diagnostic comportemental. Votre travail est enregistré au fur et à mesure.'}
+    ]},
+    'kit':{key:'kit',auto:true,steps:[
+      {target:'#brandAssetsBlock',title:'Votre logo et votre charte',text:'Déposez-les pendant la relecture : Me&YouToo s’en sert pour préparer les visuels de votre campagne.'},
+      {target:'#timelineBlock',title:'Le plan de relance conseillé',text:'Les moments clés pour annoncer la campagne puis relancer vos collaborateurs. Une relance suffit souvent à faire décoller la participation.'},
+      {target:'#messagesBlock',title:'Des messages prêts à copier',text:'Des textes adaptés à votre thématique, avec le nom, les dates et le lien de votre campagne. Copiez-les dans vos e-mails ou votre intranet.'},
+      {target:'#linksBlock',title:'Les liens de diffusion',text:'Le lien à partager avec vos collaborateurs, disponible dès que Me&YouToo a préparé la mise en ligne.'}
+    ]},
     'composer':{key:'creation-composer',auto:true,steps:[
       {target:'nav.steps',title:'Les 5 étapes de création',text:'Vous êtes à l’étape « Composer ». Votre travail est enregistré au fur et à mesure : vous pouvez vous arrêter et reprendre plus tard depuis « Mes campagnes ».'},
       {target:'.composer-chapter-nav',title:'Les chapitres',text:'Votre diagnostic comportemental est composé d’un ou plusieurs chapitres. Ouvrez-en un pour voir ses situations.'},
@@ -150,7 +166,7 @@
       {target:'nav.steps',title:'Dernière étape : transmettre',text:'Vérifiez votre configuration, puis transmettez-la. Me&YouToo la relit avant la mise en ligne et vous prévient par notification et par e-mail.'}
     ]}
   };
-  var PAGE_TOURS={'mes-campagnes.html':'mes-campagnes','campagne-detail.html':'campagne-detail','composer.html':'composer','personnalisation.html':'personnalisation','parametrage.html':'parametrage'};
+  var PAGE_TOURS={'bibliotheque.html':'catalogue','kit-communication.html':'kit','mes-campagnes.html':'mes-campagnes','campagne-detail.html':'campagne-detail','composer.html':'composer','personnalisation.html':'personnalisation','parametrage.html':'parametrage'};
   var tourState=null,registeredTour=null;
   function tourUser(){try{return window.StudioAPI&&StudioAPI.user()||JSON.parse(localStorage.getItem('studio_user')||'null');}catch(e){return null;}}
   function seenKey(tour){var u=tourUser();return 'studio_tour_seen_v1:'+(u&&u.id||'anonyme')+':'+tour.key;}
@@ -221,14 +237,68 @@
     replay:function(){if(registeredTour)startTour(registeredTour,true);}
   };
   document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-tour-replay]');if(b){e.preventDefault();window.StudioTour.replay();}});
-  // Pages dont la visite ne dépend pas du profil : on attend que le premier élément soit affiché (contenus chargés).
+  // Pages dont la visite ne dépend pas du profil : on attend que les éléments soient affichés (contenus chargés),
+  // puis, au bout de quelques secondes, on lance la visite avec ceux qui sont là.
   function autoOffer(){
-    var page=location.pathname.split('/').pop(),id=PAGE_TOURS[page];if(!id)return;
+    var page=location.pathname.split('/').pop(),id=PAGE_TOURS[page]||(/^theme(-[a-z-]+)?.html$/.test(page)?'theme':'');if(!id)return;
     var tour=TOURS[id],tries=0;
     (function wait(){
-      if(tour.steps.some(function(s){return findTarget(s);})){window.StudioTour.offer(id);return;}
+      var shown=tour.steps.filter(function(s){return findTarget(s);}).length;
+      if(shown===tour.steps.length||(shown&&tries>=12)){window.StudioTour.offer(id);return;}
       if(++tries<40)setTimeout(wait,300);
     })();
+  }
+
+  // Tutoriels vidéo : un bouton « ▶ Tuto » sur chaque étape, qui ouvre la vidéo dans une fenêtre.
+  // Renseigner url (lien HubSpot de la vidéo) suffit à faire apparaître le bouton ; sans lien, il reste caché.
+  var TUTORIALS={
+    decouvrir:{title:'Découvrir le Studio',url:''},
+    choisir:{title:'Choisir son diagnostic',url:''},
+    composer:{title:'Composer son diagnostic',url:''},
+    personnaliser:{title:'Personnaliser les profils',url:''},
+    parametrer:{title:'Paramétrer sa campagne',url:''},
+    transmettre:{title:'Vérifier et transmettre sa configuration',url:''},
+    relecture:{title:'Suivre la relecture et demander un ajustement',url:''},
+    diffuser:{title:'Préparer la communication et diffuser sa campagne',url:''}
+  };
+  var PAGE_TUTORIALS={'accueil.html':'decouvrir','bibliotheque.html':'choisir','composer.html':'composer','personnalisation.html':'personnaliser','parametrage.html':'parametrer','validation.html':'transmettre','kit-communication.html':'diffuser'};
+  function openTutorial(id){
+    var t=TUTORIALS[id];if(!t||!t.url)return;
+    var dialog=document.createElement('dialog');dialog.className='studio-modal studio-tuto-dialog';dialog.setAttribute('aria-labelledby','studio-tuto-title');
+    var embed=/\.(mp4|webm|mov)(\?|$)/i.test(t.url)
+      ?'<video controls autoplay playsinline preload="metadata" src="'+esc(t.url)+'"></video>'
+      :'<iframe src="'+esc(t.url)+'" title="'+esc(t.title)+'" allow="autoplay; fullscreen" allowfullscreen></iframe>';
+    dialog.innerHTML='<div class="studio-tuto-shell"><button type="button" class="studio-modal-close" aria-label="Fermer la vidéo" data-tuto-close>×</button><p class="eyebrow">Tutoriel vidéo</p><h2 id="studio-tuto-title">'+esc(t.title)+'</h2><div class="studio-tuto-player">'+embed+'</div></div>';
+    document.body.appendChild(dialog);
+    var close=function(){dialog.close();};
+    dialog.querySelector('[data-tuto-close]').onclick=close;
+    dialog.addEventListener('click',function(e){if(e.target===dialog)close();});
+    dialog.addEventListener('close',function(){dialog.remove();});
+    dialog.showModal();
+  }
+  function tutorialButton(id){
+    var t=TUTORIALS[id];if(!t||!t.url)return '';
+    return '<button type="button" class="studio-tuto-button" data-tutorial="'+esc(id)+'"><span aria-hidden="true">▶</span> Voir le tuto</button>';
+  }
+  // Le bouton se place près du temps moyen de l'étape, sinon dans les actions de l'en-tête, sinon sous le titre.
+  function placeTutorial(id){
+    document.querySelectorAll('.studio-tuto-button').forEach(function(b){b.remove();});
+    var html=tutorialButton(id);if(!html)return;
+    var badge=document.querySelector('.step-time-badge'),actions=document.querySelector('.topbar .top-actions'),title=document.querySelector('.topbar .page-title');
+    if(badge)badge.insertAdjacentHTML('afterend',html);
+    else if(actions)actions.insertAdjacentHTML('afterbegin',html);
+    else if(title)title.insertAdjacentHTML('afterend',html);
+  }
+  window.StudioTutorial={
+    // Une page peut changer de tutoriel après chargement (la transmission devient le suivi de relecture).
+    set:placeTutorial,
+    open:openTutorial
+  };
+  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-tutorial]');if(b){e.preventDefault();openTutorial(b.dataset.tutorial);}});
+  function autoTutorial(){
+    var page=location.pathname.split('/').pop()||'accueil.html';
+    var id=PAGE_TUTORIALS[page]||(/^theme(-[a-z-]+)?\.html$/.test(page)?'choisir':'');
+    if(id)placeTutorial(id);
   }
 
   // Les libellés statiques portent data-glossary="terme" : le point « i » est ajouté ici.
@@ -243,7 +313,7 @@
       el.innerHTML=window.StudioJourney.html(el.getAttribute('data-journey'),null,{stepsOnly:true});
     });
   }
-  function init(){decorate();autoOffer();}
+  function init(){decorate();autoOffer();autoTutorial();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 

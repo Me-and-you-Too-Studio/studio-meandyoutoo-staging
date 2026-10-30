@@ -412,6 +412,7 @@
         lockSubmittedState();
         hideSubmittedPreparation();
         reviewPanel();
+        window.StudioTutorial?.set('relecture');
         // La frise passe en tête, au-dessus du suivi de relecture.
         const reviewCard=document.querySelector('.review-workflow'),journeyCard=document.querySelector('.studio-process-card:not([hidden])');
         if(reviewCard&&journeyCard)reviewCard.before(journeyCard);
