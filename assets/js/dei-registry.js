@@ -12,7 +12,10 @@
   var MONTHS=['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
   var MONTHS_LONG=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
   var THEMES=['Sexisme','Égalité femmes-hommes','Handicap','LGBT+','Origines','Religion','Intergénérationnel','Harcèlement & VSS','Inclusion','Management inclusif'];
-  var state={year:Number(params.get('year'))||new Date().getFullYear(),data:null};
+  // Onglets du cockpit (mémorisés dans l'adresse : #apercu, #actions, #prestataires).
+  var TABS={apercu:'Vue d’ensemble',actions:'Actions',prestataires:'Prestataires'};
+  var tabsEl=document.getElementById('dei-tabs'),yearEl=document.getElementById('dei-year');
+  var state={year:Number(params.get('year'))||new Date().getFullYear(),data:null,tab:TABS[location.hash.slice(1)]?location.hash.slice(1):'apercu'};
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function num(v){return new Intl.NumberFormat('fr-FR').format(Number(v)||0);}
@@ -32,7 +35,7 @@
   // Actions du registre + campagnes de diagnostic, dans un même format d'affichage.
   function items(){
     var d=state.data,t=today();
-    var actions=d.actions.map(function(a){return {type:'action',id:a.id,kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,notes:a.notes,meayt:a.led_by_meayt,documents:a.documents||[],offerId:a.offer_id,raw:a};});
+    var actions=d.actions.map(function(a){return {type:'action',id:a.id,kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,notes:a.notes,meayt:a.led_by_meayt,documents:a.documents||[],offerId:a.offer_id,provider:a.provider_name,raw:a};});
     var campaigns=d.campaigns.map(function(c){return {type:'campaign',id:c.id,kind:'diagnostic',title:c.name,date:c.launch_date,end:c.close_date,status:c.close_date&&c.close_date<t?'done':'in_progress',theme:c.theme_title,people:c.respondents,documents:[]};});
     return actions.concat(campaigns).sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
   }
@@ -61,14 +64,75 @@
       return '<div class="dr-month'+(current?' is-current':'')+(past&&!its.length?' is-gap':'')+'" role="listitem"><p class="dr-month-name">'+MONTHS[m]+'</p>'+body+empty+'</div>';
     }).join('')+'</div>';
     var rows=list.length?list.map(row).join(''):'<p class="dr-empty">Aucune action enregistrée pour '+state.year+'. '+(canEdit?'Ajoutez votre première action, ou demandez-nous de l’alimenter pour vous.':'')+'</p>';
-    root.innerHTML=head+cards+'<h3 class="dr-sub">Frise de l’année</h3>'+frise+'<h3 class="dr-sub">Détail des actions</h3><div class="dr-list">'+rows+'</div>';
+    renderTabs();
+    if(yearEl)yearEl.classList.toggle('is-tab-hidden',state.tab!=='apercu');
+    if(state.tab==='prestataires'){root.innerHTML=providersView();return;}
+    root.innerHTML=state.tab==='actions'
+      ?head+'<div class="dr-list">'+rows+'</div>'
+      :head+cards+'<h3 class="dr-sub">Frise de l’année</h3>'+frise;
+  }
+  function renderTabs(){
+    if(!tabsEl)return;
+    var counts={actions:items().length,prestataires:(state.data.providers||[]).length};
+    tabsEl.hidden=false;
+    tabsEl.innerHTML=Object.keys(TABS).map(function(k){return '<button type="button" role="tab" class="dr-tab'+(k===state.tab?' is-current':'')+'" aria-selected="'+(k===state.tab)+'" data-tab="'+k+'">'+esc(TABS[k])+(counts[k]!=null?' <span>'+counts[k]+'</span>':'')+'</button>';}).join('');
+  }
+  function setTab(tab){state.tab=tab;try{history.replaceState(null,'','#'+tab);}catch(e){}render();window.scrollTo({top:(tabsEl||root).getBoundingClientRect().top+window.scrollY-16,behavior:'smooth'});}
+
+  // ── Annuaire des prestataires ──
+  function providerName(p){return [p.company,[p.first_name,p.last_name].filter(Boolean).join(' ')].filter(Boolean).join(' · ');}
+  function providersView(){
+    var d=state.data,list=d.providers||[],canEdit=d.canEdit;
+    var head='<div class="dr-head"><div><p class="eyebrow">Annuaire</p><h2>'+(organizationId?'Prestataires de '+esc(d.organizationName||'ce client'):'Vos prestataires D&amp;I')+'</h2>'+
+      '<p>Cabinets, formateurs, associations, intervenants : gardez leurs coordonnées à portée de main et reliez-les à vos actions. Renseignez uniquement des coordonnées professionnelles.</p></div>'+
+      (canEdit?'<div class="dr-head-actions"><button type="button" class="button button-primary" data-provider-add>＋ Ajouter un prestataire</button></div>':'')+'</div>';
+    if(!list.length)return head+'<p class="dr-empty">Aucun prestataire enregistré pour le moment.</p>';
+    return head+'<div class="dr-providers">'+list.map(function(p){
+      var contact=[p.first_name,p.last_name].filter(Boolean).join(' ');
+      return '<article class="dr-provider"><h4>'+esc(p.company||contact)+'</h4>'+(p.company&&contact?'<p class="dr-provider-contact">'+esc(contact)+'</p>':'')+
+        (p.specialty?'<p class="dr-row-meta">'+esc(p.specialty)+'</p>':'')+
+        '<p class="dr-provider-lines">'+(p.email?'<a href="mailto:'+esc(p.email)+'">✉ '+esc(p.email)+'</a>':'')+(p.phone?'<a href="tel:'+esc(p.phone.replace(/\s+/g,''))+'">☎ '+esc(p.phone)+'</a>':'')+'</p>'+
+        (p.notes?'<p class="dr-row-notes">'+esc(p.notes)+'</p>':'')+
+        '<p class="dr-row-meta">'+(p.actions_count?p.actions_count+' action'+(p.actions_count>1?'s':'')+' rattachée'+(p.actions_count>1?'s':''):'Aucune action rattachée')+'</p>'+
+        (canEdit?'<div class="dr-row-tools"><button type="button" class="button button-ghost" data-provider-edit="'+esc(p.id)+'">Modifier</button><button type="button" class="button button-ghost" data-provider-delete="'+esc(p.id)+'">Supprimer</button></div>':'')+'</article>';
+    }).join('')+'</div>';
+  }
+  function providerDialog(provider,onSaved){
+    var p=provider||{};
+    var dlg=document.createElement('dialog');dlg.className='dr-dialog';
+    dlg.innerHTML='<form><h2>'+(provider?'Modifier le prestataire':'Nouveau prestataire')+'</h2>'+
+      '<label class="dr-field"><span>Société</span><input name="company" maxlength="160" value="'+esc(p.company||'')+'" placeholder="Ex. : Cabinet, association, indépendant…"></label>'+
+      '<div class="dr-field-row"><label class="dr-field"><span>Prénom</span><input name="firstName" maxlength="80" value="'+esc(p.first_name||'')+'"></label><label class="dr-field"><span>Nom</span><input name="lastName" maxlength="80" value="'+esc(p.last_name||'')+'"></label></div>'+
+      '<div class="dr-field-row"><label class="dr-field"><span>E-mail</span><input type="email" name="email" maxlength="160" value="'+esc(p.email||'')+'"></label><label class="dr-field"><span>Téléphone</span><input type="tel" name="phone" maxlength="40" value="'+esc(p.phone||'')+'"></label></div>'+
+      '<label class="dr-field"><span>Domaine d’intervention</span><input name="specialty" maxlength="200" value="'+esc(p.specialty||'')+'" placeholder="Ex. : handicap, égalité, accessibilité numérique…"></label>'+
+      '<label class="dr-field"><span>Notes</span><textarea name="notes" rows="2" maxlength="2000">'+esc(p.notes||'')+'</textarea></label>'+
+      '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
+    document.body.appendChild(dlg);
+    var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
+    dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
+    dlg.addEventListener('close',function(){dlg.remove();});
+    form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
+      if(!form.checkValidity()){form.reportValidity();return;}
+      var f=new FormData(form),body=withOrg({company:f.get('company'),firstName:f.get('firstName'),lastName:f.get('lastName'),email:f.get('email'),phone:f.get('phone'),specialty:f.get('specialty'),notes:f.get('notes')});
+      try{
+        var r=await StudioAPI.request('/api/dei/providers'+(provider?'/'+encodeURIComponent(provider.id)+qs():''),{method:provider?'PATCH':'POST',body:JSON.stringify(body)});
+        dlg.close();if(onSaved)onSaved(provider?provider.id:r.provider&&r.provider.id);else load();
+      }catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
+    };
+    dlg.showModal();
+  }
+  async function removeProvider(id){
+    var p=(state.data.providers||[]).find(function(x){return String(x.id)===String(id);});if(!p)return;
+    var ok=await window.StudioModal.confirm({eyebrow:'Prestataires',title:'Supprimer « '+providerName(p)+' » ?',message:'Ses coordonnées seront effacées. Les actions rattachées sont conservées, sans prestataire.',confirmLabel:'Supprimer'});
+    if(!ok)return;
+    try{await StudioAPI.request('/api/dei/providers/'+encodeURIComponent(id)+qs(),{method:'DELETE'});load();}catch(e){window.StudioModal.alert({title:'Suppression impossible',message:e.message});}
   }
   function kpi(value,label,hint,cls){return '<article class="dr-kpi '+(cls||'')+'"><strong>'+value+'</strong><span>'+label+'</span><small>'+hint+'</small></article>';}
 
   function row(it){
     var k=kind(it.kind),st=(state.data.statuses||{})[it.status]||it.status,canEdit=state.data.canEdit&&it.type==='action';
     var when=fmtDate(it.date)+(it.end&&it.end!==it.date?' → '+fmtDate(it.end):'');
-    var meta=[it.theme,it.audience,it.people!=null?num(it.people)+(it.type==='campaign'?' participations':' personnes touchées'):''].filter(Boolean).map(esc).join(' · ');
+    var meta=[it.theme,it.audience,it.people!=null?num(it.people)+(it.type==='campaign'?' participations':' personnes touchées'):'',it.provider?'avec '+it.provider:''].filter(Boolean).map(esc).join(' · ');
     var docs=(it.documents||[]).map(function(doc){return '<span class="dr-doc"><button type="button" class="dr-link" data-download="'+esc(it.id)+':'+esc(doc.id)+'" data-filename="'+esc(doc.filename)+'">📎 '+esc(doc.filename)+'</button>'+(canEdit?'<button type="button" class="dr-x" data-doc-delete="'+esc(it.id)+':'+esc(doc.id)+'" aria-label="Retirer '+esc(doc.filename)+'">×</button>':'')+'</span>';}).join('');
     var tools=it.type==='campaign'
       ?'<a class="dr-link" href="campagne-detail.html?projectId='+encodeURIComponent(it.id)+(organizationId?'':'')+'">Voir la campagne →</a>'
@@ -83,7 +147,13 @@
   // ── Saisie ──
   function editDialog(action,month){
     var d=state.data,a=action||{kind:'formation',status:'planned',action_date:(state.year+'-'+String((month??new Date().getMonth())+1).padStart(2,'0')+'-15'),led_by_meayt:isAdmin};
-    var kinds=Object.keys(d.kinds).filter(function(k){return k!=='microlearning';}).map(function(k){return '<option value="'+esc(k)+'"'+(k===a.kind?' selected':'')+'>'+esc(d.kinds[k].icon+' '+d.kinds[k].label)+'</option>';}).join('');
+    // Types regroupés par famille ; le diagnostic Studio s'ajoute tout seul via les campagnes, mais reste saisissable.
+    var groups=d.groups||{};
+    var kinds=Object.keys(groups).map(function(g){
+      var opts=Object.keys(d.kinds).filter(function(k){return d.kinds[k].group===g;}).map(function(k){return '<option value="'+esc(k)+'"'+(k===a.kind?' selected':'')+'>'+esc(d.kinds[k].icon+' '+d.kinds[k].label)+'</option>';}).join('');
+      return opts?'<optgroup label="'+esc(groups[g])+'">'+opts+'</optgroup>':'';
+    }).join('');
+    var providerOptions=function(selected){return '<option value="">— Aucun —</option>'+(d.providers||[]).map(function(p){return '<option value="'+esc(p.id)+'"'+(String(p.id)===String(selected||'')?' selected':'')+'>'+esc(providerName(p))+'</option>';}).join('');};
     var statuses=Object.keys(d.statuses).map(function(s){return '<option value="'+s+'"'+(s===a.status?' selected':'')+'>'+esc(d.statuses[s])+'</option>';}).join('');
     var dlg=document.createElement('dialog');dlg.className='dr-dialog';
     dlg.innerHTML='<form><h2>'+(action?'Modifier l’action':'Nouvelle action')+'</h2>'+
@@ -92,6 +162,7 @@
       '<div class="dr-field-row"><label class="dr-field"><span>Date *</span><input type="date" name="actionDate" required value="'+esc(a.action_date||'')+'"></label><label class="dr-field"><span>Date de fin</span><input type="date" name="endDate" value="'+esc(a.end_date||'')+'"></label><label class="dr-field"><span>Statut</span><select name="status">'+statuses+'</select></label></div>'+
       '<div class="dr-field-row"><label class="dr-field"><span>Thématique</span><input name="theme" list="dr-themes" value="'+esc(a.theme||'')+'"><datalist id="dr-themes">'+THEMES.map(function(t){return '<option value="'+esc(t)+'">';}).join('')+'</datalist></label><label class="dr-field"><span>Personnes touchées</span><input type="number" min="0" name="peopleReached" value="'+esc(a.people_reached??'')+'"></label></div>'+
       '<label class="dr-field"><span>Public visé</span><input name="audience" maxlength="200" value="'+esc(a.audience||'')+'" placeholder="Ex. : managers du siège, nouveaux arrivants…"></label>'+
+      '<div class="dr-field-row dr-provider-pick"><label class="dr-field"><span>Prestataire</span><select name="providerId">'+providerOptions(a.provider_id)+'</select></label><button type="button" class="button button-ghost" data-new-provider>＋ Nouveau prestataire</button></div>'+
       '<label class="dr-field"><span>Notes</span><textarea name="notes" rows="3" maxlength="4000">'+esc(a.notes||'')+'</textarea></label>'+
       (isAdmin?'<label class="dr-check"><input type="checkbox" name="ledByMeayt"'+(a.led_by_meayt?' checked':'')+'> Action animée par Me&amp;YouToo</label>':'')+
       '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
@@ -99,10 +170,17 @@
     var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
     dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
     dlg.addEventListener('close',function(){dlg.remove();});
+    // Création d'un prestataire sans quitter la fiche : la liste est rechargée puis le nouveau est sélectionné.
+    dlg.querySelector('[data-new-provider]').onclick=function(){
+      providerDialog(null,async function(newId){
+        var r=await StudioAPI.request('/api/dei/providers'+qs());state.data.providers=r.providers||[];
+        form.elements.providerId.innerHTML=providerOptions(newId);
+      });
+    };
     form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
       if(!form.checkValidity()){form.reportValidity();return;}
       var f=new FormData(form),body=withOrg({kind:f.get('kind'),title:f.get('title'),actionDate:f.get('actionDate'),endDate:f.get('endDate'),status:f.get('status'),
-        theme:f.get('theme'),peopleReached:f.get('peopleReached'),audience:f.get('audience'),notes:f.get('notes')});
+        theme:f.get('theme'),peopleReached:f.get('peopleReached'),audience:f.get('audience'),notes:f.get('notes'),providerId:f.get('providerId')});
       if(isAdmin)body.ledByMeayt=f.get('ledByMeayt')==='on';
       try{
         await StudioAPI.request('/api/dei/actions'+(action?'/'+encodeURIComponent(action.id):'')+(action?qs():''),{method:action?'PATCH':'POST',body:JSON.stringify(body)});
@@ -164,8 +242,17 @@
     else if(t.hasAttribute('data-doc-delete'))removeDoc(t.getAttribute('data-doc-delete'));
     else if(t.hasAttribute('data-month')){var m=Number(t.getAttribute('data-month'));accompany({year:state.year,month:m+1},'Une action D&I en '+MONTHS_LONG[m]+' '+state.year);}
     else if(t.hasAttribute('data-accompany')){var a=state.data.actions.find(function(x){return String(x.id)===t.getAttribute('data-accompany');});if(a)accompany({actionId:a.id,kind:a.kind},'Accompagnement : '+a.title);}
-    else if(t.hasAttribute('data-focus')){var el=document.getElementById('dr-'+t.getAttribute('data-focus'));if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('is-focus');setTimeout(function(){el.classList.remove('is-focus');},1600);}}
+    else if(t.hasAttribute('data-provider-add'))providerDialog(null);
+    else if(t.hasAttribute('data-provider-edit'))providerDialog((state.data.providers||[]).find(function(p){return String(p.id)===t.getAttribute('data-provider-edit');}));
+    else if(t.hasAttribute('data-provider-delete'))removeProvider(t.getAttribute('data-provider-delete'));
+    else if(t.hasAttribute('data-focus')){
+      // La frise est dans la vue d'ensemble : on bascule sur l'onglet Actions pour montrer le détail.
+      var focus=t.getAttribute('data-focus');setTab('actions');
+      setTimeout(function(){var el=document.getElementById('dr-'+focus);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('is-focus');setTimeout(function(){el.classList.remove('is-focus');},1600);}},150);
+    }
   });
+  if(tabsEl)tabsEl.addEventListener('click',function(ev){var t=ev.target.closest('[data-tab]');if(t)setTab(t.getAttribute('data-tab'));});
+  window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(TABS[h]&&h!==state.tab&&state.data){state.tab=h;render();}});
   root.addEventListener('change',function(ev){var t=ev.target;if(t.matches('[data-upload]'))upload(t.getAttribute('data-upload'),t.files&&t.files[0]);});
   load();
 })();

@@ -66,3 +66,17 @@
 .dei-cockpit-hero-live .dei-cockpit-hero-copy h1{font-size:clamp(2.2rem,4vw,3.4rem)}
 .dei-cockpit-hero-live .dei-cockpit-intro{max-width:820px}
 .dei-registry{margin-top:8px}
+.dr-tabs{position:sticky;top:0;z-index:5;display:flex;gap:4px;margin:8px 0 18px;padding:6px;background:var(--royal-blue-tint,#f5f7fb);border-radius:14px;overflow-x:auto}
+.dr-tab{flex:0 0 auto;border:0;background:transparent;border-radius:10px;padding:9px 16px;font:inherit;font-weight:700;color:var(--ink,#273a64);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.dr-tab span{font-size:.75rem;background:#fff;border-radius:999px;padding:1px 8px;color:var(--muted,#54607e)}
+.dr-tab.is-current{background:#fff;box-shadow:0 2px 8px rgba(39,58,100,.12)}
+.dr-tab.is-current span{background:var(--royal-blue,#273a64);color:#fff}
+.is-tab-hidden{display:none!important}
+.dr-providers{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.dr-provider{background:#fff;border:1px solid var(--line,#e2e7f1);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.dr-provider h4{margin:0;font-size:1.02rem}
+.dr-provider-contact{margin:0;font-weight:600}
+.dr-provider-lines{margin:4px 0;display:flex;flex-direction:column;gap:2px;font-size:.9rem}
+.dr-provider-lines a{color:var(--green-blue,#007883);text-decoration:none;overflow-wrap:anywhere}
+.dr-provider-pick{align-items:flex-end}
+.dr-provider-pick .button{white-space:nowrap}
