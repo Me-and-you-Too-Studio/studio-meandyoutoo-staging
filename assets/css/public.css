@@ -413,8 +413,6 @@ body.public-contact footer.public-contact-only .public-wrap{display:flex}
 .quote-status.success{background:#e9f7ef;color:#17643c;border:1px solid #b9e4ca}
 .quote-form .quote-consent{display:flex;align-items:flex-start;gap:10px;font-weight:600;color:var(--public-ink)}
 .quote-form .quote-consent input{width:auto;margin-top:3px}
-.quote-note{margin:-6px 0 0;font-size:.85rem;color:var(--public-ink)}
-.quote-note a{color:var(--public-green);font-weight:700}
 @media(max-width:1040px){.pricing-layout{grid-template-columns:1fr}.pricing-value{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.pricing-value h3{grid-column:1/-1;margin-bottom:4px}.pricing-value-item{margin:0}.studio-commerce-grid{grid-template-columns:1fr}}
 @media(max-width:760px){.pricing-plans{grid-template-columns:1fr}.saas-plan{min-height:auto}.pricing-value{grid-template-columns:1fr}.pricing-value h3{grid-column:auto}.pricing-passations{align-items:stretch;flex-direction:column}.pricing-passations>div{align-items:flex-start}.pricing-passations .btn{width:100%}.existing-client-light p{display:block;margin:5px 0}.studio-commerce{padding-top:48px}}
 
