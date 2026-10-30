@@ -11,7 +11,21 @@
   var isClient=Boolean(user&&user.role==='client');
   var MONTHS=['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
   var MONTHS_LONG=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-  var THEMES=['Sexisme','Égalité femmes-hommes','Handicap','LGBT+','Origines','Religion','Intergénérationnel','Harcèlement & VSS','Inclusion','Management inclusif'];
+  var THEMES=['Sexisme','Égalité femmes-hommes','Handicap','LGBT+','Origines','Religion','Intergénérationnel','Harcèlement & VSS','Management inclusif','Inclusion (transversal)'];
+  var DOMAINS=THEMES.concat(['Accessibilité','Recrutement inclusif','Qualité de vie au travail','Communication interne']);
+  // Choix multiples en cases à cocher + champ « Autre » libre ; enregistré en liste séparée par des virgules.
+  function splitValues(v){return String(v||'').split(',').map(function(s){return s.trim();}).filter(Boolean);}
+  function multiField(name,label,options,value){
+    var values=splitValues(value),known=options.map(function(o){return o.toLowerCase();});
+    var others=values.filter(function(v){return known.indexOf(v.toLowerCase())<0;});
+    return '<fieldset class="dr-multi"><legend>'+esc(label)+' <small>(plusieurs choix possibles)</small></legend><div class="dr-chips">'+
+      options.map(function(o){var on=values.some(function(v){return v.toLowerCase()===o.toLowerCase();});return '<label class="dr-chip"><input type="checkbox" name="'+name+'" value="'+esc(o)+'"'+(on?' checked':'')+'><span>'+esc(o)+'</span></label>';}).join('')+
+      '</div><label class="dr-other"><span>Autre</span><input name="'+name+'__other" maxlength="160" value="'+esc(others.join(', '))+'" placeholder="Précisez (séparez par des virgules)"></label></fieldset>';
+  }
+  function readMulti(form,name){
+    var picked=[].slice.call(form.querySelectorAll('input[name="'+name+'"]:checked')).map(function(i){return i.value;});
+    return picked.concat(splitValues(form.elements[name+'__other']&&form.elements[name+'__other'].value)).join(', ');
+  }
   // Onglets du cockpit (mémorisés dans l'adresse : #apercu, #actions, #prestataires).
   var TABS={apercu:'Vue d’ensemble',actions:'Actions',prestataires:'Prestataires'};
   var tabsEl=document.getElementById('dei-tabs'),yearEl=document.getElementById('dei-year');
@@ -101,10 +115,10 @@
     var p=provider||{};
     var dlg=document.createElement('dialog');dlg.className='dr-dialog';
     dlg.innerHTML='<form><h2>'+(provider?'Modifier le prestataire':'Nouveau prestataire')+'</h2>'+
-      '<label class="dr-field"><span>Société</span><input name="company" maxlength="160" value="'+esc(p.company||'')+'" placeholder="Ex. : Cabinet, association, indépendant…"></label>'+
+      '<label class="dr-field"><span>Nom de l’entreprise ou de la structure</span><input name="company" maxlength="160" value="'+esc(p.company||'')+'" placeholder="Ex. : Cabinet Inclusio, Association Handi+…"></label>'+
       '<div class="dr-field-row"><label class="dr-field"><span>Prénom</span><input name="firstName" maxlength="80" value="'+esc(p.first_name||'')+'"></label><label class="dr-field"><span>Nom</span><input name="lastName" maxlength="80" value="'+esc(p.last_name||'')+'"></label></div>'+
       '<div class="dr-field-row"><label class="dr-field"><span>E-mail</span><input type="email" name="email" maxlength="160" value="'+esc(p.email||'')+'"></label><label class="dr-field"><span>Téléphone</span><input type="tel" name="phone" maxlength="40" value="'+esc(p.phone||'')+'"></label></div>'+
-      '<label class="dr-field"><span>Domaine d’intervention</span><input name="specialty" maxlength="200" value="'+esc(p.specialty||'')+'" placeholder="Ex. : handicap, égalité, accessibilité numérique…"></label>'+
+      multiField('specialty','Domaines d’intervention',DOMAINS,p.specialty)+
       '<label class="dr-field"><span>Notes</span><textarea name="notes" rows="2" maxlength="2000">'+esc(p.notes||'')+'</textarea></label>'+
       '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
     document.body.appendChild(dlg);
@@ -113,7 +127,7 @@
     dlg.addEventListener('close',function(){dlg.remove();});
     form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
       if(!form.checkValidity()){form.reportValidity();return;}
-      var f=new FormData(form),body=withOrg({company:f.get('company'),firstName:f.get('firstName'),lastName:f.get('lastName'),email:f.get('email'),phone:f.get('phone'),specialty:f.get('specialty'),notes:f.get('notes')});
+      var f=new FormData(form),body=withOrg({company:f.get('company'),firstName:f.get('firstName'),lastName:f.get('lastName'),email:f.get('email'),phone:f.get('phone'),specialty:readMulti(form,'specialty'),notes:f.get('notes')});
       try{
         var r=await StudioAPI.request('/api/dei/providers'+(provider?'/'+encodeURIComponent(provider.id)+qs():''),{method:provider?'PATCH':'POST',body:JSON.stringify(body)});
         dlg.close();if(onSaved)onSaved(provider?provider.id:r.provider&&r.provider.id);else load();
@@ -160,8 +174,8 @@
       '<label class="dr-field"><span>Type d’action *</span><select name="kind">'+kinds+'</select></label>'+
       '<label class="dr-field"><span>Titre *</span><input name="title" required maxlength="200" value="'+esc(a.title||'')+'" placeholder="Ex. : Conférence sur le sexisme ordinaire"></label>'+
       '<div class="dr-field-row"><label class="dr-field"><span>Date *</span><input type="date" name="actionDate" required value="'+esc(a.action_date||'')+'"></label><label class="dr-field"><span>Date de fin</span><input type="date" name="endDate" value="'+esc(a.end_date||'')+'"></label><label class="dr-field"><span>Statut</span><select name="status">'+statuses+'</select></label></div>'+
-      '<div class="dr-field-row"><label class="dr-field"><span>Thématique</span><input name="theme" list="dr-themes" value="'+esc(a.theme||'')+'"><datalist id="dr-themes">'+THEMES.map(function(t){return '<option value="'+esc(t)+'">';}).join('')+'</datalist></label><label class="dr-field"><span>Personnes touchées</span><input type="number" min="0" name="peopleReached" value="'+esc(a.people_reached??'')+'"></label></div>'+
-      '<label class="dr-field"><span>Public visé</span><input name="audience" maxlength="200" value="'+esc(a.audience||'')+'" placeholder="Ex. : managers du siège, nouveaux arrivants…"></label>'+
+      multiField('theme','Thématiques',THEMES,a.theme)+
+      '<div class="dr-field-row"><label class="dr-field"><span>Public visé</span><input name="audience" maxlength="200" value="'+esc(a.audience||'')+'" placeholder="Ex. : managers du siège, nouveaux arrivants…"></label><label class="dr-field dr-field-small"><span>Personnes touchées</span><input type="number" min="0" name="peopleReached" value="'+esc(a.people_reached??'')+'"></label></div>'+
       '<div class="dr-field-row dr-provider-pick"><label class="dr-field"><span>Prestataire</span><select name="providerId">'+providerOptions(a.provider_id)+'</select></label><button type="button" class="button button-ghost" data-new-provider>＋ Nouveau prestataire</button></div>'+
       '<label class="dr-field"><span>Notes</span><textarea name="notes" rows="3" maxlength="4000">'+esc(a.notes||'')+'</textarea></label>'+
       (isAdmin?'<label class="dr-check"><input type="checkbox" name="ledByMeayt"'+(a.led_by_meayt?' checked':'')+'> Action animée par Me&amp;YouToo</label>':'')+
@@ -180,7 +194,7 @@
     form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
       if(!form.checkValidity()){form.reportValidity();return;}
       var f=new FormData(form),body=withOrg({kind:f.get('kind'),title:f.get('title'),actionDate:f.get('actionDate'),endDate:f.get('endDate'),status:f.get('status'),
-        theme:f.get('theme'),peopleReached:f.get('peopleReached'),audience:f.get('audience'),notes:f.get('notes'),providerId:f.get('providerId')});
+        theme:readMulti(form,'theme'),peopleReached:f.get('peopleReached'),audience:f.get('audience'),notes:f.get('notes'),providerId:f.get('providerId')});
       if(isAdmin)body.ledByMeayt=f.get('ledByMeayt')==='on';
       try{
         await StudioAPI.request('/api/dei/actions'+(action?'/'+encodeURIComponent(action.id):'')+(action?qs():''),{method:action?'PATCH':'POST',body:JSON.stringify(body)});
