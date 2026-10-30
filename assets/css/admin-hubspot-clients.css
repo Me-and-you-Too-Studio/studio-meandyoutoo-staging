@@ -1,0 +1,18 @@
+/* Admin › Clients : import des entreprises clientes depuis HubSpot */
+.hs-clients-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.hs-clients-dialog h3{margin:18px 0 6px;font-size:1rem}
+.hs-clients-hint{margin:0 0 8px;color:#54607e;font-size:.88rem}
+.hs-clients-message{margin:10px 0;padding:10px 14px;border-radius:10px;background:#e6f4f5;color:#0b5b63;font-size:.9rem}
+.hs-clients-message.is-error{background:#fdecec;color:#a42323}
+.hs-clients-list{list-style:none;margin:0;padding:0;max-height:300px;overflow:auto;border:1px solid #e3e8f1;border-radius:10px}
+.hs-clients-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid #eef1f6}
+.hs-clients-list li:last-child{border-bottom:0}
+.hs-clients-list label{display:flex;gap:10px;align-items:flex-start;flex:1;cursor:pointer}
+.hs-clients-list small{display:block;color:#54607e;font-size:.8rem;margin-top:2px}
+.hs-clients-list a{font-size:.8rem;margin-left:6px;white-space:nowrap}
+.hs-clients-list select{max-width:220px;font-size:.82rem}
+.hs-clients-all{display:inline-flex;gap:8px;margin:0 0 6px;font-size:.88rem}
+.hs-clients-linked{margin-top:16px}
+.hs-clients-linked summary{cursor:pointer;font-weight:700}
+.admin-client-hubspot-link{font-size:.78rem;font-weight:600;margin-left:8px;white-space:nowrap}
+@media (max-width:600px){.hs-clients-list li{flex-direction:column;align-items:stretch}.hs-clients-list select{max-width:none}}
