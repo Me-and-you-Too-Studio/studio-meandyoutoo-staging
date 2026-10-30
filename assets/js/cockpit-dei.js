@@ -13,7 +13,7 @@
   var adminOrganizationId=isAdmin?new URLSearchParams(location.search).get('organizationId'):null;
   if(adminOrganizationId){
     var banner=document.getElementById('dei-admin-banner');
-    if(banner){banner.hidden=false;banner.innerHTML='Vous consultez le Cockpit DEI de ce client en tant que Me&amp;YouToo : les actions que vous ajoutez sont marquées « Animée par Me&amp;YouToo ». <a href="client.html?organizationId='+encodeURIComponent(adminOrganizationId)+'">← Retour au dossier client</a>';}
+    if(banner){banner.hidden=false;banner.innerHTML='Vous consultez le Cockpit DEI de ce client en tant que Me&amp;YouToo : « Me&amp;YouToo » est présélectionné comme prestataire, et l’action apparaît chez le client « Animée par Me&amp;YouToo ». <a href="client.html?organizationId='+encodeURIComponent(adminOrganizationId)+'">← Retour au dossier client</a>';}
     return;
   }
 

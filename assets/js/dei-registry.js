@@ -167,7 +167,10 @@
       var opts=Object.keys(d.kinds).filter(function(k){return d.kinds[k].group===g;}).map(function(k){return '<option value="'+esc(k)+'"'+(k===a.kind?' selected':'')+'>'+esc(d.kinds[k].icon+' '+d.kinds[k].label)+'</option>';}).join('');
       return opts?'<optgroup label="'+esc(groups[g])+'">'+opts+'</optgroup>':'';
     }).join('');
-    var providerOptions=function(selected){return '<option value="">— Aucun —</option>'+(d.providers||[]).map(function(p){return '<option value="'+esc(p.id)+'"'+(String(p.id)===String(selected||'')?' selected':'')+'>'+esc(providerName(p))+'</option>';}).join('');};
+    // « Me&YouToo » en tête : il marque l'action « Animée par Me&YouToo » (présélectionné quand l'admin saisit).
+    var providerOptions=function(selected){return '<option value="">— Aucun —</option><option value="meayt"'+(selected==='meayt'?' selected':'')+'>Me&amp;YouToo</option>'+
+      ((d.providers||[]).length?'<optgroup label="Vos prestataires">'+d.providers.map(function(p){return '<option value="'+esc(p.id)+'"'+(String(p.id)===String(selected||'')?' selected':'')+'>'+esc(providerName(p))+'</option>';}).join('')+'</optgroup>':'');};
+    var currentProvider=a.led_by_meayt?'meayt':a.provider_id;
     var statuses=Object.keys(d.statuses).map(function(s){return '<option value="'+s+'"'+(s===a.status?' selected':'')+'>'+esc(d.statuses[s])+'</option>';}).join('');
     var dlg=document.createElement('dialog');dlg.className='dr-dialog';
     dlg.innerHTML='<form><h2>'+(action?'Modifier l’action':'Nouvelle action')+'</h2>'+
@@ -176,9 +179,8 @@
       '<div class="dr-field-row"><label class="dr-field"><span>Date *</span><input type="date" name="actionDate" required value="'+esc(a.action_date||'')+'"></label><label class="dr-field"><span>Date de fin</span><input type="date" name="endDate" value="'+esc(a.end_date||'')+'"></label><label class="dr-field"><span>Statut</span><select name="status">'+statuses+'</select></label></div>'+
       multiField('theme','Thématiques',THEMES,a.theme)+
       '<div class="dr-field-row"><label class="dr-field"><span>Public visé</span><input name="audience" maxlength="200" value="'+esc(a.audience||'')+'" placeholder="Ex. : managers du siège, nouveaux arrivants…"></label><label class="dr-field dr-field-small"><span>Personnes touchées</span><input type="number" min="0" name="peopleReached" value="'+esc(a.people_reached??'')+'"></label></div>'+
-      '<div class="dr-field-row dr-provider-pick"><label class="dr-field"><span>Prestataire</span><select name="providerId">'+providerOptions(a.provider_id)+'</select></label><button type="button" class="button button-ghost" data-new-provider>＋ Nouveau prestataire</button></div>'+
+      '<div class="dr-field-row dr-provider-pick"><label class="dr-field"><span>Prestataire</span><select name="providerId">'+providerOptions(currentProvider)+'</select></label><button type="button" class="button button-ghost" data-new-provider>＋ Nouveau prestataire</button></div>'+
       '<label class="dr-field"><span>Notes</span><textarea name="notes" rows="3" maxlength="4000">'+esc(a.notes||'')+'</textarea></label>'+
-      (isAdmin?'<label class="dr-check"><input type="checkbox" name="ledByMeayt"'+(a.led_by_meayt?' checked':'')+'> Action animée par Me&amp;YouToo</label>':'')+
       '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
     document.body.appendChild(dlg);
     var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
@@ -195,7 +197,6 @@
       if(!form.checkValidity()){form.reportValidity();return;}
       var f=new FormData(form),body=withOrg({kind:f.get('kind'),title:f.get('title'),actionDate:f.get('actionDate'),endDate:f.get('endDate'),status:f.get('status'),
         theme:readMulti(form,'theme'),peopleReached:f.get('peopleReached'),audience:f.get('audience'),notes:f.get('notes'),providerId:f.get('providerId')});
-      if(isAdmin)body.ledByMeayt=f.get('ledByMeayt')==='on';
       try{
         await StudioAPI.request('/api/dei/actions'+(action?'/'+encodeURIComponent(action.id):'')+(action?qs():''),{method:action?'PATCH':'POST',body:JSON.stringify(body)});
         dlg.close();var y=Number(String(body.actionDate).slice(0,4));if(y&&y!==state.year)state.year=y;load();
