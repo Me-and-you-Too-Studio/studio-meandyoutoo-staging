@@ -6,7 +6,8 @@
   var adminView=isAdmin&&audience!=='client';
   ['dei-calendar-link','dei-final-calendar-link'].forEach(function(id){
     var link=document.getElementById(id);
-    if(link)link.href=adminView?'calendrier.html':'calendrier.html?audience=client';
+    var orgParam=new URLSearchParams(location.search).get('organizationId');
+    if(link)link.href=adminView?(orgParam?'calendrier.html?organizationId='+encodeURIComponent(orgParam):'calendrier.html'):'calendrier.html?audience=client';
   });
 
   // Mode admin (cockpit-dei.html?organizationId=…) : on saisit le registre d'un client ; le parcours ne concerne que le compte connecté.

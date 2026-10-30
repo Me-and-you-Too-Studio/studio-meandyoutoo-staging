@@ -37,6 +37,8 @@
   function fmtDate(v){if(!v)return '';var d=new Date(String(v).slice(0,10)+'T12:00:00');return d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});}
   function qs(extra){var p=new URLSearchParams();if(organizationId)p.set('organizationId',organizationId);Object.keys(extra||{}).forEach(function(k){p.set(k,extra[k]);});var s=p.toString();return s?'?'+s:'';}
   function withOrg(body){if(organizationId)body.organizationId=organizationId;return body;}
+  // Le calendrier d'un client : en mode admin, ouvert directement sur le client consulté.
+  function calendarHref(){return isAdmin?(organizationId?'calendrier.html?organizationId='+encodeURIComponent(organizationId):'calendrier.html'):'calendrier.html?audience=client';}
   function today(){return new Date().toISOString().slice(0,10);}
 
   function load(){
@@ -84,7 +86,7 @@
     if(state.tab==='prestataires'){root.innerHTML=providersView();return;}
     root.innerHTML=state.tab==='actions'
       ?head+'<div class="dr-list">'+rows+'</div>'
-      :head+cards+pilotageView()+'<div class="dr-sub-row"><h3 class="dr-sub">Frise de l’année</h3><a class="button button-ghost" href="'+(isAdmin?'calendrier.html':'calendrier.html?audience=client')+'">Ouvrir dans le calendrier →</a></div>'+frise;
+      :head+cards+pilotageView()+'<div class="dr-sub-row"><h3 class="dr-sub">Frise de l’année</h3><a class="button button-ghost" href="'+calendarHref()+'">Ouvrir dans le calendrier →</a></div>'+frise;
     // Arrivée depuis le calendrier (?focus=action-12) : on montre l'action une seule fois.
     if(state.focus&&state.tab==='actions'){var target=document.getElementById('dr-'+state.focus);state.focus=null;
       if(target)setTimeout(function(){target.scrollIntoView({block:'center'});target.classList.add('is-focus');setTimeout(function(){target.classList.remove('is-focus');},2000);},200);}
@@ -205,7 +207,7 @@
     var up=(p.upcoming||[]).slice(0,8).map(function(u){
       var link=u.type==='action'?'<button type="button" class="dr-link" data-focus="action-'+esc(u.id)+'">Voir</button>'
         :(u.type==='campaign_start'||u.type==='campaign_end')?'<a class="dr-link" href="campagne-detail.html?projectId='+encodeURIComponent(u.id)+'">Voir</a>'
-        :u.type==='task'?'<a class="dr-link" href="calendrier.html'+(isAdmin?'':'?audience=client')+'">Voir</a>'
+        :u.type==='task'?'<a class="dr-link" href="'+calendarHref()+'">Voir</a>'
         :(canEdit?'<button type="button" class="dr-link" data-prepare="'+esc(u.date)+'" data-theme="'+esc(u.theme||'')+'" data-title="'+esc(u.title)+'">Préparer</button>':(isClient?'<button type="button" class="dr-link" data-event-help="'+esc(u.title)+'">Être accompagné</button>':''));
       var kindLabel={action:'Action prévue',campaign_start:'Lancement de campagne',campaign_end:'Clôture de campagne',task:'Tâche',event:'Temps fort D&I'}[u.type]||'';
       return '<li><span class="dp-date">'+esc(shortDate(u.date))+'</span><span class="dp-ico" aria-hidden="true">'+EVENT_ICONS[u.type]+'</span><div><strong>'+esc(u.title)+'</strong><small>'+esc(kindLabel)+'</small></div>'+link+'</li>';
