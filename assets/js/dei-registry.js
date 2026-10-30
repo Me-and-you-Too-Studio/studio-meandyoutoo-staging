@@ -12,6 +12,7 @@
   var MONTHS=['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
   var MONTHS_LONG=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
   var THEMES=['Sexisme','Égalité femmes-hommes','Handicap','LGBT+','Origines','Religion','Intergénérationnel','Harcèlement & VSS','Management inclusif','Inclusion (transversal)'];
+  var AUDIENCES=['Managers','Collaborateurs','Direction / COMEX','RH','Référents harcèlement & VSS','Nouveaux arrivants','Alternants & stagiaires'];
   var DOMAINS=THEMES.concat(['Accessibilité','Recrutement inclusif','Qualité de vie au travail','Communication interne']);
   // Choix multiples en cases à cocher + champ « Autre » libre ; enregistré en liste séparée par des virgules.
   function splitValues(v){return String(v||'').split(',').map(function(s){return s.trim();}).filter(Boolean);}
@@ -170,13 +171,24 @@
     var canEdit=state.data.canEdit;
     // Objectifs
     var objs=p.objectives.map(function(o){
-      var custom=o.metric==='custom',title=custom?o.label:(o.metricLabel+(o.label?' — '+o.label:''));
-      var pct=custom?(o.done?100:0):(o.value==null||!o.target?0:Math.min(100,Math.round(o.value/o.target*100)));
-      var reached=custom?o.done:(o.value!=null&&o.target&&o.value>=o.target);
-      var figure=custom?(o.done?'Atteint':'À atteindre'):(o.value==null?'Pas encore mesurable':num(o.value)+' / '+num(o.target)+(o.unit==='%'?' %':' '+o.unit));
-      return '<li class="dp-obj'+(reached?' is-reached':'')+'"><div class="dp-obj-head"><strong>'+esc(title)+'</strong><span>'+esc(figure)+(reached?' ✓':'')+'</span></div>'+
+      var custom=o.metric==='custom',strategic=o.metric==='strategic',manual=custom||strategic;
+      var title=custom?o.label:strategic?(o.label||('Enjeu : '+o.themes)):(o.metricLabel+(o.label?' — '+o.label:''));
+      var pct,reached,figure;
+      if(strategic){
+        // Enjeu stratégique : coché à la main quand il est atteint ; jauge sur les personnes touchées si un chiffre est fixé.
+        var s=o.strategic||{done:0,planned:0,people:0};
+        reached=o.done;pct=o.done?100:(o.target?Math.min(100,Math.round(s.people/o.target*100)):(s.done?50:(s.planned?20:0)));
+        figure=(o.done?'Atteint':s.done+' action'+(s.done>1?'s':'')+' réalisée'+(s.done>1?'s':'')+(s.planned?' · '+s.planned+' prévue'+(s.planned>1?'s':''):''))+(o.target?' · '+num(s.people)+' / '+num(o.target)+' pers.':'');
+      }else{
+        pct=custom?(o.done?100:0):(o.value==null||!o.target?0:Math.min(100,Math.round(o.value/o.target*100)));
+        reached=custom?o.done:(o.value!=null&&o.target&&o.value>=o.target);
+        figure=custom?(o.done?'Atteint':'À atteindre'):(o.value==null?'Pas encore mesurable':num(o.value)+' / '+num(o.target)+(o.unit==='%'?' %':' '+o.unit));
+      }
+      var meta=[strategic&&o.themes&&o.label?'Thématiques : '+o.themes:'',o.audiences?'Publics : '+o.audiences:''].filter(Boolean).map(esc).join(' · ');
+      return '<li class="dp-obj'+(reached?' is-reached':'')+(strategic?' is-strategic':'')+'">'+(o.suggestion_key?'<span class="dp-suggested">Proposé par Me&amp;YouToo</span>':'')+'<div class="dp-obj-head"><strong>'+esc(title)+'</strong><span>'+esc(figure)+(reached?' ✓':'')+'</span></div>'+
+        (meta?'<p class="dp-obj-meta">'+meta+'</p>':'')+
         '<div class="dp-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i style="width:'+pct+'%"></i></div>'+
-        (canEdit?'<div class="dp-obj-tools">'+(custom?'<label class="dr-check"><input type="checkbox" data-obj-done="'+esc(o.id)+'"'+(o.done?' checked':'')+'> Atteint</label>':'')+'<button type="button" class="dr-link" data-obj-edit="'+esc(o.id)+'">Modifier</button><button type="button" class="dr-link" data-obj-delete="'+esc(o.id)+'">Retirer</button></div>':'')+'</li>';
+        (canEdit?'<div class="dp-obj-tools">'+(manual?'<label class="dr-check"><input type="checkbox" data-obj-done="'+esc(o.id)+'"'+(o.done?' checked':'')+'> Atteint</label>':'')+'<button type="button" class="dr-link" data-obj-edit="'+esc(o.id)+'">Modifier</button><button type="button" class="dr-link" data-obj-delete="'+esc(o.id)+'">Retirer</button></div>':'')+'</li>';
     }).join('');
     var objCard='<article class="dp-card"><header><h3>🎯 Objectifs '+state.year+'</h3>'+(canEdit&&p.objectives.length<p.maxObjectives?'<button type="button" class="button button-ghost" data-obj-add>＋ Fixer un objectif</button>':'')+'</header>'+
       (objs?'<ul class="dp-objs">'+objs+'</ul>':'<p class="dr-empty">Fixez 3 à 5 objectifs pour l’année : la progression se calcule toute seule à partir de vos actions et de vos diagnostics.</p>'+
@@ -204,34 +216,46 @@
     (a.late||[]).forEach(function(l){alerts.push('<li class="is-warn"><span class="dp-ico" aria-hidden="true">⚠️</span><div><strong>'+esc(l.title)+'</strong><small>Prévue le '+esc(fmtDate(l.date))+' : est-elle réalisée ?</small></div>'+(canEdit?'<button type="button" class="dr-link" data-late-edit="'+esc(l.id)+'" data-year-of="'+esc(String(l.date).slice(0,4))+'">Mettre à jour</button>':'')+'</li>');});
     (a.emptyMonths||[]).forEach(function(m){alerts.push('<li><span class="dp-ico" aria-hidden="true">🕳️</span><div><strong>Rien de prévu en '+MONTHS_LONG[m.month-1]+' '+m.year+'</strong><small>Un mois sans action casse la dynamique.</small></div>'+
       (canEdit&&m.year===state.year?'<button type="button" class="dr-link" data-add-month="'+(m.month-1)+'">Planifier</button>':'')+(isClient?'<button type="button" class="dr-link" data-month="'+(m.month-1)+'" data-month-year="'+m.year+'">Être accompagné</button>':'')+'</li>');});
+    // Rappels réglementaires (ex. loi VSS) : renvoient vers l'objectif proposé de l'année concernée.
+    (a.notices||[]).forEach(function(n){alerts.unshift('<li class="is-notice"><span class="dp-ico" aria-hidden="true">⚖️</span><div><strong>'+esc(n.title)+'</strong><small>'+esc(n.text)+'</small></div><button type="button" class="dr-link" data-year="'+esc(n.year)+'">Voir les objectifs '+esc(n.year)+'</button></li>');});
     if((a.uncoveredThemes||[]).length)alerts.push('<li><span class="dp-ico" aria-hidden="true">🧭</span><div><strong>Thématiques non travaillées depuis 12 mois</strong><small>'+esc(a.uncoveredThemes.join(', '))+'</small></div><a class="dr-link" href="'+(isAdmin?'offres.html':'offres.html')+'">Voir nos offres</a></li>');
     var attCard='<article class="dp-card"><header><h3>🔎 Points d’attention</h3></header>'+(alerts.length?'<ul class="dp-list">'+alerts.join('')+'</ul>':'<p class="dr-empty">Rien à signaler, belle dynamique 👍</p>')+'</article>';
     return '<section class="dp-grid">'+objCard+qCard+upCard+attCard+'</section>';
   }
   function objectiveDialog(objective,preset){
-    var p=state.data.pilotage,o=objective||preset||{metric:'actions_done'};
+    var p=state.data.pilotage,o=objective||preset||{metric:'strategic'};
     var opts=Object.keys(p.metrics).map(function(k){return '<option value="'+k+'"'+(k===o.metric?' selected':'')+'>'+esc(p.metrics[k].label)+'</option>';}).join('');
     var dlg=document.createElement('dialog');dlg.className='dr-dialog';
     dlg.innerHTML='<form><h2>'+(objective?'Modifier l’objectif':'Nouvel objectif '+state.year)+'</h2>'+
       '<label class="dr-field"><span>Type d’objectif</span><select name="metric">'+opts+'</select></label>'+
-      '<label class="dr-field" data-when="target"><span>Cible</span><input type="number" min="1" name="target" value="'+esc(o.target??'')+'"></label>'+
-      '<label class="dr-field"><span data-label-text>Précision (facultatif)</span><input name="label" maxlength="160" value="'+esc(o.label||'')+'" placeholder="Ex. : au siège et en régions"></label>'+
+      '<label class="dr-field"><span data-label-text>Précision (facultatif)</span><input name="label" maxlength="240" value="'+esc(o.label||'')+'" placeholder="Ex. : former tous les managers à la prévention des VSS"></label>'+
+      '<div data-when="themes">'+multiField('themes','Thématiques',THEMES,o.themes)+'</div>'+
+      multiField('audiences','Publics visés',AUDIENCES,o.audiences)+
+      '<label class="dr-field" data-when="target"><span data-target-text>Cible</span><input type="number" min="1" name="target" value="'+esc(o.target??'')+'"></label>'+
       '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
     document.body.appendChild(dlg);
     var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
-    function sync(){var custom=form.elements.metric.value==='custom';dlg.querySelector('[data-when="target"]').hidden=custom;dlg.querySelector('[data-label-text]').textContent=custom?'Objectif *':'Précision (facultatif)';}
+    function sync(){
+      var m=form.elements.metric.value,custom=m==='custom',strategic=m==='strategic';
+      dlg.querySelector('[data-when="target"]').hidden=custom;
+      dlg.querySelector('[data-when="themes"]').hidden=!strategic;
+      dlg.querySelector('[data-target-text]').textContent=strategic?'Nombre de personnes à toucher (facultatif)':'Cible chiffrée *';
+      dlg.querySelector('[data-label-text]').textContent=custom?'Objectif *':strategic?'Enjeu (facultatif si une thématique est cochée)':'Précision (facultatif)';
+    }
     form.elements.metric.onchange=sync;sync();
     dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
     dlg.addEventListener('close',function(){dlg.remove();});
     form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
-      var f=new FormData(form),body=withOrg({year:state.year,metric:f.get('metric'),target:f.get('target'),label:f.get('label'),done:Boolean(objective&&objective.done)});
+      var f=new FormData(form),strategicMetric=f.get('metric')==='strategic';
+      var body=withOrg({year:state.year,metric:f.get('metric'),target:f.get('target'),label:f.get('label'),done:Boolean(objective&&objective.done),
+        themes:strategicMetric?readMulti(form,'themes'):'',audiences:readMulti(form,'audiences')});
       try{await StudioAPI.request('/api/dei/objectives'+(objective?'/'+encodeURIComponent(objective.id)+qs():''),{method:objective?'PATCH':'POST',body:JSON.stringify(body)});dlg.close();load();}
       catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
     };
     dlg.showModal();
   }
   async function saveObjective(o,changes){
-    try{await StudioAPI.request('/api/dei/objectives/'+encodeURIComponent(o.id)+qs(),{method:'PATCH',body:JSON.stringify(withOrg(Object.assign({metric:o.metric,target:o.target,label:o.label,done:o.done},changes)))});load();}
+    try{await StudioAPI.request('/api/dei/objectives/'+encodeURIComponent(o.id)+qs(),{method:'PATCH',body:JSON.stringify(withOrg(Object.assign({metric:o.metric,target:o.target,label:o.label,done:o.done,themes:o.themes,audiences:o.audiences},changes)))});load();}
     catch(e){window.StudioModal.alert({title:'Enregistrement impossible',message:e.message});}
   }
   function findObjective(id){return state.data.pilotage.objectives.find(function(o){return String(o.id)===String(id);});}

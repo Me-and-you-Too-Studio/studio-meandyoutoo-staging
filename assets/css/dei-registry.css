@@ -130,3 +130,8 @@
 .dp-ico{flex:0 0 auto;font-size:1.05rem}
 .dp-list .dr-link{white-space:nowrap}
 @media (max-width:900px){.dp-grid{grid-template-columns:minmax(0,1fr)}}
+.dp-obj{position:relative}
+.dp-obj.is-strategic{background:var(--royal-blue-tint,#f5f7fb);border-radius:12px;padding:10px 12px}
+.dp-obj-meta{margin:4px 0 0;font-size:.8rem;color:var(--muted,#54607e)}
+.dp-suggested{display:inline-block;margin-bottom:4px;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--royal-blue,#273a64);border-radius:999px;padding:2px 8px}
+.dp-list li.is-notice{background:var(--sunny-yellow-soft,#fff6dd);border-radius:10px;padding:8px 10px;border-bottom:0;margin-bottom:4px}

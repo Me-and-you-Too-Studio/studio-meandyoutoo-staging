@@ -382,8 +382,8 @@
     const actionMarks=yearActions.map(a=>{
       const s=parseDate(a.action_date),e=parseDate(a.end_date),k=state.deiKinds[a.kind]||{};
       const label=`${k.icon?k.icon+' ':''}${a.title} · ${dayLabel(s)}${e&&!sameDay(s,e)?' → '+dayLabel(e):''} · ${actionStatusLabel[a.status]||''}`;
-      if(e&&!sameDay(s,e)){const to=new Date(e.getFullYear(),e.getMonth(),e.getDate()+1);return `<a class="cal-tl-action is-band st-${esc(a.status)}" href="${esc(actionHref(a))}" style="left:${pct(s).toFixed(2)}%;width:${Math.max(pct(to)-pct(s),0.8).toFixed(2)}%" title="${esc(label)}" aria-label="${esc(label)}"><span>${esc(a.title)}</span></a>`;}
-      return `<a class="cal-tl-action st-${esc(a.status)}" href="${esc(actionHref(a))}" style="left:${pct(s).toFixed(2)}%" title="${esc(label)}" aria-label="${esc(label)}"></a>`;
+      if(e&&!sameDay(s,e)){const to=new Date(e.getFullYear(),e.getMonth(),e.getDate()+1);return `<a class="cal-tl-action is-band st-${esc(a.status)}" href="${esc(actionHref(a))}" style="left:${pct(s).toFixed(2)}%;width:${Math.max(pct(to)-pct(s),0.8).toFixed(2)}%" data-tip="${esc(label)}" aria-label="${esc(label)}"><span>${esc(a.title)}</span></a>`;}
+      return `<a class="cal-tl-action st-${esc(a.status)}" href="${esc(actionHref(a))}" style="left:${pct(s).toFixed(2)}%" data-tip="${esc(label)}" aria-label="${esc(label)}"></a>`;
     }).join('');
     const actionRow=yearActions.length?`<div class="cal-tl-row cal-tl-row-actions"><a class="cal-tl-label" href="${esc(isAdmin&&selectedOrg?'cockpit-dei.html?organizationId='+encodeURIComponent(selectedOrg)+'#actions':'cockpit-dei.html#actions')}"><strong>Actions D&amp;I</strong><small>${yearActions.length} action${yearActions.length>1?'s':''} du Cockpit DEI</small></a><div class="cal-tl-track">${todayLine}${actionMarks}</div><span class="cal-tl-note"></span></div>`:'';
     const empty=rows.length?'':`<div class="cal-tl-empty"><strong>Aucune campagne datée en ${year}.</strong> <a href="bibliotheque.html">Choisir une thématique →</a></div>`;
