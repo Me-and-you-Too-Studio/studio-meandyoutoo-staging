@@ -4,7 +4,7 @@
   const user=StudioAPI.user()||{};
   const isAdmin=user.role==='admin'&&StudioAPI.interfaceMode()!=='client';
   const canManageTasks=isAdmin||Boolean(user.permissions&&user.permissions.manage_tasks);
-  const state={view:'year',cursor:new Date(),campaigns:[],tasks:[],organizations:[],missingDates:0,taskFilter:'todo'};
+  const state={view:'year',cursor:new Date(),campaigns:[],tasks:[],organizations:[],missingDates:0,taskFilter:'todo',deiActions:[],deiKinds:{}};
   const statusLabel=status=>status?window.StudioStatus.label(status,isAdmin):'';
   // Même règle que la page campagne : le statut affiché tient compte des dates de diffusion.
   function displayStatus(p){
@@ -252,6 +252,26 @@
     };
     return state.campaigns.filter(p=>matchesStatus(p)&&(!org||String(p.organization_id)===String(org))&&(!q||[campaignName(p),p.organization_name,p.theme_title,campaignStatusLabel(p)].some(v=>String(v||'').toLowerCase().includes(q))));
   }
+  // Actions du Cockpit DEI (registre) : un seul calendrier pour tout ce que le client mène.
+  // Chargées pour un client, ou pour l'admin quand un client est choisi ; une erreur n'empêche pas le calendrier.
+  async function loadDeiActions(r,org){
+    if(isAdmin&&!org)return[];
+    if(!isAdmin&&user.permissions&&user.permissions.view_dei_cockpit===false)return[];
+    const years=[...new Set([Number(String(r.start).slice(0,4)),Number(String(r.end).slice(0,4))])];
+    try{
+      const results=await Promise.all(years.map(y=>StudioAPI.request(`/api/dei/actions?year=${y}${isAdmin?'&organizationId='+encodeURIComponent(org):''}`)));
+      state.deiKinds=results[0]?.kinds||{};
+      return results.flatMap(d=>d.actions||[]);
+    }catch(e){return[];}
+  }
+  function filteredDeiActions(){
+    if(!$('#calendar-show-actions')?.checked)return[];
+    const q=($('#calendar-search')?.value||'').trim().toLowerCase();
+    return state.deiActions.filter(a=>!q||[a.title,a.theme,a.provider_name].some(v=>String(v||'').toLowerCase().includes(q)));
+  }
+  function actionCovers(a,d){const s=parseDate(a.action_date),e=parseDate(a.end_date)||s;return s&&d>=new Date(s.getFullYear(),s.getMonth(),s.getDate())&&d<=new Date(e.getFullYear(),e.getMonth(),e.getDate());}
+  function actionHref(a){const org=$('#calendar-org-filter')?.value||'';return `cockpit-dei.html?${isAdmin&&org?'organizationId='+encodeURIComponent(org)+'&':''}year=${String(a.action_date).slice(0,4)}&focus=action-${encodeURIComponent(a.id)}#actions`;}
+  const actionStatusLabel={planned:'Prévue',in_progress:'En cours',done:'Réalisée'};
   function filteredTasksForCalendar(){
     if(!$('#calendar-show-tasks').checked)return[];
     const org=$('#calendar-org-filter').value;
@@ -280,10 +300,11 @@
       const dayTasks=tasks.filter(t=>t.due_date&&String(t.due_date).slice(0,10)===key&&t.status!=='done');
       const dayDeiCover=deiEventsCoveringDate(d);
       const dayDei=deiEventsOnDate(d);
-      const events=[...dayDei.map(e=>({type:'dei',data:e})),...dayCampaigns.map(p=>({type:'campaign',data:p})),...dayTasks.map(t=>({type:'task',data:t}))];
+      const dayActions=filteredDeiActions().filter(a=>actionCovers(a,d));
+      const events=[...dayDei.map(e=>({type:'dei',data:e})),...dayCampaigns.map(p=>({type:'campaign',data:p})),...dayActions.map(a=>({type:'action',data:a})),...dayTasks.map(t=>({type:'task',data:t}))];
       const deiDayClass=dayDeiCover.length?` has-dei-event has-dei-${dayDeiCover[dayDeiCover.length-1].category}`:'';
       html+=`<article class="studio-calendar-day ${outside?'is-outside':''} ${isToday?'is-today':''}${deiDayClass}" data-date="${key}"><header><span>${d.getDate()}</span>${isToday?'<b>Aujourd’hui</b>':''}</header><div class="studio-calendar-day-events">`;
-      events.slice(0,4).forEach(evt=>{if(evt.type==='dei'){const e=evt.data;const eventIndex=deiEvents.indexOf(e);html+=`<button class="studio-calendar-event is-dei is-dei-${esc(e.category)}" type="button" data-dei-event="${eventIndex}" data-dei-date="${key}" aria-haspopup="dialog" aria-label="Voir le détail : ${esc(e.title)}"><span></span><div><strong>${esc(e.short||e.title)}</strong>${e.recommendation?`<small>Diagnostic recommandé : ${esc(e.recommendation)}</small>`:''}</div></button>`;}else if(evt.type==='campaign'){const p=evt.data,startDate=parseDate(p.launch_date),endDate=parseDate(p.close_date),isStart=sameDay(startDate,d),isEnd=sameDay(endDate,d);let phase=isStart&&isEnd?'Début · Fin':isStart?'Début':'Fin';const cls=isStart&&isEnd?'is-single':isEnd?'is-end':'';html+=`<a class="studio-calendar-event is-campaign ${cls}" href="campagne-detail.html?id=${encodeURIComponent(p.id)}" data-campaign-id="${esc(p.id)}"><span></span><div><strong>${esc(campaignName(p))}</strong><small>${esc(phase)}${isAdmin&&p.organization_name?' · '+esc(p.organization_name):''}</small></div></a>`;}else{const t=evt.data;html+=`<button class="studio-calendar-event is-task ${t.priority==='high'?'is-high':''}" type="button" data-open-task="${t.id}"><span></span><div><strong>${esc(t.title)}</strong><small>Tâche${isAdmin&&t.organization_name?' · '+esc(t.organization_name):''}</small></div></button>`;}});
+      events.slice(0,4).forEach(evt=>{if(evt.type==='dei'){const e=evt.data;const eventIndex=deiEvents.indexOf(e);html+=`<button class="studio-calendar-event is-dei is-dei-${esc(e.category)}" type="button" data-dei-event="${eventIndex}" data-dei-date="${key}" aria-haspopup="dialog" aria-label="Voir le détail : ${esc(e.title)}"><span></span><div><strong>${esc(e.short||e.title)}</strong>${e.recommendation?`<small>Diagnostic recommandé : ${esc(e.recommendation)}</small>`:''}</div></button>`;}else if(evt.type==='campaign'){const p=evt.data,startDate=parseDate(p.launch_date),endDate=parseDate(p.close_date),isStart=sameDay(startDate,d),isEnd=sameDay(endDate,d);let phase=isStart&&isEnd?'Début · Fin':isStart?'Début':'Fin';const cls=isStart&&isEnd?'is-single':isEnd?'is-end':'';html+=`<a class="studio-calendar-event is-campaign ${cls}" href="campagne-detail.html?id=${encodeURIComponent(p.id)}" data-campaign-id="${esc(p.id)}"><span></span><div><strong>${esc(campaignName(p))}</strong><small>${esc(phase)}${isAdmin&&p.organization_name?' · '+esc(p.organization_name):''}</small></div></a>`;}else if(evt.type==='action'){const a=evt.data,k=state.deiKinds[a.kind]||{};html+=`<a class="studio-calendar-event is-dei-action st-${esc(a.status)}" href="${esc(actionHref(a))}"><span></span><div><strong>${esc((k.icon?k.icon+' ':'')+a.title)}</strong><small>Action D&amp;I · ${esc(actionStatusLabel[a.status]||'')}${a.led_by_meayt?' · Me&amp;YouToo':''}</small></div></a>`;}else{const t=evt.data;html+=`<button class="studio-calendar-event is-task ${t.priority==='high'?'is-high':''}" type="button" data-open-task="${t.id}"><span></span><div><strong>${esc(t.title)}</strong><small>Tâche${isAdmin&&t.organization_name?' · '+esc(t.organization_name):''}</small></div></button>`;}});
       if(events.length>4)html+=`<div class="studio-calendar-more">+${events.length-4} autre${events.length-4>1?'s':''}</div>`;
       html+='</div></article>';
     }
@@ -356,8 +377,17 @@
       return to?`<button type="button" class="cal-tl-dei is-band is-${esc(e.category)}" style="left:${pct(from).toFixed(2)}%;width:${(pct(to)-pct(from)).toFixed(2)}%" data-dei-event="${index}" data-dei-date="${dateKey}" aria-haspopup="dialog" aria-label="${esc(e.title)}"><span>${esc(e.short||e.title)}</span></button>`:`<button type="button" class="cal-tl-dei is-${esc(e.category)}" style="left:${pct(from).toFixed(2)}%" data-dei-event="${index}" data-dei-date="${dateKey}" aria-haspopup="dialog" aria-label="${esc(e.title)}"></button>`;
     }).join('');
     const deiRow=dei.length?`<div class="cal-tl-row cal-tl-row-dei"><div class="cal-tl-label"><strong>Temps forts DEI</strong><small>Le bon moment pour lancer une thématique</small></div><div class="cal-tl-track">${todayLine}${deiMarks}</div><span class="cal-tl-note"></span></div>`:'';
+    // Ligne « Actions D&I » : une barre par action (point si elle tient sur une journée), reliée au Cockpit.
+    const yearActions=filteredDeiActions().filter(a=>String(a.action_date).slice(0,4)===String(year)||String(a.end_date||'').slice(0,4)===String(year));
+    const actionMarks=yearActions.map(a=>{
+      const s=parseDate(a.action_date),e=parseDate(a.end_date),k=state.deiKinds[a.kind]||{};
+      const label=`${k.icon?k.icon+' ':''}${a.title} · ${dayLabel(s)}${e&&!sameDay(s,e)?' → '+dayLabel(e):''} · ${actionStatusLabel[a.status]||''}`;
+      if(e&&!sameDay(s,e)){const to=new Date(e.getFullYear(),e.getMonth(),e.getDate()+1);return `<a class="cal-tl-action is-band st-${esc(a.status)}" href="${esc(actionHref(a))}" style="left:${pct(s).toFixed(2)}%;width:${Math.max(pct(to)-pct(s),0.8).toFixed(2)}%" title="${esc(label)}" aria-label="${esc(label)}"><span>${esc(a.title)}</span></a>`;}
+      return `<a class="cal-tl-action st-${esc(a.status)}" href="${esc(actionHref(a))}" style="left:${pct(s).toFixed(2)}%" title="${esc(label)}" aria-label="${esc(label)}"></a>`;
+    }).join('');
+    const actionRow=yearActions.length?`<div class="cal-tl-row cal-tl-row-actions"><a class="cal-tl-label" href="${esc(isAdmin&&selectedOrg?'cockpit-dei.html?organizationId='+encodeURIComponent(selectedOrg)+'#actions':'cockpit-dei.html#actions')}"><strong>Actions D&amp;I</strong><small>${yearActions.length} action${yearActions.length>1?'s':''} du Cockpit DEI</small></a><div class="cal-tl-track">${todayLine}${actionMarks}</div><span class="cal-tl-note"></span></div>`:'';
     const empty=rows.length?'':`<div class="cal-tl-empty"><strong>Aucune campagne datée en ${year}.</strong> <a href="bibliotheque.html">Choisir une thématique →</a></div>`;
-    root.innerHTML=`<header class="cal-tl-head"><div><h3>Vos campagnes en ${year}</h3><p>Chaque barre va du lancement à la clôture. Cliquez sur une campagne pour l’ouvrir.</p></div><ul class="cal-tl-legend"><li class="is-scheduled">Programmée</li><li class="is-active">En diffusion</li><li class="is-closed">Terminée</li><li class="is-task">Tâche</li></ul></header><div class="cal-tl-grid"><div class="cal-tl-row cal-tl-axis" aria-hidden="true"><span class="cal-tl-label"></span><div class="cal-tl-track">${axis}</div><span class="cal-tl-note"></span></div>${rowHtml}${teamRow}${deiRow}</div>${empty}`;
+    root.innerHTML=`<header class="cal-tl-head"><div><h3>Vos campagnes en ${year}</h3><p>Chaque barre va du lancement à la clôture. Cliquez sur une campagne pour l’ouvrir.</p></div><ul class="cal-tl-legend"><li class="is-scheduled">Programmée</li><li class="is-active">En diffusion</li><li class="is-closed">Terminée</li><li class="is-task">Tâche</li></ul></header><div class="cal-tl-grid"><div class="cal-tl-row cal-tl-axis" aria-hidden="true"><span class="cal-tl-label"></span><div class="cal-tl-track">${axis}</div><span class="cal-tl-note"></span></div>${rowHtml}${teamRow}${deiRow}${actionRow}</div>${empty}`;
     bindCampaignPopovers(root);bindDeiPopovers(root);
     root.querySelectorAll('[data-open-task]').forEach(b=>b.onclick=()=>switchToTasks(Number(b.dataset.openTask)));
   }
@@ -415,7 +445,7 @@
     }catch(e){setAlert(e.message);}
   }
   async function load(){
-    setAlert('');const loading=$('#calendar-loading');loading.hidden=false;const monthRoot=$('#calendar-month'),yearRoot=$('#calendar-year'),summary=$('#calendar-month-summary');if(monthRoot)monthRoot.style.visibility='hidden';if(yearRoot)yearRoot.style.visibility='hidden';if(summary)summary.style.visibility='hidden';const r=range(),org=$('#calendar-org-filter')?.value||'';try{const suffix=`?start=${r.start}&end=${r.end}${isAdmin&&org?'&organizationId='+encodeURIComponent(org):''}`;const [cal,tasks]=await Promise.all([StudioAPI.request('/api/calendar'+suffix),StudioAPI.request('/api/tasks'+suffix)]);state.campaigns=cal.campaigns||[];state.tasks=tasks.tasks||[];state.missingDates=Number(cal.missingDates||0);populateTaskProjects();render();}catch(e){setAlert(e.message);}finally{loading.hidden=true;if(monthRoot)monthRoot.style.visibility='';if(yearRoot)yearRoot.style.visibility='';if(summary)summary.style.visibility='';}
+    setAlert('');const loading=$('#calendar-loading');loading.hidden=false;const monthRoot=$('#calendar-month'),yearRoot=$('#calendar-year'),summary=$('#calendar-month-summary');if(monthRoot)monthRoot.style.visibility='hidden';if(yearRoot)yearRoot.style.visibility='hidden';if(summary)summary.style.visibility='hidden';const r=range(),org=$('#calendar-org-filter')?.value||'';try{const suffix=`?start=${r.start}&end=${r.end}${isAdmin&&org?'&organizationId='+encodeURIComponent(org):''}`;const [cal,tasks,actions]=await Promise.all([StudioAPI.request('/api/calendar'+suffix),StudioAPI.request('/api/tasks'+suffix),loadDeiActions(r,org)]);state.campaigns=cal.campaigns||[];state.tasks=tasks.tasks||[];state.deiActions=actions;state.missingDates=Number(cal.missingDates||0);populateTaskProjects();render();}catch(e){setAlert(e.message);}finally{loading.hidden=true;if(monthRoot)monthRoot.style.visibility='';if(yearRoot)yearRoot.style.visibility='';if(summary)summary.style.visibility='';}
   }
   function populateTaskProjects(){const select=$('#task-project');const org=$('#task-org')?.value||$('#calendar-org-filter')?.value||'';const rows=state.campaigns.filter(p=>!org||String(p.organization_id)===String(org)).sort((a,b)=>{
     const options={sensitivity:'base',numeric:true};
@@ -445,7 +475,7 @@
   $('#calendar-prev').onclick=()=>{state.cursor=state.view==='year'?new Date(state.cursor.getFullYear()-1,0,1):new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);load();};
   $('#calendar-next').onclick=()=>{state.cursor=state.view==='year'?new Date(state.cursor.getFullYear()+1,0,1):new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);load();};
   $('#calendar-today').onclick=()=>{state.cursor=new Date();load();};
-  $('#calendar-status-filter').onchange=render;$('#calendar-dei-filter').onchange=render;$('#calendar-search').oninput=render;$('#calendar-show-tasks').onchange=render;
+  $('#calendar-status-filter').onchange=render;$('#calendar-dei-filter').onchange=render;$('#calendar-search').oninput=render;$('#calendar-show-tasks').onchange=render;if($('#calendar-show-actions'))$('#calendar-show-actions').onchange=render;
   $('#calendar-org-filter').onchange=()=>{
     // En choisissant un client, on repart sur tous les statuts afin que ses dates
     // de campagnes soient immédiatement visibles dans l'année.
