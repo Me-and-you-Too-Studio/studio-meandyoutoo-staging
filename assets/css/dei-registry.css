@@ -80,3 +80,15 @@
 .dr-provider-lines a{color:var(--green-blue,#007883);text-decoration:none;overflow-wrap:anywhere}
 .dr-provider-pick{align-items:flex-end}
 .dr-provider-pick .button{white-space:nowrap}
+.dr-multi{border:1px solid var(--line,#e2e7f1);border-radius:12px;padding:10px 12px 12px;margin:0}
+.dr-multi legend{font-weight:600;font-size:.9rem;padding:0 4px}
+.dr-multi legend small{font-weight:400;color:var(--muted,#54607e)}
+.dr-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.dr-chip{position:relative;cursor:pointer}
+.dr-chip input{position:absolute;opacity:0;pointer-events:none}
+.dr-chip span{display:inline-block;border:1px solid var(--line,#e2e7f1);background:#fff;border-radius:999px;padding:5px 11px;font-size:.85rem;font-weight:600;color:var(--ink,#273a64)}
+.dr-chip input:checked+span{background:var(--green-blue,#007883);border-color:var(--green-blue,#007883);color:#fff}
+.dr-chip input:focus-visible+span{outline:3px solid rgba(0,120,131,.25)}
+.dr-other{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.85rem}
+.dr-other input{flex:1;font:inherit;font-weight:400;border:1px solid var(--line,#e2e7f1);border-radius:10px;padding:8px 10px;background:#fff}
+.dr-field-small{flex:0 0 160px;min-width:140px}
