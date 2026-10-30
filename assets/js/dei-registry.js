@@ -50,7 +50,7 @@
   function items(){
     var d=state.data,t=today();
     var actions=d.actions.map(function(a){return {type:'action',id:a.id,kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,notes:a.notes,meayt:a.led_by_meayt,documents:a.documents||[],offerId:a.offer_id,provider:a.provider_name,raw:a};});
-    var campaigns=d.campaigns.map(function(c){return {type:'campaign',id:c.id,kind:'diagnostic',title:c.name,date:c.launch_date,end:c.close_date,status:c.close_date&&c.close_date<t?'done':'in_progress',theme:c.theme_title,people:c.respondents,documents:[]};});
+    var campaigns=d.campaigns.map(function(c){return {type:'campaign',id:c.id,kind:'diagnostic',title:c.name,date:c.launch_date,end:c.close_date,status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':'in_progress',theme:c.theme_title,people:c.respondents,documents:[]};});
     return actions.concat(campaigns).sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
   }
   function kind(k){return (state.data.kinds||{})[k]||{label:k,icon:'•'};}
