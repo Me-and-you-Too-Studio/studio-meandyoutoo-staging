@@ -28,6 +28,7 @@
 .offer-status{font-size:.75rem;font-weight:700;border-radius:999px;padding:3px 10px}
 .offer-status.is-on{background:var(--of-teal-soft);color:var(--of-teal)}
 .offer-status.is-off{background:#f1f2f6;color:var(--of-muted)}
+.offer-status.is-hs{background:#fff1e6;color:#a4471a}
 .offer-card.is-hidden-offer{opacity:.65}
 .offer-dialog{border:0;border-radius:16px;padding:0;width:min(560px,calc(100vw - 32px));box-shadow:0 20px 60px rgba(0,0,0,.25)}
 .offer-dialog::backdrop{background:rgba(27,42,73,.45)}
