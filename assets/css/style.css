@@ -16688,11 +16688,13 @@ nav.steps[hidden] { display: none; }
 .is-client .studio-journey-owner { background: var(--sunny-yellow-soft); color: var(--warning); }
 .is-team .studio-journey-owner { background: var(--green-blue-soft); color: var(--green-blue-dark); }
 .is-auto .studio-journey-owner { background: var(--royal-blue-soft); color: var(--royal-blue); }
+.is-live .studio-journey-owner { background: var(--green-blue-soft); color: var(--green-blue-dark); }
 .studio-journey-mini { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 12px 0 0; color: var(--muted); font-size: .82rem; font-weight: 600; }
 .studio-journey-mini ol { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .studio-journey-mini li { width: 22px; height: 6px; border-radius: 3px; background: var(--line); }
 .studio-journey-mini li.is-done { background: #0d8791; }
 .studio-journey-mini li.is-current { background: #e0a322; }
+.studio-journey-mini:not(.is-client) li.is-current { background: #7cc3c9; }
 @media (max-width: 700px) {
   .studio-journey { padding: 18px 16px; }
   .studio-journey-steps { grid-template-columns: 1fr; }

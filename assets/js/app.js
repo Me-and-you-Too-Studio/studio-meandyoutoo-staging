@@ -33,6 +33,7 @@
     thematique:{title:'Thématique',text:'Le sujet D&I de la campagne : sexisme, handicap, origines, management inclusif… Chaque thématique a son propre catalogue de situations conçues par nos experts.'},
     passation:{title:'Passation',text:'Un questionnaire complété par un collaborateur. Chaque passation est décomptée de votre pack, quelle que soit la thématique.'},
     pack:{title:'Votre pack',text:'Votre réserve de passations. Elle est valable sur tous les diagnostics Me&YouToo : utilisez-la pour explorer de nouvelles thématiques avec vos équipes.'},
+    'passations-pack':{title:'Passations utilisées sur votre pack',text:'Les questionnaires complétés depuis le début de votre pack actuel, décomptés de vos crédits. Le total des participations compte toutes les réponses depuis le lancement de vos campagnes, y compris celles des packs précédents : il est donc plus élevé.'},
     participation:{title:'Participations et répondants',text:'Un même collaborateur peut répondre plusieurs fois, le questionnaire étant anonyme : ce chiffre correspond au nombre de questionnaires complétés, pas à un nombre de personnes. Chiffres mis à jour chaque nuit.'},
     objectif:{title:'Objectif de répondants',text:'Le nombre de collaborateurs que vous souhaitez toucher. Il sert à calculer votre taux de participation et à savoir quand relancer.'},
     relecture:{title:'Relecture Me&YouToo',text:'Avant toute diffusion, l’équipe Me&YouToo vérifie vos contenus, vos traductions et vos paramètres. C’est une garantie de qualité pour vos collaborateurs.'},
@@ -62,7 +63,7 @@
     {label:'Diffusion',hint:'Vos collaborateurs répondent'},
     {label:'Résultats',hint:'Analyser et poursuivre'}
   ];
-  var OWNERS={client:'À vous d’agir',team:'Chez Me&YouToo',auto:'Automatique'};
+  var OWNERS={client:'À vous d’agir',team:'Chez Me&YouToo',auto:'Automatique',live:'En cours'};
   var IN_REVIEW={step:1,owner:'team',next:'Me&YouToo relit votre configuration. Vous serez prévenu par notification et par e-mail dès qu’une action vous sera demandée.'};
   var FINISHED={step:4,owner:'client',next:'Consultez vos résultats. Vous pouvez ensuite relancer cette campagne avec les mêmes contenus et les mêmes liens, ou explorer une nouvelle thématique : votre pack est valable sur tous les diagnostics Me&YouToo.'};
   var JOURNEY={
@@ -73,8 +74,8 @@
     client_validation_required:{step:1,owner:'client',next:'Me&YouToo vous propose des corrections : validez-les pour passer à la mise en ligne.'},
     ready_to_publish:{step:2,owner:'team',next:'Me&YouToo prépare la mise en ligne aux dates prévues. Profitez-en pour préparer l’annonce à vos collaborateurs.'},
     scheduled:{step:2,owner:'auto',next:'La campagne s’ouvrira automatiquement à sa date de début. Préparez son annonce avec le kit de communication.'},
-    published:{step:3,owner:'client',next:'Annoncez la campagne à vos collaborateurs avec le kit de communication.'},
-    active:{step:3,owner:'client',next:'Suivez la participation et relancez vos collaborateurs avec le kit de communication si besoin. Il vous faut plus de temps ? Prolongez la campagne.'},
+    published:{step:3,owner:'live',lead:'Pour aller plus loin',next:'Annoncez la campagne à vos collaborateurs avec le kit de communication.'},
+    active:{step:3,owner:'live',lead:'Pour aller plus loin',next:'Suivez la participation et relancez vos collaborateurs avec le kit de communication si besoin. Il vous faut plus de temps ? Prolongez la campagne.'},
     unpublished:{step:4,owner:'client',next:'La campagne a été retirée. Reprogrammez-la pour la relancer avec les mêmes liens, ou lancez une nouvelle thématique.'},
     closed:FINISHED,
     completed:FINISHED,
@@ -90,7 +91,7 @@
         return '<li class="studio-process-step '+state+'"'+(i===j.step?' aria-current="step"':'')+'><span aria-hidden="true">'+(state==='is-done'?'✓':i+1)+'</span><strong>'+esc(s.label)+'</strong><small>'+esc(s.hint)+'</small></li>';
       }).join('')+'</ol>';
       if(options&&options.stepsOnly)return steps;
-      return steps+'<div class="studio-journey-next is-'+j.owner+'"><span class="studio-journey-owner">'+esc(OWNERS[j.owner])+'</span><p><strong>Prochaine étape :</strong> '+esc(j.next)+'</p>'+
+      return steps+'<div class="studio-journey-next is-'+j.owner+'"><span class="studio-journey-owner">'+esc(OWNERS[j.owner])+'</span><p><strong>'+esc(j.lead||'Prochaine étape')+' :</strong> '+esc(j.next)+'</p>'+
         [].concat(action||[]).map(function(a,i){return '<a class="button '+(i?'button-secondary':'button-primary')+'" href="'+esc(a.href)+'">'+esc(a.label)+(i?'':' →')+'</a>';}).join('')+'</div>';
     },
     // Version courte pour les cartes : progression en cinq segments et qui agit.
