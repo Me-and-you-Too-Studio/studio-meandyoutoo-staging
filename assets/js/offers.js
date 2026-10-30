@@ -146,14 +146,37 @@
     if(!ok)return;
     try{await StudioAPI.request('/api/admin/offers/'+encodeURIComponent(id),{method:'DELETE'});refresh();}catch(e){window.StudioModal.alert({title:'Action impossible',message:e.message});}
   }
+  // Suivi de l'envoi à HubSpot : statut, raison d'un échec, prochaine relance et bouton « Renvoyer ».
+  function when(v){return new Date(v).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+  function hubspotCell(r){
+    var st=r.hubspot_deal_id?'synced':r.hubspot_status;
+    var resend='<br><button type="button" class="'+cls('secondary')+' offer-hs-resend" data-offer-hubspot="'+esc(r.id)+'">Renvoyer à HubSpot</button>';
+    if(st==='synced')return '<span class="offer-hs is-ok">✓ Transmise</span>'+(r.hubspot_synced_at?'<br><small>'+esc(when(r.hubspot_synced_at))+'</small>':'');
+    if(st==='sending')return '<span class="offer-hs is-wait">Envoi en cours…</span>';
+    var reason=r.hubspot_error?'<br><small>'+esc(r.hubspot_error)+'</small>':'';
+    if(st==='failed')return '<span class="offer-hs is-ko">⚠ Échec</span>'+reason+'<br><small>'+(r.hubspot_next_attempt_at?'Nouvel essai auto le '+esc(when(r.hubspot_next_attempt_at)):'Relances automatiques épuisées')+' · '+esc(r.hubspot_attempts)+' essai(s)</small>'+resend;
+    if(st==='disabled'||st==='skipped')return '<span class="offer-hs is-ko">Non transmise</span>'+reason+resend;
+    return '<span class="offer-hs is-wait">Non suivie</span><br><small>Demande antérieure au suivi</small>'+resend;
+  }
+  async function resendHubspot(btn){
+    btn.disabled=true;btn.textContent='Envoi…';
+    try{var d=await StudioAPI.request('/api/admin/offer-requests/'+encodeURIComponent(btn.getAttribute('data-offer-hubspot'))+'/hubspot-sync',{method:'POST'});
+      if(d.request&&d.request.hubspot_status!=='synced')window.StudioModal.alert({title:'Toujours pas transmise',message:d.request.hubspot_error||'HubSpot n’a pas accepté la demande.'});
+    }catch(e){window.StudioModal.alert({title:'Envoi impossible',message:e.message});}
+    loadRequests();
+  }
   function loadRequests(){
     var box=document.getElementById('offer-requests');if(!box)return;
     StudioAPI.request('/api/admin/offer-requests').then(function(d){
-      var rows=(d.requests||[]).map(function(r){
+      var list=d.requests||[];
+      var pending=list.filter(function(r){return !r.hubspot_deal_id&&r.hubspot_status!=='sending';}).length;
+      var rows=list.map(function(r){
         var who=[r.first_name,r.last_name].filter(Boolean).join(' ')||r.email||'';
-        return '<tr><td>'+esc(new Date(r.created_at).toLocaleDateString('fr-FR'))+'</td><td><a href="client.html?organizationId='+encodeURIComponent(r.organization_id||'')+'">'+esc(r.organization_name||'—')+'</a></td><td>'+esc(who)+(r.email?'<br><small>'+esc(r.email)+'</small>':'')+'</td><td>'+esc(r.offer_title||'Accompagnement')+'</td><td>'+esc(r.message||'')+'</td></tr>';
+        return '<tr><td>'+esc(new Date(r.created_at).toLocaleDateString('fr-FR'))+'</td><td><a href="client.html?organizationId='+encodeURIComponent(r.organization_id||'')+'">'+esc(r.organization_name||'—')+'</a></td><td>'+esc(who)+(r.email?'<br><small>'+esc(r.email)+'</small>':'')+'</td><td>'+esc(r.offer_title||'Accompagnement')+'</td><td>'+esc(r.message||'')+'</td><td>'+hubspotCell(r)+'</td></tr>';
       }).join('');
-      box.innerHTML='<h2 class="offer-requests-title">Demandes reçues</h2>'+(rows?'<div class="offer-table-wrap"><table class="offer-table"><thead><tr><th>Date</th><th>Client</th><th>Contact</th><th>Offre</th><th>Message</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<p class="offer-empty">Aucune demande pour le moment.</p>');
+      var notice=d.hubspotEnabled===false?'<p class="offer-hs-notice">La clé HubSpot n’est pas configurée sur le serveur : les demandes ne sont pas transmises à HubSpot.</p>'
+        :pending?'<p class="offer-hs-notice">'+pending+' demande'+(pending>1?'s':'')+' non transmise'+(pending>1?'s':'')+' à HubSpot.</p>':'';
+      box.innerHTML='<h2 class="offer-requests-title">Demandes reçues</h2>'+notice+(rows?'<div class="offer-table-wrap"><table class="offer-table"><thead><tr><th>Date</th><th>Client</th><th>Contact</th><th>Offre</th><th>Message</th><th>HubSpot</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<p class="offer-empty">Aucune demande pour le moment.</p>');
     }).catch(function(){box.innerHTML='';});
   }
 
@@ -165,6 +188,7 @@
     else if(t.hasAttribute('data-offer-new'))edit(null);
     else if(t.hasAttribute('data-offer-edit'))edit(t.getAttribute('data-offer-edit'));
     else if(t.hasAttribute('data-offer-archive'))archive(t.getAttribute('data-offer-archive'));
+    else if(t.hasAttribute('data-offer-hubspot'))resendHubspot(t);
   });
   refresh();
 })();
