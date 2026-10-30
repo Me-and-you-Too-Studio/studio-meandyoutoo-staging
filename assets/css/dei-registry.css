@@ -135,3 +135,8 @@
 .dp-obj-meta{margin:4px 0 0;font-size:.8rem;color:var(--muted,#54607e)}
 .dp-suggested{display:inline-block;margin-bottom:4px;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--royal-blue,#273a64);border-radius:999px;padding:2px 8px}
 .dp-list li.is-notice{background:var(--sunny-yellow-soft,#fff6dd);border-radius:10px;padding:8px 10px;border-bottom:0;margin-bottom:4px}
+/* Pastilles de la frise : texte tronqué, infobulle du Studio (pas celle du navigateur). */
+.dr-pill{position:relative;overflow:visible}
+.dr-pill-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dr-pill[data-tip]::after{content:attr(data-tip);position:absolute;left:0;bottom:calc(100% + 6px);background:#1b2a49;color:#fff;font-size:.78rem;font-weight:600;line-height:1.35;padding:6px 10px;border-radius:8px;white-space:normal;width:max-content;max-width:260px;box-shadow:0 6px 18px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .15s;z-index:20}
+.dr-pill[data-tip]:hover::after,.dr-pill[data-tip]:focus-visible::after{opacity:1}
