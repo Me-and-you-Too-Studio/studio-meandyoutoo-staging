@@ -1974,6 +1974,8 @@
 
   function bind() {
     const viewClient=$('#view-client-space');if(viewClient){viewClient.disabled=!organization?.id;viewClient.onclick=openClientPreview;}
+    // Registre des actions du client : saisie des actions animées par Me&YouToo.
+    const deiCockpit=$('#client-dei-cockpit');if(deiCockpit&&organization?.id){deiCockpit.href='cockpit-dei.html?organizationId='+encodeURIComponent(organization.id);deiCockpit.hidden=false;}
     const createCampaign=$('#create-client-campaign');if(createCampaign){createCampaign.disabled=!organization?.id;createCampaign.onclick=openClientCampaignCreation;}
     $('#admin-theme-filter')?.addEventListener('change', (event) => { activeTheme = event.target.value; applyFilter(); });
     $$('[data-refresh-stats]').forEach((btn) => btn.onclick = async () => {
