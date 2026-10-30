@@ -63,7 +63,7 @@
     var years=d.years.map(function(y){return '<button type="button" class="dr-year'+(y===state.year?' is-current':'')+'" data-year="'+y+'">'+y+'</button>';}).join('');
     var head='<div class="dr-head"><div><p class="eyebrow">Registre des actions D&amp;I</p><h2>'+(organizationId?'Année '+state.year+(d.organizationName?' — '+esc(d.organizationName):''):'Votre année '+state.year)+'</h2>'+
       '<p>Toutes vos actions diversité &amp; inclusion au même endroit : celles animées par Me&amp;YouToo, vos diagnostics et vos initiatives internes.</p></div>'+
-      '<div class="dr-head-actions"><div class="dr-years" role="group" aria-label="Choisir l’année">'+years+'</div>'+(canEdit?'<button type="button" class="button button-primary" data-add>＋ Ajouter une action</button>':'')+'</div></div>';
+      '<div class="dr-head-actions"><div class="dr-years" role="group" aria-label="Choisir l’année">'+years+'</div><a class="button button-secondary" data-bilan href="bilan-dei.html'+qs({year:state.year})+'">📄 Bilan '+state.year+' (PDF)</a>'+(canEdit?'<button type="button" class="button button-primary" data-add>＋ Ajouter une action</button>':'')+'</div></div>';
     var cards='<div class="dr-kpis">'+
       kpi(num(ind.actions),'action'+(ind.actions>1?'s':''),ind.done+' réalisée'+(ind.done>1?'s':'')+' · '+ind.planned+' à venir ou en cours')+
       kpi(num(ind.peopleReached),'personne'+(ind.peopleReached>1?'s':'')+' touchée'+(ind.peopleReached>1?'s':''),'actions réalisées et participations aux diagnostics')+

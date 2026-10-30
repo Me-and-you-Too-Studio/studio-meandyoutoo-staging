@@ -1,0 +1,87 @@
+/* Bilan D&I annuel : aperçu à l'écran et mise en page A4 à l'impression. */
+:root{--blue:#273a64;--blue-soft:#eaeef7;--teal:#007883;--teal-soft:#e6f4f5;--yellow:#ffc000;--yellow-soft:#fff6dd;--muted:#54607e;--line:#e2e7f1;--ok:#0d6b3f;--ok-soft:#e3f6ea}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:#e9edf4;color:var(--blue);font:14px/1.5 "Segoe UI",system-ui,-apple-system,Arial,sans-serif}
+.bl-toolbar{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:12px 16px;background:#fff;border-bottom:1px solid var(--line)}
+.bl-toolbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bl-tip{flex-basis:100%;margin:0;color:var(--muted);font-size:13px}
+.bl-year{display:flex;align-items:center;gap:6px;font-weight:600}
+.bl-year select{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:10px;color:var(--blue)}
+.bl-btn{display:inline-flex;align-items:center;padding:9px 18px;border-radius:999px;border:0;background:var(--teal);color:#fff;font:600 14px/1.2 inherit;text-decoration:none;cursor:pointer}
+.bl-btn[disabled]{opacity:.5;cursor:wait}
+.bl-btn-ghost{background:transparent;color:var(--blue);border:1px solid var(--line)}
+.bl-doc{max-width:210mm;margin:24px auto;padding:0 16px}
+.bl-loading{padding:40px;text-align:center;background:#fff;border-radius:16px}
+.bl-page{background:#fff;padding:18mm 16mm;margin-bottom:20px;border-radius:6px;box-shadow:0 2px 12px rgba(39,58,100,.08)}
+.bl-page h2{margin:0 0 14px;font-size:24px;color:var(--blue);border-bottom:3px solid var(--yellow);padding-bottom:6px;display:inline-block}
+.bl-page h3{margin:22px 0 8px;font-size:16px;color:var(--teal)}
+.bl-page h3 small{color:var(--muted);font-weight:400;font-size:13px;margin-left:6px}
+.bl-note{color:var(--muted);font-size:13px;margin:6px 0}
+/* Couverture */
+.bl-cover{min-height:250mm;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(160deg,#fff 55%,var(--blue-soft))}
+.bl-cover-logos{display:flex;justify-content:space-between;align-items:center;gap:20px}
+.bl-cover-logos img{max-height:56px;max-width:45%;object-fit:contain}
+.bl-eyebrow{margin:0;text-transform:uppercase;letter-spacing:.12em;font-weight:700;color:var(--teal)}
+.bl-cover h1{margin:4px 0;font-size:96px;line-height:1;color:var(--blue)}
+.bl-org{margin:8px 0 0;font-size:28px;font-weight:700}
+.bl-cover-intro{max-width:120mm;font-size:16px;color:var(--muted)}
+.bl-cover-foot{margin:0;color:var(--muted);font-size:12px}
+/* Chiffres */
+.bl-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.bl-kpi{padding:14px;border-radius:14px;background:var(--blue-soft)}
+.bl-kpi strong{display:block;font-size:30px;line-height:1.1}
+.bl-kpi span{display:block;color:var(--muted);font-size:13px}
+.bl-kpi em{display:block;margin-top:4px;font-style:normal;font-size:12px;color:var(--teal);font-weight:600}
+.bl-tags{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.bl-tags li{padding:4px 10px;border-radius:999px;background:var(--teal-soft);font-size:13px}
+.bl-tags b{margin-left:4px}
+.bl-frise{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.bl-month{min-width:0;min-height:70px;padding:6px;border:1px solid var(--line);border-radius:10px;font-size:11px;display:flex;flex-direction:column;gap:3px}
+.bl-month b{font-size:12px}
+.bl-pill{display:block;padding:2px 6px;border-radius:6px;background:var(--blue-soft);overflow-wrap:anywhere;line-height:1.3}
+.bl-pill.st-done{background:var(--ok-soft)}
+.bl-pill.st-planned{background:var(--yellow-soft)}
+.bl-empty{color:#a3abc0}
+/* Objectifs */
+.bl-objs{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.bl-objs li{padding:12px 14px;border:1px solid var(--line);border-radius:12px;break-inside:avoid}
+.bl-objs li.is-reached{border-color:#9fd8b6;background:#f6fcf8}
+.bl-obj-head{display:flex;justify-content:space-between;gap:10px}
+.bl-ok{color:var(--ok);font-weight:700;white-space:nowrap}
+.bl-obj-meta,.bl-obj-figure{margin:4px 0 0;color:var(--muted);font-size:12.5px}
+.bl-bar{height:8px;margin-top:8px;border-radius:999px;background:var(--blue-soft);overflow:hidden}
+.bl-bar i{display:block;height:100%;background:var(--teal)}
+/* Tableaux */
+.bl-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.bl-table th{text-align:left;padding:6px 8px;background:var(--blue);color:#fff;font-weight:600}
+.bl-table td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.bl-table tr{break-inside:avoid}
+.bl-table small{color:var(--muted)}
+.bl-actions{table-layout:fixed}.bl-actions th:nth-child(1){width:13%}.bl-actions th:nth-child(2){width:40%}.bl-actions th:nth-child(3){width:26%}.bl-actions th:nth-child(4){width:8%}.bl-actions th:nth-child(5){width:13%}
+.bl-docs{display:block;margin-top:2px;color:var(--muted);font-size:11.5px}
+.bl-st{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;white-space:nowrap;background:var(--blue-soft)}
+.bl-st.st-done{background:var(--ok-soft);color:var(--ok)}
+.bl-st.st-planned{background:var(--yellow-soft);color:#7a4b00}
+/* Perspectives */
+.bl-list{margin:0;padding-left:18px}
+.bl-list li{margin:3px 0}
+.bl-list span{display:inline-block;min-width:92px;font-weight:600;color:var(--teal)}
+.bl-notice{margin:16px 0;padding:12px 14px;border-left:4px solid var(--yellow);background:var(--yellow-soft);border-radius:8px}
+.bl-notice p{margin:4px 0 0}
+.bl-cta{display:flex;gap:16px;align-items:center;margin-top:24px;padding:16px;border-radius:14px;background:var(--blue);color:#fff;break-inside:avoid}
+.bl-cta img{width:80px;background:#fff;border-radius:10px;padding:6px}
+.bl-cta p{margin:6px 0 0;font-size:13px;opacity:.92}
+.bl-cta .bl-cta-link{font-weight:700;color:var(--yellow);opacity:1}
+.bl-footer{text-align:center;color:var(--muted);font-size:12px;padding-bottom:24px}
+@media (max-width:640px){.bl-page{padding:20px 16px}.bl-kpis{grid-template-columns:repeat(2,1fr)}.bl-frise{grid-template-columns:repeat(3,minmax(0,1fr))}.bl-cover h1{font-size:64px}.bl-cover{min-height:0;gap:40px}.bl-actions th:nth-child(3),.bl-actions td:nth-child(3){display:none}}
+@page{size:A4;margin:12mm}
+@media print{
+  body{background:#fff}
+  .bl-toolbar{display:none}
+  .bl-doc{max-width:none;margin:0;padding:0}
+  .bl-page{box-shadow:none;border-radius:0;padding:0;margin:0;break-after:page}
+  .bl-cover{min-height:265mm;padding:6mm}
+  .bl-footer{padding:4mm 0 0;font-size:10px}
+  h2,h3{break-after:avoid}
+}
