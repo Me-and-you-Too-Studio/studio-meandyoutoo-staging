@@ -104,7 +104,8 @@
       // Avant le go, l’invitation est « préparée » : elle partira automatiquement à la mise en production.
       var ready=u.invitationPreparedAt&&!data.invitationsEnabled;
       return '<article class="ae-row"><div class="ae-row-person"><strong>'+nameHtml(u)+'</strong><span>'+esc(u.email||'')+'</span>'+(ready?'<small>✓ Invitation prête le '+esc(new Date(u.invitationPreparedAt).toLocaleDateString("fr-FR"))+' : elle partira à la mise en production</small>':'')+'</div><div>'+scopeBadge(u)+'</div>'+
-        '<div class="ae-row-actions"><button class="button '+(ready?'button-secondary':'button-primary')+'" type="button" data-invite="'+esc(u.id)+'">'+(data.invitationsEnabled?'Envoyer l’invitation':ready?'Modifier l’invitation':'Préparer l’invitation')+'</button></div></article>';
+        '<div class="ae-row-actions"><button class="button '+(ready?'button-secondary':'button-primary')+'" type="button" data-invite="'+esc(u.id)+'">'+(data.invitationsEnabled?'Envoyer l’invitation':ready?'Modifier l’invitation':'Préparer l’invitation')+'</button>'+
+          '<button class="button button-ghost" type="button" data-reset="'+esc(u.id)+'">Annuler l’intégration</button></div></article>';
     }).join('');
   }
   function renderFolders(){
@@ -152,6 +153,9 @@
     var rows=data.users.filter(function(u){return u.suggestion!=='pending';});
     $('ae-review').hidden=!data.canEdit;
     $('ae-who-rows').innerHTML=rows.map(function(u){
+      // Suggestion refusée (vue admin) : seule action possible, annuler le refus.
+      if(u.suggestion==='refused')return '<div class="ae-who-row" role="row"><span role="cell"><strong>'+nameHtml(u)+'</strong>'+statusBadge(u)+'<small>'+esc(u.jobTitle||'')+'</small></span><span role="cell"></span><span role="cell"></span>'+
+        '<span role="cell">'+(data.canEdit?'<button class="button button-ghost" type="button" data-reset="'+esc(u.id)+'">Annuler le refus</button>':'')+'</span></div>';
       var editable=data.canEdit&&u.accessLevel!=='owner';
       return '<div class="ae-who-row'+(u.seesNothing?' is-warning':'')+'" role="row"><span role="cell"><strong>'+nameHtml(u)+'</strong>'+statusBadge(u)+'<small>'+esc(u.jobTitle||'')+'</small></span>'+
         '<span role="cell">'+esc(LEVELS[u.accessLevel]||u.accessLevel)+'<small><button type="button" class="ae-link" data-rights-of="'+esc(u.id)+'">'+rightsCount(u.permissions)+'</button></small></span><span role="cell">'+scopeBadge(u)+'</span>'+
@@ -270,6 +274,9 @@
     else if(t.dataset.unfile){var c=data.campaigns.find(function(x){return x.id===t.dataset.unfile;});
       if(await StudioModal.confirm({type:'warning',title:'Retirer « '+c.name+' » du dossier ?',message:'Elle ne sera plus visible que des comptes « Toutes les campagnes ».',confirmLabel:'Retirer'}))
         await act(function(){return api('/api/team-access/campaigns/'+c.id+'/folder',{method:'PUT',body:JSON.stringify({teamFolderId:null})});});}
+    else if(t.dataset.reset){var back=data.users.find(function(u){return u.id===t.dataset.reset;}),refusedBack=back.suggestion==='refused';
+      if(!await StudioModal.confirm({type:'warning',title:(refusedBack?'Annuler le refus de ':'Annuler l’intégration de ')+name(back)+' ?',message:name(back)+' redeviendra une suggestion à examiner, comme à son import : niveau et équipe à choisir de nouveau'+(refusedBack?'':', invitation préparée effacée')+'. Aucun e-mail n’est envoyé.',confirmLabel:refusedBack?'Annuler le refus':'Annuler l’intégration'}))return;
+      await act(function(){return api('/api/team-access/suggestions/'+back.id+'/reset',{method:'POST'});});}
     else if(t.dataset.invite){openInvite(data.users.find(function(u){return u.id===t.dataset.invite;}));}
     else if(t.dataset.edit){openPerimeter(data.users.find(function(u){return u.id===t.dataset.edit;}));}
     else if(t.dataset.rename){
