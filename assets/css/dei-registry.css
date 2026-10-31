@@ -153,3 +153,23 @@
 .dp-sent{font-size:.85rem;font-weight:700;color:var(--green-blue-dark,#00636c);white-space:nowrap}
 .dr-badge.is-reco{background:var(--sunny-yellow,#ffc000);color:#1b2a49}
 .dr-reco-pick{align-items:flex-end}
+/* Cartes chiffrées cliquables : chaque chiffre ouvre son détail. */
+button.dr-kpi{font:inherit;color:inherit;text-align:left;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+button.dr-kpi:hover,button.dr-kpi:focus-visible{border-color:var(--green-blue,#007883);box-shadow:0 6px 18px rgba(39,58,100,.10);transform:translateY(-1px)}
+.dr-kpi-more{font-style:normal;font-size:.8rem;font-weight:700;color:var(--green-blue,#007883);margin-top:6px}
+/* Frise : titre sur deux lignes au lieu d'être coupé. */
+.dr-pill{white-space:normal}
+.dr-pill-text{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dr-pill:hover{box-shadow:inset 0 0 0 1px var(--green-blue,#007883)}
+/* Fenêtre de détail d'une carte. */
+.dr-detail{width:min(680px,calc(100vw - 32px))}
+.dr-detail-intro{margin:0;color:var(--muted,#54607e)}
+.dr-detail-group{margin:8px 0 0;font-size:.95rem}
+.dr-detail-group span{display:inline-block;min-width:22px;padding:0 6px;border-radius:999px;background:var(--royal-blue-soft,#eaeef7);font-size:.8rem;text-align:center}
+.dr-detail-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.dr-detail-line{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;color:inherit;background:#fff;border:1px solid var(--line,#e2e7f1);border-radius:12px;padding:10px 12px;cursor:pointer}
+.dr-detail-line:hover,.dr-detail-line:focus-visible{border-color:var(--green-blue,#007883);background:var(--green-blue-soft,#e6f4f5)}
+.dr-detail-ico{font-size:1.2rem}
+.dr-detail-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.dr-detail-main small{color:var(--muted,#54607e)}
+.dr-detail-month{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line,#e2e7f1);border-radius:12px;padding:10px 12px}

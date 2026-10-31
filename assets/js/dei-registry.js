@@ -67,11 +67,11 @@
       '<p>Toutes vos actions diversité &amp; inclusion au même endroit : celles animées par Me&amp;YouToo, vos diagnostics et vos initiatives internes.</p></div>'+
       '<div class="dr-head-actions"><div class="dr-years" role="group" aria-label="Choisir l’année">'+years+'</div><a class="button button-secondary" data-bilan href="bilan-dei.html'+qs({year:state.year})+'">📄 Bilan '+state.year+' (PDF)</a>'+(canEdit?'<button type="button" class="button button-primary" data-add>＋ Ajouter une action</button>':'')+'</div></div>';
     var cards='<div class="dr-kpis">'+
-      kpi(num(ind.actions),'action'+(ind.actions>1?'s':''),ind.done+' réalisée'+(ind.done>1?'s':'')+' · '+ind.planned+' à venir ou en cours')+
-      kpi(num(ind.peopleReached),'personne'+(ind.peopleReached>1?'s':'')+' touchée'+(ind.peopleReached>1?'s':''),'actions réalisées et participations aux diagnostics')+
-      kpi(num(ind.formats),'format'+(ind.formats>1?'s':'')+' utilisé'+(ind.formats>1?'s':''),'conférences, formations, diagnostics…')+
-      kpi(num(ind.themes),'thématique'+(ind.themes>1?'s':'')+' couverte'+(ind.themes>1?'s':''),'sur l’année')+
-      kpi(num(ind.monthsWithoutAction),'mois sans action',ind.monthsWithoutAction?'sur les mois déjà écoulés':'aucun trou sur les mois écoulés',ind.monthsWithoutAction?'is-alert':'is-ok')+
+      kpi(num(ind.actions),'action'+(ind.actions>1?'s':''),ind.done+' réalisée'+(ind.done>1?'s':'')+' · '+ind.planned+' à venir ou en cours',null,'actions')+
+      kpi(num(ind.peopleReached),'personne'+(ind.peopleReached>1?'s':'')+' touchée'+(ind.peopleReached>1?'s':''),'actions réalisées et participations aux diagnostics',null,'people')+
+      kpi(num(ind.formats),'format'+(ind.formats>1?'s':'')+' utilisé'+(ind.formats>1?'s':''),'conférences, formations, diagnostics…',null,'formats')+
+      kpi(num(ind.themes),'thématique'+(ind.themes>1?'s':'')+' couverte'+(ind.themes>1?'s':''),'sur l’année',null,'themes')+
+      kpi(num(ind.monthsWithoutAction),'mois sans action',ind.monthsWithoutAction?'sur les mois déjà écoulés':'aucun trou sur les mois écoulés',ind.monthsWithoutAction?'is-alert':'is-ok','months')+
     '</div>';
     var byMonth=MONTHS.map(function(){return [];});
     list.forEach(function(it){if(String(it.date).slice(0,4)===String(state.year))byMonth[Number(String(it.date).slice(5,7))-1].push(it);});
@@ -149,7 +149,55 @@
     if(!ok)return;
     try{await StudioAPI.request('/api/dei/providers/'+encodeURIComponent(id)+qs(),{method:'DELETE'});load();}catch(e){window.StudioModal.alert({title:'Suppression impossible',message:e.message});}
   }
-  function kpi(value,label,hint,cls){return '<article class="dr-kpi '+(cls||'')+'"><strong>'+value+'</strong><span>'+label+'</span><small>'+hint+'</small></article>';}
+  // Carte chiffrée cliquable : ouvre le détail de ce qu'elle compte.
+  function kpi(value,label,hint,cls,key){return '<button type="button" class="dr-kpi '+(cls||'')+'" data-kpi="'+esc(key)+'" aria-haspopup="dialog"><strong>'+value+'</strong><span>'+label+'</span><small>'+hint+'</small><em class="dr-kpi-more">Voir le détail →</em></button>';}
+  // Détail d'une carte : les actions et diagnostics de l'année derrière le chiffre, chacun menant à sa fiche.
+  function kpiDetail(key){
+    var y=String(state.year),list=items().filter(function(it){return String(it.date).slice(0,4)===y;});
+    var themesOf=function(it){return String(it.theme||'').split(',').map(function(s){return s.trim();}).filter(Boolean);};
+    var line=function(it,extra){var k=kind(it.kind),st=(state.data.statuses||{})[it.status]||it.status;
+      var when=fmtDate(it.start||it.date)+(it.end&&it.end!==it.date?' → '+fmtDate(it.end):'');
+      return '<li><button type="button" class="dr-detail-line" data-go="'+esc(it.type+'-'+it.id)+'"><span class="dr-detail-ico" aria-hidden="true">'+esc(k.icon)+'</span><span class="dr-detail-main"><strong>'+esc(it.title)+'</strong><small>'+
+        esc([it.type==='campaign'?'Diagnostic comportemental':k.label,when].concat(extra||[]).filter(Boolean).join(' · '))+'</small></span><span class="dr-badge st-'+esc(it.status)+'">'+esc(st)+'</span></button></li>';};
+    var group=function(title,its,extra){return its.length?'<h3 class="dr-detail-group">'+esc(title)+' <span>'+its.length+'</span></h3><ul class="dr-detail-list">'+its.map(function(it){return line(it,extra&&extra(it));}).join('')+'</ul>':'';};
+    var people=function(it){return it.people!=null?num(it.people)+(it.type==='campaign'?' participations':' personnes'):'';};
+    var title,intro='',body='';
+    if(key==='actions'){title='Actions de '+y;
+      body=group('Réalisées',list.filter(function(it){return it.status==='done';}),people)+group('À venir ou en cours',list.filter(function(it){return it.status!=='done';}),people);}
+    else if(key==='people'){title='Personnes touchées en '+y;
+      var counted=list.filter(function(it){return (it.status==='done'||it.type==='campaign')&&Number(it.people)>0;}).sort(function(a,b){return b.people-a.people;});
+      intro='Participations aux diagnostics et personnes touchées par les actions réalisées. Une même personne peut avoir participé à plusieurs actions.';
+      body=group('Ce qui compte dans le total',counted,people)+group('Pas encore comptées (action à venir ou sans nombre renseigné)',list.filter(function(it){return counted.indexOf(it)<0;}));}
+    else if(key==='formats'){title='Formats utilisés en '+y;
+      var byKind={};list.forEach(function(it){(byKind[it.kind]=byKind[it.kind]||[]).push(it);});
+      body=Object.keys(byKind).map(function(k){var kd=kind(k);return group(kd.icon+' '+(k==='diagnostic'?'Diagnostics comportementaux':kd.label),byKind[k],people);}).join('');}
+    else if(key==='themes'){title='Thématiques couvertes en '+y;
+      var byTheme={},none=[];list.forEach(function(it){var th=themesOf(it);if(!th.length)none.push(it);th.forEach(function(t){(byTheme[t]=byTheme[t]||[]).push(it);});});
+      body=Object.keys(byTheme).sort(function(a,b){return a.localeCompare(b,'fr');}).map(function(t){return group(t,byTheme[t]);}).join('')+group('Sans thématique renseignée',none);}
+    else if(key==='months'){title='Mois sans action en '+y;
+      var gaps=(state.data.indicators.months||[]).map(function(c,m){return c?null:m;}).filter(function(m){return m!==null;});
+      var nowY=new Date().getFullYear(),elapsed=state.year<nowY?12:state.year>nowY?0:new Date().getMonth()+1;
+      gaps=gaps.filter(function(m){return m<elapsed;});
+      intro='Les mois déjà écoulés sans aucune action ni diagnostic. Une action régulière entretient la dynamique.';
+      body=gaps.length?'<ul class="dr-detail-list">'+gaps.map(function(m){return '<li class="dr-detail-month"><strong>'+esc(MONTHS[m])+' '+y+'</strong>'+
+        (isClient?'<button type="button" class="dr-link" data-go-month="'+m+'">Être accompagné →</button>':(state.data.canEdit?'<button type="button" class="dr-link" data-go-add-month="'+m+'">＋ Ajouter une action</button>':''))+'</li>';}).join('')+'</ul>':'<p class="dr-empty">Aucun mois sans action : bravo pour la régularité.</p>';}
+    if(!body&&key!=='months')body='<p class="dr-empty">Rien d’enregistré pour '+y+'.</p>';
+    var dlg=document.createElement('dialog');dlg.className='dr-dialog dr-detail';
+    dlg.innerHTML='<form method="dialog"><h2>'+esc(title)+'</h2>'+(intro?'<p class="dr-detail-intro">'+esc(intro)+'</p>':'')+body+
+      '<div class="dr-dialog-actions"><button type="submit" class="button button-ghost">Fermer</button></div></form>';
+    document.body.appendChild(dlg);
+    dlg.addEventListener('close',function(){dlg.remove();});
+    dlg.addEventListener('click',function(ev){var b=ev.target.closest('[data-go],[data-go-month],[data-go-add-month]');if(!b)return;ev.preventDefault();dlg.close();
+      if(b.hasAttribute('data-go')){var go=b.getAttribute('data-go');
+        // Un diagnostic s'ouvre sur sa campagne ; une action sur sa fiche dans l'onglet Actions.
+        if(/^campaign-/.test(go))location.href='campagne-detail.html?projectId='+encodeURIComponent(go.slice(9));else focusItem(go);}
+      else{var sel=b.hasAttribute('data-go-month')?'[data-month="'+b.getAttribute('data-go-month')+'"]':'[data-add-month="'+b.getAttribute('data-go-add-month')+'"]';var target=root.querySelector(sel);if(target)target.click();}
+    });
+    dlg.showModal();
+  }
+  // Montre une action (ou un diagnostic) dans l'onglet Actions.
+  function focusItem(focus){setTab('actions');
+    setTimeout(function(){var el=document.getElementById('dr-'+focus);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('is-focus');setTimeout(function(){el.classList.remove('is-focus');},1600);}},150);}
 
   function campaignName(id){var c=((state.data.diagnostics||{}).campaigns||[]).find(function(x){return String(x.id)===String(id);});return c?c.name:'';}
   function recoTip(id){var n=campaignName(id);return 'Recommandée lors de la restitution'+(n?' du diagnostic « '+n+' »':' de votre diagnostic');}
@@ -431,11 +479,9 @@
     else if(t.hasAttribute('data-provider-add'))providerDialog(null);
     else if(t.hasAttribute('data-provider-edit'))providerDialog((state.data.providers||[]).find(function(p){return String(p.id)===t.getAttribute('data-provider-edit');}));
     else if(t.hasAttribute('data-provider-delete'))removeProvider(t.getAttribute('data-provider-delete'));
-    else if(t.hasAttribute('data-focus')){
-      // La frise est dans la vue d'ensemble : on bascule sur l'onglet Actions pour montrer le détail.
-      var focus=t.getAttribute('data-focus');setTab('actions');
-      setTimeout(function(){var el=document.getElementById('dr-'+focus);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('is-focus');setTimeout(function(){el.classList.remove('is-focus');},1600);}},150);
-    }
+    // La frise est dans la vue d'ensemble : on bascule sur l'onglet Actions pour montrer le détail.
+    else if(t.hasAttribute('data-focus'))focusItem(t.getAttribute('data-focus'));
+    else if(t.hasAttribute('data-kpi'))kpiDetail(t.getAttribute('data-kpi'));
   });
   if(tabsEl)tabsEl.addEventListener('click',function(ev){var t=ev.target.closest('[data-tab]');if(t)setTab(t.getAttribute('data-tab'));});
   window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(TABS[h]&&h!==state.tab&&state.data){state.tab=h;render();}});
