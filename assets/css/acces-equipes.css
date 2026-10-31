@@ -146,3 +146,7 @@
 .ae-invitations .ae-row-person small { color: var(--success); }
 /* Les bandeaux en flex restent masqués tant que la page ne les affiche pas. */
 .ae-preview-banner[hidden], .ae-proposal[hidden] { display: none; }
+/* Aperçu de l’e-mail : présentation du Studio et accès reçu */
+.ae-preview-studio { margin: 12px 0; padding: 12px 14px; border: 1px solid #d7e8f1; border-radius: 10px; background: #eef6fb; }
+.ae-preview-studio ul { margin: 6px 0; padding-left: 20px; list-style: disc; }
+.ae-preview-studio li { margin: 3px 0; }

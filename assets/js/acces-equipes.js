@@ -29,6 +29,8 @@
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
   function plain(v){return String(v||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();}
   function api(path,options){
+    // Mode démonstration (vue client ouverte par l’admin) : les écritures sont jouées à l’écran seulement.
+    if(preview&&options&&options.method&&options.method!=='GET')return demoApply(path,options.method,options.body?JSON.parse(options.body):{});
     var sep=path.indexOf('?')>=0?'&':'?';
     if(isAdmin&&(!options||!options.method||options.method==='GET'))path+=sep+'organizationId='+encodeURIComponent(organizationId);
     if(isAdmin&&options&&options.body){var body=JSON.parse(options.body);body.organizationId=organizationId;options.body=JSON.stringify(body);}
@@ -185,7 +187,9 @@
   }
   document.querySelectorAll('[data-end-preview]').forEach(function(b){b.onclick=function(){StudioAPI.endClientPreview();};});
   async function act(fn,success){
-    try{await fn();await load();if(success)await StudioModal.alert({type:'success',title:success.title,message:success.message});}
+    try{await fn();
+      if(preview){recomputeSteps();render();}else await load();
+      if(success)await StudioModal.alert({type:'success',title:success.title,message:success.message+(preview?' (Mode démonstration : rien n’est enregistré.)':'')});}
     catch(error){await StudioModal.alert({type:'error',title:'Action impossible',message:error.message});}
   }
 
@@ -220,11 +224,20 @@
   };
 
   // ── Invitation ──
+  // Présentation du Studio et accès reçu : mêmes textes que l’e-mail envoyé par l’API (access-email.js).
+  var PRESENTATION={lead:'Le Studio Me&YouToo est la plateforme diversité et inclusion de votre entreprise. Vous pourrez y :',points:['créer et diffuser des autodiagnostics anonymes sur la diversité et l’inclusion (sexisme, handicap, origines, intergénérationnel…), conçus par les experts Me&YouToo ;','suivre la participation de vos collaborateurs et consulter les résultats ;','piloter vos actions D&I (conférences, formations…) et préparer votre bilan dans le Cockpit.']};
+  function accessText(u){
+    var level=LEVELS[u.accessLevel];if(!level)return '';
+    var scope=u.accessLevel==='owner'||u.scope!=='folders'?'toutes les campagnes de l’entreprise':u.folderIds.length?(u.folderIds.length>1?'dossiers ':'dossier ')+u.folderIds.map(folderName).join(', '):'';
+    return scope?level+' · '+scope:level;
+  }
   function renderInvitePreview(){
     var org=data.organization.name,inviter=isAdmin?'':(((me.firstName||'')+' '+(me.lastName||'')).trim());
-    var note=$('ae-invite-message').value.trim();
+    var note=$('ae-invite-message').value.trim(),access=accessText(inviting);
     $('ae-invite-preview').innerHTML='<p>Bonjour '+esc(inviting.firstName||'')+',</p><p>'+esc(inviter?inviter+' vous invite à rejoindre le Studio Me&YouToo de l’entreprise '+org+'.':'L’équipe Me&YouToo vient de créer pour vous un accès au Studio Me&YouToo, rattaché à l’entreprise '+org+'.')+'</p>'+
-      (note?'<blockquote>'+esc(note)+'</blockquote>':'')+'<p><span class="ae-fake-button">Créer mon mot de passe</span></p><p class="ae-muted">Ce lien est personnel, utilisable une seule fois et valable 72 heures.</p>';
+      (note?'<blockquote>'+esc(note)+'</blockquote>':'')+
+      '<div class="ae-preview-studio"><p><strong>'+esc(PRESENTATION.lead)+'</strong></p><ul>'+PRESENTATION.points.map(function(p){return '<li>'+esc(p)+'</li>';}).join('')+'</ul>'+(access?'<p><strong>Votre accès :</strong> '+esc(access)+'</p>':'')+'</div>'+
+      '<p><span class="ae-fake-button">Créer mon mot de passe</span></p><p class="ae-muted">Ce lien est personnel, utilisable une seule fois et valable 72 heures.</p>';
   }
   async function openInvite(user){
     inviting=user;
@@ -260,9 +273,7 @@
       if(!await StudioModal.confirm({type:'info',title:'Intégrer '+name(user)+' ?',message:LEVELS[level]+' ('+rightsCount(rights)+'). '+summary(user,perimeter.scope,perimeter.folderIds)+' Aucune invitation n’est envoyée pour l’instant.',confirmLabel:'Intégrer'}))return;
       await act(function(){return api('/api/team-access/suggestions/'+user.id+'/accept',{method:'POST',body:JSON.stringify({accessLevel:level,permissions:rights,perimeter:perimeter})});});
     }else if(t.hasAttribute('data-refuse')&&row){
-      var refused=data.users.find(function(u){return u.id===row.dataset.suggestion;});
-      if(!await StudioModal.confirm({type:'warning',title:'Refuser '+name(refused)+' ?',message:'Cette personne sortira de votre compte et n’aura jamais accès au Studio. Rien n’est supprimé : Me&YouToo voit votre décision.',confirmLabel:'Refuser'}))return;
-      await act(function(){return api('/api/team-access/suggestions/'+refused.id+'/refuse',{method:'POST'});});
+      openRefuse(data.users.find(function(u){return u.id===row.dataset.suggestion;}));
     }else if(t.hasAttribute('data-levels')){e.preventDefault();openLevels();}
     else if(t.dataset.rightsOf){var who=data.users.find(function(u){return u.id===t.dataset.rightsOf;});$('ae-levels-title').textContent='Ce que peut faire '+name(who);$('ae-levels-body').innerHTML='<p class="ae-summary">'+esc(LEVELS[who.accessLevel]||who.accessLevel)+' · '+rightsCount(who.permissions)+'</p>'+rightsHtml(who.permissions,false);$('ae-levels-dialog').showModal();}
     else if(t.dataset.addCampaigns){openAdd('campaigns',t.dataset.addCampaigns);}
@@ -318,6 +329,60 @@
     var kind=adding.mode==='campaigns'?'campaigns':'actions';
     await act(async function(){for(var i=0;i<picked.length;i++)await api('/api/team-access/'+kind+'/'+picked[i].id+'/folder',{method:'PUT',body:JSON.stringify({teamFolderId:picked[i].target})});});
   };
+  // Refuser une suggestion : « a quitté l’entreprise » (contact supprimé, Me&YouToo prévenu) ou « ne doit pas avoir accès ».
+  var refusing=null;
+  function openRefuse(user){
+    refusing=user;
+    $('ae-refuse-title').textContent='Refuser '+name(user)+' ?';
+    document.querySelectorAll('input[name="ae-refuse-reason"]').forEach(function(i){i.checked=false;});
+    $('ae-refuse-error').hidden=true;
+    $('ae-refuse-dialog').showModal();
+  }
+  $('ae-refuse-dialog').addEventListener('change',function(){$('ae-refuse-error').hidden=true;});
+  $('ae-refuse-confirm').onclick=async function(){
+    var picked=document.querySelector('input[name="ae-refuse-reason"]:checked');
+    if(!picked){$('ae-refuse-error').hidden=false;return;}
+    $('ae-refuse-dialog').close();
+    var who=name(refusing),left=picked.value==='left';
+    await act(function(){return api('/api/team-access/suggestions/'+refusing.id+'/refuse',{method:'POST',body:JSON.stringify({reason:picked.value})});},
+      left?{title:'Contact supprimé',message:who+' est retiré(e) du Studio. Me&YouToo est prévenu pour mettre sa base de contacts à jour.'}:{title:'Suggestion refusée',message:who+' n’aura pas accès au Studio.'});
+  };
+
+  // ── Mode démonstration : les actions sont jouées sur les données affichées, sans rien enregistrer ──
+  var demoReviewed=false;
+  function demoApply(path,method,body){
+    var m,byId=function(list,id){return list.find(function(x){return x.id===String(id);});};
+    var changed=true;
+    if((m=path.match(/suggestions\/([^/]+)\/accept$/))){var a=byId(data.users,m[1]),p=body.perimeter||{scope:'all',folderIds:[]};
+      Object.assign(a,{suggestion:'accepted',canInvite:true,accessLevel:body.accessLevel||a.accessLevel,permissions:body.permissions||a.permissions,scope:p.scope,folderIds:(p.folderIds||[]).map(String)});a.seesNothing=a.scope==='folders'&&!a.folderIds.length;}
+    else if((m=path.match(/suggestions\/([^/]+)\/refuse$/)))data.users=data.users.filter(function(u){return u.id!==m[1];});
+    else if((m=path.match(/suggestions\/([^/]+)\/reset$/)))Object.assign(byId(data.users,m[1]),{suggestion:'pending',canInvite:false,invitationPreparedAt:null,invitationMessage:'',accessLevel:'manager',permissions:PRESETS.manager,scope:'all',folderIds:[],seesNothing:false});
+    else if((m=path.match(/users\/([^/]+)\/invite$/))){var i=byId(data.users,m[1]);i.email=body.email;i.invitationMessage=body.message||'';
+      if(data.invitationsEnabled)Object.assign(i,{canInvite:false,status:'active'});else i.invitationPreparedAt=new Date().toISOString();}
+    else if((m=path.match(/users\/([^/]+)\/perimeter$/))){var q=byId(data.users,m[1]);q.scope=body.scope;q.folderIds=(body.folderIds||[]).map(String);q.seesNothing=q.scope==='folders'&&!q.folderIds.length;}
+    else if((m=path.match(/campaigns\/([^/]+)\/folder$/)))byId(data.campaigns,m[1]).teamFolderId=body.teamFolderId?String(body.teamFolderId):null;
+    else if((m=path.match(/actions\/([^/]+)\/folder$/)))byId(actions(),m[1]).teamFolderId=body.teamFolderId?String(body.teamFolderId):null;
+    else if(/\/folders$/.test(path))data.teamFolders.push({id:'demo-'+Date.now(),name:body.name,campaignCount:0});
+    else if((m=path.match(/folders\/([^/]+)$/))){
+      if(method==='DELETE'){data.teamFolders=data.teamFolders.filter(function(f){return f.id!==m[1];});
+        data.campaigns.concat(actions()).forEach(function(x){if(x.teamFolderId===m[1])x.teamFolderId=null;});
+        data.users.forEach(function(u){u.folderIds=u.folderIds.filter(function(id){return id!==m[1];});u.seesNothing=u.scope==='folders'&&!u.folderIds.length;});}
+      else byId(data.teamFolders,m[1]).name=body.name;}
+    else if(/\/review$/.test(path)){demoReviewed=true;changed=false;}
+    if(changed)demoReviewed=false;
+    data.teamFolders.forEach(function(f){f.campaignCount=data.campaigns.filter(function(c){return c.teamFolderId===f.id;}).length;});
+    return Promise.resolve({ok:true,demo:true});
+  }
+  // Frise recalculée à l’écran, avec les mêmes règles que l’API (team-access.js, setupSteps).
+  function recomputeSteps(){
+    var live=data.users.filter(function(u){return u.suggestion!=='refused';});
+    var undecided=live.filter(function(u){return u.suggestion==='pending';}).length;
+    var unfiled=data.campaigns.filter(function(c){return !c.teamFolderId;}).length+actions().filter(function(a){return !a.teamFolderId&&a.proposedFolderId;}).length;
+    var nothing=live.filter(function(u){return u.seesNothing;}).length,toInvite=live.filter(function(u){return u.canInvite&&!u.invitationPreparedAt;}).length;
+    var state={suggestions:[undecided===0,undecided],folders:[data.teamFolders.length>0,data.teamFolders.length?0:1],campaigns:[data.teamFolders.length>0&&unfiled===0,unfiled],
+      perimeters:[nothing===0&&undecided===0,nothing],invitations:[toInvite===0&&undecided===0,toInvite],review:[demoReviewed,demoReviewed?0:1]};
+    data.steps.forEach(function(s){if(state[s.key]){s.done=state[s.key][0];s.todo=state[s.key][1];}});
+  }
   function openLevels(){$('ae-levels-title').textContent='Ce que permet chaque niveau d’accès';$('ae-levels-body').innerHTML=levelsTable();$('ae-levels-dialog').showModal();}
   document.querySelectorAll('[data-open-levels]').forEach(function(b){b.onclick=openLevels;});
   document.addEventListener('change',async function(e){
