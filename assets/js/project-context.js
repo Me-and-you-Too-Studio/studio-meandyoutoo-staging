@@ -48,13 +48,29 @@
     }catch(error){console.warn('Identité projet indisponible',error);}
   }
 
+  // Compte limité à plusieurs dossiers d’équipe : il choisit celui de la nouvelle campagne (un seul dossier : choisi d’office par l’API).
+  async function chooseTeamFolder(){
+    var user=window.StudioAPI.user()||{};
+    if(user.campaignScope!=='folders')return null;
+    var folders=(await window.StudioAPI.request('/api/campaign-folders')).teamFolders||[];
+    if(folders.length<2)return null;
+    return new Promise(function(resolve,reject){
+      var dialog=document.createElement('dialog');dialog.className='admin-dialog access-dialog';
+      dialog.innerHTML='<form method="dialog"><p class="eyebrow">Nouvelle campagne</p><h2>Dans quel dossier d’équipe ?</h2><p>La campagne sera visible de l’équipe de ce dossier et de la direction.</p><div class="field"><label for="team-folder-choice">Dossier d’équipe</label><select id="team-folder-choice">'+folders.map(function(f){return '<option value="'+esc(f.id)+'">📁 '+esc(f.name)+'</option>';}).join('')+'</select></div><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" value="ok">Continuer</button></div></form>';
+      document.body.appendChild(dialog);
+      dialog.addEventListener('close',function(){var value=dialog.querySelector('select').value,ok=dialog.returnValue==='ok';dialog.remove();if(ok)resolve(value);else reject(new Error('Création annulée : choisissez le dossier d’équipe de la campagne.'));});
+      dialog.showModal();
+    });
+  }
   async function createProject(themeSlug,startMode,confirmedSelection,variant){
     var selected=String(themeSlug||theme()||'').trim();
     if(!selected)throw new Error('Aucune thématique n’a été sélectionnée. Le Studio ne choisit pas de thème par défaut.');
+    var teamFolderId=startMode==='resume'?null:await chooseTeamFolder();
     var data=await window.StudioAPI.request('/api/projects/from-template',{
       method:'POST',
       body:JSON.stringify({
         themeSlug:selected,
+        teamFolderId:teamFolderId,
         organizationId:window.StudioAPI.organizationId(),
         startMode:startMode==='resume'?'resume':'new',
         creationIntent:confirmedSelection===true?'confirmed-theme-selection':'',

@@ -16806,3 +16806,8 @@ a.cal-tl-label:hover strong, a.cal-tl-label:focus-visible strong { color: var(--
   .cal-tl-row-dei, .cal-tl-row-tasks { padding: 10px 8px; }
   .cal-tl-bar span { display: none; }
 }
+
+/* Périmètre par dossiers d’équipe : bandeau des listes et rappel de l’accueil (page complète : acces-equipes.css) */
+.ae-perimeter-banner { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 16px; padding: 10px 14px; border-radius: var(--radius-sm); background: var(--green-blue-soft); color: var(--green-blue-dark); font-weight: 600; }
+.ae-home-reminder { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; border: 1px solid var(--sunny-yellow); background: var(--sunny-yellow-soft); }
+.ae-home-reminder p { margin: 4px 0 0; }

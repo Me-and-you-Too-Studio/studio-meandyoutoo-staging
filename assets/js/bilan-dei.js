@@ -48,6 +48,8 @@
     select.innerHTML=d.years.filter(function(y){return y<=new Date().getFullYear()+1;}).map(function(y){return '<option'+(y===year?' selected':'')+'>'+y+'</option>';}).join('');
     select.onchange=function(){params.set('year',select.value);location.search=params.toString();};
     var org=d.organizationName||(user&&user.organizationName)||'';
+    // Compte limité à certains dossiers d’équipe : « Bilan Handicap », limité à ses dossiers.
+    if(d.perimeter)org=(d.perimeter.folders.map(function(f){return f.name;}).join(', ')||'Aucun dossier')+(org?' · '+org:'');
     document.title='Bilan D&I '+year+(org?' — '+org:'')+' — Studio Me&YouToo';
     var list=items(d),ind=d.indicators,p=d.pilotage||{objectives:[],quarters:[]};
     var done=list.filter(function(i){return i.status==='done';});

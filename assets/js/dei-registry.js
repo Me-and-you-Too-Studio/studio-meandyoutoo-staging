@@ -61,7 +61,9 @@
   function render(){
     var d=state.data,list=items(),ind=d.indicators,canEdit=d.canEdit;
     var years=d.years.map(function(y){return '<button type="button" class="dr-year'+(y===state.year?' is-current':'')+'" data-year="'+y+'">'+y+'</button>';}).join('');
-    var head='<div class="dr-head"><div><p class="eyebrow">Registre des actions D&amp;I</p><h2>'+(organizationId?'Année '+state.year+(d.organizationName?' — '+esc(d.organizationName):''):'Votre année '+state.year)+'</h2>'+
+    // Compte limité à certains dossiers d’équipe : son Cockpit ne porte que sur eux.
+    var perimeterNames=d.perimeter?d.perimeter.folders.map(function(f){return f.name;}).join(', '):'';
+    var head=(d.perimeter?'<p class="ae-perimeter-banner">👥 Votre Cockpit porte sur '+(d.perimeter.folders.length>1?'vos dossiers':'votre dossier')+' d’équipe : '+esc(perimeterNames||'aucun')+'. La vue d’ensemble de l’entreprise et ses objectifs restent à la direction.</p>':'')+'<div class="dr-head"><div><p class="eyebrow">Registre des actions D&amp;I'+(perimeterNames?' · '+esc(perimeterNames):'')+'</p><h2>'+(organizationId?'Année '+state.year+(d.organizationName?' — '+esc(d.organizationName):''):'Votre année '+state.year)+'</h2>'+
       '<p>Toutes vos actions diversité &amp; inclusion au même endroit : celles animées par Me&amp;YouToo, vos diagnostics et vos initiatives internes.</p></div>'+
       '<div class="dr-head-actions"><div class="dr-years" role="group" aria-label="Choisir l’année">'+years+'</div><a class="button button-secondary" data-bilan href="bilan-dei.html'+qs({year:state.year})+'">📄 Bilan '+state.year+' (PDF)</a>'+(canEdit?'<button type="button" class="button button-primary" data-add>＋ Ajouter une action</button>':'')+'</div></div>';
     var cards='<div class="dr-kpis">'+
@@ -194,7 +196,7 @@
         '<div class="dp-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i style="width:'+pct+'%"></i></div>'+
         (canEdit?'<div class="dp-obj-tools">'+(manual?'<label class="dr-check"><input type="checkbox" data-obj-done="'+esc(o.id)+'"'+(o.done?' checked':'')+'> Atteint</label>':'')+'<button type="button" class="dr-link" data-obj-edit="'+esc(o.id)+'">Modifier</button><button type="button" class="dr-link" data-obj-delete="'+esc(o.id)+'">Retirer</button></div>':'')+'</li>';
     }).join('');
-    var objCard='<article class="dp-card"><header><h3>🎯 Objectifs '+state.year+'</h3>'+(canEdit&&p.objectives.length<p.maxObjectives?'<button type="button" class="button button-ghost" data-obj-add>＋ Fixer un objectif</button>':'')+'</header>'+
+    var objCard=state.data.perimeter?'':'<article class="dp-card"><header><h3>🎯 Objectifs '+state.year+'</h3>'+(canEdit&&p.objectives.length<p.maxObjectives?'<button type="button" class="button button-ghost" data-obj-add>＋ Fixer un objectif</button>':'')+'</header>'+
       (objs?'<ul class="dp-objs">'+objs+'</ul>':'<p class="dr-empty">Fixez 3 à 5 objectifs pour l’année : la progression se calcule toute seule à partir de vos actions et de vos diagnostics.</p>'+
         (canEdit?'<div class="dp-suggest">'+[['actions_done',12,'12 actions réalisées'],['active_quarters',4,'Une action chaque trimestre'],['themes',5,'Couvrir 5 thématiques'],['people_reached',1000,'1 000 personnes touchées']].map(function(s){return '<button type="button" class="dr-chip-btn" data-obj-suggest="'+s[0]+':'+s[1]+'">＋ '+s[2]+'</button>';}).join('')+'</div>':''))+'</article>';
     // Trimestres
@@ -322,6 +324,8 @@
       multiField('theme','Thématiques',THEMES,a.theme)+
       '<div class="dr-field-row"><label class="dr-field"><span>Public visé</span><input name="audience" maxlength="200" value="'+esc(a.audience||'')+'" placeholder="Ex. : managers du siège, nouveaux arrivants…"></label><label class="dr-field dr-field-small"><span>Personnes touchées</span><input type="number" min="0" name="peopleReached" value="'+esc(a.people_reached??'')+'"></label></div>'+
       '<div class="dr-field-row dr-provider-pick"><label class="dr-field"><span>Prestataire</span><select name="providerId">'+providerOptions(currentProvider)+'</select></label><button type="button" class="button button-ghost" data-new-provider>＋ Nouveau prestataire</button></div>'+
+      // Dossier d’équipe : l’action apparaît dans le Cockpit de l’équipe concernée (obligatoire pour un compte limité).
+      ((d.teamFolders||[]).length?'<label class="dr-field"><span>Dossier d’équipe'+(d.perimeter?' *':'')+'</span><select name="teamFolderId"'+(d.perimeter?' required':'')+'>'+(d.perimeter?'':'<option value="">— Toute l’entreprise —</option>')+d.teamFolders.map(function(t){return '<option value="'+esc(t.id)+'"'+(String(t.id)===String(a.team_folder_id||'')?' selected':'')+'>'+esc(t.name)+'</option>';}).join('')+'</select></label>':'')+
       '<label class="dr-field"><span>Notes</span><textarea name="notes" rows="3" maxlength="4000">'+esc(a.notes||'')+'</textarea></label>'+
       // Côté Me&YouToo : rattacher l'action à un diagnostic (restitution, recommandation issue de la restitution).
       (isAdmin?'<div class="dr-field-row dr-reco-pick"><label class="dr-field"><span>Diagnostic lié</span><select name="campaignId"><option value="">— Aucun —</option>'+
@@ -344,6 +348,7 @@
       var f=new FormData(form),body=withOrg({kind:f.get('kind'),title:f.get('title'),actionDate:f.get('actionDate'),endDate:f.get('endDate'),status:f.get('status'),
         theme:readMulti(form,'theme'),peopleReached:f.get('peopleReached'),audience:f.get('audience'),notes:f.get('notes'),providerId:f.get('providerId'),offerId:a.offer_id||null});
       if(isAdmin){body.campaignId=f.get('campaignId');body.recommended=f.get('recommended')==='on';}
+      if(form.elements.teamFolderId)body.teamFolderId=f.get('teamFolderId')||null;
       try{
         await StudioAPI.request('/api/dei/actions'+(action?'/'+encodeURIComponent(action.id):'')+(action?qs():''),{method:action?'PATCH':'POST',body:JSON.stringify(body)});
         dlg.close();var y=Number(String(body.actionDate).slice(0,4));if(y&&y!==state.year)state.year=y;load();

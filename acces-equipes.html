@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accès et équipes — Studio Me&YouToo</title>
+<meta name="description" content="Constituez vos équipes, choisissez qui voit quelles campagnes et invitez vos collaborateurs au Studio Me&YouToo.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="assets/img/brand/favicon.png">
+<link rel="stylesheet" href="assets/css/style.css?v=20261031-perimetre-1">
+<link rel="stylesheet" href="assets/css/acces-equipes.css?v=20261031-perimetre-1">
+</head>
+<body>
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+<header class="mobile-header">
+  <img class="studio-brand-logo" src="assets/img/brand/logo-studio-blue.png" alt="Le Studio Me&amp;YouToo">
+  <button class="icon-button" aria-label="Ouvrir le menu" aria-expanded="false" data-menu-toggle><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+</header>
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Navigation principale" id="sidebar-root"></aside>
+  <main class="main ae-page" id="contenu">
+    <div class="topbar compact-topbar">
+      <div>
+        <p class="eyebrow" id="ae-eyebrow">Compte</p>
+        <h1 class="page-title">Accès et équipes</h1>
+        <p class="lead" id="ae-lead">Qui peut faire quoi, et qui voit quelles campagnes.</p>
+      </div>
+      <div class="top-actions"><button class="button button-secondary" type="button" data-tour-replay hidden>Revoir la visite guidée</button></div>
+    </div>
+
+    <p class="composer-alert" id="ae-alert" hidden></p>
+    <p class="ae-readonly" id="ae-readonly" hidden>Vous consultez cette page. Seul un responsable du compte peut constituer les équipes et régler les périmètres.</p>
+
+    <section class="card ae-explain" id="ae-explain" aria-labelledby="ae-explain-title">
+      <h2 id="ae-explain-title" class="section-title">Comment ça marche</h2>
+      <ol class="ae-explain-list">
+        <li><strong>Chaque personne a un niveau d’accès</strong>, qui dit ce qu’elle peut <em>faire</em> : créer, modifier, voir les résultats…</li>
+        <li><strong>Chaque personne a un périmètre</strong>, qui dit <em>quelles campagnes</em> elle voit : toutes, ou seulement celles de certains dossiers d’équipe.</li>
+        <li><strong>Les dossiers d’équipe</strong> (Handicap, Sexisme…) regroupent les campagnes d’un sujet. Ranger une campagne dans un dossier la rend visible à l’équipe de ce dossier.</li>
+      </ol>
+      <div class="ae-diagram" aria-hidden="true">
+        <div class="ae-diagram-top">Direction diversité · <strong>toutes les campagnes</strong>, Cockpit et bilan de l’entreprise</div>
+        <div class="ae-diagram-row"><div>📁 Handicap<small>son équipe voit ses campagnes, son Cockpit et son bilan</small></div><div>📁 Sexisme<small>son équipe voit ses campagnes, son Cockpit et son bilan</small></div></div>
+      </div>
+    </section>
+
+    <section class="card ae-progress" id="ae-progress" aria-labelledby="ae-progress-title">
+      <div class="ae-section-head"><h2 id="ae-progress-title" class="section-title">Paramétrage de vos équipes</h2><strong id="ae-progress-count">—</strong></div>
+      <div class="progress large" aria-hidden="true"><span id="ae-progress-bar" style="width:0"></span></div>
+      <ol class="studio-process-steps studio-journey-steps" id="ae-steps"></ol>
+    </section>
+
+    <section class="card ae-suggestions" id="ae-suggestions" aria-labelledby="ae-suggestions-title" hidden>
+      <h2 id="ae-suggestions-title" class="section-title">Me&amp;YouToo vous suggère des personnes</h2>
+      <p class="section-desc">Nous les avons identifiées comme interlocuteurs de vos sujets diversité. Vous décidez de les intégrer ou non. Aucun e-mail ne leur est envoyé tant que vous ne cliquez pas sur « Envoyer l’invitation ».</p>
+      <div id="ae-suggestion-list" class="ae-rows"></div>
+    </section>
+
+    <section class="card ae-invitations" id="ae-invitations" aria-labelledby="ae-invitations-title" hidden>
+      <h2 id="ae-invitations-title" class="section-title">Invitations à envoyer</h2>
+      <p class="section-desc">Ces personnes sont intégrées à votre compte mais n’ont encore rien reçu. Envoyez leur invitation quand vous le souhaitez, par exemple après une annonce interne.</p>
+      <div id="ae-invitation-list" class="ae-rows"></div>
+    </section>
+
+    <section class="ae-folders-section" id="ae-folders-section" aria-labelledby="ae-folders-title">
+      <div class="ae-section-head"><div><h2 id="ae-folders-title" class="section-title">Dossiers d’équipe</h2><p class="section-desc">Un dossier par sujet ou par équipe. Les comptes « Toutes les campagnes » voient tous les dossiers.</p></div><button class="button button-primary" type="button" id="ae-add-folder">+ Créer un dossier d’équipe</button></div>
+      <p class="ae-warning" id="ae-unfiled" hidden></p>
+      <div class="ae-folder-grid" id="ae-folders"></div>
+    </section>
+
+    <section class="table-card ae-who" id="ae-who" aria-labelledby="ae-who-title">
+      <div class="ae-section-head"><div><h2 id="ae-who-title" class="section-title">Qui voit quoi</h2><p class="section-desc">Vérifiez en un coup d’œil. Un ⚠️ signale un compte qui ne voit aucune campagne.</p></div><button class="button button-secondary" type="button" id="ae-review">J’ai vérifié qui voit quoi</button></div>
+      <div class="ae-who-table" role="table" aria-label="Qui voit quoi">
+        <div class="ae-who-row ae-who-head" role="row"><span role="columnheader">Personne</span><span role="columnheader">Ce qu’elle peut faire</span><span role="columnheader">Ce qu’elle voit</span><span role="columnheader"><span class="sr-only">Action</span></span></div>
+        <div id="ae-who-rows"></div>
+      </div>
+    </section>
+
+    <section class="card ae-campaigns" id="ae-campaigns" aria-labelledby="ae-campaigns-title">
+      <h2 id="ae-campaigns-title" class="section-title">Ranger les campagnes</h2>
+      <p class="section-desc">Choisissez le dossier d’équipe de chaque campagne. Une campagne sans dossier n’est visible que des comptes « Toutes les campagnes ».</p>
+      <div id="ae-campaign-list" class="ae-rows"></div>
+    </section>
+
+    <section class="card ae-faq" aria-labelledby="ae-faq-title">
+      <h2 id="ae-faq-title" class="section-title">Questions fréquentes</h2>
+      <details><summary>Que se passe-t-il si je supprime un dossier ?</summary><p>Ses campagnes ne sont plus rangées : seuls les comptes « Toutes les campagnes » les voient encore. Les personnes limitées à ce seul dossier ne voient plus aucune campagne, jamais toutes par défaut. Rangez les campagnes ailleurs et ajustez leur périmètre.</p></details>
+      <details><summary>Une personne limitée peut-elle créer des campagnes ?</summary><p>Oui, si son niveau d’accès le permet. Elle les crée dans un de ses dossiers, et la direction les retrouve automatiquement.</p></details>
+      <details><summary>Qui voit le solde de passations ?</summary><p>Tout le monde voit le solde commun de l’entreprise. Une personne limitée ne voit que ses propres commandes de passations.</p></details>
+      <details><summary>Et le Cockpit D&amp;I et le bilan ?</summary><p>Une personne limitée a son Cockpit et son bilan, limités à ses dossiers : ses campagnes, ses actions, ses restitutions. La vue d’ensemble de l’entreprise et les objectifs de l’année restent aux comptes « Toutes les campagnes ».</p></details>
+      <details><summary>Comment donner l’accès à tout ?</summary><p>Dans « Qui voit quoi », cliquez sur « Modifier » puis choisissez « Toutes les campagnes ». Le responsable du compte voit toujours tout.</p></details>
+      <details><summary>Pourquoi un compte ne voit rien ?</summary><p>Il est réglé sur « Seulement certains dossiers » sans aucun dossier coché, ou son dossier a été supprimé. Cochez au moins un dossier ou choisissez « Toutes les campagnes ».</p></details>
+    </section>
+  </main>
+</div>
+
+<dialog id="ae-perimeter-dialog" class="admin-dialog access-dialog"><form method="dialog" id="ae-perimeter-form">
+  <button type="button" class="admin-dialog-close" data-close aria-label="Fermer">×</button>
+  <p class="eyebrow" id="ae-perimeter-eyebrow">Périmètre</p>
+  <h2 id="ae-perimeter-title">Ce que voit cette personne</h2>
+  <div id="ae-perimeter-access" class="ae-dialog-block" hidden></div>
+  <fieldset class="ae-choice"><legend>Quelles campagnes voit cette personne ?</legend>
+    <label class="ae-choice-card"><input type="radio" name="ae-scope" value="all"> <span><strong>Toutes les campagnes</strong><small>Comme la direction : toutes les campagnes, le Cockpit et le bilan de l’entreprise.</small></span></label>
+    <label class="ae-choice-card"><input type="radio" name="ae-scope" value="folders"> <span><strong>Seulement ces dossiers</strong><small>Ses campagnes, son Cockpit et son bilan, limités aux dossiers cochés.</small></span></label>
+    <div id="ae-perimeter-folders" class="ae-folder-checks"></div>
+  </fieldset>
+  <p class="ae-summary" id="ae-perimeter-summary" aria-live="polite"></p>
+  <p class="field-error" id="ae-perimeter-error" hidden></p>
+  <div class="top-actions"><button class="button button-ghost" type="button" data-close>Annuler</button><button class="button button-primary" type="button" id="ae-perimeter-save">Enregistrer</button></div>
+</form></dialog>
+
+<dialog id="ae-invite-dialog" class="admin-dialog access-dialog"><form method="dialog" id="ae-invite-form">
+  <button type="button" class="admin-dialog-close" data-close aria-label="Fermer">×</button>
+  <p class="eyebrow">Invitation</p>
+  <h2 id="ae-invite-title">Envoyer l’invitation</h2>
+  <div class="field"><label for="ae-invite-email">Adresse e-mail professionnelle</label><input id="ae-invite-email" type="email" required><small class="field-hint">Corrigez-la si besoin avant l’envoi.</small></div>
+  <div class="field"><label for="ae-invite-message">Votre mot d’accompagnement (facultatif)</label><textarea id="ae-invite-message" rows="4" maxlength="1500" placeholder="Bonjour, je t’ouvre l’accès au Studio pour suivre nos campagnes handicap."></textarea></div>
+  <div class="ae-preview"><p class="eyebrow">Aperçu de l’e-mail</p><div id="ae-invite-preview"></div></div>
+  <p class="field-error" id="ae-invite-error" hidden></p>
+  <div class="top-actions"><button class="button button-ghost" type="button" data-close>Annuler</button><button class="button button-primary" type="button" id="ae-invite-send">Envoyer l’invitation</button></div>
+</form></dialog>
+
+<nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
+<script src="assets/js/api.js?v=20261019-client-preview-1"></script>
+<script src="assets/js/app.js?v=20261031-perimetre-1"></script>
+<script src="assets/js/acces-equipes.js?v=20261031-perimetre-1"></script>
+</body>
+</html>

@@ -173,6 +173,15 @@
       {target:'#settings-form fieldset:nth-of-type(2)',title:'L’introduction',text:'Adaptez le texte d’accueil à votre organisation. Si votre campagne a plusieurs langues, personnalisez-en une et confiez les autres à Me&YouToo.'},
       {target:'#settings-form fieldset:nth-of-type(3)',title:'Les dates',text:'La campagne s’ouvrira et se fermera automatiquement à ces dates. Prévoyez au moins cinq jours avant le lancement pour la relecture.'}
     ]},
+    'acces-equipes':{key:'acces-equipes',steps:[
+      {target:'#ae-explain',title:'Accès et équipes',text:'Ici, vous décidez qui peut faire quoi dans le Studio, et qui voit quelles campagnes. Prenez une minute pour lire ces trois principes.'},
+      {target:'#ae-suggestions',title:'Les personnes suggérées par Me&YouToo',text:'Me&YouToo a préparé des comptes pour vos interlocuteurs D&I. Choisissez l’équipe de chacun, puis intégrez-le ou refusez-le. Rien ne leur est envoyé à ce stade.'},
+      {target:'.ae-who-row:not(.ae-who-head) span:nth-child(2)',title:'Le niveau d’accès',text:'Ce que la personne peut faire : créer, modifier, voir les résultats, commander des passations…'},
+      {target:'.ae-who-row:not(.ae-who-head) span:nth-child(3)',title:'Le périmètre',text:'Les campagnes qu’elle voit : toutes, ou seulement celles de ses dossiers d’équipe. Une personne limitée a aussi son Cockpit et son bilan, limités à ses dossiers.'},
+      {target:'#ae-folders-section',title:'Les dossiers d’équipe',text:'Un dossier par sujet ou par équipe. Rangez une campagne dans un dossier, et l’équipe du dossier la voit.'},
+      {target:'#ae-who',title:'Qui voit quoi',text:'Vérifiez en un coup d’œil. Un ⚠️ signale un compte qui ne voit rien. Le Studio vous résume toujours ce que la personne verra avant d’enregistrer.'},
+      {target:'#ae-progress',title:'Votre progression',text:'La frise suit votre paramétrage. Une étape repasse « à faire » si la situation change, par exemple quand une nouvelle personne arrive sans équipe.'}
+    ]},
     'validation':{key:'creation-validation',auto:true,steps:[
       {target:'nav.steps',title:'Dernière étape : transmettre',text:'Vérifiez votre configuration, puis transmettez-la. Me&YouToo la relit avant la mise en ligne et vous prévient par notification et par e-mail.'}
     ]}
@@ -608,6 +617,7 @@
 
   var NAV_SECONDARY = [
     { href: 'packs.html', label: 'Commander des passations', permission:'order_passations', icon: '<path d="M3 7h18v12H3z"/><path d="M16 12h5"/><path d="M6 7V5h12v2"/>' },
+    { href: 'acces-equipes.html', label: 'Accès et équipes', permission:'manage_users', icon: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M15 14.5c3 0 6 2 6 5.5"/>' },
     { href: 'account.html', label: 'Mon compte', icon: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>' }
   ];
 
@@ -652,7 +662,8 @@
       'commande.html':'order_passations',
       'kit-communication.html':'manage_kit',
       'calendrier.html':'view_calendar',
-      'cockpit-dei.html':'view_dei_cockpit'
+      'cockpit-dei.html':'view_dei_cockpit',
+      'acces-equipes.html':'manage_users'
     }[CURRENT];
     if(!required||CURRENT_USER&&CURRENT_USER.permissions&&CURRENT_USER.permissions[required])return;
     var main=document.querySelector('main.main');
@@ -1062,4 +1073,19 @@
   setupScrollNavigation();
   setupStudioSubscriptionAccess();
   setTimeout(trackProductActivity,0);
+  setTimeout(teamAccessReminder,0);
+
+  // Accueil d'un responsable du compte : rappel des personnes à répartir et du paramétrage des équipes restant à faire.
+  async function teamAccessReminder(){
+    if(CURRENT!=='accueil.html'||IS_ADMIN&&!CLIENT_PREVIEW||!CURRENT_USER||CURRENT_USER.accessLevel!=='owner')return;
+    var main=document.querySelector('main.main');if(!main)return;
+    try{
+      var d=await StudioAPI.request('/api/team-access');
+      var pending=d.users.filter(function(u){return u.suggestion==='pending';}).length,left=d.steps.filter(function(s){return !s.done;}).length;
+      if(!left)return;
+      var box=document.createElement('section');box.className='card ae-home-reminder';
+      box.innerHTML='<div><p class="eyebrow">Accès et équipes</p><strong>'+(pending?pending+' personne'+(pending>1?'s':'')+' suggérée'+(pending>1?'s':'')+' par Me&YouToo attend'+(pending>1?'ent':'')+' votre décision':'Le paramétrage de vos équipes n’est pas terminé')+'</strong><p>Constituez vos équipes et choisissez qui voit quelles campagnes : '+(d.steps.length-left)+' étape'+(d.steps.length-left>1?'s':'')+' sur '+d.steps.length+' faite'+(d.steps.length-left>1?'s':'')+'.</p></div><a class="button button-primary" href="acces-equipes.html">Répartir dans les équipes →</a>';
+      var top=main.querySelector('.topbar');if(top)top.insertAdjacentElement('afterend',box);else main.prepend(box);
+    }catch(error){}
+  }
 })();

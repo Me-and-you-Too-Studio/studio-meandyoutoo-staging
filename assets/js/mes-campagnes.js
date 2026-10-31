@@ -13,6 +13,9 @@
 
   var projects = [];
   var folders = [];
+  // Dossiers d’équipe (communs à l’entreprise, « team:<id> » dans le filtre) et périmètre du compte.
+  var teamFolders = [];
+  var perimeterLimited = false;
   var activeFolder = "all";
   var activeTheme = "all";
   var activeCountry = "all";
@@ -667,6 +670,9 @@
     });
   }
 
+  function teamFolderById(id) {
+    return id == null ? null : teamFolders.find(function (f) { return String(f.id) === String(id); }) || null;
+  }
   function folderById(id) {
     return folders.find(function (folder) { return String(folder.id) === String(id); });
   }
@@ -720,6 +726,7 @@
       themeFilter.onchange = function (event) { activeTheme = event.target.value; renderCards(); };
     }
     root.innerHTML = '<div class="campaign-folder-heading"><div><strong>Dossiers</strong><span>Votre classement personnel des campagnes</span></div>' + (can("organize_folders") ? '<button class="campaign-folder-create" type="button" data-folder-create>+ Nouveau dossier</button>' : "") + '</div><div class="campaign-folder-list">' + chip("all", "🗂️ Toutes", projects.length) + chip("unclassified", "📄 Non classées", unclassified) + folders.map(function (f) { return '<span class="campaign-folder-group">' + chip(String(f.id), "📁 " + esc(f.name), projects.filter(function (p) { return String(p.folder_id || "") === String(f.id); }).length) + (can("organize_folders") ? '<button type="button" class="campaign-folder-manage" data-folder-manage="' + esc(f.id) + '" aria-label="Gérer le dossier ' + esc(f.name) + '">•••</button>' : "") + '</span>'; }).join("") + '</div>';
+    if (teamFolders.length) root.insertAdjacentHTML("afterbegin", (perimeterLimited ? '<p class="ae-perimeter-banner">👥 Vous voyez les campagnes de ' + (teamFolders.length > 1 ? 'vos dossiers' : 'votre dossier') + ' d’équipe : ' + teamFolders.map(function (f) { return esc(f.name); }).join(", ") + '.</p>' : "") + '<div class="campaign-folder-heading"><div><strong>Dossiers d’équipe</strong><span>Communs à l’entreprise : ils décident qui voit quelles campagnes</span></div></div><div class="campaign-folder-list">' + teamFolders.map(function (f) { return chip("team:" + f.id, "👥 " + esc(f.name), projects.filter(function (p) { return String(p.team_folder_id || "") === String(f.id); }).length); }).join("") + '</div>');
     root.querySelectorAll("[data-folder-filter]").forEach(function (b) { b.onclick = function () { activeFolder = b.dataset.folderFilter; renderFolderBar(); renderCards(); }; });
     root.querySelector("[data-folder-create]")?.addEventListener("click", async function () { var name = await askFolderName("Nouveau dossier", ""); if (!name) return; await StudioAPI.request("/api/campaign-folders", { method: "POST", body: JSON.stringify({ name: name }) }); await load(); });
     root.querySelectorAll("[data-folder-manage]").forEach(function (b) { b.onclick = async function () { var folder = folderById(b.dataset.folderManage); if (!folder) return; var rename = await StudioModal.confirm({ eyebrow: "Dossier", title: folder.name, message: "Renommez ce dossier, ou supprimez-le pour replacer ses campagnes dans « Non classées ».", cancelLabel: "Supprimer le dossier", confirmLabel: "Renommer" }); if (rename) { var name = await askFolderName("Renommer le dossier", folder.name); if (!name || name === folder.name) return; await StudioAPI.request("/api/campaign-folders/" + folder.id, { method: "PATCH", body: JSON.stringify({ name: name }) }); } else { var remove = await StudioModal.confirm({ type: "danger", title: "Supprimer le dossier « " + folder.name + " » ?", message: "Les campagnes ne seront pas supprimées. Elles retourneront dans « Non classées ».", cancelLabel: "Conserver", confirmLabel: "Supprimer le dossier" }); if (!remove) return; await StudioAPI.request("/api/campaign-folders/" + folder.id, { method: "DELETE" }); if (activeFolder === String(folder.id)) activeFolder = "all"; } await load(); }; });
@@ -793,6 +800,7 @@
       esc(statusLabel(statusKey(p))) +
       "</span>" +
       window.StudioStatus.dot(statusKey(p)) +
+      (teamFolderById(p.team_folder_id) ? '<span class="campaign-folder-tag">👥 ' + esc(teamFolderById(p.team_folder_id).name) + '</span>' : "") +
       (folderById(p.folder_id) ? '<span class="campaign-folder-tag">📁 ' + esc(folderById(p.folder_id).name) + '</span>' : "") +
       extraBadges(p) +
       "</div>" +
@@ -1295,7 +1303,7 @@
         .concat(locales.map(function (locale) { return locale + " " + localeLabel(locale); }))
         .join(" ")
         .toLowerCase();
-      var inFolder = activeFolder === "all" || (activeFolder === "unclassified" ? !p.folder_id : String(p.folder_id || "") === activeFolder);
+      var inFolder = activeFolder === "all" || (activeFolder.indexOf("team:") === 0 ? String(p.team_folder_id || "") === activeFolder.slice(5) : activeFolder === "unclassified" ? !p.folder_id : String(p.folder_id || "") === activeFolder);
       var inTheme = activeTheme === "all" || themeLabel(p) === activeTheme;
       var inCountry = activeCountry === "all" ||
         (activeCountry === "__france__" ? projectIsFranceOnly(p) :
@@ -1371,6 +1379,8 @@
           encodeURIComponent(window.StudioAPI.organizationId()),
       );
       folders = Array.isArray(folderData.folders) ? folderData.folders : [];
+      teamFolders = Array.isArray(folderData.teamFolders) ? folderData.teamFolders : [];
+      perimeterLimited = folderData.perimeterLimited === true;
       projects.forEach(function (project) { project.folder_id = null; });
       (folderData.assignments || []).forEach(function (assignment) {
         var project = projects.find(function (item) { return String(item.id) === String(assignment.project_id); });

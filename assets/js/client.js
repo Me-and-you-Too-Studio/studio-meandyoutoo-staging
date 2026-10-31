@@ -1976,6 +1976,8 @@
     const viewClient=$('#view-client-space');if(viewClient){viewClient.disabled=!organization?.id;viewClient.onclick=openClientPreview;}
     // Registre des actions du client : saisie des actions animées par Me&YouToo.
     const deiCockpit=$('#client-dei-cockpit');if(deiCockpit&&organization?.id){deiCockpit.href='cockpit-dei.html?organizationId='+encodeURIComponent(organization.id);deiCockpit.hidden=false;}
+    // Équipes, périmètres et suggestions du client (mêmes réglages que son responsable du compte).
+    const teamAccess=$('#client-team-access');if(teamAccess&&organization?.id){teamAccess.href='acces-equipes.html?organizationId='+encodeURIComponent(organization.id);teamAccess.hidden=false;}
     const clientCalendar=$('#client-calendar');if(clientCalendar&&organization?.id){clientCalendar.href='calendrier.html?organizationId='+encodeURIComponent(organization.id);clientCalendar.hidden=false;}
     const createCampaign=$('#create-client-campaign');if(createCampaign){createCampaign.disabled=!organization?.id;createCampaign.onclick=openClientCampaignCreation;}
     $('#admin-theme-filter')?.addEventListener('change', (event) => { activeTheme = event.target.value; applyFilter(); });
