@@ -48,7 +48,7 @@
       used.map(function(k){var c=state.categories[k];return '<button type="button" class="offer-chip'+(state.filter===k?' is-current':'')+'" data-offer-filter="'+esc(k)+'"><span aria-hidden="true">'+esc(c.icon)+'</span> '+esc(c.label)+'</button>';}).join('')+'</div>';
     var catalogues='';
     if(state.catalogues.conferences||state.catalogues.formations){
-      catalogues='<div class="offer-catalogues"><span>📘 Nos catalogues 2026 :</span>'+
+      catalogues='<div class="offer-catalogues"><span>📘 Nos catalogues :</span>'+
         (safeUrl(state.catalogues.conferences)?'<a href="'+esc(state.catalogues.conferences)+'" target="_blank" rel="noopener">Conférences ↗</a>':'')+
         (safeUrl(state.catalogues.formations)?'<a href="'+esc(state.catalogues.formations)+'" target="_blank" rel="noopener">Formations ↗</a>':'')+'</div>';
     }else if(mode==='public'){
