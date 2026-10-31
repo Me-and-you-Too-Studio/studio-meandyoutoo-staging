@@ -35,6 +35,8 @@
     return StudioAPI.request(path,options);
   }
   function name(u){return ((u.firstName||'')+' '+(u.lastName||'')).trim()||u.email||'Compte';}
+  // Nom + lien vers la fiche HubSpot (fourni par l’API à l’admin uniquement).
+  function nameHtml(u){return esc(name(u))+(u.hubspotUrl?' <a class="ae-hs" href="'+esc(u.hubspotUrl)+'" target="_blank" rel="noopener" title="Ouvrir la fiche HubSpot">HubSpot ↗</a>':'');}
   function folderName(id){var f=data.teamFolders.find(function(x){return x.id===String(id);});return f?f.name:'Dossier supprimé';}
   function campaignsIn(ids){return data.campaigns.filter(function(c){return c.teamFolderId&&ids.indexOf(c.teamFolderId)>=0;}).length;}
   function scopeBadge(u){
@@ -84,7 +86,7 @@
     $('ae-suggestions-title').textContent='Me&YouToo vous suggère '+list.length+' personne'+(list.length>1?'s':'')+' pour votre compte';
     $('ae-suggestion-list').innerHTML=list.map(function(u){
       var p=u.proposedPerimeter,selected=p?(p.scope==='all'?'all':p.folderIds[0]):'';
-      return '<article class="ae-row" data-suggestion="'+esc(u.id)+'"><div class="ae-row-person"><strong>'+esc(name(u))+'</strong><span>'+esc(u.jobTitle||'Fonction non renseignée')+'</span>'+
+      return '<article class="ae-row" data-suggestion="'+esc(u.id)+'"><div class="ae-row-person"><strong>'+nameHtml(u)+'</strong><span>'+esc(u.jobTitle||'Fonction non renseignée')+'</span>'+
         (p?'<small>💡 Sa fonction évoque : '+esc(perimeterText(p))+'</small>':'')+'</div>'+
         '<label class="ae-row-field"><span>Niveau d’accès <button type="button" class="ae-link" data-levels>Que permet chaque niveau ?</button></span><select data-level>'+Object.keys(LEVELS).filter(function(k){return k!=='owner';}).map(function(k){return '<option value="'+k+'"'+(u.accessLevel===k?' selected':'')+'>'+LEVELS[k]+'</option>';}).join('')+'</select></label>'+
         '<label class="ae-row-field"><span>Équipe</span><select data-scope><option value="">Choisir son équipe…</option>'+folderOptions(selected,true)+'</select></label>'+
@@ -96,7 +98,7 @@
     var list=data.users.filter(function(u){return u.canInvite;});
     $('ae-invitations').hidden=!list.length||!data.canEdit;
     $('ae-invitation-list').innerHTML=list.map(function(u){
-      return '<article class="ae-row"><div class="ae-row-person"><strong>'+esc(name(u))+'</strong><span>'+esc(u.email||'')+'</span></div><div>'+scopeBadge(u)+'</div>'+
+      return '<article class="ae-row"><div class="ae-row-person"><strong>'+nameHtml(u)+'</strong><span>'+esc(u.email||'')+'</span></div><div>'+scopeBadge(u)+'</div>'+
         '<div class="ae-row-actions"><button class="button button-primary" type="button" data-invite="'+esc(u.id)+'">Envoyer l’invitation</button></div></article>';
     }).join('');
   }
@@ -104,7 +106,7 @@
     var everyone=data.users.filter(function(u){return u.suggestion!=='pending'&&(u.accessLevel==='owner'||u.scope==='all');}).length;
     var unfiled=data.campaigns.filter(function(c){return !c.teamFolderId;}).length;
     $('ae-unfiled').hidden=!unfiled||!data.teamFolders.length;
-    $('ae-unfiled').textContent=unfiled+' campagne'+(unfiled>1?'s ne sont':' n’est')+' dans aucun dossier : seuls les comptes « Toutes les campagnes » '+(unfiled>1?'les':'la')+' voient. Rangez-'+(unfiled>1?'les':'la')+' plus bas.';
+    $('ae-unfiled').textContent=unfiled+' campagne'+(unfiled>1?'s ne sont':' n’est')+' dans aucun dossier : seuls les comptes « Toutes les campagnes » '+(unfiled>1?'les':'la')+' voient. Ajoutez-'+(unfiled>1?'les':'la')+' à un dossier avec « + Ajouter des campagnes ».';
     $('ae-add-folder').hidden=!data.canEdit;
     if(!data.teamFolders.length){
       $('ae-folders').innerHTML='<div class="ae-empty"><strong>Créez votre premier dossier d’équipe</strong><p>Par exemple « Handicap » ou « Sexisme et harcèlement ». Vous y rangerez les campagnes du sujet, et l’équipe concernée ne verra que celles-ci.</p></div>';
@@ -112,8 +114,11 @@
     }
     $('ae-folders').innerHTML=data.teamFolders.map(function(f){
       var team=data.users.filter(function(u){return u.suggestion!=='pending'&&u.accessLevel!=='owner'&&u.scope==='folders'&&u.folderIds.indexOf(f.id)>=0;});
-      var ideas=functionsFor(f.name);
-      return '<article class="card ae-folder"><h3>📁 '+esc(f.name)+'</h3><p class="ae-folder-count">'+f.campaignCount+' campagne'+(f.campaignCount>1?'s':'')+'</p>'+
+      var ideas=functionsFor(f.name),inside=data.campaigns.filter(function(c){return c.teamFolderId===f.id;});
+      // Les campagnes du dossier, avec l’ajout et le retrait directement ici.
+      return '<article class="card ae-folder"><h3>📁 '+esc(f.name)+'</h3><p class="ae-folder-label">Campagnes ('+inside.length+')</p>'+
+        (inside.length?'<ul class="ae-folder-campaigns">'+inside.map(function(c){return '<li><span>'+esc(c.name)+'</span>'+(data.canEdit?'<button type="button" class="ae-link" data-unfile="'+esc(c.id)+'" aria-label="Retirer '+esc(c.name)+' du dossier">Retirer</button>':'')+'</li>';}).join('')+'</ul>':'<p class="ae-muted">Aucune campagne pour l’instant.</p>')+
+        (data.canEdit&&data.campaigns.length>inside.length?'<button class="button button-secondary ae-add-campaigns" type="button" data-add-campaigns="'+esc(f.id)+'">+ Ajouter des campagnes</button>':'')+
         '<p class="ae-folder-label">Visible par</p><p>'+(team.length?team.map(function(u){return '👤 '+esc(name(u));}).join(' · '):'<span class="ae-muted">Personne de l’équipe pour l’instant</span>')+'</p>'+
         '<p class="ae-muted">+ '+everyone+' compte'+(everyone>1?'s':'')+' « Toutes les campagnes »</p>'+
         (ideas.length?'<p class="ae-ideas">'+(team.length?'Fonctions souvent associées':'Personne ne suit encore ce sujet. Les entreprises désignent souvent')+' : '+esc(ideas.join(' · '))+'</p>':'')+
@@ -131,7 +136,7 @@
     $('ae-review').hidden=!data.canEdit;
     $('ae-who-rows').innerHTML=rows.map(function(u){
       var editable=data.canEdit&&u.accessLevel!=='owner';
-      return '<div class="ae-who-row'+(u.seesNothing?' is-warning':'')+'" role="row"><span role="cell"><strong>'+esc(name(u))+'</strong>'+statusBadge(u)+'<small>'+esc(u.jobTitle||'')+'</small></span>'+
+      return '<div class="ae-who-row'+(u.seesNothing?' is-warning':'')+'" role="row"><span role="cell"><strong>'+nameHtml(u)+'</strong>'+statusBadge(u)+'<small>'+esc(u.jobTitle||'')+'</small></span>'+
         '<span role="cell">'+esc(LEVELS[u.accessLevel]||u.accessLevel)+'<small><button type="button" class="ae-link" data-rights-of="'+esc(u.id)+'">'+rightsCount(u.permissions)+'</button></small></span><span role="cell">'+scopeBadge(u)+'</span>'+
         '<span role="cell">'+(editable?'<button class="button button-secondary" type="button" data-edit="'+esc(u.id)+'">Modifier</button>':u.accessLevel==='owner'?'<small class="ae-muted">Voit toujours tout</small>':'')+'</span></div>';
     }).join('')||'<p class="ae-muted">Aucun compte.</p>';
@@ -144,7 +149,8 @@
     }).join('');
   }
   function render(){
-    $('ae-eyebrow').textContent=isAdmin?'Fiche client · '+data.organization.name:'Compte · '+data.organization.name;
+    // Admin : retour à la fiche du client, et sa fiche entreprise HubSpot.
+    $('ae-eyebrow').innerHTML=isAdmin?'<a href="client.html?organizationId='+encodeURIComponent(organizationId)+'">← Fiche client · '+esc(data.organization.name)+'</a>'+(data.organization.hubspotUrl?' · <a href="'+esc(data.organization.hubspotUrl)+'" target="_blank" rel="noopener">HubSpot ↗</a>':''):'Compte · '+esc(data.organization.name);
     $('ae-readonly').hidden=data.canEdit;
     renderSteps();renderSuggestions();renderInvitations();renderFolders();renderWho();renderCampaigns();
   }
@@ -235,6 +241,10 @@
       await act(function(){return api('/api/team-access/suggestions/'+refused.id+'/refuse',{method:'POST'});});
     }else if(t.hasAttribute('data-levels')){e.preventDefault();openLevels();}
     else if(t.dataset.rightsOf){var who=data.users.find(function(u){return u.id===t.dataset.rightsOf;});$('ae-levels-title').textContent='Ce que peut faire '+name(who);$('ae-levels-body').innerHTML='<p class="ae-summary">'+esc(LEVELS[who.accessLevel]||who.accessLevel)+' · '+rightsCount(who.permissions)+'</p>'+rightsHtml(who.permissions,false);$('ae-levels-dialog').showModal();}
+    else if(t.dataset.addCampaigns){openAddCampaigns(t.dataset.addCampaigns);}
+    else if(t.dataset.unfile){var c=data.campaigns.find(function(x){return x.id===t.dataset.unfile;});
+      if(await StudioModal.confirm({type:'warning',title:'Retirer « '+c.name+' » du dossier ?',message:'Elle ne sera plus visible que des comptes « Toutes les campagnes ».',confirmLabel:'Retirer'}))
+        await act(function(){return api('/api/team-access/campaigns/'+c.id+'/folder',{method:'PUT',body:JSON.stringify({teamFolderId:null})});});}
     else if(t.dataset.invite){openInvite(data.users.find(function(u){return u.id===t.dataset.invite;}));}
     else if(t.dataset.edit){openPerimeter(data.users.find(function(u){return u.id===t.dataset.edit;}));}
     else if(t.dataset.rename){
@@ -254,6 +264,20 @@
     if(e.target.matches('[data-level]'))row.querySelector('[data-rights-box]').innerHTML=rightsHtml(PRESETS[e.target.value],true);
     if(e.target.matches('[data-level],[data-right]'))row.querySelector('[data-rights-count]').textContent=rightsCount(rowRights(row));
   });
+  // Ajouter des campagnes à un dossier : cases à cocher, avec le dossier actuel de chaque campagne.
+  var addingTo=null;
+  function openAddCampaigns(folderId){
+    addingTo=folderId;
+    $('ae-add-campaigns-title').textContent='Ajouter des campagnes à « '+folderName(folderId)+' »';
+    var others=data.campaigns.filter(function(c){return c.teamFolderId!==folderId;}).sort(function(a,b){return (a.teamFolderId?1:0)-(b.teamFolderId?1:0);});
+    $('ae-add-campaigns-list').innerHTML=others.map(function(c){return '<li><label><input type="checkbox" value="'+esc(c.id)+'"> <span><strong>'+esc(c.name)+'</strong><small>'+esc(c.theme||'')+' · '+(c.teamFolderId?'actuellement dans « '+esc(folderName(c.teamFolderId))+' » (elle en sera retirée)':'sans dossier')+'</small></span></label></li>';}).join('');
+    $('ae-add-campaigns-dialog').showModal();
+  }
+  $('ae-add-campaigns-save').onclick=async function(){
+    var ids=[].map.call(document.querySelectorAll('#ae-add-campaigns-list input:checked'),function(i){return i.value;});
+    $('ae-add-campaigns-dialog').close();if(!ids.length)return;
+    await act(async function(){for(var i=0;i<ids.length;i++)await api('/api/team-access/campaigns/'+ids[i]+'/folder',{method:'PUT',body:JSON.stringify({teamFolderId:addingTo})});});
+  };
   function openLevels(){$('ae-levels-title').textContent='Ce que permet chaque niveau d’accès';$('ae-levels-body').innerHTML=levelsTable();$('ae-levels-dialog').showModal();}
   document.querySelectorAll('[data-open-levels]').forEach(function(b){b.onclick=openLevels;});
   document.addEventListener('change',async function(e){

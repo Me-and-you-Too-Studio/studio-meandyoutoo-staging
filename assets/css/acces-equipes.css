@@ -117,3 +117,17 @@
 .ae-levels-table td.is-off { color: #b8c2d3; }
 .ae-levels-table tbody tr:nth-child(odd) { background: var(--surface-soft); }
 @media (max-width: 760px) { .ae-levels-table { font-size: .78rem; } .ae-levels-table th, .ae-levels-table td { padding: 7px 4px; } }
+/* Campagnes d'un dossier d'équipe, ajout depuis le dossier, liens HubSpot (admin) */
+.ae-folder-campaigns { display: grid; gap: 6px; margin: 4px 0 8px; padding: 0; list-style: none; }
+.ae-folder-campaigns li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 7px 10px; border-radius: 10px; background: var(--surface-soft); font-size: .9rem; color: var(--royal-blue); }
+.ae-folder-campaigns .ae-link { flex: 0 0 auto; font-size: .8rem; font-weight: 600; color: var(--muted); }
+.ae-add-campaigns { align-self: flex-start; margin: 4px 0 6px; }
+.ae-add-campaigns-list { display: grid; gap: 8px; max-height: 50vh; overflow: auto; margin: 14px 0; padding: 0; list-style: none; }
+.ae-add-campaigns-list label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
+.ae-add-campaigns-list label:has(input:checked) { border-color: var(--green-blue); background: var(--green-blue-soft); }
+.ae-add-campaigns-list input { margin-top: 3px; accent-color: var(--green-blue); }
+.ae-add-campaigns-list strong, .ae-add-campaigns-list small { display: block; }
+.ae-add-campaigns-list small { margin-top: 2px; color: var(--muted); }
+.ae-hs { margin-left: 4px; font-size: .78rem; font-weight: 700; color: #ff5c35; text-decoration: none; white-space: nowrap; }
+.ae-hs:hover { text-decoration: underline; }
+#ae-eyebrow a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
