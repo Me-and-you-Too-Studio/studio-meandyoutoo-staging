@@ -42,11 +42,11 @@
           <div class="hs-tools"><button type="button" class="button button-secondary" data-hs-unlink="${esc(o.id)}">Détacher</button></div></div></li>`).join('')}</ul>` : ''}
       ${suggested.length ? `<h3>À rattacher (${suggested.length})</h3><p class="hs-clients-hint">Un client du Studio ressemble à ces entreprises : rattachez-le plutôt que de créer un doublon.</p>
         <ul class="hs-clients-list">${suggested.map(c => `<li><div class="hs-row"><div><strong>${esc(c.name)}</strong> ${link(c)}<small>Proposé : ${esc(c.suggestion.name)} (même ${esc(c.suggestion.reason)})</small></div>
-          <div class="hs-tools"><button type="button" class="button button-secondary" data-hs-link="${esc(c.id)}" data-org="${esc(c.suggestion.id)}">Rattacher à ${esc(c.suggestion.name)}</button></div></div></li>`).join('')}</ul>` : ''}
+          <div class="hs-tools"><button type="button" class="button button-secondary" data-hs-link="${esc(c.id)}" data-org="${esc(c.suggestion.id)}">Rattacher à ${esc(c.suggestion.name)}</button><button type="button" class="button button-ghost hs-tool" data-hs-create-one="${esc(c.id)}" data-allow-similar="1" title="Créer une fiche distincte dans le Studio (ex. une filiale)">Créer quand même</button></div></div></li>`).join('')}</ul>` : ''}
       <h3>Nouveaux clients (${fresh.length})</h3>
       ${fresh.length ? `<label class="hs-clients-all"><input type="checkbox" data-hs-all ${fresh.every(c => picked.has(c.id)) ? 'checked' : ''}> Tout cocher</label>
         <ul class="hs-clients-list">${fresh.map(c => `<li data-hs-row="${esc(c.id)}"><div class="hs-row"><label><input type="checkbox" data-hs-pick="${esc(c.id)}" ${picked.has(c.id) ? 'checked' : ''}> <span><strong>${esc(c.name)}</strong> ${link(c)}<small>${esc(c.sector)} · ${esc(c.countryCode)}${c.domain ? ' · ' + esc(c.domain) : ''}</small></span></label>
-          <div class="hs-tools">${tool('contacts', c, 'Contacts')}${canLink ? tool('link', c, 'Rattacher à…') : ''}</div></div>${box('contacts', c)}${canLink ? linkBox(c) : ''}</li>`).join('')}</ul>`
+          <div class="hs-tools">${tool('contacts', c, 'Contacts')}${canLink ? tool('link', c, 'Rattacher à…') : ''}<button type="button" class="button button-secondary hs-tool" data-hs-create-one="${esc(c.id)}" title="Créer la fiche de ce client dans le Studio, avec les contacts cochés">Créer dans le Studio</button></div></div>${box('contacts', c)}${canLink ? linkBox(c) : ''}</li>`).join('')}</ul>`
         : '<p class="hs-clients-hint">Toutes les entreprises clientes de HubSpot existent déjà dans le Studio.</p>'}
       <details class="hs-clients-linked" ${focusId || openBoxes.has('linked') ? 'open' : ''}><summary>Déjà rattachés (${linked.length})</summary><ul class="hs-clients-list">${linked.map(c => `<li data-hs-row="${esc(c.id)}" class="${focusId === c.id ? 'is-focus' : ''}"><div class="hs-row"><div><strong>${esc(c.organization.name)}</strong> ← ${esc(c.name)} ${link(c)}<small>${esc(usersSummary(c.organization))}${c.organization.mergedFrom ? ' · rattachement mis à jour après fusion dans HubSpot' : ''}</small></div>
         <div class="hs-tools">${tool('contacts', c, 'Contacts')}${tool('prestations', c, 'Prestations')}<button type="button" class="button button-ghost hs-tool" data-hs-unlink="${esc(c.organization.id)}">Détacher</button></div></div>${box('contacts', c)}${box('prestations', c)}</li>`).join('')}</ul></details>
@@ -191,11 +191,12 @@
         changed = true; contactsCache.delete(companyId); pickedContacts.delete(companyId); focusId = companyId;
         return load(`${plural(r.added.length, 'contact')} repris pour ${esc(r.organization.name)}, en attente du go.` + (r.skipped.length ? ` Non repris : ${r.skipped.map(s => esc(s.email) + ' (' + esc(s.reason) + ')').join(', ')}.` : ''));
       }
-      if (t.hasAttribute('data-hs-create')) {
-        const ids = [...dialog.querySelectorAll('[data-hs-pick]:checked')].map(c => c.dataset.hsPick);
+      // « Créer les clients cochés » en bas, ou « Créer dans le Studio » sur une seule entreprise.
+      if (t.hasAttribute('data-hs-create') || t.dataset.hsCreateOne) {
+        const ids = t.dataset.hsCreateOne ? [t.dataset.hsCreateOne] : [...dialog.querySelectorAll('[data-hs-pick]:checked')].map(c => c.dataset.hsPick);
         if (!ids.length) return window.StudioModal.alert({ title: 'Aucune entreprise cochée', message: 'Cochez les nouveaux clients à créer. Une entreprise rattachée à un client existant n’a pas besoin d’être créée : elle est dans « Déjà rattachés ».' });
         t.disabled = true; t.textContent = 'Création…';
-        const r = await StudioAPI.request('/api/admin/hubspot/clients/create', { method: 'POST', body: JSON.stringify({ companyIds: ids }) });
+        const r = await StudioAPI.request('/api/admin/hubspot/clients/create', { method: 'POST', body: JSON.stringify({ companyIds: ids, allowSimilar: t.dataset.allowSimilar === '1' }) });
         changed = true;
         let added = 0; const failed = [];
         for (const org of r.created) {
