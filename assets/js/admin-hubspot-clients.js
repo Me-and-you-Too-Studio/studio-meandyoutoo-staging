@@ -25,6 +25,10 @@
   const box = (kind, c, inner = '') => `<div class="hs-box" data-hs-box="${kind}:${esc(c.id)}" ${openBoxes.has(kind + ':' + c.id) ? '' : 'hidden'}>${inner}</div>`;
   const linkBox = c => box('link', c, `<label>Rattacher « ${esc(c.name)} » au client du Studio :</label><div class="hs-inline"><select data-hs-org="${esc(c.id)}"><option value="">Choisir un client…</option>${data.unlinkedOrganizations.map(o => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('')}</select>
     <button type="button" class="button button-secondary" data-hs-link="${esc(c.id)}">Rattacher</button></div>`);
+  // Une fiche HubSpot peut être partagée par plusieurs clients du Studio : une ligne rattachée a pour clé « fiche~client ».
+  const rowKey = c => ({ id: c.organization ? `${c.id}~${c.organization.id}` : c.id });
+  const parseKey = k => { const [companyId, orgId] = String(k).split('~'); return { companyId, orgId: orgId || null }; };
+  const orgQuery = orgId => orgId ? '?organizationId=' + encodeURIComponent(orgId) : '';
   const usersSummary = o => [o.pendingUsers ? `${plural(o.pendingUsers, 'contact')} en attente du go` : '', o.activeUsers ? `${plural(o.activeUsers, 'compte')} actif${o.activeUsers > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || 'Aucun contact repris';
 
   function render(message) {
@@ -51,8 +55,8 @@
         <ul class="hs-clients-list">${fresh.map(c => `<li data-hs-row="${esc(c.id)}"><div class="hs-row"><label><input type="checkbox" data-hs-pick="${esc(c.id)}" ${picked.has(c.id) ? 'checked' : ''}> <span><strong>${esc(c.name)}</strong> ${link(c)}<small>${esc(c.sector)} · ${esc(c.countryCode)}${c.domain ? ' · ' + esc(c.domain) : ''}</small></span></label>
           <div class="hs-tools">${tool('contacts', c, 'Contacts')}${canLink ? tool('link', c, 'Rattacher à…') : ''}<button type="button" class="button button-secondary hs-tool" data-hs-create-one="${esc(c.id)}" title="Créer la fiche de ce client dans le Studio, avec les contacts cochés">Créer dans le Studio</button></div></div>${box('contacts', c)}${canLink ? linkBox(c) : ''}</li>`).join('')}</ul>`
         : '<p class="hs-clients-hint">Toutes les entreprises clientes de HubSpot existent déjà dans le Studio.</p>'}
-      <details class="hs-clients-linked" ${focusId || openBoxes.has('linked') ? 'open' : ''}><summary>Déjà rattachés (${linked.length})</summary><ul class="hs-clients-list">${linked.map(c => `<li data-hs-row="${esc(c.id)}" class="${focusId === c.id ? 'is-focus' : ''}"><div class="hs-row"><div><strong>${esc(c.organization.name)}</strong> ← ${esc(c.name)} ${link(c)}<small>${esc(usersSummary(c.organization))}${c.organization.mergedFrom ? ' · rattachement mis à jour après fusion dans HubSpot' : ''}${c.notCustomer ? ' · pas au stade « Client » dans HubSpot' : ''}</small></div>
-        <div class="hs-tools">${tool('contacts', c, 'Contacts')}${tool('prestations', c, 'Prestations')}<button type="button" class="button button-ghost hs-tool" data-hs-unlink="${esc(c.organization.id)}">Détacher</button></div></div>${box('contacts', c)}${box('prestations', c)}</li>`).join('')}</ul></details>
+      <details class="hs-clients-linked" ${focusId || openBoxes.has('linked') ? 'open' : ''}><summary>Déjà rattachés (${linked.length})</summary><ul class="hs-clients-list">${linked.map(c => { const k = rowKey(c); return `<li data-hs-row="${esc(k.id)}" class="${focusId === k.id ? 'is-focus' : ''}"><div class="hs-row"><div><strong>${esc(c.organization.name)}</strong> ← ${esc(c.name)} ${link(c)}<small>${esc(usersSummary(c.organization))}${c.organization.mergedFrom ? ' · rattachement mis à jour après fusion dans HubSpot' : ''}${c.notCustomer ? ' · pas au stade « Client » dans HubSpot' : ''}</small></div>
+        <div class="hs-tools">${tool('contacts', k, 'Contacts')}${tool('prestations', k, 'Prestations')}<button type="button" class="button button-ghost hs-tool" data-hs-unlink="${esc(c.organization.id)}">Détacher</button></div></div>${box('contacts', k)}${box('prestations', k)}</li>`; }).join('')}</ul></details>
       <div class="admin-dialog-actions"><button type="button" class="button button-ghost" data-hs-close>Fermer</button>
         <button type="button" class="button button-primary" data-hs-create ${fresh.length ? '' : 'disabled'}>${createLabel(fresh)}</button></div></form>`;
     dialog.querySelectorAll('[data-hs-box^="contacts:"]:not([hidden])').forEach(b => fillContacts(b));
@@ -71,18 +75,18 @@
     catch (e) { dialog.innerHTML = `<form method="dialog"><button type="button" class="admin-dialog-close" data-hs-close aria-label="Fermer">×</button><h2>Import HubSpot</h2><p class="hs-clients-message is-error">${esc(e.message)}</p></form>`; }
   }
   async function fillContacts(target) {
-    const companyId = target.dataset.hsBox.split(':')[1];
-    const linkedOrg = data.companies.find(c => c.id === companyId)?.organization;
+    const key = target.dataset.hsBox.split(':')[1], { companyId, orgId } = parseKey(key);
+    const linkedOrg = orgId || data.companies.find(c => c.id === companyId)?.organization;
     target.innerHTML = '<p class="hs-clients-hint">Lecture des contacts…</p>';
     try {
-      if (!contactsCache.has(companyId)) contactsCache.set(companyId, (await StudioAPI.request(`/api/admin/hubspot/clients/${encodeURIComponent(companyId)}/contacts`)).contacts);
-      const contacts = contactsCache.get(companyId), chosen = pickedContacts.get(companyId) || new Set();
+      if (!contactsCache.has(key)) contactsCache.set(key, (await StudioAPI.request(`/api/admin/hubspot/clients/${encodeURIComponent(companyId)}/contacts${orgQuery(orgId)}`)).contacts);
+      const contacts = contactsCache.get(key), chosen = pickedContacts.get(key) || new Set();
       const selectable = contacts.filter(p => p.status === 'ok');
       target.innerHTML = contacts.length ? `<ul class="hs-contacts-list">${contacts.map(p => {
         const name = [p.firstName, p.lastName].filter(Boolean).join(' ') || p.email || 'Sans nom', ok = p.status === 'ok', done = ['pending', 'active', 'disabled'].includes(p.status);
-        return `<li><label class="${ok ? '' : done ? 'is-done' : 'is-off'}"><input type="checkbox" data-hs-contact="${esc(p.id)}" data-company="${esc(companyId)}" ${ok ? '' : 'disabled'} ${(ok && chosen.has(p.id)) || done ? 'checked' : ''}>
+        return `<li><label class="${ok ? '' : done ? 'is-done' : 'is-off'}"><input type="checkbox" data-hs-contact="${esc(p.id)}" data-company="${esc(key)}" ${ok ? '' : 'disabled'} ${(ok && chosen.has(p.id)) || done ? 'checked' : ''}>
           <span>${esc(name)}${p.jobTitle ? ' · ' + esc(p.jobTitle) : ''}<small>${esc(p.email || '')}${ok ? '' : ' — ' + esc(STATUS[p.status]) + (p.status === 'existing' && p.existingOrganization ? ' (' + esc(p.existingOrganization) + ')' : '')}</small></span></label></li>`;
-      }).join('')}</ul>${linkedOrg && selectable.length ? `<button type="button" class="button button-secondary" data-hs-add="${esc(companyId)}">Reprendre les contacts cochés</button>` : ''}`
+      }).join('')}</ul>${linkedOrg && selectable.length ? `<button type="button" class="button button-secondary" data-hs-add="${esc(key)}">Reprendre les contacts cochés</button>` : ''}`
         : '<p class="hs-clients-hint">Aucun contact associé à cette entreprise dans HubSpot.</p>';
     } catch (e) { target.innerHTML = `<p class="hs-clients-message is-error">${esc(e.message)}</p>`; }
   }
@@ -90,19 +94,19 @@
   const pickedPrestations = new Map(), prestationsCache = new Map();
   const day = d => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
   async function fillPrestations(target) {
-    const companyId = target.dataset.hsBox.split(':')[1];
+    const key = target.dataset.hsBox.split(':')[1], { companyId, orgId } = parseKey(key);
     target.innerHTML = '<p class="hs-clients-hint">Lecture des transactions gagnées…</p>';
     try {
-      if (!prestationsCache.has(companyId)) prestationsCache.set(companyId, await StudioAPI.request(`/api/admin/hubspot/clients/${encodeURIComponent(companyId)}/prestations`));
-      const r = prestationsCache.get(companyId), chosen = pickedPrestations.get(companyId) || new Set();
+      if (!prestationsCache.has(key)) prestationsCache.set(key, await StudioAPI.request(`/api/admin/hubspot/clients/${encodeURIComponent(companyId)}/prestations${orgQuery(orgId)}`));
+      const r = prestationsCache.get(key), chosen = pickedPrestations.get(key) || new Set();
       const open = r.proposals.filter(p => !p.imported), years = [...new Set(r.proposals.map(p => p.actionDate.slice(0, 4)))];
       const dealLink = d => `<a href="${esc(d.hubspotUrl)}" target="_blank" rel="noopener">${esc(d.dealName)} ↗</a>`;
       target.innerHTML = (r.proposals.length ? `<p class="hs-clients-hint">${plural(r.proposals.length, 'prestation')} trouvée${r.proposals.length > 1 ? 's' : ''} dans HubSpot, dont ${open.length} pas encore dans le Cockpit. Chaque date d’intervention devient une action « animée par Me&amp;YouToo ».</p>
-        ${open.length ? `<label class="hs-clients-all"><input type="checkbox" data-hs-presta-all="${esc(companyId)}" ${open.every(p => chosen.has(p.key)) ? 'checked' : ''}> Tout cocher</label>` : ''}
+        ${open.length ? `<label class="hs-clients-all"><input type="checkbox" data-hs-presta-all="${esc(key)}" ${open.every(p => chosen.has(p.key)) ? 'checked' : ''}> Tout cocher</label>` : ''}
         ${years.map(y => `<p class="hs-presta-year">${esc(y)}</p><ul class="hs-contacts-list">${r.proposals.filter(p => p.actionDate.startsWith(y)).map(p => `<li><label class="${p.imported ? 'is-done' : ''}">
-          <input type="checkbox" data-hs-presta="${esc(p.key)}" data-company="${esc(companyId)}" ${p.imported ? 'checked disabled' : chosen.has(p.key) ? 'checked' : ''}>
+          <input type="checkbox" data-hs-presta="${esc(p.key)}" data-company="${esc(key)}" ${p.imported ? 'checked disabled' : chosen.has(p.key) ? 'checked' : ''}>
           <span><strong>${esc(day(p.actionDate))}</strong> · ${esc(p.kindLabel)} · ${esc(p.title)}<small>${p.theme ? esc(p.theme) : '<em>thème à compléter</em>'} · ${p.status === 'done' ? 'réalisée' : 'prévue'}${p.imported ? ' — ✓ déjà dans le Cockpit' : ''}</small></span></label></li>`).join('')}</ul>`).join('')}
-        ${open.length ? `<button type="button" class="button button-primary" data-hs-import="${esc(companyId)}">Ajouter au Cockpit${chosen.size ? ` (${chosen.size})` : ''}</button>` : ''}`
+        ${open.length ? `<button type="button" class="button button-primary" data-hs-import="${esc(key)}">Ajouter au Cockpit${chosen.size ? ` (${chosen.size})` : ''}</button>` : ''}`
         : '<p class="hs-clients-hint">Aucune prestation datée à importer pour ce client.</p>') +
         (r.toComplete.length ? `<div class="hs-presta-warn"><strong>À compléter dans HubSpot (${r.toComplete.length})</strong> : transactions gagnées sans date de livraison/intervention.<ul>${r.toComplete.map(d => `<li>${dealLink(d)}</li>`).join('')}</ul></div>` : '') +
         (r.ignored.length ? `<details class="hs-presta-ignored"><summary>Non importées (${r.ignored.length})</summary><ul>${r.ignored.map(d => `<li>${dealLink(d)} — ${esc(d.categories.join(', ') || d.reason)}</li>`).join('')}</ul></details>` : '');
@@ -125,7 +129,7 @@
     } catch (e) { target.innerHTML = `<p class="hs-clients-message is-error">${esc(e.message)}</p>`; }
   }
   const refreshImportLabel = companyId => { const b = dialog.querySelector(`[data-hs-import="${companyId}"]`), n = (pickedPrestations.get(companyId) || new Set()).size; if (b) b.textContent = `Ajouter au Cockpit${n ? ` (${n})` : ''}`; };
-  const addContacts = (companyId, contactIds) => StudioAPI.request(`/api/admin/hubspot/clients/${encodeURIComponent(companyId)}/contacts`, { method: 'POST', body: JSON.stringify({ contactIds }) });
+  const addContacts = (companyId, contactIds, organizationId = null) => StudioAPI.request(`/api/admin/hubspot/clients/${encodeURIComponent(companyId)}/contacts`, { method: 'POST', body: JSON.stringify({ contactIds, organizationId }) });
   const linkTo = (organizationId, companyId) => StudioAPI.request('/api/admin/hubspot/clients/link', { method: 'POST', body: JSON.stringify({ organizationId, companyId }) });
   // Recherche d'une entreprise HubSpot (tous stades) pour un client du Studio sans fiche HubSpot.
   const lifecycleLabels = { customer: 'Client', opportunity: 'Opportunité', lead: 'Lead', subscriber: '1er contact', marketingqualifiedlead: 'MQL', other: 'Autre' };
@@ -140,8 +144,8 @@
     out.innerHTML = '<p class="hs-clients-hint">Recherche dans HubSpot…</p>';
     try {
       const companies = (await StudioAPI.request('/api/admin/hubspot/companies/search?q=' + encodeURIComponent(input.value.trim()))).companies;
-      out.innerHTML = companies.length ? `<ul class="hs-contacts-list">${companies.map(c => `<li><div class="hs-row"><span><strong>${esc(c.name)}</strong> <a href="${esc(c.hubspotUrl)}" target="_blank" rel="noopener">Fiche HubSpot ↗</a><small>${esc([lifecycleLabels[c.lifecycleStage] || c.lifecycleStage, c.domain].filter(Boolean).join(' · '))}${c.linkedOrganization ? ' — déjà rattachée à ' + esc(c.linkedOrganization.name) : ''}</small></span>
-        ${c.linkedOrganization ? '' : `<button type="button" class="button button-secondary hs-tool" data-hs-link="${esc(c.id)}" data-org="${esc(orgId)}">Rattacher</button>`}</div></li>`).join('')}</ul>`
+      out.innerHTML = companies.length ? `<ul class="hs-contacts-list">${companies.map(c => `<li><div class="hs-row"><span><strong>${esc(c.name)}</strong> <a href="${esc(c.hubspotUrl)}" target="_blank" rel="noopener">Fiche HubSpot ↗</a><small>${esc([lifecycleLabels[c.lifecycleStage] || c.lifecycleStage, c.domain].filter(Boolean).join(' · '))}${(c.linkedOrganizations || []).length ? ' — déjà rattachée à ' + esc(c.linkedOrganizations.map(o => o.name).join(', ')) : ''}</small></span>
+        <button type="button" class="button button-secondary hs-tool" data-hs-link="${esc(c.id)}" data-org="${esc(orgId)}">${(c.linkedOrganizations || []).length ? 'Rattacher aussi' : 'Rattacher'}</button></div></li>`).join('')}</ul>`
         : '<p class="hs-clients-hint">Aucune entreprise trouvée. Essayez un autre nom ou le domaine e-mail (ex. bnpparibas.com).</p>';
     } catch (e) { out.innerHTML = `<p class="hs-clients-message is-error">${esc(e.message)}</p>`; }
   }
@@ -190,11 +194,11 @@
         return load(`${plural(r.assigned, 'client')} ${r.assigned > 1 ? 'reçoivent leur' : 'reçoit sa'} chargée de compte depuis HubSpot.`);
       }
       if (t.dataset.hsImport) {
-        const companyId = t.dataset.hsImport, keys = [...(pickedPrestations.get(companyId) || [])];
+        const key = t.dataset.hsImport, { companyId, orgId } = parseKey(key), keys = [...(pickedPrestations.get(key) || [])];
         if (!keys.length) return window.StudioModal.alert({ title: 'Aucune prestation cochée', message: 'Cochez les prestations à ajouter au Cockpit du client.' });
         t.disabled = true; t.textContent = 'Ajout…';
-        const r = await StudioAPI.request(`/api/admin/hubspot/clients/${encodeURIComponent(companyId)}/prestations`, { method: 'POST', body: JSON.stringify({ keys }) });
-        changed = true; prestationsCache.delete(companyId); pickedPrestations.delete(companyId); focusId = companyId;
+        const r = await StudioAPI.request(`/api/admin/hubspot/clients/${encodeURIComponent(companyId)}/prestations`, { method: 'POST', body: JSON.stringify({ keys, organizationId: orgId }) });
+        changed = true; prestationsCache.delete(key); pickedPrestations.delete(key); focusId = key;
         return load(`${plural(r.added, 'prestation')} ajoutée${r.added > 1 ? 's' : ''} au Cockpit de ${esc(r.organization.name)}.`);
       }
       if (t.dataset.hsSearch) return runSearch(t.dataset.hsSearch);
@@ -203,16 +207,16 @@
         if (!orgId) return window.StudioModal.alert({ title: 'Aucun client choisi', message: 'Choisissez le client du Studio à rattacher.' });
         const orgName = data.unlinkedOrganizations.find(o => o.id === orgId)?.name || '';
         t.disabled = true; await linkTo(orgId, companyId); changed = true;
-        picked.delete(companyId); openBoxes.delete('link:' + companyId); openBoxes.delete('search:' + orgId); focusId = companyId;
+        picked.delete(companyId); openBoxes.delete('link:' + companyId); openBoxes.delete('search:' + orgId); focusId = `${companyId}~${orgId}`;
         return load(`${esc(orgName)} est rattaché à HubSpot. Il est maintenant dans « Déjà rattachés » ci-dessous : ouvrez « Contacts » pour reprendre ses contacts.`);
       }
       if (t.dataset.hsUnlink) { t.disabled = true; await linkTo(t.dataset.hsUnlink, null); changed = true; return load('Client détaché de HubSpot.'); }
       if (t.dataset.hsAdd) {
-        const companyId = t.dataset.hsAdd, ids = [...(pickedContacts.get(companyId) || [])];
+        const key = t.dataset.hsAdd, { companyId, orgId } = parseKey(key), ids = [...(pickedContacts.get(key) || [])];
         if (!ids.length) return window.StudioModal.alert({ title: 'Aucun contact coché', message: 'Cochez au moins un contact à reprendre.' });
         t.disabled = true;
-        const r = await addContacts(companyId, ids);
-        changed = true; contactsCache.delete(companyId); pickedContacts.delete(companyId); focusId = companyId;
+        const r = await addContacts(companyId, ids, orgId);
+        changed = true; contactsCache.delete(key); pickedContacts.delete(key); focusId = key;
         return load(`${plural(r.added.length, 'contact')} repris pour ${esc(r.organization.name)}, en attente du go.` + (r.skipped.length ? ` Non repris : ${r.skipped.map(s => esc(s.email) + ' (' + esc(s.reason) + ')').join(', ')}.` : ''));
       }
       // « Créer les clients cochés » en bas, ou « Créer dans le Studio » sur une seule entreprise.
@@ -227,7 +231,7 @@
           const companyId = String(org.hubspot_company_id), contactIds = [...(pickedContacts.get(companyId) || [])];
           picked.delete(companyId);
           if (!contactIds.length) continue;
-          try { added += (await addContacts(companyId, contactIds)).added.length; pickedContacts.delete(companyId); contactsCache.delete(companyId); } catch (e) { failed.push(org.name); }
+          try { added += (await addContacts(companyId, contactIds, org.id)).added.length; pickedContacts.delete(companyId); contactsCache.delete(companyId); } catch (e) { failed.push(org.name); }
         }
         openBoxes.add('linked');
         load(`${plural(r.created.length, 'client')} créé${r.created.length > 1 ? 's' : ''}, ${plural(added, 'contact')} en attente du go. Ils sont dans « Déjà rattachés ».` +
