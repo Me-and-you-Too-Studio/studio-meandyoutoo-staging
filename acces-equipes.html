@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
 <link rel="stylesheet" href="assets/css/style.css?v=20261031-hubspot-1">
-<link rel="stylesheet" href="assets/css/acces-equipes.css?v=20261031-actions-1">
+<link rel="stylesheet" href="assets/css/acces-equipes.css?v=20261031-invitation-1">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -29,6 +29,7 @@
     </div>
 
     <p class="composer-alert" id="ae-alert" hidden></p>
+    <div class="ae-preview-banner" id="ae-preview" hidden><span>👁 Vous consultez l’espace du client tel qu’il le voit : rien n’y est modifiable. Les réglages (intégrer, équipes, invitations) se font depuis votre page admin « Accès et équipes » de ce client.</span><button class="button button-primary" type="button" data-end-preview>Revenir à l’admin</button></div>
     <p class="ae-readonly" id="ae-readonly" hidden>Vous consultez cette page. Seul un responsable du compte peut constituer les équipes et régler les périmètres.</p>
 
     <section class="card ae-explain" id="ae-explain" aria-labelledby="ae-explain-title">
@@ -60,7 +61,7 @@
 
     <section class="card ae-invitations" id="ae-invitations" aria-labelledby="ae-invitations-title" hidden>
       <h2 id="ae-invitations-title" class="section-title">Invitations à envoyer</h2>
-      <p class="section-desc">Ces personnes sont intégrées à votre compte mais n’ont encore rien reçu. Envoyez leur invitation quand vous le souhaitez, par exemple après une annonce interne.</p>
+      <p class="section-desc" id="ae-invitations-desc">Ces personnes sont intégrées à votre compte mais n’ont encore rien reçu. Envoyez leur invitation quand vous le souhaitez, par exemple après une annonce interne.</p>
       <div id="ae-invitation-list" class="ae-rows"></div>
     </section>
 
@@ -120,6 +121,7 @@
   <div class="field"><label for="ae-invite-email">Adresse e-mail professionnelle</label><input id="ae-invite-email" type="email" required><small class="field-hint">Corrigez-la si besoin avant l’envoi.</small></div>
   <div class="field"><label for="ae-invite-message">Votre mot d’accompagnement (facultatif)</label><textarea id="ae-invite-message" rows="4" maxlength="1500" placeholder="Bonjour, je t’ouvre l’accès au Studio pour suivre nos campagnes handicap."></textarea></div>
   <div class="ae-preview"><p class="eyebrow">Aperçu de l’e-mail</p><div id="ae-invite-preview"></div></div>
+  <p class="ae-invite-later" id="ae-invite-later" hidden>📌 Rien n’est envoyé maintenant : cette invitation est enregistrée et partira automatiquement à la mise en production du Studio. Vous pourrez la modifier d’ici là.</p>
   <p class="field-error" id="ae-invite-error" hidden></p>
   <div class="top-actions"><button class="button button-ghost" type="button" data-close>Annuler</button><button class="button button-primary" type="button" id="ae-invite-send">Envoyer l’invitation</button></div>
 </form></dialog>
@@ -143,6 +145,6 @@
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20261019-client-preview-1"></script>
 <script src="assets/js/app.js?v=20261031-hubspot-1"></script>
-<script src="assets/js/acces-equipes.js?v=20261031-actions-1"></script>
+<script src="assets/js/acces-equipes.js?v=20261031-invitation-1"></script>
 </body>
 </html>

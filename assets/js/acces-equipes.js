@@ -23,7 +23,8 @@
       RIGHT_KEYS.map(function(k){return '<tr><th scope="row">'+esc(RIGHTS[k])+'</th>'+levels.map(function(l){return PRESETS[l][k]?'<td class="is-on"><span aria-hidden="true">✓</span><span class="sr-only">oui</span></td>':'<td class="is-off"><span aria-hidden="true">—</span><span class="sr-only">non</span></td>';}).join('')+'</tr>';}).join('')+
       '</tbody></table><p class="ae-muted">Ce sont les droits par défaut de chaque niveau ; vous pouvez les ajuster personne par personne. Le responsable du compte a toujours tous les droits. Ce que chacun voit (toutes les campagnes ou certains dossiers) se règle à part, dans le périmètre.</p>';
   }
-  var me=StudioAPI.user()||{},isAdmin=me.role==='admin'&&!(StudioAPI.clientPreview&&StudioAPI.clientPreview());
+  var preview=Boolean(StudioAPI.clientPreview&&StudioAPI.clientPreview());
+  var me=StudioAPI.user()||{},isAdmin=me.role==='admin'&&!preview;
   var organizationId=isAdmin?new URLSearchParams(location.search).get('organizationId')||'':'';
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
   function plain(v){return String(v||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();}
@@ -97,9 +98,13 @@
   function renderInvitations(){
     var list=data.users.filter(function(u){return u.canInvite;});
     $('ae-invitations').hidden=!list.length||!data.canEdit;
+    $('ae-invitations-title').textContent=data.invitationsEnabled?'Invitations à envoyer':'Invitations à préparer';
+    $('ae-invitations-desc').textContent=data.invitationsEnabled?'Ces personnes sont intégrées à votre compte mais n’ont encore rien reçu. Envoyez leur invitation quand vous le souhaitez, par exemple après une annonce interne.':'Ces personnes sont intégrées à votre compte. Préparez dès maintenant leur invitation (adresse, mot d’accompagnement) : elle partira automatiquement à la mise en production du Studio. Rien n’est envoyé pour l’instant.';
     $('ae-invitation-list').innerHTML=list.map(function(u){
-      return '<article class="ae-row"><div class="ae-row-person"><strong>'+nameHtml(u)+'</strong><span>'+esc(u.email||'')+'</span></div><div>'+scopeBadge(u)+'</div>'+
-        '<div class="ae-row-actions"><button class="button button-primary" type="button" data-invite="'+esc(u.id)+'">Envoyer l’invitation</button></div></article>';
+      // Avant le go, l’invitation est « préparée » : elle partira automatiquement à la mise en production.
+      var ready=u.invitationPreparedAt&&!data.invitationsEnabled;
+      return '<article class="ae-row"><div class="ae-row-person"><strong>'+nameHtml(u)+'</strong><span>'+esc(u.email||'')+'</span>'+(ready?'<small>✓ Invitation prête le '+esc(new Date(u.invitationPreparedAt).toLocaleDateString("fr-FR"))+' : elle partira à la mise en production</small>':'')+'</div><div>'+scopeBadge(u)+'</div>'+
+        '<div class="ae-row-actions"><button class="button '+(ready?'button-secondary':'button-primary')+'" type="button" data-invite="'+esc(u.id)+'">'+(data.invitationsEnabled?'Envoyer l’invitation':ready?'Modifier l’invitation':'Préparer l’invitation')+'</button></div></article>';
     }).join('');
   }
   function renderFolders(){
@@ -167,9 +172,14 @@
     renderSteps();renderSuggestions();renderInvitations();renderFolders();renderWho();renderCampaigns();
   }
   async function load(){
-    try{data=await api('/api/team-access');render();if(window.StudioTour)StudioTour.offer('acces-equipes');}
+    try{data=await api('/api/team-access');
+      // Vue client ouverte par l’admin : la page s’affiche comme pour le client, mais rien n’y est modifiable
+      // (l’API refuse toute écriture) ; le bandeau renvoie vers la page admin.
+      if(preview)$('ae-preview').hidden=false;
+      render();if(preview)$('ae-readonly').hidden=true;if(window.StudioTour)StudioTour.offer('acces-equipes');}
     catch(error){$('ae-alert').hidden=false;$('ae-alert').textContent='Impossible de charger les accès : '+error.message;}
   }
+  document.querySelectorAll('[data-end-preview]').forEach(function(b){b.onclick=function(){StudioAPI.endClientPreview();};});
   async function act(fn,success){
     try{await fn();await load();if(success)await StudioModal.alert({type:'success',title:success.title,message:success.message});}
     catch(error){await StudioModal.alert({type:'error',title:'Action impossible',message:error.message});}
@@ -213,14 +223,12 @@
       (note?'<blockquote>'+esc(note)+'</blockquote>':'')+'<p><span class="ae-fake-button">Créer mon mot de passe</span></p><p class="ae-muted">Ce lien est personnel, utilisable une seule fois et valable 72 heures.</p>';
   }
   async function openInvite(user){
-    if(!data.invitationsEnabled){
-      await StudioModal.alert({type:'info',title:'Bientôt disponible',message:'L’envoi des invitations s’ouvrira à la mise en production du Studio. '+name(user)+' est bien intégré(e) à votre compte : vous pourrez l’inviter dès l’ouverture.'});
-      return;
-    }
     inviting=user;
-    $('ae-invite-title').textContent='Inviter '+name(user);
+    $('ae-invite-title').textContent=(data.invitationsEnabled?'Inviter ':'Préparer l’invitation de ')+name(user);
+    $('ae-invite-later').hidden=data.invitationsEnabled;
+    $('ae-invite-send').textContent=data.invitationsEnabled?'Envoyer l’invitation':'Enregistrer l’invitation';
     $('ae-invite-email').value=user.email||'';
-    $('ae-invite-message').value='';
+    $('ae-invite-message').value=user.invitationMessage||'';
     $('ae-invite-error').hidden=true;
     renderInvitePreview();
     $('ae-invite-dialog').showModal();
@@ -233,7 +241,7 @@
     $('ae-invite-dialog').close();
     var who=name(inviting);
     await act(function(){return api('/api/team-access/users/'+inviting.id+'/invite',{method:'POST',body:JSON.stringify({email:email,message:$('ae-invite-message').value.trim()})});},
-      {title:'Invitation envoyée',message:who+' va recevoir son invitation par e-mail.'});
+      data.invitationsEnabled?{title:'Invitation envoyée',message:who+' va recevoir son invitation par e-mail.'}:{title:'Invitation prête',message:'Aucun e-mail n’est parti. L’invitation de '+who+' partira automatiquement à la mise en production du Studio, avec votre mot d’accompagnement. Vous pouvez la modifier d’ici là.'});
   };
   document.querySelectorAll('dialog [data-close]').forEach(function(b){b.onclick=function(){b.closest('dialog').close();};});
 
