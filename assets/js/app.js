@@ -51,6 +51,11 @@
     info:function(status){return STATUSES[status]?STATUSES[status].info:'';},
     dot:function(status){return STATUSES[status]?dot(STATUSES[status].label,STATUSES[status].info):'';}
   };
+  // Fiches HubSpot (écrans admin) : même portail que HUBSPOT_PORTAL_ID de l’API ; les identifiants ne sont envoyés qu’à l’admin.
+  window.StudioHubspot={
+    url:function(kind,id){return id?'https://app-eu1.hubspot.com/contacts/139575435/'+kind+'/'+encodeURIComponent(id):'';},
+    link:function(kind,id){var u=this.url(kind,id);return u?' <a class="hubspot-link" href="'+u+'" target="_blank" rel="noopener" title="Ouvrir la fiche HubSpot">HubSpot ↗</a>':'';}
+  };
   window.StudioGlossary={
     text:function(term){return GLOSSARY[term]?GLOSSARY[term].text:'';},
     dot:function(term){return GLOSSARY[term]?dot(GLOSSARY[term].title,GLOSSARY[term].text):'';}

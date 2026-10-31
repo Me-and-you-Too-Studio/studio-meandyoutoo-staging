@@ -1029,7 +1029,7 @@
       level = accessLabels[u.access_level] || accessLabels.manager;
     return (
       '<article class="admin-inline-user"><div><strong>' +
-      esc((u.first_name || "") + " " + (u.last_name || "")) +
+      esc((u.first_name || "") + " " + (u.last_name || "")) + StudioHubspot.link("contact", u.hubspot_contact_id) +
       "</strong><span>" +
       esc(u.job_title || "Fonction non renseignée") +
       " · " +
@@ -1069,16 +1069,16 @@
     const others = principal ? list.filter((u) => String(u.id) !== String(principal.id)) : list;
     const principalHtml = principal
       ? '<article class="admin-contact-card principal"><span class="admin-contact-kicker">Contact principal</span><strong>' +
-        esc(contactDisplayName(principal)) +
+        esc(contactDisplayName(principal)) + StudioHubspot.link('contact', principal.hubspot_contact_id) +
         '</strong><span>' + esc(principal.job_title || "Fonction non renseignée") +
         '</span><a href="mailto:' + esc(principal.email || "") + '">' + esc(principal.email || "—") +
         '</a>' + (principal.phone ? '<span>📞 ' + esc(principal.phone) + '</span>' : '') + '</article>'
       : '<article class="admin-contact-card principal"><span class="admin-contact-kicker">Contact principal</span><strong>Non renseigné</strong><span>Ajoutez un accès responsable du compte.</span></article>';
     const associatedHtml = others.length
       ? others.map((u) => '<article class="admin-contact-card"><span class="admin-contact-kicker">Contact associé</span><strong>' +
-          esc(contactDisplayName(u)) + '</strong><span>' + esc(u.job_title || "Fonction non renseignée") +
+          esc(contactDisplayName(u)) + StudioHubspot.link('contact', u.hubspot_contact_id) + '</strong><span>' + esc(u.job_title || "Fonction non renseignée") +
           '</span><a href="mailto:' + esc(u.email || "") + '">' + esc(u.email || "—") +
-          '</a><small>' + esc(accessLabels[u.access_level] || accessLabels.manager) + (u.active === false ? ' · désactivé' : '') + '</small></article>').join("")
+          '</a><small>' + esc(accessLabels[u.access_level] || accessLabels.manager) + (u.active === false ? (u.invitation_pending ? ' · en attente du go' : ' · désactivé') : '') + '</small></article>').join("")
       : '<article class="admin-contact-card"><span class="admin-contact-kicker">Contacts associés</span><strong>Aucun autre contact</strong><span>Le contact principal est le seul compte rattaché.</span></article>';
     $("#client-contacts").innerHTML = principalHtml + associatedHtml;
   }
@@ -1136,6 +1136,8 @@
     projects = new Map(ps.map((p) => [String(p.id), p]));
     renderFolderBar(ps);
     $("#client-name").textContent = organization.name || "Dossier client";
+    // Fiche entreprise HubSpot à côté du nom du client.
+    if (organization.hubspot_company_id) $("#client-name").insertAdjacentHTML("beforeend", StudioHubspot.link("company", organization.hubspot_company_id));
     const clientLogo = $("#client-logo");
     const clientLogoUpload = $("#client-logo-upload");
     const clientLogoUploadLabel = $("#client-logo-upload-label");

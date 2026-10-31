@@ -16821,3 +16821,8 @@ a.cal-tl-label:hover strong, a.cal-tl-label:focus-visible strong { color: var(--
 .ae-home-reminder .button { flex: 0 0 auto; white-space: nowrap; }
 @media (max-width: 760px) { .ae-home-reminder { padding: 18px 18px; } .ae-home-reminder .button { width: 100%; justify-content: center; } }
 .ae-home-reminder p { margin: 4px 0 0; }
+
+/* Lien vers la fiche HubSpot d’un contact ou d’un client (écrans admin) */
+.hubspot-link { margin-left: 6px; font-size: .74rem; font-weight: 800; color: #ff5c35; text-decoration: none; white-space: nowrap; letter-spacing: 0; vertical-align: middle; }
+.hubspot-link:hover { text-decoration: underline; }
+h1 .hubspot-link { font-size: .9rem; }
