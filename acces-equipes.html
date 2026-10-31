@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
 <link rel="stylesheet" href="assets/css/style.css?v=20261031-hubspot-1">
-<link rel="stylesheet" href="assets/css/acces-equipes.css?v=20261031-demo-1">
+<link rel="stylesheet" href="assets/css/acces-equipes.css?v=20261031-retirer-1">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -128,11 +128,11 @@
 
 <dialog id="ae-refuse-dialog" class="admin-dialog access-dialog"><form method="dialog">
   <button type="button" class="admin-dialog-close" data-close aria-label="Fermer">×</button>
-  <p class="eyebrow">Suggestion de Me&amp;YouToo</p>
+  <p class="eyebrow" id="ae-refuse-eyebrow">Suggestion de Me&amp;YouToo</p>
   <h2 id="ae-refuse-title">Refuser cette personne ?</h2>
   <fieldset class="ae-choice"><legend>Pour quelle raison ?</legend>
-    <label class="ae-choice-card"><input type="radio" name="ae-refuse-reason" value="left"> <span><strong>Elle a quitté l’entreprise ou n’est plus le bon contact</strong><small>Le contact est supprimé du Studio, définitivement. Me&amp;YouToo est prévenu pour mettre à jour sa base de contacts.</small></span></label>
-    <label class="ae-choice-card"><input type="radio" name="ae-refuse-reason" value="no_access"> <span><strong>Elle ne doit pas avoir accès au Studio</strong><small>Elle sort de votre compte et ne recevra aucune invitation. Me&amp;YouToo peut annuler ce refus si besoin.</small></span></label>
+    <label class="ae-choice-card"><input type="radio" name="ae-refuse-reason" value="left"> <span><strong>Elle a quitté l’entreprise ou n’est plus le bon contact</strong><small id="ae-refuse-left-small">Le contact est supprimé du Studio, définitivement. Me&amp;YouToo est prévenu pour mettre à jour sa base de contacts.</small></span></label>
+    <label class="ae-choice-card"><input type="radio" name="ae-refuse-reason" value="no_access"> <span><strong id="ae-refuse-no-strong">Elle ne doit pas avoir accès au Studio</strong><small id="ae-refuse-no-small">Elle sort de votre compte et ne recevra aucune invitation. Me&amp;YouToo peut annuler ce refus si besoin.</small></span></label>
   </fieldset>
   <p class="field-error" id="ae-refuse-error" hidden>Choisissez une raison.</p>
   <div class="top-actions"><button class="button button-ghost" type="button" data-close>Annuler</button><button class="button button-primary" type="button" id="ae-refuse-confirm">Refuser</button></div>
@@ -157,6 +157,6 @@
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20261019-client-preview-1"></script>
 <script src="assets/js/app.js?v=20261031-hubspot-1"></script>
-<script src="assets/js/acces-equipes.js?v=20261031-non-ranges-1"></script>
+<script src="assets/js/acces-equipes.js?v=20261031-retirer-2"></script>
 </body>
 </html>

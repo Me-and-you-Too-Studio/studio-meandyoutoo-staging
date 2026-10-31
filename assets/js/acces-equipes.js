@@ -161,10 +161,13 @@
       // Suggestion refusée (vue admin) : seule action possible, annuler le refus.
       if(u.suggestion==='refused')return '<div class="ae-who-row" role="row"><span role="cell"><strong>'+nameHtml(u)+'</strong>'+statusBadge(u)+'<small>'+esc(u.jobTitle||'')+'</small></span><span role="cell"></span><span role="cell"></span>'+
         '<span role="cell">'+(data.canEdit?'<button class="button button-ghost" type="button" data-reset="'+esc(u.id)+'">Annuler le refus</button>':'')+'</span></div>';
-      var editable=data.canEdit&&u.accessLevel!=='owner';
+      // A quitté l'entreprise (vue admin uniquement : le client ne la voit plus).
+      if(u.status==='left')return '<div class="ae-who-row" role="row"><span role="cell"><strong>'+nameHtml(u)+'</strong> <span class="badge badge-muted">A quitté l’entreprise'+(u.leftAt?' le '+new Date(u.leftAt).toLocaleDateString('fr-FR'):'')+'</span><small>'+esc(u.jobTitle||'')+'</small></span><span role="cell"></span><span role="cell"></span><span role="cell"></span></div>';
+      var editable=data.canEdit&&u.accessLevel!=='owner',removable=data.canEdit&&u.id!==String(me.id);
       return '<div class="ae-who-row'+(u.seesNothing?' is-warning':'')+'" role="row"><span role="cell"><strong>'+nameHtml(u)+'</strong>'+statusBadge(u)+'<small>'+esc(u.jobTitle||'')+'</small></span>'+
         '<span role="cell">'+esc(LEVELS[u.accessLevel]||u.accessLevel)+'<small><button type="button" class="ae-link" data-rights-of="'+esc(u.id)+'">'+rightsCount(u.permissions)+'</button></small></span><span role="cell">'+scopeBadge(u)+'</span>'+
-        '<span role="cell">'+(editable?'<button class="button button-secondary" type="button" data-edit="'+esc(u.id)+'">Modifier</button>':u.accessLevel==='owner'?'<small class="ae-muted">Voit toujours tout</small>':'')+'</span></div>';
+        '<span role="cell">'+(editable?'<button class="button button-secondary" type="button" data-edit="'+esc(u.id)+'">Modifier</button>':u.accessLevel==='owner'?'<small class="ae-muted">Voit toujours tout</small>':'')+
+        (removable?'<button class="ae-link ae-remove" type="button" data-remove="'+esc(u.id)+'">Retirer du compte</button>':'')+'</span></div>';
     }).join('')||'<p class="ae-muted">Aucun compte.</p>';
   }
   function renderCampaigns(){
@@ -288,6 +291,7 @@
     else if(t.dataset.unfile){var c=data.campaigns.find(function(x){return x.id===t.dataset.unfile;});
       if(await StudioModal.confirm({type:'warning',title:'Retirer « '+c.name+' » du dossier ?',message:'Elle ne sera plus visible que des comptes « Toutes les campagnes ».',confirmLabel:'Retirer'}))
         await act(function(){return api('/api/team-access/campaigns/'+c.id+'/folder',{method:'PUT',body:JSON.stringify({teamFolderId:null})});});}
+    else if(t.dataset.remove){openRefuse(data.users.find(function(u){return u.id===t.dataset.remove;}),'remove');}
     else if(t.dataset.reset){var back=data.users.find(function(u){return u.id===t.dataset.reset;}),refusedBack=back.suggestion==='refused';
       if(!await StudioModal.confirm({type:'warning',title:(refusedBack?'Annuler le refus de ':'Annuler l’intégration de ')+name(back)+' ?',message:name(back)+' redeviendra une suggestion à examiner, comme à son import : niveau et équipe à choisir de nouveau'+(refusedBack?'':', invitation préparée effacée')+'. Aucun e-mail n’est envoyé.',confirmLabel:refusedBack?'Annuler le refus':'Annuler l’intégration'}))return;
       await act(function(){return api('/api/team-access/suggestions/'+back.id+'/reset',{method:'POST'});});}
@@ -334,9 +338,17 @@
   };
   // Refuser une suggestion : « a quitté l’entreprise » (contact supprimé, Me&YouToo prévenu) ou « ne doit pas avoir accès ».
   var refusing=null;
-  function openRefuse(user){
-    refusing=user;
-    $('ae-refuse-title').textContent='Refuser '+name(user)+' ?';
+  // mode « remove » : même fenêtre pour retirer du compte une personne déjà intégrée ou active.
+  var refuseMode='refuse',REFUSE_TEXTS={
+    refuse:{eyebrow:'Suggestion de Me&YouToo',confirm:'Refuser',left:'Le contact est supprimé du Studio, définitivement. Me&YouToo est prévenu pour mettre à jour sa base de contacts.',noStrong:'Elle ne doit pas avoir accès au Studio',noSmall:'Elle sort de votre compte et ne recevra aucune invitation. Me&YouToo peut annuler ce refus si besoin.'},
+    remove:{eyebrow:'Accès au Studio',confirm:'Retirer du compte',left:'Son accès est retiré. Si elle ne s’est jamais connectée, le contact est supprimé ; sinon son compte est désactivé et ses campagnes et actions restent attribuées. Me&YouToo est prévenu pour mettre à jour sa base de contacts.',noStrong:'Elle ne doit plus avoir accès au Studio',noSmall:'Son compte est désactivé ; vous pourrez le réactiver depuis « Mon compte ».'}
+  };
+  function openRefuse(user,mode){
+    refusing=user;refuseMode=mode||'refuse';
+    var tx=REFUSE_TEXTS[refuseMode];
+    $('ae-refuse-eyebrow').textContent=tx.eyebrow;$('ae-refuse-confirm').textContent=tx.confirm;$('ae-refuse-left-small').textContent=tx.left;
+    $('ae-refuse-no-strong').textContent=tx.noStrong;$('ae-refuse-no-small').textContent=tx.noSmall;
+    $('ae-refuse-title').textContent=(refuseMode==='remove'?'Retirer '+name(user)+' du compte ?':'Refuser '+name(user)+' ?');
     document.querySelectorAll('input[name="ae-refuse-reason"]').forEach(function(i){i.checked=false;});
     $('ae-refuse-error').hidden=true;
     $('ae-refuse-dialog').showModal();
@@ -346,9 +358,10 @@
     var picked=document.querySelector('input[name="ae-refuse-reason"]:checked');
     if(!picked){$('ae-refuse-error').hidden=false;return;}
     $('ae-refuse-dialog').close();
-    var who=name(refusing),left=picked.value==='left';
-    await act(function(){return api('/api/team-access/suggestions/'+refusing.id+'/refuse',{method:'POST',body:JSON.stringify({reason:picked.value})});},
-      left?{title:'Contact supprimé',message:who+' est retiré(e) du Studio. Me&YouToo est prévenu pour mettre sa base de contacts à jour.'}:{title:'Suggestion refusée',message:who+' n’aura pas accès au Studio.'});
+    var who=name(refusing),left=picked.value==='left',removing=refuseMode==='remove';
+    await act(function(){return api(removing?'/api/team-access/users/'+refusing.id+'/remove':'/api/team-access/suggestions/'+refusing.id+'/refuse',{method:'POST',body:JSON.stringify({reason:picked.value})});},
+      left?{title:removing?'Accès retiré':'Contact supprimé',message:who+' est retiré(e) du Studio. Me&YouToo est prévenu pour mettre sa base de contacts à jour.'}
+        :{title:removing?'Compte désactivé':'Suggestion refusée',message:removing?who+' n’a plus accès au Studio.':who+' n’aura pas accès au Studio.'});
   };
 
   // ── Mode démonstration : les actions sont jouées sur les données affichées, sans rien enregistrer ──
@@ -358,7 +371,7 @@
     var changed=true;
     if((m=path.match(/suggestions\/([^/]+)\/accept$/))){var a=byId(data.users,m[1]),p=body.perimeter||{scope:'all',folderIds:[]};
       Object.assign(a,{suggestion:'accepted',canInvite:true,accessLevel:body.accessLevel||a.accessLevel,permissions:body.permissions||a.permissions,scope:p.scope,folderIds:(p.folderIds||[]).map(String)});a.seesNothing=a.scope==='folders'&&!a.folderIds.length;}
-    else if((m=path.match(/suggestions\/([^/]+)\/refuse$/)))data.users=data.users.filter(function(u){return u.id!==m[1];});
+    else if((m=path.match(/suggestions\/([^/]+)\/refuse$/))||(m=path.match(/users\/([^/]+)\/remove$/)))data.users=data.users.filter(function(u){return u.id!==m[1];});
     else if((m=path.match(/suggestions\/([^/]+)\/reset$/)))Object.assign(byId(data.users,m[1]),{suggestion:'pending',canInvite:false,invitationPreparedAt:null,invitationMessage:'',accessLevel:'manager',permissions:PRESETS.manager,scope:'all',folderIds:[],seesNothing:false});
     else if((m=path.match(/users\/([^/]+)\/invite$/))){var i=byId(data.users,m[1]);i.email=body.email;i.invitationMessage=body.message||'';
       if(data.invitationsEnabled)Object.assign(i,{canInvite:false,status:'active'});else i.invitationPreparedAt=new Date().toISOString();}
