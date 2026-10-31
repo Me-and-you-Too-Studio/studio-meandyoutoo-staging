@@ -16826,3 +16826,8 @@ a.cal-tl-label:hover strong, a.cal-tl-label:focus-visible strong { color: var(--
 .hubspot-link { margin-left: 6px; font-size: .74rem; font-weight: 800; color: #ff5c35; text-decoration: none; white-space: nowrap; letter-spacing: 0; vertical-align: middle; }
 .hubspot-link:hover { text-decoration: underline; }
 h1 .hubspot-link { font-size: .9rem; }
+
+/* Fiche client : chargée de compte Me&YouToo */
+.client-account-manager{display:inline-flex;align-items:center;gap:8px;margin-top:6px;font-size:.85rem;font-weight:600;color:#48617d}
+.client-account-manager select{font:inherit;font-weight:600;padding:5px 10px;border:1px solid #ccd6e4;border-radius:999px;background:#fff;color:#273a64;max-width:260px}
+.client-account-manager select:focus{outline:3px solid rgba(0,120,131,.12);border-color:#007883}

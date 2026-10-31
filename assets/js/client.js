@@ -1127,6 +1127,31 @@
     const chip = (key, label, count) => '<button type="button" class="campaign-folder-chip ' + (activeFolder === key ? "is-active" : "") + '" data-admin-folder-filter="' + esc(key) + '"><span>' + label + '</span><strong>' + count + '</strong></button>';
     root.innerHTML = '<div class="campaign-folder-heading"><div><strong>Mes dossiers pour ce client</strong><span>Votre classement personnel des campagnes</span></div><button class="campaign-folder-create" type="button" data-admin-folder-create>+ Nouveau dossier</button></div><div class="campaign-folder-list">' + chip("all", "🗂️ Toutes", ps.length) + chip("unclassified", "📄 Non classées", ps.filter((p) => !p.folder_id).length) + folders.map((f) => '<span class="campaign-folder-group">' + chip(String(f.id), "📁 " + esc(f.name), ps.filter((p) => String(p.folder_id || "") === String(f.id)).length) + '<button type="button" class="campaign-folder-manage" data-admin-folder-manage="' + esc(f.id) + '" aria-label="Gérer ' + esc(f.name) + '">•••</button></span>').join("") + '</div>';
   }
+  // Chargée de compte Me&YouToo du client, modifiable depuis la fiche (comptes en attente du go compris).
+  function renderAccountManager() {
+    let box = $("#client-account-manager");
+    if (!box) {
+      $("#client-subtitle")?.insertAdjacentHTML("afterend", '<label id="client-account-manager" class="client-account-manager"><span>Chargée de compte Me&amp;YouToo</span><select></select></label>');
+      box = $("#client-account-manager");
+      if (!box) return;
+      box.querySelector("select").addEventListener("change", async (event) => {
+        const select = event.target, value = select.value;
+        select.disabled = true;
+        try {
+          await StudioAPI.request("/api/admin/organizations/" + encodeURIComponent(organization.id), { method: "PATCH", body: JSON.stringify({ accountManagerUserId: value || null }) });
+          organization.account_manager_user_id = value ? Number(value) : null;
+        } catch (error) {
+          select.value = organization.account_manager_user_id ? String(organization.account_manager_user_id) : "";
+          await StudioModal.alert({ title: "Chargée de compte non modifiée", message: error.message, type: "error" });
+        } finally { select.disabled = false; }
+      });
+    }
+    const current = organization.account_manager_user_id ? String(organization.account_manager_user_id) : "";
+    const choices = administrators.filter((a) => a.active !== false || a.invitation_pending || String(a.id) === current);
+    box.querySelector("select").innerHTML = '<option value="">Non attribuée</option>' + choices.map((a) =>
+      '<option value="' + esc(a.id) + '"' + (String(a.id) === current ? " selected" : "") + ">" + esc([a.first_name, a.last_name].filter(Boolean).join(" ") || a.email) +
+      (a.invitation_pending ? " (en attente du go)" : "") + "</option>").join("");
+  }
   function render() {
     const ps = sortProjects(orgProjects(organization)),
       rem = remaining(organization),
@@ -1138,6 +1163,7 @@
     $("#client-name").textContent = organization.name || "Dossier client";
     // Fiche entreprise HubSpot à côté du nom du client.
     if (organization.hubspot_company_id) $("#client-name").insertAdjacentHTML("beforeend", StudioHubspot.link("company", organization.hubspot_company_id));
+    renderAccountManager();
     const clientLogo = $("#client-logo");
     const clientLogoUpload = $("#client-logo-upload");
     const clientLogoUploadLabel = $("#client-logo-upload-label");
