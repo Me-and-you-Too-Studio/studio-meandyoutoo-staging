@@ -19,7 +19,7 @@
   function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function num(v){return new Intl.NumberFormat('fr-FR').format(Number(v)||0);}
   function plural(n,word){return num(n)+' '+word+(Number(n)>1?'s':'');}
-  function fmtDate(v){if(!v)return '';var d=new Date(String(v).slice(0,10)+'T12:00:00');return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}
+  function fmtDate(v){if(!v)return '';var d=new Date(String(v).slice(0,10)+'T12:00:00');var o={day:'numeric',month:'short'};if(String(v).slice(0,4)!==String(year))o.year='numeric';return d.toLocaleDateString('fr-FR',o);}
   function qs(y){var p=new URLSearchParams({year:String(y)});if(organizationId)p.set('organizationId',organizationId);return '?'+p.toString();}
   function today(){return new Date().toISOString().slice(0,10);}
   function cockpitHref(){return 'cockpit-dei.html'+(organizationId?'?organizationId='+encodeURIComponent(organizationId):'');}
@@ -28,7 +28,7 @@
   function items(d){
     var t=today();
     return d.actions.map(function(a){return {kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,provider:a.led_by_meayt?'Me&YouToo':a.provider_name,documents:a.documents||[]};})
-      .concat(d.campaigns.map(function(c){return {kind:'diagnostic',title:c.name,date:c.launch_date,end:c.close_date,campaign:true,
+      .concat(d.campaigns.map(function(c){return {kind:'diagnostic',title:c.name,date:c.year_date||c.launch_date,start:c.launch_date,end:c.close_date,campaign:true,
         status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':'in_progress',
         theme:c.theme_title,people:c.respondents,provider:'Me&YouToo',documents:[]};}))
       .sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
@@ -117,7 +117,7 @@
         var k=kindOf(d,i.kind);
         var sub=[k.label,i.provider?'par '+i.provider:''].filter(Boolean).join(' · ');
         var docs=i.documents.length?'<span class="bl-docs">📎 '+i.documents.map(function(x){return esc(x.filename);}).join(', ')+'</span>':'';
-        return '<tr><td>'+esc(fmtDate(i.date))+(i.end&&i.end!==i.date?'<br><small>→ '+esc(fmtDate(i.end))+'</small>':'')+'</td><td><strong>'+esc(i.title)+'</strong><br><small>'+esc(sub)+'</small>'+docs+'</td>'+
+        return '<tr><td>'+esc(fmtDate(i.start||i.date))+(i.end&&i.end!==i.date?'<br><small>→ '+esc(fmtDate(i.end))+'</small>':'')+'</td><td><strong>'+esc(i.title)+'</strong><br><small>'+esc(sub)+'</small>'+docs+'</td>'+
           '<td>'+esc(i.theme||'—')+(i.audience?'<br><small>'+esc(i.audience)+'</small>':'')+'</td><td>'+(i.people!=null&&i.people!==''?num(i.people):'—')+'</td><td><span class="bl-st st-'+esc(i.status)+'">'+esc(STATUS[i.status]||i.status)+'</span></td></tr>';
       }).join('')+'</tbody></table>';
     });

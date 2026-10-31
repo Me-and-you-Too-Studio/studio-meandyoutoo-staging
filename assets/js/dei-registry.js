@@ -53,7 +53,7 @@
   function items(){
     var d=state.data,t=today();
     var actions=d.actions.map(function(a){return {type:'action',id:a.id,kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,notes:a.notes,meayt:a.led_by_meayt,documents:a.documents||[],offerId:a.offer_id,provider:a.provider_name,recommended:a.recommended,campaignId:a.campaign_id,raw:a};});
-    var campaigns=d.campaigns.map(function(c){return {type:'campaign',id:c.id,kind:'diagnostic',title:c.name,date:c.launch_date,end:c.close_date,status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':'in_progress',theme:c.theme_title,people:c.respondents,documents:[]};});
+    var campaigns=d.campaigns.map(function(c){return {type:'campaign',id:c.id,kind:'diagnostic',title:c.name,date:c.year_date||c.launch_date,start:c.launch_date,end:c.close_date,status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':'in_progress',theme:c.theme_title,people:c.respondents,documents:[]};});
     return actions.concat(campaigns).sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
   }
   function kind(k){return (state.data.kinds||{})[k]||{label:k,icon:'•'};}
@@ -155,7 +155,7 @@
   function recoTip(id){var n=campaignName(id);return 'Recommandée lors de la restitution'+(n?' du diagnostic « '+n+' »':' de votre diagnostic');}
   function row(it){
     var k=kind(it.kind),st=(state.data.statuses||{})[it.status]||it.status,canEdit=state.data.canEdit&&it.type==='action';
-    var when=fmtDate(it.date)+(it.end&&it.end!==it.date?' → '+fmtDate(it.end):'');
+    var when=fmtDate(it.start||it.date)+(it.end&&it.end!==it.date?' → '+fmtDate(it.end):'');
     var meta=[it.theme,it.audience,it.people!=null?num(it.people)+(it.type==='campaign'?' participations':' personnes touchées'):'',it.provider?'avec '+it.provider:'',it.recommended?recoTip(it.campaignId):''].filter(Boolean).map(esc).join(' · ');
     var docs=(it.documents||[]).map(function(doc){return '<span class="dr-doc"><button type="button" class="dr-link" data-download="'+esc(it.id)+':'+esc(doc.id)+'" data-filename="'+esc(doc.filename)+'">📎 '+esc(doc.filename)+'</button>'+(canEdit?'<button type="button" class="dr-x" data-doc-delete="'+esc(it.id)+':'+esc(doc.id)+'" aria-label="Retirer '+esc(doc.filename)+'">×</button>':'')+'</span>';}).join('');
     var tools=it.type==='campaign'
