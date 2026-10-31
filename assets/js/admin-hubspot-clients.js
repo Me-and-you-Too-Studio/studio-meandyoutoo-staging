@@ -36,6 +36,7 @@
       <p class="admin-dialog-intro">${all.length} entreprises au stade « Client » dans HubSpot. Une entreprise qui existe déjà dans le Studio se <strong>rattache</strong> ; les autres se <strong>créent</strong>.
         Les contacts repris restent <strong>en attente du go</strong> : personne ne reçoit d’e-mail avant la mise en production.</p>
       ${message ? `<p class="hs-clients-message">${message}</p>` : ''}
+      <div class="hs-managers">${tool('managers', { id: 'all' }, 'Chargées de compte depuis HubSpot')}${box('managers', { id: 'all' })}</div>
       ${suggested.length ? `<h3>À rattacher (${suggested.length})</h3><p class="hs-clients-hint">Un client du Studio ressemble à ces entreprises : rattachez-le plutôt que de créer un doublon.</p>
         <ul class="hs-clients-list">${suggested.map(c => `<li><div class="hs-row"><div><strong>${esc(c.name)}</strong> ${link(c)}<small>Proposé : ${esc(c.suggestion.name)} (même ${esc(c.suggestion.reason)})</small></div>
           <div class="hs-tools"><button type="button" class="button button-secondary" data-hs-link="${esc(c.id)}" data-org="${esc(c.suggestion.id)}">Rattacher à ${esc(c.suggestion.name)}</button></div></div></li>`).join('')}</ul>` : ''}
@@ -50,6 +51,7 @@
         <button type="button" class="button button-primary" data-hs-create ${fresh.length ? '' : 'disabled'}>${createLabel(fresh)}</button></div></form>`;
     dialog.querySelectorAll('[data-hs-box^="contacts:"]:not([hidden])').forEach(b => fillContacts(b));
     dialog.querySelectorAll('[data-hs-box^="prestations:"]:not([hidden])').forEach(b => fillPrestations(b));
+    dialog.querySelectorAll('[data-hs-box="managers:all"]:not([hidden])').forEach(b => fillManagers(b));
     if (focusId) { dialog.querySelector(`[data-hs-row="${focusId}"]`)?.scrollIntoView({ block: 'center' }); focusId = null; }
   }
   function createLabel(fresh) {
@@ -100,6 +102,22 @@
         (r.ignored.length ? `<details class="hs-presta-ignored"><summary>Non importées (${r.ignored.length})</summary><ul>${r.ignored.map(d => `<li>${dealLink(d)} — ${esc(d.categories.join(', ') || d.reason)}</li>`).join('')}</ul></details>` : '');
     } catch (e) { target.innerHTML = `<p class="hs-clients-message is-error">${esc(e.message)}</p>`; }
   }
+  // Chargées de compte : propriétaire de la dernière transaction de chaque client rattaché, à appliquer aux clients qui n'en ont pas.
+  async function fillManagers(target) {
+    target.innerHTML = '<p class="hs-clients-hint">Lecture des propriétaires des transactions…</p>';
+    try {
+      const rows = (await StudioAPI.request('/api/admin/hubspot/account-managers')).rows, of = s => rows.filter(r => r.status === s);
+      const assign = of('assign'), manual = of('manual'), noAdmin = of('no_admin'), noDeal = of('no_deal'), already = of('already');
+      const list = (items, line) => `<ul class="hs-managers-list">${items.map(line).join('')}</ul>`;
+      target.innerHTML = `<p class="hs-clients-hint">Pour chaque client rattaché sans chargée de compte, le Studio reprend la propriétaire de sa transaction HubSpot la plus récente. Les choix déjà faits ne sont pas modifiés.</p>
+        ${assign.length ? `<p><strong>À attribuer (${assign.length})</strong></p>${list(assign, r => `<li>${esc(r.organizationName)} → <strong>${esc(r.adminName)}</strong></li>`)}
+          <button type="button" class="button button-primary" data-hs-managers-apply>Attribuer ces ${plural(assign.length, 'chargée')} de compte</button>` : '<p class="hs-clients-hint">Aucun client à attribuer automatiquement.</p>'}
+        ${manual.length ? `<details><summary>À faire à la main — ${esc(manual[0].ownerName)} (${manual.length})</summary>${list(manual, r => `<li>${esc(r.organizationName)}</li>`)}</details>` : ''}
+        ${noAdmin.length ? `<details><summary>Propriétaire sans compte administratrice dans le Studio (${noAdmin.length})</summary>${list(noAdmin, r => `<li>${esc(r.organizationName)} — ${esc(r.ownerName)}</li>`)}</details>` : ''}
+        ${noDeal.length ? `<details><summary>Sans transaction dans HubSpot (${noDeal.length})</summary>${list(noDeal, r => `<li>${esc(r.organizationName)}</li>`)}</details>` : ''}
+        ${already.length ? `<p class="hs-clients-hint">${plural(already.length, 'client')} rattaché${already.length > 1 ? 's ont' : ' a'} déjà sa chargée de compte.</p>` : ''}`;
+    } catch (e) { target.innerHTML = `<p class="hs-clients-message is-error">${esc(e.message)}</p>`; }
+  }
   const refreshImportLabel = companyId => { const b = dialog.querySelector(`[data-hs-import="${companyId}"]`), n = (pickedPrestations.get(companyId) || new Set()).size; if (b) b.textContent = `Ajouter au Cockpit${n ? ` (${n})` : ''}`; };
   const addContacts = (companyId, contactIds) => StudioAPI.request(`/api/admin/hubspot/clients/${encodeURIComponent(companyId)}/contacts`, { method: 'POST', body: JSON.stringify({ contactIds }) });
   const linkTo = (organizationId, companyId) => StudioAPI.request('/api/admin/hubspot/clients/link', { method: 'POST', body: JSON.stringify({ organizationId, companyId }) });
@@ -135,9 +153,16 @@
       target.hidden = !target.hidden; target.hidden ? openBoxes.delete(key) : openBoxes.add(key);
       if (!target.hidden && t.dataset.hsToggle === 'contacts') fillContacts(target);
       if (!target.hidden && t.dataset.hsToggle === 'prestations') fillPrestations(target);
+      if (!target.hidden && t.dataset.hsToggle === 'managers') fillManagers(target);
       return;
     }
     try {
+      if (t.hasAttribute('data-hs-managers-apply')) {
+        t.disabled = true; t.textContent = 'Attribution…';
+        const r = await StudioAPI.request('/api/admin/hubspot/account-managers', { method: 'POST' });
+        changed = true;
+        return load(`${plural(r.assigned, 'client')} ${r.assigned > 1 ? 'reçoivent leur' : 'reçoit sa'} chargée de compte depuis HubSpot.`);
+      }
       if (t.dataset.hsImport) {
         const companyId = t.dataset.hsImport, keys = [...(pickedPrestations.get(companyId) || [])];
         if (!keys.length) return window.StudioModal.alert({ title: 'Aucune prestation cochée', message: 'Cochez les prestations à ajouter au Cockpit du client.' });
