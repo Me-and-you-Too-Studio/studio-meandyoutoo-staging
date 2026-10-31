@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
 <link rel="stylesheet" href="assets/css/style.css?v=20261031-perimetre-2">
-<link rel="stylesheet" href="assets/css/acces-equipes.css?v=20261031-perimetre-2">
+<link rel="stylesheet" href="assets/css/acces-equipes.css?v=20261031-droits-1">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -34,7 +34,7 @@
     <section class="card ae-explain" id="ae-explain" aria-labelledby="ae-explain-title">
       <h2 id="ae-explain-title" class="section-title">Comment ça marche</h2>
       <ol class="ae-explain-list">
-        <li><strong>Chaque personne a un niveau d’accès</strong>, qui dit ce qu’elle peut <em>faire</em> : créer, modifier, voir les résultats…</li>
+        <li><strong>Chaque personne a un niveau d’accès</strong>, qui dit ce qu’elle peut <em>faire</em> : créer, modifier, voir les résultats… <button type="button" class="ae-link" data-open-levels>Voir ce que permet chaque niveau</button></li>
         <li><strong>Chaque personne a un périmètre</strong>, qui dit <em>quelles campagnes</em> elle voit : toutes, ou seulement celles de certains dossiers d’équipe.</li>
         <li><strong>Les dossiers d’équipe</strong> (Handicap, Sexisme…) regroupent les campagnes d’un sujet. Ranger une campagne dans un dossier la rend visible à l’équipe de ce dossier.</li>
       </ol>
@@ -53,6 +53,7 @@
     <section class="card ae-suggestions" id="ae-suggestions" aria-labelledby="ae-suggestions-title" hidden>
       <h2 id="ae-suggestions-title" class="section-title">Me&amp;YouToo vous suggère des personnes</h2>
       <p class="section-desc">Nous les avons identifiées comme interlocuteurs de vos sujets diversité. Vous décidez de les intégrer ou non. Aucun e-mail ne leur est envoyé tant que vous ne cliquez pas sur « Envoyer l’invitation ».</p>
+      <p class="section-desc">Pour chacune, choisissez un niveau d’accès (ce qu’elle peut faire) et une équipe (ce qu’elle voit). Dépliez « Ce que ce niveau lui permet » pour voir la liste complète des droits et l’ajuster. <button type="button" class="ae-link" data-open-levels>Comparer les niveaux</button></p>
       <div id="ae-suggestion-list" class="ae-rows"></div>
     </section>
 
@@ -120,9 +121,17 @@
   <div class="top-actions"><button class="button button-ghost" type="button" data-close>Annuler</button><button class="button button-primary" type="button" id="ae-invite-send">Envoyer l’invitation</button></div>
 </form></dialog>
 
+<dialog id="ae-levels-dialog" class="admin-dialog access-dialog ae-levels-dialog"><form method="dialog">
+  <button type="button" class="admin-dialog-close" data-close aria-label="Fermer">×</button>
+  <p class="eyebrow">Niveaux d’accès</p>
+  <h2 id="ae-levels-title">Ce que permet chaque niveau d’accès</h2>
+  <div id="ae-levels-body"></div>
+  <div class="top-actions"><button class="button button-primary" type="button" data-close>Fermer</button></div>
+</form></dialog>
+
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20261019-client-preview-1"></script>
 <script src="assets/js/app.js?v=20261031-perimetre-1"></script>
-<script src="assets/js/acces-equipes.js?v=20261031-perimetre-1"></script>
+<script src="assets/js/acces-equipes.js?v=20261031-droits-1"></script>
 </body>
 </html>

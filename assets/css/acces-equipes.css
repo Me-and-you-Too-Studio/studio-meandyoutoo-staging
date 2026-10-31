@@ -94,3 +94,26 @@
   .ae-diagram-row { grid-template-columns: minmax(0, 1fr); }
   .ae-page .studio-journey-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* Droits ouverts par chaque niveau d'accès */
+.ae-link { padding: 0; border: 0; background: none; color: var(--green-blue-dark); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.ae-row-field .ae-link { margin-left: 6px; font-size: .78rem; }
+.ae-who-row small .ae-link { font-size: .82rem; font-weight: 600; }
+.ae-rights { grid-column: 1 / -1; padding-top: 10px; border-top: 1px dashed var(--line); }
+.ae-rights summary { cursor: pointer; color: var(--royal-blue); font-size: .9rem; }
+.ae-rights summary strong { color: var(--green-blue-dark); }
+.ae-rights-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 6px 18px; margin: 12px 0 2px; padding: 0; list-style: none; font-size: .9rem; }
+.ae-rights-list label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; line-height: 1.35; }
+.ae-rights-list input { margin-top: 2px; accent-color: var(--green-blue); }
+.ae-rights-list li.is-on span { color: var(--success); font-weight: 800; }
+.ae-rights-list li.is-off { color: var(--muted); }
+.ae-dialog-block details summary { cursor: pointer; }
+.ae-dialog-block .ae-rights-list { grid-template-columns: minmax(0, 1fr); }
+.ae-levels-dialog { width: min(900px, calc(100vw - 28px)); }
+.ae-levels-table { width: 100%; margin: 14px 0; border-collapse: collapse; font-size: .9rem; }
+.ae-levels-table th, .ae-levels-table td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: center; }
+.ae-levels-table thead th { color: var(--royal-blue); font-size: .8rem; vertical-align: bottom; }
+.ae-levels-table tbody th { text-align: left; font-weight: 600; color: var(--royal-blue); }
+.ae-levels-table td.is-on { color: var(--success); font-weight: 800; }
+.ae-levels-table td.is-off { color: #b8c2d3; }
+.ae-levels-table tbody tr:nth-child(odd) { background: var(--surface-soft); }
+@media (max-width: 760px) { .ae-levels-table { font-size: .78rem; } .ae-levels-table th, .ae-levels-table td { padding: 7px 4px; } }

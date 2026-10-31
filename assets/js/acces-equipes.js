@@ -6,6 +6,23 @@
   var $=function(id){return document.getElementById(id);};
   var data=null,editing=null,inviting=null;
   var LEVELS={owner:'Responsable du compte',manager:'Gestionnaire de campagnes',contributor:'Contributeur',viewer:'Lecture seule'};
+  // Droits ouverts par chaque niveau : mêmes libellés et mêmes valeurs par défaut que « Mon compte » (permissionPresets de l’API).
+  var RIGHTS={manage_users:'Gérer les comptes et les accès',create_campaigns:'Créer des campagnes',edit_campaigns:'Modifier et renommer les campagnes, et demander des ajustements',organize_folders:'Organiser les campagnes dans des dossiers',submit_campaigns:'Transmettre une configuration à Me&YouToo pour relecture',manage_schedule:'Programmer, prolonger et reprogrammer',manage_kit:'Gérer le kit de communication et le lien de diffusion',view_results:'Voir le lien des résultats et les statistiques',order_passations:'Commander des passations',track_orders:'Suivre les commandes de passations',view_calendar:'Voir le calendrier des campagnes',manage_tasks:'Créer et gérer les tâches',view_dei_cockpit:'Accéder au Cockpit DEI'};
+  var PRESETS={owner:{manage_users:true,create_campaigns:true,edit_campaigns:true,organize_folders:true,submit_campaigns:true,manage_schedule:true,manage_kit:true,view_results:true,order_passations:true,track_orders:true,view_calendar:true,manage_tasks:true,view_dei_cockpit:true},manager:{manage_users:false,create_campaigns:true,edit_campaigns:true,organize_folders:true,submit_campaigns:true,manage_schedule:true,manage_kit:true,view_results:true,order_passations:false,track_orders:true,view_calendar:true,manage_tasks:true,view_dei_cockpit:true},contributor:{manage_users:false,create_campaigns:true,edit_campaigns:true,organize_folders:false,submit_campaigns:true,manage_schedule:false,manage_kit:true,view_results:false,order_passations:false,track_orders:false,view_calendar:true,manage_tasks:true,view_dei_cockpit:true},viewer:{manage_users:false,create_campaigns:false,edit_campaigns:false,organize_folders:false,submit_campaigns:false,manage_schedule:false,manage_kit:false,view_results:false,order_passations:false,track_orders:false,view_calendar:true,manage_tasks:false,view_dei_cockpit:true}};
+  var RIGHT_KEYS=Object.keys(RIGHTS);
+  function rightsCount(values){var n=RIGHT_KEYS.filter(function(k){return values&&values[k];}).length;return n+' droit'+(n>1?'s':'')+' sur '+RIGHT_KEYS.length;}
+  // Liste complète des droits : cases à cocher (ajustables avant d’intégrer) ou lecture seule (✓ / —).
+  function rightsHtml(values,editable){
+    return '<ul class="ae-rights-list">'+RIGHT_KEYS.map(function(k){var on=Boolean(values&&values[k]);
+      return editable?'<li><label><input type="checkbox" data-right="'+k+'"'+(on?' checked':'')+'> '+esc(RIGHTS[k])+'</label></li>':'<li class="'+(on?'is-on':'is-off')+'"><span aria-hidden="true">'+(on?'✓':'—')+'</span> '+esc(RIGHTS[k])+(on?'':' <span class="sr-only">(non)</span>')+'</li>';}).join('')+'</ul>';
+  }
+  function rowRights(row){var r={};row.querySelectorAll('[data-right]').forEach(function(i){r[i.dataset.right]=i.checked;});if(r.manage_tasks)r.view_calendar=true;return r;}
+  function levelsTable(){
+    var levels=Object.keys(LEVELS);
+    return '<table class="ae-levels-table"><thead><tr><th scope="col">Ce que la personne peut faire</th>'+levels.map(function(l){return '<th scope="col">'+esc(LEVELS[l])+'</th>';}).join('')+'</tr></thead><tbody>'+
+      RIGHT_KEYS.map(function(k){return '<tr><th scope="row">'+esc(RIGHTS[k])+'</th>'+levels.map(function(l){return PRESETS[l][k]?'<td class="is-on"><span aria-hidden="true">✓</span><span class="sr-only">oui</span></td>':'<td class="is-off"><span aria-hidden="true">—</span><span class="sr-only">non</span></td>';}).join('')+'</tr>';}).join('')+
+      '</tbody></table><p class="ae-muted">Ce sont les droits par défaut de chaque niveau ; vous pouvez les ajuster personne par personne. Le responsable du compte a toujours tous les droits. Ce que chacun voit (toutes les campagnes ou certains dossiers) se règle à part, dans le périmètre.</p>';
+  }
   var me=StudioAPI.user()||{},isAdmin=me.role==='admin'&&!(StudioAPI.clientPreview&&StudioAPI.clientPreview());
   var organizationId=isAdmin?new URLSearchParams(location.search).get('organizationId')||'':'';
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
@@ -69,9 +86,10 @@
       var p=u.proposedPerimeter,selected=p?(p.scope==='all'?'all':p.folderIds[0]):'';
       return '<article class="ae-row" data-suggestion="'+esc(u.id)+'"><div class="ae-row-person"><strong>'+esc(name(u))+'</strong><span>'+esc(u.jobTitle||'Fonction non renseignée')+'</span>'+
         (p?'<small>💡 Sa fonction évoque : '+esc(perimeterText(p))+'</small>':'')+'</div>'+
-        '<label class="ae-row-field"><span>Niveau d’accès</span><select data-level>'+Object.keys(LEVELS).filter(function(k){return k!=='owner';}).map(function(k){return '<option value="'+k+'"'+(u.accessLevel===k?' selected':'')+'>'+LEVELS[k]+'</option>';}).join('')+'</select></label>'+
+        '<label class="ae-row-field"><span>Niveau d’accès <button type="button" class="ae-link" data-levels>Que permet chaque niveau ?</button></span><select data-level>'+Object.keys(LEVELS).filter(function(k){return k!=='owner';}).map(function(k){return '<option value="'+k+'"'+(u.accessLevel===k?' selected':'')+'>'+LEVELS[k]+'</option>';}).join('')+'</select></label>'+
         '<label class="ae-row-field"><span>Équipe</span><select data-scope><option value="">Choisir son équipe…</option>'+folderOptions(selected,true)+'</select></label>'+
-        '<div class="ae-row-actions"><button class="button button-primary" type="button" data-accept>Intégrer</button><button class="button button-ghost" type="button" data-refuse>Refuser</button></div></article>';
+        '<div class="ae-row-actions"><button class="button button-primary" type="button" data-accept>Intégrer</button><button class="button button-ghost" type="button" data-refuse>Refuser</button></div>'+
+        '<details class="ae-rights"><summary>Ce que ce niveau lui permet · <strong data-rights-count>'+rightsCount(PRESETS[u.accessLevel]||PRESETS.manager)+'</strong> <span class="ae-muted">(voir et ajuster)</span></summary><div data-rights-box>'+rightsHtml(PRESETS[u.accessLevel]||PRESETS.manager,true)+'</div></details></article>';
     }).join('');
   }
   function renderInvitations(){
@@ -114,7 +132,7 @@
     $('ae-who-rows').innerHTML=rows.map(function(u){
       var editable=data.canEdit&&u.accessLevel!=='owner';
       return '<div class="ae-who-row'+(u.seesNothing?' is-warning':'')+'" role="row"><span role="cell"><strong>'+esc(name(u))+'</strong>'+statusBadge(u)+'<small>'+esc(u.jobTitle||'')+'</small></span>'+
-        '<span role="cell">'+esc(LEVELS[u.accessLevel]||u.accessLevel)+'</span><span role="cell">'+scopeBadge(u)+'</span>'+
+        '<span role="cell">'+esc(LEVELS[u.accessLevel]||u.accessLevel)+'<small><button type="button" class="ae-link" data-rights-of="'+esc(u.id)+'">'+rightsCount(u.permissions)+'</button></small></span><span role="cell">'+scopeBadge(u)+'</span>'+
         '<span role="cell">'+(editable?'<button class="button button-secondary" type="button" data-edit="'+esc(u.id)+'">Modifier</button>':u.accessLevel==='owner'?'<small class="ae-muted">Voit toujours tout</small>':'')+'</span></div>';
     }).join('')||'<p class="ae-muted">Aucun compte.</p>';
   }
@@ -144,7 +162,7 @@
     editing=user;
     $('ae-perimeter-title').textContent='Ce que voit '+name(user);
     $('ae-perimeter-access').hidden=false;
-    $('ae-perimeter-access').innerHTML='<strong>Ce que cette personne peut faire :</strong> '+esc(LEVELS[user.accessLevel]||user.accessLevel)+'. <a href="'+(isAdmin?'client.html?organizationId='+encodeURIComponent(organizationId):'account.html#team-access-section')+'">Modifier son niveau d’accès</a>';
+    $('ae-perimeter-access').innerHTML='<details><summary><strong>Ce que cette personne peut faire :</strong> '+esc(LEVELS[user.accessLevel]||user.accessLevel)+' · '+rightsCount(user.permissions)+'</summary>'+rightsHtml(user.permissions,false)+'</details><a href="'+(isAdmin?'client.html?organizationId='+encodeURIComponent(organizationId):'account.html#team-access-section')+'">Modifier son niveau d’accès et ses droits</a>';
     document.querySelector('input[name="ae-scope"][value="'+(user.scope==='folders'?'folders':'all')+'"]').checked=true;
     $('ae-perimeter-folders').innerHTML=data.teamFolders.length?data.teamFolders.map(function(f){return '<label><input type="checkbox" value="'+esc(f.id)+'"'+(user.folderIds.indexOf(f.id)>=0?' checked':'')+'> 📁 '+esc(f.name)+' <small>('+f.campaignCount+')</small></label>';}).join(''):'<p class="ae-muted">Créez d’abord un dossier d’équipe.</p>';
     $('ae-perimeter-error').hidden=true;
@@ -208,14 +226,16 @@
     if(t.hasAttribute('data-accept')&&row){
       var choice=row.querySelector('[data-scope]').value,level=row.querySelector('[data-level]').value,user=data.users.find(function(u){return u.id===row.dataset.suggestion;});
       if(!choice){await StudioModal.alert({type:'warning',title:'Choisissez son équipe',message:'Indiquez quelles campagnes '+name(user)+' verra : toutes, ou celles d’un dossier d’équipe.'});return;}
-      var perimeter=choice==='all'?{scope:'all',folderIds:[]}:{scope:'folders',folderIds:[choice]};
-      if(!await StudioModal.confirm({type:'info',title:'Intégrer '+name(user)+' ?',message:summary(user,perimeter.scope,perimeter.folderIds)+' Aucune invitation n’est envoyée pour l’instant.',confirmLabel:'Intégrer'}))return;
-      await act(function(){return api('/api/team-access/suggestions/'+user.id+'/accept',{method:'POST',body:JSON.stringify({accessLevel:level,perimeter:perimeter})});});
+      var perimeter=choice==='all'?{scope:'all',folderIds:[]}:{scope:'folders',folderIds:[choice]},rights=rowRights(row);
+      if(!await StudioModal.confirm({type:'info',title:'Intégrer '+name(user)+' ?',message:LEVELS[level]+' ('+rightsCount(rights)+'). '+summary(user,perimeter.scope,perimeter.folderIds)+' Aucune invitation n’est envoyée pour l’instant.',confirmLabel:'Intégrer'}))return;
+      await act(function(){return api('/api/team-access/suggestions/'+user.id+'/accept',{method:'POST',body:JSON.stringify({accessLevel:level,permissions:rights,perimeter:perimeter})});});
     }else if(t.hasAttribute('data-refuse')&&row){
       var refused=data.users.find(function(u){return u.id===row.dataset.suggestion;});
       if(!await StudioModal.confirm({type:'warning',title:'Refuser '+name(refused)+' ?',message:'Cette personne sortira de votre compte et n’aura jamais accès au Studio. Rien n’est supprimé : Me&YouToo voit votre décision.',confirmLabel:'Refuser'}))return;
       await act(function(){return api('/api/team-access/suggestions/'+refused.id+'/refuse',{method:'POST'});});
-    }else if(t.dataset.invite){openInvite(data.users.find(function(u){return u.id===t.dataset.invite;}));}
+    }else if(t.hasAttribute('data-levels')){e.preventDefault();openLevels();}
+    else if(t.dataset.rightsOf){var who=data.users.find(function(u){return u.id===t.dataset.rightsOf;});$('ae-levels-title').textContent='Ce que peut faire '+name(who);$('ae-levels-body').innerHTML='<p class="ae-summary">'+esc(LEVELS[who.accessLevel]||who.accessLevel)+' · '+rightsCount(who.permissions)+'</p>'+rightsHtml(who.permissions,false);$('ae-levels-dialog').showModal();}
+    else if(t.dataset.invite){openInvite(data.users.find(function(u){return u.id===t.dataset.invite;}));}
     else if(t.dataset.edit){openPerimeter(data.users.find(function(u){return u.id===t.dataset.edit;}));}
     else if(t.dataset.rename){
       var folder=data.teamFolders.find(function(f){return f.id===t.dataset.rename;});
@@ -228,6 +248,14 @@
       await act(function(){return api('/api/team-access/folders/'+del.id,{method:'DELETE'});});
     }
   });
+  // Niveau changé sur une suggestion : on repart des droits par défaut de ce niveau ; case cochée : compteur à jour.
+  document.addEventListener('change',function(e){
+    var row=e.target.closest('[data-suggestion]');if(!row)return;
+    if(e.target.matches('[data-level]'))row.querySelector('[data-rights-box]').innerHTML=rightsHtml(PRESETS[e.target.value],true);
+    if(e.target.matches('[data-level],[data-right]'))row.querySelector('[data-rights-count]').textContent=rightsCount(rowRights(row));
+  });
+  function openLevels(){$('ae-levels-title').textContent='Ce que permet chaque niveau d’accès';$('ae-levels-body').innerHTML=levelsTable();$('ae-levels-dialog').showModal();}
+  document.querySelectorAll('[data-open-levels]').forEach(function(b){b.onclick=openLevels;});
   document.addEventListener('change',async function(e){
     var s=e.target.closest('select[data-campaign]');if(!s)return;
     await act(function(){return api('/api/team-access/campaigns/'+s.dataset.campaign+'/folder',{method:'PUT',body:JSON.stringify({teamFolderId:s.value||null})});});
