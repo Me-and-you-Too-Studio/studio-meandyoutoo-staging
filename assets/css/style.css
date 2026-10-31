@@ -16831,3 +16831,9 @@ h1 .hubspot-link { font-size: .9rem; }
 .client-account-manager{display:inline-flex;align-items:center;gap:8px;margin-top:6px;font-size:.85rem;font-weight:600;color:#48617d}
 .client-account-manager select{font:inherit;font-weight:600;padding:5px 10px;border:1px solid #ccd6e4;border-radius:999px;background:#fff;color:#273a64;max-width:260px}
 .client-account-manager select:focus{outline:3px solid rgba(0,120,131,.12);border-color:#007883}
+
+/* Utilisateurs & accès : sélection multiple et rôle groupé */
+[data-admin-panel="accounts"] .admin-access-select{width:34px;text-align:center}
+.admin-bulk-role{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:0 0 12px;padding:10px 14px;border-radius:12px;background:#e6f4f5;color:#0b5b63;font-size:.9rem}
+.admin-bulk-role label{display:inline-flex;align-items:center;gap:8px;font-weight:600}
+.admin-bulk-role select{font:inherit;padding:6px 10px;border:1px solid #ccd6e4;border-radius:10px;background:#fff;color:#273a64}
