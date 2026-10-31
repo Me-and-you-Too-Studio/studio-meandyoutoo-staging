@@ -250,8 +250,10 @@
     }).join('')+'</article>';
   }
   // Demande de conférence de restitution : même circuit que les offres (notification, e-mail, transaction HubSpot).
-  async function requestRestitution(id){
-    var dg=state.data.diagnostics||{},c=(dg.restitutions||[]).find(function(x){return String(x.id)===String(id);});if(!c)return;
+  async function requestRestitution(id,fromLink){
+    var dg=state.data.diagnostics||{},c=(dg.restitutions||[]).find(function(x){return String(x.id)===String(id);});
+    if(!c){if(fromLink)window.StudioModal.alert({eyebrow:'Conférence de restitution',title:'Restitution déjà prévue',message:'Une restitution ou un plan d’actions est déjà rattaché à ce diagnostic : retrouvez-le dans « Plans d’actions issus des diagnostics ». Pour toute question : contact@meandyoutoo.app.'});return;}
+    if(c.requested){if(fromLink)window.StudioModal.alert({eyebrow:'Conférence de restitution',title:'Demande déjà envoyée',type:'success',message:'Votre demande de restitution pour « '+c.name+' » nous est bien parvenue. Nous revenons vers vous pour fixer une date.'});return;}
     var message=await window.StudioModal.prompt({eyebrow:'Conférence de restitution',title:'Restitution du diagnostic « '+c.name+' »',
       message:'Notre experte inclusion & diversité et en statistiques analyse vos résultats, les situe par rapport à un benchmark anonyme d’autres entreprises et vous propose des recommandations d’actions ciblées. Nous revenons vers vous pour fixer une date et vous adresser une proposition.',
       inputLabel:'Vos attentes ou contraintes (facultatif)',placeholder:'Ex. : restitution au CODIR en janvier, en présentiel…',confirmLabel:'Demander la restitution'});
@@ -436,5 +438,7 @@
     if(t.matches('[data-upload]'))upload(t.getAttribute('data-upload'),t.files&&t.files[0]);
     else if(t.matches('[data-obj-done]')){var o=findObjective(t.getAttribute('data-obj-done'));if(o)saveObjective(o,{done:t.checked});}
   });
-  load();
+  // Arrivée depuis l'alerte « Campagne terminée » (?restitution=<id>) : on ouvre la demande, le client confirme.
+  var restitutionLink=isClient&&/^\d+$/.test(params.get('restitution')||'')?params.get('restitution'):null;
+  load().then(function(){if(restitutionLink&&state.data)requestRestitution(restitutionLink,true);});
 })();
