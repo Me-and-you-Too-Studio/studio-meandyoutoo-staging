@@ -15472,6 +15472,10 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 [data-admin-panel="accounts"] .admin-access-table {width:100%;border-collapse:collapse;text-align:left;font-size:.82rem;}
 [data-admin-panel="accounts"] .admin-access-table caption {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
 [data-admin-panel="accounts"] .admin-access-table th {padding:12px;background:#f1f6fa;color:#48617d;font-size:.74rem;white-space:nowrap;}
+[data-admin-panel="accounts"] .admin-sort-button{all:unset;cursor:pointer;font:inherit;color:inherit;display:inline-flex;gap:4px;align-items:center}
+[data-admin-panel="accounts"] .admin-sort-button:hover,[data-admin-panel="accounts"] .admin-sort-button.is-active{color:#0b5b63}
+[data-admin-panel="accounts"] .admin-sort-button:focus-visible{outline:2px solid #007883;outline-offset:2px;border-radius:4px}
+[data-admin-panel="accounts"] .admin-sort-button span{font-size:.7rem;opacity:.7}
 [data-admin-panel="accounts"] .admin-access-table td {padding:13px 12px;border-top:1px solid #e8eff5;vertical-align:top;color:#345371;}
 [data-admin-panel="accounts"] .admin-access-table tbody tr:hover {background:#f8fcfd;}
 [data-admin-panel="accounts"] .admin-access-table strong {color:#193e61;}
