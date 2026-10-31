@@ -112,10 +112,13 @@
   }
   function renderFolders(){
     var everyone=data.users.filter(function(u){return u.suggestion!=='pending'&&(u.accessLevel==='owner'||u.scope==='all');}).length;
-    var unfiled=data.campaigns.filter(function(c){return !c.teamFolderId;}).length,unfiledActions=actions().filter(function(a){return !a.teamFolderId;}).length;
-    var parts=[unfiled?unfiled+' campagne'+(unfiled>1?'s':''):'',unfiledActions?unfiledActions+' action'+(unfiledActions>1?'s':'')+' du Cockpit':''].filter(Boolean);
-    $('ae-unfiled').hidden=!parts.length||!data.teamFolders.length;
-    $('ae-unfiled').textContent=parts.join(' et ')+(unfiled+unfiledActions>1?' ne sont':' n’est')+' dans aucun dossier : seuls les comptes « Toutes les campagnes » les voient. Ajoutez-les depuis un dossier (« + Ajouter… »). Une action de toute l’entreprise, comme un séminaire de direction, peut rester sans dossier.';
+    // On nomme ce qui n'est rangé nulle part (campagne ou action du Cockpit, avec son type et sa date), pour que le client s'y retrouve.
+    var loose=data.campaigns.filter(function(c){return !c.teamFolderId;}).map(function(c){return 'la campagne « '+c.name+' »';})
+      .concat(actions().filter(function(a){return !a.teamFolderId;}).map(function(a){return 'l’action du Cockpit « '+a.title+' » ('+[a.kindLabel,shortDate(a.date)].filter(Boolean).join(', ')+')';}));
+    var shown=loose.slice(0,5),more=loose.length-shown.length;
+    $('ae-unfiled').hidden=!loose.length||!data.teamFolders.length;
+    $('ae-unfiled').textContent='Pas encore rangé'+(loose.length>1?'es':'e')+' dans un dossier : '+(more?shown.join(', ')+' et '+more+' autre'+(more>1?'s':''):shown.slice(0,-1).join(', ')+(shown.length>1?' et ':'')+shown[shown.length-1])+
+      '. Seuls les comptes « Toutes les campagnes » '+(loose.length>1?'les':'la')+' voient. Pour '+(loose.length>1?'les':'la')+' ranger, cliquez sur « + Ajouter… » dans le dossier voulu. Une action de toute l’entreprise, comme un séminaire de direction, peut rester sans dossier.';
     var proposed=proposals();
     $('ae-actions-proposal').hidden=!proposed.length||!data.canEdit;
     $('ae-actions-proposal-text').textContent=proposed.length+' action'+(proposed.length>1?'s':'')+' du Cockpit évoque'+(proposed.length>1?'nt':'')+' un de vos dossiers d’après leur thématique ('+Array.from(new Set(proposed.map(function(a){return folderName(a.proposedFolderId);}))).join(', ')+').';
