@@ -30,3 +30,8 @@
 .hs-clients-linked summary{cursor:pointer;font-weight:700}
 .admin-client-hubspot-link{font-size:.78rem;font-weight:600;margin-left:8px;white-space:nowrap}
 @media (max-width:600px){.hs-row{flex-direction:column;align-items:stretch}.hs-tools{flex-wrap:wrap}.hs-box{margin-left:0}}
+.hs-presta-year{margin:6px 0 0;font-weight:700;font-size:.85rem;color:#273a64}
+.hs-presta-warn{width:100%;margin-top:6px;padding:8px 12px;border-radius:8px;background:#fff6e5;color:#7a4b00;font-size:.85rem}
+.hs-presta-warn ul,.hs-presta-ignored ul{margin:6px 0 0;padding-left:18px}
+.hs-presta-ignored{font-size:.82rem;color:#54607e}
+.hs-presta-ignored summary{cursor:pointer}

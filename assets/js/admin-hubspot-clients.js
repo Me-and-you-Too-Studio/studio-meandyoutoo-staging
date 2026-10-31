@@ -45,10 +45,11 @@
           <div class="hs-tools">${tool('contacts', c, 'Contacts')}${canLink ? tool('link', c, 'Rattacher à…') : ''}</div></div>${box('contacts', c)}${canLink ? linkBox(c) : ''}</li>`).join('')}</ul>`
         : '<p class="hs-clients-hint">Toutes les entreprises clientes de HubSpot existent déjà dans le Studio.</p>'}
       <details class="hs-clients-linked" ${focusId || openBoxes.has('linked') ? 'open' : ''}><summary>Déjà rattachés (${linked.length})</summary><ul class="hs-clients-list">${linked.map(c => `<li data-hs-row="${esc(c.id)}" class="${focusId === c.id ? 'is-focus' : ''}"><div class="hs-row"><div><strong>${esc(c.organization.name)}</strong> ← ${esc(c.name)} ${link(c)}<small>${esc(usersSummary(c.organization))}</small></div>
-        <div class="hs-tools">${tool('contacts', c, 'Contacts')}<button type="button" class="button button-ghost hs-tool" data-hs-unlink="${esc(c.organization.id)}">Détacher</button></div></div>${box('contacts', c)}</li>`).join('')}</ul></details>
+        <div class="hs-tools">${tool('contacts', c, 'Contacts')}${tool('prestations', c, 'Prestations')}<button type="button" class="button button-ghost hs-tool" data-hs-unlink="${esc(c.organization.id)}">Détacher</button></div></div>${box('contacts', c)}${box('prestations', c)}</li>`).join('')}</ul></details>
       <div class="admin-dialog-actions"><button type="button" class="button button-ghost" data-hs-close>Fermer</button>
         <button type="button" class="button button-primary" data-hs-create ${fresh.length ? '' : 'disabled'}>${createLabel(fresh)}</button></div></form>`;
     dialog.querySelectorAll('[data-hs-box^="contacts:"]:not([hidden])').forEach(b => fillContacts(b));
+    dialog.querySelectorAll('[data-hs-box^="prestations:"]:not([hidden])').forEach(b => fillPrestations(b));
     if (focusId) { dialog.querySelector(`[data-hs-row="${focusId}"]`)?.scrollIntoView({ block: 'center' }); focusId = null; }
   }
   function createLabel(fresh) {
@@ -77,11 +78,34 @@
         : '<p class="hs-clients-hint">Aucun contact associé à cette entreprise dans HubSpot.</p>';
     } catch (e) { target.innerHTML = `<p class="hs-clients-message is-error">${esc(e.message)}</p>`; }
   }
+  // Prestations HubSpot (transactions gagnées) proposées comme actions du Cockpit D&I, à valider avant import.
+  const pickedPrestations = new Map(), prestationsCache = new Map();
+  const day = d => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  async function fillPrestations(target) {
+    const companyId = target.dataset.hsBox.split(':')[1];
+    target.innerHTML = '<p class="hs-clients-hint">Lecture des transactions gagnées…</p>';
+    try {
+      if (!prestationsCache.has(companyId)) prestationsCache.set(companyId, await StudioAPI.request(`/api/admin/hubspot/clients/${encodeURIComponent(companyId)}/prestations`));
+      const r = prestationsCache.get(companyId), chosen = pickedPrestations.get(companyId) || new Set();
+      const open = r.proposals.filter(p => !p.imported), years = [...new Set(r.proposals.map(p => p.actionDate.slice(0, 4)))];
+      const dealLink = d => `<a href="${esc(d.hubspotUrl)}" target="_blank" rel="noopener">${esc(d.dealName)} ↗</a>`;
+      target.innerHTML = (r.proposals.length ? `<p class="hs-clients-hint">${plural(r.proposals.length, 'prestation')} trouvée${r.proposals.length > 1 ? 's' : ''} dans HubSpot, dont ${open.length} pas encore dans le Cockpit. Chaque date d’intervention devient une action « animée par Me&amp;YouToo ».</p>
+        ${open.length ? `<label class="hs-clients-all"><input type="checkbox" data-hs-presta-all="${esc(companyId)}" ${open.every(p => chosen.has(p.key)) ? 'checked' : ''}> Tout cocher</label>` : ''}
+        ${years.map(y => `<p class="hs-presta-year">${esc(y)}</p><ul class="hs-contacts-list">${r.proposals.filter(p => p.actionDate.startsWith(y)).map(p => `<li><label class="${p.imported ? 'is-done' : ''}">
+          <input type="checkbox" data-hs-presta="${esc(p.key)}" data-company="${esc(companyId)}" ${p.imported ? 'checked disabled' : chosen.has(p.key) ? 'checked' : ''}>
+          <span><strong>${esc(day(p.actionDate))}</strong> · ${esc(p.kindLabel)} · ${esc(p.title)}<small>${p.theme ? esc(p.theme) : '<em>thème à compléter</em>'} · ${p.status === 'done' ? 'réalisée' : 'prévue'}${p.imported ? ' — ✓ déjà dans le Cockpit' : ''}</small></span></label></li>`).join('')}</ul>`).join('')}
+        ${open.length ? `<button type="button" class="button button-primary" data-hs-import="${esc(companyId)}">Ajouter au Cockpit${chosen.size ? ` (${chosen.size})` : ''}</button>` : ''}`
+        : '<p class="hs-clients-hint">Aucune prestation datée à importer pour ce client.</p>') +
+        (r.toComplete.length ? `<div class="hs-presta-warn"><strong>À compléter dans HubSpot (${r.toComplete.length})</strong> : transactions gagnées sans date de livraison/intervention.<ul>${r.toComplete.map(d => `<li>${dealLink(d)}</li>`).join('')}</ul></div>` : '') +
+        (r.ignored.length ? `<details class="hs-presta-ignored"><summary>Non importées (${r.ignored.length})</summary><ul>${r.ignored.map(d => `<li>${dealLink(d)} — ${esc(d.categories.join(', ') || d.reason)}</li>`).join('')}</ul></details>` : '');
+    } catch (e) { target.innerHTML = `<p class="hs-clients-message is-error">${esc(e.message)}</p>`; }
+  }
+  const refreshImportLabel = companyId => { const b = dialog.querySelector(`[data-hs-import="${companyId}"]`), n = (pickedPrestations.get(companyId) || new Set()).size; if (b) b.textContent = `Ajouter au Cockpit${n ? ` (${n})` : ''}`; };
   const addContacts = (companyId, contactIds) => StudioAPI.request(`/api/admin/hubspot/clients/${encodeURIComponent(companyId)}/contacts`, { method: 'POST', body: JSON.stringify({ contactIds }) });
   const linkTo = (organizationId, companyId) => StudioAPI.request('/api/admin/hubspot/clients/link', { method: 'POST', body: JSON.stringify({ organizationId, companyId }) });
   const refreshCreateLabel = () => { const b = dialog.querySelector('[data-hs-create]'); if (b && data) b.textContent = createLabel(data.companies.filter(c => !c.organization && !c.suggestion)); };
 
-  button.onclick = () => { changed = false; data = null; [picked, pickedContacts, openBoxes, contactsCache].forEach(s => s.clear()); dialog.showModal(); load(); };
+  button.onclick = () => { changed = false; data = null; [picked, pickedContacts, openBoxes, contactsCache, pickedPrestations, prestationsCache].forEach(s => s.clear()); dialog.showModal(); load(); };
   dialog.addEventListener('close', () => { if (changed) location.reload(); });
   dialog.addEventListener('toggle', ev => { if (ev.target.matches?.('.hs-clients-linked')) ev.target.open ? openBoxes.add('linked') : openBoxes.delete('linked'); }, true);
   dialog.addEventListener('change', ev => {
@@ -94,6 +118,12 @@
       const pick = dialog.querySelector(`[data-hs-pick="${t.dataset.company}"]`);
       if (pick && t.checked) { pick.checked = true; picked.add(t.dataset.company); }
     }
+    if (t.matches('[data-hs-presta], [data-hs-presta-all]')) {
+      const companyId = t.dataset.company || t.dataset.hsPrestaAll, set = pickedPrestations.get(companyId) || new Set(); pickedPrestations.set(companyId, set);
+      const boxes = t.matches('[data-hs-presta-all]') ? [...dialog.querySelectorAll(`[data-hs-presta][data-company="${companyId}"]:not(:disabled)`)] : [t];
+      for (const c of boxes) { if (t.matches('[data-hs-presta-all]')) c.checked = t.checked; c.checked ? set.add(c.dataset.hsPresta) : set.delete(c.dataset.hsPresta); }
+      refreshImportLabel(companyId);
+    }
     refreshCreateLabel();
   });
   dialog.addEventListener('click', async ev => {
@@ -104,9 +134,18 @@
       const key = `${t.dataset.hsToggle}:${t.dataset.company}`, target = dialog.querySelector(`[data-hs-box="${key}"]`);
       target.hidden = !target.hidden; target.hidden ? openBoxes.delete(key) : openBoxes.add(key);
       if (!target.hidden && t.dataset.hsToggle === 'contacts') fillContacts(target);
+      if (!target.hidden && t.dataset.hsToggle === 'prestations') fillPrestations(target);
       return;
     }
     try {
+      if (t.dataset.hsImport) {
+        const companyId = t.dataset.hsImport, keys = [...(pickedPrestations.get(companyId) || [])];
+        if (!keys.length) return window.StudioModal.alert({ title: 'Aucune prestation cochée', message: 'Cochez les prestations à ajouter au Cockpit du client.' });
+        t.disabled = true; t.textContent = 'Ajout…';
+        const r = await StudioAPI.request(`/api/admin/hubspot/clients/${encodeURIComponent(companyId)}/prestations`, { method: 'POST', body: JSON.stringify({ keys }) });
+        changed = true; prestationsCache.delete(companyId); pickedPrestations.delete(companyId); focusId = companyId;
+        return load(`${plural(r.added, 'prestation')} ajoutée${r.added > 1 ? 's' : ''} au Cockpit de ${esc(r.organization.name)}.`);
+      }
       if (t.dataset.hsLink) {
         const companyId = t.dataset.hsLink, orgId = t.dataset.org || dialog.querySelector(`[data-hs-org="${companyId}"]`)?.value;
         if (!orgId) return window.StudioModal.alert({ title: 'Aucun client choisi', message: 'Choisissez le client du Studio à rattacher.' });
