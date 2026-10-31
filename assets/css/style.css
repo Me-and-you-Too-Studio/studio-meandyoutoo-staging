@@ -16809,5 +16809,11 @@ a.cal-tl-label:hover strong, a.cal-tl-label:focus-visible strong { color: var(--
 
 /* Périmètre par dossiers d’équipe : bandeau des listes et rappel de l’accueil (page complète : acces-equipes.css) */
 .ae-perimeter-banner { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 16px; padding: 10px 14px; border-radius: var(--radius-sm); background: var(--green-blue-soft); color: var(--green-blue-dark); font-weight: 600; }
-.ae-home-reminder { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; border: 1px solid var(--sunny-yellow); background: var(--sunny-yellow-soft); }
+.ae-home-reminder { display: flex; justify-content: space-between; align-items: center; gap: 16px 24px; flex-wrap: wrap; margin-bottom: 22px; padding: 22px 28px; border: 1px solid #f3dd9c; border-radius: var(--radius-lg); background: var(--sunny-yellow-soft); box-shadow: none; }
+.ae-home-reminder > div { flex: 1 1 360px; min-width: 0; }
+.ae-home-reminder .eyebrow { margin-bottom: 6px; }
+.ae-home-reminder strong { display: block; color: var(--royal-blue); font-size: 1.05rem; }
+.ae-home-reminder p:not(.eyebrow) { margin: 6px 0 0; color: var(--muted); }
+.ae-home-reminder .button { flex: 0 0 auto; white-space: nowrap; }
+@media (max-width: 760px) { .ae-home-reminder { padding: 18px 18px; } .ae-home-reminder .button { width: 100%; justify-content: center; } }
 .ae-home-reminder p { margin: 4px 0 0; }
