@@ -131,3 +131,11 @@
 .ae-hs { margin-left: 4px; font-size: .78rem; font-weight: 700; color: #ff5c35; text-decoration: none; white-space: nowrap; }
 .ae-hs:hover { text-decoration: underline; }
 #ae-eyebrow a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+/* Schéma d'exemple (non cliquable) et proposition de rangement des actions */
+.ae-diagram { margin: 0; }
+.ae-diagram figcaption { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--muted); font-size: .88rem; }
+.ae-example-badge { padding: 3px 10px; border-radius: 999px; background: var(--royal-blue-soft); color: var(--royal-blue); font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.ae-diagram-top, .ae-diagram-row div { opacity: .75; cursor: default; user-select: none; }
+.ae-diagram-row em { font-weight: 400; font-size: .8rem; color: var(--muted); }
+.ae-proposal { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px 16px; border-radius: var(--radius-sm); background: var(--green-blue-soft); color: var(--green-blue-dark); font-weight: 600; }
+.ae-folder-campaigns small { font-weight: 400; }
