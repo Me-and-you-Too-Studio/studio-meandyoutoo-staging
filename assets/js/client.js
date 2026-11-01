@@ -2379,10 +2379,15 @@
   }
   async function deleteCockpit() {
     const name = organization.name || "ce client";
-    const typed = window.prompt(
-      "Suppression définitive du cockpit « " + name + " ».\n\nCette action n’est possible que s’il ne contient aucune campagne, commande ou historique de pack. Les données métier ne seront jamais supprimées en cascade.\n\nTapez SUPPRIMER pour confirmer.",
-      "",
-    );
+    const typed = await StudioModal.prompt({
+      type: "danger",
+      eyebrow: "Suppression définitive",
+      title: "Supprimer le cockpit « " + name + " » ?",
+      message: "Possible uniquement s’il ne contient aucune campagne, commande ou historique de pack. Les données métier ne sont jamais supprimées en cascade. Cette action est irréversible.",
+      inputLabel: "Tapez SUPPRIMER pour confirmer",
+      placeholder: "SUPPRIMER",
+      confirmLabel: "Supprimer définitivement",
+    });
     if (typed !== "SUPPRIMER") return;
     try {
       await StudioAPI.request("/api/admin/organizations/" + organization.id, { method: "DELETE" });
