@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="canonical" href="https://studio.meandyoutoo.app/account.html">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20261101-nuit">
+<link rel="stylesheet" href="assets/css/style.css?v=20261101-compte-2">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -18,72 +18,66 @@
 </header>
 <div class="app-shell">
   <aside class="sidebar" aria-label="Navigation principale" id="sidebar-root" data-help-title="Besoin d'inspiration&nbsp;?" data-help-text="Découvrez tous les sujets de sensibilisation disponibles." data-help-href="bibliotheque.html" data-help-cta="Explorer la bibliothèque"></aside>
-  <main class="main account-page" id="contenu">
-    <div class="topbar compact-topbar">
-      <div>
-        <p class="eyebrow">Compte</p>
-        <h1 class="page-title">Mon compte</h1>
-        <p class="lead">Gérez les informations de votre organisation, la sécurité de votre accès et vos crédits de passation.</p>
+  <main class="main account-page account-v2" id="contenu">
+    <section class="card account-hero" aria-labelledby="organization-name">
+      <div class="account-photo account-photo-logo" id="organization-logo-preview" aria-label="Logo de l’entreprise"><span>Logo</span></div>
+      <div class="account-hero-copy">
+        <p class="eyebrow">Mon compte</p>
+        <h1 class="page-title" id="organization-name">Chargement…</h1>
+        <p class="account-hero-meta" id="account-hero-meta"></p>
       </div>
-      <div class="top-actions"><a class="button button-primary" href="packs.html">Commander des passations</a></div>
-    </div>
+      <span class="account-plan-pill" data-licence-pill hidden></span>
+    </section>
 
     <section class="account-grid" aria-label="Informations du compte">
-      <article class="card account-card account-card-profile">
-        <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></span><p class="eyebrow">Informations personnelles</p></div>
-        <div class="account-identity-row">
-          <div class="account-photo account-photo-person" id="profile-photo-preview" aria-label="Photo du contact"><span>?</span></div>
-          <div><h2 id="account-name">Chargement…</h2><p class="account-media-help">Ajoutez votre photo pour personnaliser votre espace.</p></div>
+      <article class="card account-card account-card-credits">
+        <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 12h5M7 10h5M7 14h3"/></svg></span><p class="eyebrow">Vos passations</p></div>
+        <h2 class="account-credits-figure"><span id="credits-remaining">—</span> <small id="credits-total"></small></h2>
+        <div class="progress large credits-meter" id="credits-progress" aria-label="Crédits disponibles"><span style="width:0"></span></div>
+        <p class="account-card-meta" id="credits-expiry"></p>
+        <div class="credits-nudge" id="credits-nudge" data-level="good" hidden>
+          <span class="credits-nudge-icon" aria-hidden="true">!</span>
+          <div><strong id="credits-nudge-title"></strong><p id="credits-nudge-message"></p></div>
         </div>
-        <div class="account-media-actions"><input id="profile-photo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden><button class="button button-secondary" id="upload-profile-photo" type="button">Ajouter / remplacer ma photo</button><button class="button button-ghost" id="remove-profile-photo" type="button" hidden>Supprimer la photo</button></div>
-        <dl class="info-list">
-          <div><dt>Fonction</dt><dd id="account-job">—</dd></div>
-          <div><dt>Email</dt><dd id="account-email">—</dd></div>
-          <div><dt>Téléphone</dt><dd id="account-phone">—</dd></div>
-        </dl>
-        <button class="button button-secondary" id="edit-profile" type="button">Modifier mes informations</button>
-      </article>
-
-      <article class="card account-card account-card-organization">
-        <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21V7l8-4 8 4v14"/><path d="M8 11h2M14 11h2M8 15h2M14 15h2M10 21v-3h4v3"/></svg></span><p class="eyebrow">Identité de l’entreprise</p></div>
-        <div class="account-identity-row">
-          <div class="account-photo account-photo-logo" id="organization-logo-preview" aria-label="Logo de l’entreprise"><span>Logo</span></div>
-          <div><h2 id="organization-name">Chargement…</h2><p class="account-media-help" id="organization-logo-help">Le logo est partagé avec tous les utilisateurs de votre organisation.</p><p class="account-media-help account-logo-format" id="organization-logo-format">PNG, JPG ou WebP · 8 Mo maximum.</p></div>
-        </div>
-        <div class="account-media-actions" id="organization-logo-actions"><input id="organization-logo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden><button class="button button-secondary" id="upload-organization-logo" type="button">Importer / remplacer le logo</button><button class="button button-ghost" id="remove-organization-logo" type="button" hidden>Supprimer le logo</button></div>
-        <dl class="info-list">
-          <div><dt>Offre</dt><dd>Studio D&I — accès client</dd></div>
-          <div><dt>Utilisateurs actifs</dt><dd id="organization-users-count">—</dd></div>
-          <div><dt>Depuis</dt><dd id="organization-since">—</dd></div>
-        </dl>
-        <ul class="clean-list" id="organization-users" style="margin:14px 0"><li>Chargement…</li></ul>
+        <div class="account-card-actions"><a class="button button-primary" href="packs.html">Commander un pack</a></div>
       </article>
 
       <article class="card account-card account-card-licence" id="studio-licence-card">
-        <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 10h8M8 14h5"/></svg></span><p class="eyebrow">Licence Studio</p></div>
+        <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="m9 13.5-1.5 7.5 4.5-2.5 4.5 2.5-1.5-7.5"/></svg></span><p class="eyebrow">Votre formule</p></div>
         <h2 data-licence-title>Chargement…</h2>
-        <p class="section-desc" data-licence-state></p>
-        <div data-licence-actions></div>
+        <p class="account-card-meta" data-licence-state></p>
+        <dl class="info-list" data-licence-features hidden></dl>
+        <div class="account-card-actions" data-licence-actions></div>
       </article>
 
-      <article class="card account-card account-card-credits">
-        <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 12h5M7 10h5M7 14h3"/></svg></span><p class="eyebrow">Crédits &amp; passations</p></div>
-        <h2 id="credits-remaining">Chargement…</h2>
-        <p class="section-desc" id="credits-total"></p>
-        <div class="credits-meter-head"><strong id="credits-percent">—</strong><span id="credits-meter-label">Crédits disponibles</span></div>
-        <div class="progress large credits-meter" id="credits-progress" aria-label="Crédits disponibles"><span style="width:0"></span></div>
-        <div class="credits-nudge" id="credits-nudge" data-level="good">
-          <span class="credits-nudge-icon" aria-hidden="true">✓</span>
-          <div><strong id="credits-nudge-title">Votre réserve est disponible</strong><p id="credits-nudge-message">Vous pouvez lancer vos campagnes sereinement.</p></div>
+      <article class="card account-card account-card-profile">
+        <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></span><p class="eyebrow">Votre profil</p></div>
+        <div class="account-identity-row">
+          <div class="account-photo account-photo-person" id="profile-photo-preview" aria-label="Photo du contact"><span>?</span></div>
+          <h2 id="account-name">Chargement…</h2>
         </div>
-        <p class="section-desc" id="credits-expiry"></p>
-        <a class="button button-primary" href="packs.html">Commander un pack</a>
+        <dl class="info-list">
+          <div><dt>Fonction</dt><dd id="account-job">—</dd></div>
+          <div><dt>E-mail</dt><dd id="account-email">—</dd></div>
+          <div><dt>Téléphone</dt><dd id="account-phone">—</dd></div>
+        </dl>
+        <div class="account-card-actions account-media-actions"><input id="profile-photo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden><button class="button button-secondary" id="edit-profile" type="button">Modifier mes informations</button><button class="button button-ghost" id="upload-profile-photo" type="button">Changer ma photo</button><button class="button button-ghost" id="remove-profile-photo" type="button" hidden>Supprimer la photo</button></div>
+      </article>
+
+      <article class="card account-card account-card-organization">
+        <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21V7l8-4 8 4v14"/><path d="M8 11h2M14 11h2M8 15h2M14 15h2M10 21v-3h4v3"/></svg></span><p class="eyebrow">Votre organisation</p></div>
+        <dl class="info-list">
+          <div><dt>Utilisateurs actifs</dt><dd id="organization-users-count">—</dd></div>
+          <div><dt>Espace créé</dt><dd id="organization-since">—</dd></div>
+          <div><dt>Logo</dt><dd id="organization-logo-state">—</dd></div>
+        </dl>
+        <p class="account-card-meta" id="organization-logo-help">Le logo est partagé avec tous les utilisateurs de votre organisation.</p>
+        <div class="account-card-actions account-media-actions"><span id="organization-logo-actions" class="account-inline-actions"><input id="organization-logo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden><button class="button button-secondary" id="upload-organization-logo" type="button">Importer le logo</button><button class="button button-ghost" id="remove-organization-logo" type="button" hidden>Supprimer le logo</button></span><a class="button button-ghost" id="organization-manage-access" href="acces-equipes.html" hidden>Gérer les accès →</a></div>
       </article>
 
       <article class="card account-card account-card-security">
-        <div class="account-card-heading"><span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.8 2.9 8.2 7 10 4.1-1.8 7-5.2 7-10V6z"/><path d="m9 12 2 2 4-5"/></svg></span><p class="eyebrow">Sécurité</p></div>
-        <h2>Accès sécurisé</h2>
-        <p class="section-desc">Les campagnes et résultats restent accessibles uniquement aux personnes autorisées de votre organisation. Les résultats détaillés sont disponibles via l'interface externe dédiée.</p>
+        <span class="account-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.8 2.9 8.2 7 10 4.1-1.8 7-5.2 7-10V6z"/><path d="m9 12 2 2 4-5"/></svg></span>
+        <div><strong>Sécurité de votre accès</strong><p class="account-card-meta">Vos campagnes et résultats ne sont visibles que par les personnes autorisées de votre organisation.</p></div>
         <a class="button button-secondary" href="forgot-password.html">Modifier le mot de passe</a>
       </article>
     </section>
@@ -107,7 +101,7 @@
 <dialog id="team-user-dialog" class="admin-dialog access-dialog"><form method="dialog" id="team-user-form"><button type="button" class="admin-dialog-close" id="close-team-user" aria-label="Fermer">×</button><p class="eyebrow">Compte client</p><h2 id="team-user-title">Ajouter un accès</h2><div class="parameter-grid"><div class="field"><label for="team-first">Prénom</label><input id="team-first" required></div><div class="field"><label for="team-last">Nom</label><input id="team-last" required></div><div class="field"><label for="team-job">Fonction</label><input id="team-job" required></div><div class="field"><label for="team-phone">Téléphone</label><input id="team-phone" type="tel"></div></div><div class="field"><label for="team-email">Email professionnel</label><input id="team-email" type="email" required></div><div class="field"><label for="team-level">Niveau d’accès</label><select id="team-level"><option value="owner">Responsable du compte</option><option value="manager">Gestionnaire de campagnes</option><option value="contributor">Contributeur</option><option value="viewer">Lecture seule</option></select></div><fieldset class="access-rights"><legend>Droits personnalisés</legend><div id="team-permissions" class="access-rights-grid"></div></fieldset><div class="top-actions"><button class="button button-ghost" id="cancel-team-user" type="button">Annuler</button><button class="button button-primary" id="save-team-user" type="button">Créer et inviter</button></div></form></dialog>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20261019-client-preview-1"></script>
-<script src="assets/js/app.js?v=20261101-synchro-2"></script>
-<script src="assets/js/account.js?v=20261031-perimetre-1"></script>
+<script src="assets/js/app.js?v=20261101-compte-2"></script>
+<script src="assets/js/account.js?v=20261101-compte-1"></script>
 </body>
 </html>
