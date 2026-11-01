@@ -16893,3 +16893,8 @@ body.admin-home-active .admin-cockpit-kpis { display: none; }
 @media (max-width: 760px) { .admin-home-deadlines { grid-template-columns: minmax(0, 1fr); } .admin-home-manager { flex-basis: auto; } }
 /* Fiche client dépliée : le bloc Abonnement suit les marges des autres blocs */
 .admin-client-expanded-content > .admin-subscription-card { margin: 18px 16px 0; }
+
+.admin-subscription-card .admin-subscription-action{justify-self:start;margin-top:6px;padding:6px 12px;border-radius:999px;border:1px solid #0d4c72;background:#fff;color:#0d4c72;font:inherit;font-size:.82rem;font-weight:700;cursor:pointer}
+.admin-subscription-card.is-launch{background:#eef8f3;border-color:#bfe2cf}
+.admin-home-launch{padding:8px 14px;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer}
+.studio-monthly-close-note{margin:6px 0 0;font-size:.85rem;color:#5b6b76}

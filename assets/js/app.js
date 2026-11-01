@@ -655,7 +655,9 @@
     var labelAttrs = withIcon ? ' aria-label="' + item.label + '" title="' + item.label + '"' : '';
     var actionAttr=item.action?' data-nav-action="'+item.action+'"':'';
     var allowed=!item.permission||IS_ADMIN||Boolean(CURRENT_USER&&CURRENT_USER.permissions&&CURRENT_USER.permissions[item.permission]);
-    var locked=allowed?'':' aria-disabled="true" data-nav-locked title="Accès non autorisé"';
+    var notIncluded=allowed&&item.permission==='view_dei_cockpit'&&!IS_ADMIN&&(studioSubscriptionCached()||{}).cockpitIncluded===false;
+    if(notIncluded)allowed=false;
+    var locked=allowed?'':' aria-disabled="true" data-nav-locked title="'+(notIncluded?'Inclus dans la formule annuelle':'Accès non autorisé')+'"';
     var notificationBadge=item.notificationBadge?'<b class="nav-notification-count" data-nav-notification-count hidden>0</b>':'';
     return '<a href="' + item.href + '" data-nav'+actionAttr+ current + labelAttrs + locked + '>' + iconHtml + (allowed?'':'<b class="nav-lock" aria-hidden="true">🔒</b>') + item.label + notificationBadge + '</a>';
   }
@@ -871,16 +873,32 @@
       document.addEventListener('click',function(event){var locked=event.target.closest('.subscription-disabled');if(!locked)return;event.preventDefault();showSubscriptionRequired();},true);
     }
   }
+  // Formule mensuelle : Cockpit DEI non inclus, campagnes publiées tant que l'abonnement est actif.
+  function applyStudioPlanRules(subscription){
+    if(IS_ADMIN||!subscription)return;
+    var main=document.querySelector('main.main');
+    if(subscription.cockpitIncluded===false&&(CURRENT==='cockpit-dei.html'||CURRENT==='bilan-dei.html')&&main&&!main.querySelector('.studio-plan-upsell')){
+      main.innerHTML='<section class="card permission-denied studio-plan-upsell"><div class="permission-denied-icon">🔒</div><p class="eyebrow">Formule annuelle</p><h1>Le Cockpit de pilotage D&amp;I est inclus dans la formule annuelle</h1><p>Il réunit vos diagnostics, vos actions et vos objectifs diversité &amp; inclusion pour piloter votre politique dans la durée. Votre formule mensuelle donne accès à la création et au suivi de vos campagnes.</p><a class="button button-primary" href="paiement-studio.html?plan=annual">Passer à la formule annuelle</a> <a class="button button-secondary" href="accueil.html">Retour à l’accueil</a></section>';
+    }
+    var close=CURRENT==='parametrage.html'&&document.getElementById('close-date');
+    if(close&&subscription.source==='stripe'&&subscription.plan==='monthly'&&!document.querySelector('.studio-monthly-close-note')){
+      var note=document.createElement('p');note.className='studio-monthly-close-note';
+      note.textContent='Formule mensuelle : votre campagne reste publiée tant que votre abonnement est actif. Si vous le résiliez, elle se terminera à la fin du dernier mois payé.';
+      close.insertAdjacentElement('afterend',note);
+    }
+  }
   async function setupStudioSubscriptionAccess(){
     if(IS_ADMIN)return;
     var cached=studioSubscriptionCached();
     if(cached)disableForExpiredSubscription(cached);
+    applyStudioPlanRules(cached);
     if(!window.StudioAPI||!StudioAPI.token())return;
     try{
       var data=await StudioAPI.request('/api/me');
       if(data&&data.studioSubscription){
         (CLIENT_PREVIEW?sessionStorage:localStorage).setItem(CLIENT_PREVIEW?'studio_preview_subscription':'studio_subscription',JSON.stringify(data.studioSubscription));
         disableForExpiredSubscription(data.studioSubscription);
+        applyStudioPlanRules(data.studioSubscription);
       }
     }catch(e){}
   }

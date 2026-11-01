@@ -483,3 +483,6 @@ body.public-contact footer.public-contact-only .public-wrap{display:flex}
 /* Les ancres de l'accueil restent visibles sous le menu fixe. */
 body.public-site :is(#diagnostics,#fonctionnement,#mesure,#expertise,#ressources,#tarifs){scroll-margin-top:155px}
 @media(max-width:680px){body.public-site :is(#diagnostics,#fonctionnement,#mesure,#expertise,#ressources,#tarifs){scroll-margin-top:190px}}
+
+.saas-features li.saas-feature-off{color:#6a7b88}
+.saas-features li.saas-feature-off:before{content:"–";background:#cfd8de;color:#40525f}
