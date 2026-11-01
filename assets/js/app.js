@@ -850,7 +850,7 @@
       if(main){
         var banner=document.createElement('section');
         banner.className='studio-subscription-banner';
-        banner.innerHTML='<div><strong>Votre abonnement Studio est arrivé à échéance.</strong><p>Vous conservez l’accès à vos campagnes existantes et vos passations non utilisées restent valables jusqu’à la date d’expiration de votre pack. Pour créer ou modifier une campagne, réactivez votre abonnement Studio.</p></div><a class="button button-primary" href="paiement-studio.html">Réactiver mon abonnement</a>';
+        banner.innerHTML='<div><strong>'+(subscription.source==='stripe'?'Votre abonnement Studio est arrivé':'Votre licence Studio est arrivée')+' à échéance.</strong><p>Vous conservez l’accès à vos campagnes existantes et vos passations non utilisées restent valables jusqu’à la date d’expiration de votre pack. Pour créer ou modifier une campagne, '+(subscription.source==='stripe'?'réactivez votre abonnement Studio':'demandez le renouvellement de votre licence')+'.</p></div>'+licenceRenewAction(subscription);
         main.insertBefore(banner,main.firstChild);
       }
     }
@@ -874,6 +874,77 @@
     }
   }
   // Formule mensuelle : Cockpit DEI non inclus, campagnes publiées tant que l'abonnement est actif.
+  // Licence Studio : bandeau de fin (J-30), bouton de renouvellement et carte « Licence Studio » de Mon compte.
+  // Stripe expiré → paiement en ligne ; sinon (sur facture, offerte, résiliation Stripe programmée) → demande à Me&YouToo.
+  var LICENCE_PLAN_LABELS={annual:'Formule annuelle',monthly:'Formule mensuelle',launch:'Licence offerte (lancement)'};
+  function licenceDay(v){var m=String(v||'').match(/^\d{4}-\d{2}-\d{2}/);return m?m[0]:null;}
+  function licenceFr(v){var d=licenceDay(v);return d?d.split('-').reverse().join('/'):'—';}
+  function licenceDaysLeft(end){var t=new Date();var today=Date.UTC(t.getFullYear(),t.getMonth(),t.getDate());var p=end.split('-');return Math.round((Date.UTC(+p[0],+p[1]-1,+p[2])-today)/86400000);}
+  function licenceEnding(sub){
+    if(!sub||sub.accessActive===false)return null;
+    var ends=sub.source==='invoice'||sub.source==='launch_offer'||(sub.source==='stripe'&&sub.cancellationScheduled);
+    var end=ends&&licenceDay(sub.periodEnd);if(!end)return null;
+    return {end:end,days:licenceDaysLeft(end)};
+  }
+  function licenceRenewAction(sub){
+    if(sub&&sub.source==='stripe'&&sub.accessActive===false)return '<a class="button button-primary" href="paiement-studio.html">Réactiver mon abonnement</a>';
+    return '<button class="button button-primary" type="button" data-licence-renew>Demander le renouvellement</button>';
+  }
+  function openLicenceRenewal(){
+    var sub=studioSubscriptionCached()||{};
+    document.getElementById('studio-licence-renew-dialog')?.remove();
+    var dialog=document.createElement('dialog');dialog.id='studio-licence-renew-dialog';dialog.className='admin-dialog campaign-rename-dialog';
+    var annual=sub.plan!=='monthly';
+    dialog.innerHTML='<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Licence Studio</p><h2>Demander le renouvellement</h2>'+
+      '<p class="section-desc">L’équipe Me&amp;YouToo vous recontacte pour renouveler votre licence'+(licenceDay(sub.periodEnd)?' (fin actuelle : '+licenceFr(sub.periodEnd)+')':'')+'.</p>'+
+      '<label class="field"><span>Formule souhaitée</span><select data-renew-formula><option value="annuelle"'+(annual?' selected':'')+'>Formule annuelle — Cockpit D&amp;I inclus</option><option value="mensuelle"'+(annual?'':' selected')+'>Formule mensuelle</option><option value="à définir">Je souhaite en parler</option></select></label>'+
+      '<label class="field"><span>Message (facultatif)</span><textarea data-renew-message rows="3" maxlength="1500" placeholder="Bon de commande, coordonnées de facturation, questions…"></textarea></label>'+
+      '<p class="form-error" data-renew-error hidden></p><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" type="button" data-renew-send>Envoyer la demande</button></div></form>';
+    document.body.append(dialog);
+    var err=dialog.querySelector('[data-renew-error]');
+    dialog.querySelector('[data-renew-send]').onclick=async function(){
+      var btn=this;btn.disabled=true;err.hidden=true;
+      var formula=dialog.querySelector('[data-renew-formula]').value,extra=dialog.querySelector('[data-renew-message]').value.trim();
+      try{
+        await StudioAPI.request('/api/offer-requests',{method:'POST',body:JSON.stringify({offerSlug:'renouvellement-licence-studio',source:'licence_renewal',
+          message:'Formule souhaitée : '+formula+'. Fin de licence actuelle : '+licenceFr(sub.periodEnd)+'.'+(extra?'\n'+extra:''),
+          context:{formula:formula,licenceEnd:licenceDay(sub.periodEnd),licenceSource:sub.source||null,licencePlan:sub.plan||null}})});
+        dialog.close();dialog.remove();
+        StudioModal.alert({eyebrow:'Licence Studio',title:'Demande envoyée',message:'Merci ! L’équipe Me&YouToo a bien reçu votre demande de renouvellement et revient vers vous rapidement.',confirmLabel:'Fermer'});
+      }catch(e){err.textContent=e.message;err.hidden=false;btn.disabled=false;}
+    };
+    dialog.addEventListener('close',function(){dialog.remove();});
+    dialog.showModal();
+  }
+  function applyLicenceNotices(sub){
+    if(IS_ADMIN||!sub)return;
+    var main=document.querySelector('main.main')||document.querySelector('main');
+    var ending=licenceEnding(sub);
+    var dismissKey=ending?'studio_licence_banner_'+ending.end+'_'+new Date().toISOString().slice(0,10):'';
+    var dismissed=false;try{dismissed=Boolean(dismissKey&&localStorage.getItem(dismissKey));}catch(e){}
+    if(main&&ending&&ending.days>=0&&ending.days<=30&&!dismissed&&!document.querySelector('.studio-licence-banner')){
+      var stripe=sub.source==='stripe';
+      var banner=document.createElement('section');banner.className='studio-subscription-banner studio-licence-banner';
+      banner.innerHTML='<div><strong>'+(stripe?'Votre abonnement Studio':'Votre licence Studio')+' se termine '+(ending.days===0?'aujourd’hui':'le '+licenceFr(ending.end))+'.</strong><p>'+
+        (stripe?'Sa résiliation est programmée. ':'')+'Pour continuer à créer et modifier vos campagnes, demandez son renouvellement. Vos campagnes publiées et vos passations restent disponibles selon les conditions de votre pack.</p></div>'+
+        '<div class="studio-licence-banner-actions">'+licenceRenewAction(sub)+'<button class="button button-ghost" type="button" data-licence-dismiss>Plus tard</button></div>';
+      main.insertBefore(banner,main.firstChild);
+      banner.querySelector('[data-licence-dismiss]').onclick=function(){try{localStorage.setItem(dismissKey,'1');}catch(e){}banner.remove();};
+    }
+    var card=document.getElementById('studio-licence-card');
+    if(card){
+      var label=sub.source==='legacy_or_included'?'Accès inclus':(LICENCE_PLAN_LABELS[sub.plan]||'Licence Studio');
+      var how=sub.source==='stripe'?'Paiement en ligne':sub.source==='invoice'?'Sur facture':sub.source==='launch_offer'?'Offerte par Me&amp;YouToo':'Accompagnement Me&amp;YouToo';
+      var end=licenceDay(sub.periodEnd);
+      var state=sub.accessActive===false?'Terminée le '+licenceFr(end):sub.cancellationScheduled?'Résiliation programmée au '+licenceFr(end):end?'Active jusqu’au '+licenceFr(end):'Active, sans date de fin';
+      card.querySelector('[data-licence-title]').textContent=label;
+      card.querySelector('[data-licence-state]').innerHTML=how+' · '+state+(sub.plan==='monthly'?'<br>Le Cockpit de pilotage D&amp;I est inclus dans la formule annuelle.':'');
+      var actions=card.querySelector('[data-licence-actions]');
+      var stripeRenewing=sub.source==='stripe'&&sub.accessActive!==false&&!sub.cancellationScheduled;
+      actions.innerHTML=stripeRenewing?'<p class="section-desc">Votre abonnement se renouvelle automatiquement.</p>':sub.source==='legacy_or_included'?'':licenceRenewAction(sub);
+    }
+  }
+  document.addEventListener('click',function(event){var b=event.target.closest('[data-licence-renew]');if(!b)return;event.preventDefault();openLicenceRenewal();});
   function applyStudioPlanRules(subscription){
     if(IS_ADMIN||!subscription)return;
     var main=document.querySelector('main.main');
@@ -898,6 +969,7 @@
     var cached=studioSubscriptionCached();
     if(cached)disableForExpiredSubscription(cached);
     applyStudioPlanRules(cached);
+    applyLicenceNotices(cached);
     if(!window.StudioAPI||!StudioAPI.token())return;
     try{
       var data=await StudioAPI.request('/api/me');
@@ -905,6 +977,7 @@
         (CLIENT_PREVIEW?sessionStorage:localStorage).setItem(CLIENT_PREVIEW?'studio_preview_subscription':'studio_subscription',JSON.stringify(data.studioSubscription));
         disableForExpiredSubscription(data.studioSubscription);
         applyStudioPlanRules(data.studioSubscription);
+        applyLicenceNotices(data.studioSubscription);
       }
     }catch(e){}
   }
