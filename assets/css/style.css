@@ -7564,6 +7564,38 @@ body.sidebar-collapsed .sidebar-notification-root {
   margin-right: 6px;
   font-size: 0.78rem;
 }
+.nav-group {
+  margin: 10px 13px 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #8a96ad;
+}
+.nav-separator {
+  border: 0;
+  border-top: 1px solid #e6eaf2;
+  margin: 8px 6px;
+}
+.nav a.nav-featured:not([aria-current="page"]) {
+  background: var(--green-blue-soft);
+}
+.nav a.nav-featured:not([aria-current="page"]) span {
+  background: #fff;
+}
+.nav-plan-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fdf1d6;
+  color: #7a5200;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+body.sidebar-collapsed .nav-group,
+body.sidebar-collapsed .nav-plan-badge {
+  display: none;
+}
 .button-locked {
   opacity: 0.58;
   cursor: not-allowed;
