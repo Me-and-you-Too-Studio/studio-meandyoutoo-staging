@@ -600,13 +600,16 @@
 
   var NAV_MAIN = [
     { href: 'accueil.html', label: 'Accueil', icon: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/>' },
-    { href: 'mes-campagnes.html', label: 'Mes campagnes', icon: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/>' },
+    { group: 'Piloter' },
+    { href: 'cockpit-dei.html?audience=client', label: 'Cockpit DEI', permission:'view_dei_cockpit', featured: true, icon: '<path d="M4 19v-6M10 19V9M16 19V5M22 19H2"/><path d="m4 9 5-3 5 2 6-5"/>' },
     { href: 'calendrier.html?audience=client', label: 'Calendrier', permission:'view_calendar', icon: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>' },
+    { href: 'mes-campagnes.html', label: 'Mes campagnes', icon: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/>' },
+    { group: 'Lancer' },
     { href: 'bibliotheque.html', label: 'Catalogue', icon: '<path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M8 8v8M16 8v8"/>' },
-    { href: 'notifications.html?audience=client', label: 'Notifications', notificationBadge: true, icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>' },
-    { href: 'cockpit-dei.html?audience=client', label: 'Cockpit DEI', permission:'view_dei_cockpit', icon: '<path d="M4 19v-6M10 19V9M16 19V5M22 19H2"/><path d="m4 9 5-3 5 2 6-5"/>' },
-    { href: 'ressources.html', label: 'Ressources', icon: '<path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/>' },
-    { href: 'offres.html', label: 'Nos offres', icon: '<path d="M20 12v8H4v-8M2 7h20v5H2zM12 20V7"/><path d="M12 7H8a2 2 0 1 1 0-4c3 0 4 4 4 4zM12 7h4a2 2 0 1 0 0-4c-3 0-4 4-4 4z"/>' }
+    { href: 'packs.html', label: 'Commander des passations', permission:'order_passations', icon: '<path d="M3 7h18v12H3z"/><path d="M16 12h5"/><path d="M6 7V5h12v2"/>' },
+    { group: 'S’informer' },
+    { href: 'offres.html', label: 'Nos solutions', icon: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>' },
+    { href: 'ressources.html', label: 'Ressources', icon: '<path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/>' }
   ];
 
   var NAV_ADMIN = [
@@ -621,7 +624,7 @@
   ];
 
   var NAV_SECONDARY = [
-    { href: 'packs.html', label: 'Commander des passations', permission:'order_passations', icon: '<path d="M3 7h18v12H3z"/><path d="M16 12h5"/><path d="M6 7V5h12v2"/>' },
+    { separator: true },
     { href: 'acces-equipes.html', label: 'Accès et équipes', permission:'manage_users', icon: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M15 14.5c3 0 6 2 6 5.5"/>' },
     { href: 'account.html', label: 'Mon compte', icon: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>' }
   ];
@@ -629,15 +632,19 @@
   var NAV_BOTTOM = [
     { href: 'accueil.html', label: 'Accueil' },
     { href: 'mes-campagnes.html', label: 'Campagnes' },
-    { href: 'bibliotheque.html', label: 'Catalogue' },
-    { href: 'packs.html', label: 'Passations' }
+    { href: 'cockpit-dei.html?audience=client', label: 'Cockpit', permission:'view_dei_cockpit' },
+    { href: 'bibliotheque.html', label: 'Catalogue' }
   ];
 
   function svg(icon){
     return '<svg aria-hidden="true" viewBox="0 0 24 24">' + icon + '</svg>';
   }
 
+  function navAllowed(item){return !item.permission||IS_ADMIN||Boolean(CURRENT_USER&&CURRENT_USER.permissions&&CURRENT_USER.permissions[item.permission]);}
+
   function navLink(item, withIcon){
+    if(item.group)return '<p class="nav-group">'+item.group+'</p>';
+    if(item.separator)return '<hr class="nav-separator">';
     var href=item.href||'',path=href.split('?')[0].split('#')[0],isCurrent=false;
     if(path===CURRENT&&!item.action){
       var itemQuery=href.indexOf('?')>=0?new URLSearchParams(href.split('?')[1].split('#')[0]):null;
@@ -654,12 +661,13 @@
     var iconHtml = withIcon ? '<span>' + svg(item.icon) + '</span>' : '';
     var labelAttrs = withIcon ? ' aria-label="' + item.label + '" title="' + item.label + '"' : '';
     var actionAttr=item.action?' data-nav-action="'+item.action+'"':'';
-    var allowed=!item.permission||IS_ADMIN||Boolean(CURRENT_USER&&CURRENT_USER.permissions&&CURRENT_USER.permissions[item.permission]);
+    var allowed=navAllowed(item);
     var notIncluded=allowed&&item.permission==='view_dei_cockpit'&&!IS_ADMIN&&(studioSubscriptionCached()||{}).cockpitIncluded===false;
-    if(notIncluded)allowed=false;
-    var locked=allowed?'':' aria-disabled="true" data-nav-locked title="'+(notIncluded?'Inclus dans la formule annuelle':'Accès non autorisé')+'"';
+    var locked=allowed?'':' aria-disabled="true" data-nav-locked title="Accès non autorisé"';
+    var planBadge=notIncluded&&withIcon?'<b class="nav-plan-badge" title="Inclus dans la formule annuelle">Annuel</b>':'';
+    var featured=item.featured?' class="nav-featured"':'';
     var notificationBadge=item.notificationBadge?'<b class="nav-notification-count" data-nav-notification-count hidden>0</b>':'';
-    return '<a href="' + item.href + '" data-nav'+actionAttr+ current + labelAttrs + locked + '>' + iconHtml + (allowed?'':'<b class="nav-lock" aria-hidden="true">🔒</b>') + item.label + notificationBadge + '</a>';
+    return '<a href="' + item.href + '" data-nav'+featured+actionAttr+ current + labelAttrs + locked + '>' + iconHtml + (allowed?'':'<b class="nav-lock" aria-hidden="true">🔒</b>') + item.label + planBadge + notificationBadge + '</a>';
   }
 
   function enforcePageAccess(){
@@ -717,7 +725,7 @@
   function renderBottomNav(){
     var root = document.getElementById('bottom-nav-root');
     if (!root) return;
-    root.innerHTML = NAV_BOTTOM.map(function(i){ return navLink(i, false); }).join('');
+    root.innerHTML = NAV_BOTTOM.filter(navAllowed).map(function(i){ return navLink(i, false); }).join('');
   }
 
   function setupMobileToggle(){
@@ -964,6 +972,13 @@
       close.insertAdjacentElement('afterend',note);
     }
   }
+  function syncCockpitPlanBadge(subscription){
+    document.querySelectorAll('.nav a[href^="cockpit-dei.html"]:not([data-nav-locked])').forEach(function(link){
+      var badge=link.querySelector('.nav-plan-badge');
+      if(subscription.cockpitIncluded===false&&!badge)link.insertAdjacentHTML('beforeend','<b class="nav-plan-badge" title="Inclus dans la formule annuelle">Annuel</b>');
+      else if(subscription.cockpitIncluded!==false&&badge)badge.remove();
+    });
+  }
   async function setupStudioSubscriptionAccess(){
     if(IS_ADMIN)return;
     var cached=studioSubscriptionCached();
@@ -978,6 +993,7 @@
         disableForExpiredSubscription(data.studioSubscription);
         applyStudioPlanRules(data.studioSubscription);
         applyLicenceNotices(data.studioSubscription);
+        syncCockpitPlanBadge(data.studioSubscription);
       }
     }catch(e){}
   }
