@@ -881,9 +881,15 @@
       main.innerHTML='<section class="card permission-denied studio-plan-upsell"><div class="permission-denied-icon">🔒</div><p class="eyebrow">Formule annuelle</p><h1>Le Cockpit de pilotage D&amp;I est inclus dans la formule annuelle</h1><p>Il réunit vos diagnostics, vos actions et vos objectifs diversité &amp; inclusion pour piloter votre politique dans la durée. Votre formule mensuelle donne accès à la création et au suivi de vos campagnes.</p><a class="button button-primary" href="paiement-studio.html?plan=annual">Passer à la formule annuelle</a> <a class="button button-secondary" href="accueil.html">Retour à l’accueil</a></section>';
     }
     var close=CURRENT==='parametrage.html'&&document.getElementById('close-date');
-    if(close&&subscription.source==='stripe'&&subscription.plan==='monthly'&&!document.querySelector('.studio-monthly-close-note')){
+    if(close&&subscription.plan==='monthly'&&!document.querySelector('.studio-monthly-close-note')){
       var note=document.createElement('p');note.className='studio-monthly-close-note';
-      note.textContent='Formule mensuelle : votre campagne reste publiée tant que votre abonnement est actif. Si vous le résiliez, elle se terminera à la fin du dernier mois payé.';
+      var end=String(subscription.periodEnd||'').slice(0,10);
+      if(subscription.source==='invoice'&&end){
+        close.max=end;
+        note.textContent='Formule mensuelle : votre campagne doit se terminer au plus tard le '+end.split('-').reverse().join('/')+', fin de votre licence Studio.';
+      }else{
+        note.textContent='Formule mensuelle : votre campagne reste publiée tant que votre abonnement est actif. Si vous le résiliez, elle se terminera à la fin du dernier mois payé.';
+      }
       close.insertAdjacentElement('afterend',note);
     }
   }

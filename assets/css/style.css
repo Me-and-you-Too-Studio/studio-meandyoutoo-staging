@@ -16898,3 +16898,7 @@ body.admin-home-active .admin-cockpit-kpis { display: none; }
 .admin-subscription-card.is-launch{background:#eef8f3;border-color:#bfe2cf}
 .admin-home-launch{padding:8px 14px;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer}
 .studio-monthly-close-note{margin:6px 0 0;font-size:.85rem;color:#5b6b76}
+
+.admin-licence-dates{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.admin-licence-dates .field{margin:0 0 12px}
+.admin-licence-help{margin:4px 0 16px;font-size:.88rem;color:#5b6b76}
