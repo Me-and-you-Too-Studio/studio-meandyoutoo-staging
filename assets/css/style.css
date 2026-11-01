@@ -16942,3 +16942,88 @@ body.admin-home-active .admin-cockpit-kpis { display: none; }
 .hs-sync-row{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid #dde6ec;border-radius:12px;background:#fff}
 .hs-sync-row ul{margin:6px 0 0;padding-left:18px;font-size:.9rem}
 .hs-sync-message{padding:10px 12px;border-radius:10px;background:#eef8f3;color:#0c5b55;font-weight:700}
+
+/* Mon compte (v2) : en-tête entreprise, cartes homogènes, chiffres sans redite. */
+.account-v2 .account-hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 26px;
+  margin-bottom: 20px;
+}
+.account-v2 .account-hero-copy { flex: 1; min-width: 0; }
+.account-v2 .account-hero .eyebrow { margin: 0 0 2px; }
+.account-v2 .account-hero .page-title { margin: 0; font-size: clamp(1.8rem, 3vw, 2.4rem); }
+.account-v2 .account-hero-meta { margin: 4px 0 0; color: var(--muted); font-size: 0.92rem; }
+.account-plan-pill {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--green-blue-soft);
+  color: var(--green-blue-dark);
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+.account-v2 .account-photo-logo { width: 96px; height: 72px; }
+.account-page.account-v2 .account-card {
+  --account-accent: var(--green-blue-dark);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 26px;
+  border: 1px solid #e3e9f1;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(13, 76, 114, 0.05);
+}
+.account-page.account-v2 .account-card::before { display: none; }
+.account-v2 .account-card-heading { gap: 10px; margin-bottom: 12px; }
+.account-v2 .account-card-icon {
+  flex-basis: 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--green-blue-soft);
+  color: var(--green-blue-dark);
+  box-shadow: none;
+}
+.account-v2 .account-card-icon svg { width: 19px; height: 19px; }
+.account-page.account-v2 .account-card h2 { margin: 0 0 6px; font-size: 1.35rem; }
+.account-v2 .account-credits-figure #credits-remaining { font-size: 2rem; }
+.account-v2 .account-credits-figure small { color: var(--muted); font-size: 0.95rem; font-weight: 600; }
+.account-v2 .account-card-credits .progress { margin: 10px 0 8px; height: 10px; background: #edf1f6; box-shadow: none; }
+.account-v2 .account-card-credits .progress span { background: var(--green-blue); }
+.account-v2 .credits-meter span::after { display: none; }
+.account-v2 .account-card-meta { margin: 0 0 10px; color: var(--muted); font-size: 0.88rem; line-height: 1.45; }
+.account-v2 .account-card .info-list { margin: 4px 0 12px; }
+.account-v2 .account-card .info-list > div { padding: 9px 0; }
+.account-v2 .info-list dd.is-missing { color: #8a96ad; font-style: italic; }
+.account-v2 .account-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px; }
+.account-page.account-v2 .account-card .account-card-actions .button { margin-top: 0; }
+.account-v2 .account-inline-actions { display: contents; }
+.account-v2 .account-inline-actions[hidden],
+.account-v2 .credits-nudge[hidden] { display: none; }
+.account-v2 .account-identity-row { margin-bottom: 6px; }
+.account-v2 .account-photo-person { width: 56px; height: 56px; }
+.account-page.account-v2 .account-card-security {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 22px;
+}
+.account-v2 .account-card-security > div { flex: 1; }
+.account-v2 .account-card-security strong { color: var(--royal-blue); }
+.account-v2 .account-card-security .account-card-meta { margin: 2px 0 0; }
+@media (max-width: 760px) {
+  .account-v2 .account-hero { flex-wrap: wrap; padding: 18px; }
+  .account-page.account-v2 .account-card-security { flex-wrap: wrap; }
+}
+.account-v2 .account-history-icon {
+  flex-basis: 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--green-blue-soft);
+  color: var(--green-blue-dark);
+  box-shadow: none;
+}
+.account-v2 .account-history-icon svg { width: 19px; height: 19px; }

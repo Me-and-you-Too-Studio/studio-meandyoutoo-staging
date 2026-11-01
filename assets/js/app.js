@@ -946,7 +946,10 @@
       var end=licenceDay(sub.periodEnd);
       var state=sub.accessActive===false?'Terminée le '+licenceFr(end):sub.cancellationScheduled?'Résiliation programmée au '+licenceFr(end):end?'Active jusqu’au '+licenceFr(end):'Active, sans date de fin';
       card.querySelector('[data-licence-title]').textContent=label;
-      card.querySelector('[data-licence-state]').innerHTML=how+' · '+state+(sub.plan==='monthly'?'<br>Le Cockpit de pilotage D&amp;I est inclus dans la formule annuelle.':'');
+      var features=card.querySelector('[data-licence-features]');
+      card.querySelector('[data-licence-state]').innerHTML=how+' · '+state+(sub.plan==='monthly'&&!features?'<br>Le Cockpit de pilotage D&amp;I est inclus dans la formule annuelle.':'');
+      if(features){features.hidden=false;features.innerHTML='<div><dt>Cockpit DEI</dt><dd>'+(sub.cockpitIncluded===false?'<a href="cockpit-dei.html?audience=client">Formule annuelle →</a>':'Inclus')+'</dd></div><div><dt>Création de campagnes</dt><dd>'+(sub.accessActive===false?'Suspendue':'Incluse')+'</dd></div>';}
+      var pill=document.querySelector('[data-licence-pill]');if(pill){pill.hidden=false;pill.textContent=label;}
       var actions=card.querySelector('[data-licence-actions]');
       var stripeRenewing=sub.source==='stripe'&&sub.accessActive!==false&&!sub.cancellationScheduled;
       actions.innerHTML=stripeRenewing?'<p class="section-desc">Votre abonnement se renouvelle automatiquement.</p>':sub.source==='legacy_or_included'?'':licenceRenewAction(sub);
