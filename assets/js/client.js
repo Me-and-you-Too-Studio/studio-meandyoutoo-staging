@@ -1086,6 +1086,8 @@
     const hasProjects = orgProjects(organization).length > 0;
     const deleteBtn = $("#delete-client-cockpit");
     const archiveBtn = $("#archive-client-cockpit");
+    // La fusion se fait depuis l’administration : la fenêtre s’ouvre directement sur ce client.
+    $("#merge-client-cockpit").href = "admin.html?merge=" + encodeURIComponent(organization.id);
     archiveBtn.textContent = organization.active === false ? "Réactiver le cockpit" : "Archiver le cockpit";
     archiveBtn.dataset.nextActive = organization.active === false ? "true" : "false";
     $("#client-delete-note").textContent = hasProjects
