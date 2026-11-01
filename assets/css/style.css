@@ -16942,3 +16942,9 @@ body.admin-home-active .admin-cockpit-kpis { display: none; }
 .hs-sync-row{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid #dde6ec;border-radius:12px;background:#fff}
 .hs-sync-row ul{margin:6px 0 0;padding-left:18px;font-size:.9rem}
 .hs-sync-message{padding:10px 12px;border-radius:10px;background:#eef8f3;color:#0c5b55;font-weight:700}
+
+.admin-nightly{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin:14px 0 0;padding:10px 14px;border-radius:12px;font-size:.9rem}
+.admin-nightly.is-ok{background:#eef8f3;color:#0c5b55}
+.admin-nightly.is-alert{background:#fde4dc;color:#8a2c12;font-weight:700}
+.admin-nightly small{font-weight:400;opacity:.85}
+.admin-nightly-more{margin-left:auto;border:0;background:transparent;color:inherit;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer}
