@@ -16837,3 +16837,39 @@ h1 .hubspot-link { font-size: .9rem; }
 .admin-bulk-role{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:0 0 12px;padding:10px 14px;border-radius:12px;background:#e6f4f5;color:#0b5b63;font-size:.9rem}
 .admin-bulk-role label{display:inline-flex;align-items:center;gap:8px;font-weight:600}
 .admin-bulk-role select{font:inherit;padding:6px 10px;border:1px solid #ccd6e4;border-radius:10px;background:#fff;color:#273a64}
+/* Accueil admin (onglet Cockpit clients) */
+body.admin-home-active .admin-cockpit-kpis { display: none; }
+.admin-home { display: flex; flex-direction: column; gap: 18px; }
+.admin-home-head { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; justify-content: space-between; }
+.admin-home-head h2 { margin: 0; color: #0d4c72; }
+.admin-home-head p { margin: 4px 0 0; color: #60758a; }
+.admin-home-scope { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 999px; background: #eaf3f8; }
+.admin-home-scope button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: #36566e; font: inherit; font-weight: 800; cursor: pointer; }
+.admin-home-scope button.is-active { background: #0d4c72; color: #fff; }
+.admin-home-scope button:disabled { opacity: .5; cursor: not-allowed; }
+.admin-home-card { padding: 18px 20px; border: 1px solid #e2ebf2; border-radius: 20px; background: #fbfdfe; }
+.admin-home-card h3 { margin: 0 0 8px; color: #0d4c72; }
+.admin-home-card h3 span { color: #60758a; }
+.admin-home-card-head { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; justify-content: space-between; }
+.admin-home-card-head p { margin: 0 0 8px; color: #60758a; font-size: .9rem; }
+.admin-home-todos, .admin-home-dates { margin: 0; padding: 0; list-style: none; }
+.admin-home-todos li { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 12px 2px; border-top: 1px solid #edf2f6; }
+.admin-home-todo-text { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.admin-home-todo-text span, .admin-home-dates span { color: #4f667a; font-size: .92rem; }
+.admin-home-manager { flex: 0 0 150px; color: #60758a; font-size: .85rem; }
+.admin-home-tag { flex: 0 0 auto; padding: 5px 10px; border-radius: 999px; font-size: .78rem; font-weight: 800; }
+.admin-home-tag.is-urgent { background: #fde4dc; color: #8a2c12; }
+.admin-home-tag.is-validate { background: #e2eefc; color: #1d4f8f; }
+.admin-home-tag.is-credits { background: #fff1d6; color: #7a4a00; }
+.admin-home-tag.is-follow { background: #e3f4f1; color: #0c5b55; }
+.admin-home-more { margin-top: 8px; padding: 8px 0; border: 0; background: transparent; color: #0d4c72; font: inherit; font-weight: 800; text-decoration: underline; cursor: pointer; }
+.admin-home-deadlines { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.admin-home-dates li { display: flex; gap: 14px; align-items: center; padding: 10px 0; border-top: 1px solid #edf2f6; }
+.admin-home-dates li > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.admin-home-when { flex: 0 0 90px; color: #0b5d7a; font-size: .85rem; font-weight: 800; }
+.admin-home-empty { color: #60758a; }
+.admin-home-dates li.admin-home-empty { display: block; }
+.admin-home-waiting { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 12px 18px; border-radius: 16px; background: #eef2f5; color: #3f5668; }
+.admin-home-portfolio summary { padding: 6px 2px; color: #0d4c72; font-weight: 800; cursor: pointer; }
+.admin-home-portfolio .admin-overview-grid { margin-top: 10px; }
+@media (max-width: 760px) { .admin-home-deadlines { grid-template-columns: minmax(0, 1fr); } .admin-home-manager { flex-basis: auto; } }
