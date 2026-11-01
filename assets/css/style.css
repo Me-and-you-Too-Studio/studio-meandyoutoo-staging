@@ -16937,3 +16937,8 @@ body.admin-home-active .admin-cockpit-kpis { display: none; }
 
 .studio-licence-banner-actions{display:flex;flex-wrap:wrap;gap:10px}
 .studio-licence-banner{border-color:#9cc8dc;background:#eef7fb}
+
+.hs-sync-list{display:grid;gap:8px;margin:8px 0 16px}
+.hs-sync-row{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid #dde6ec;border-radius:12px;background:#fff}
+.hs-sync-row ul{margin:6px 0 0;padding-left:18px;font-size:.9rem}
+.hs-sync-message{padding:10px 12px;border-radius:10px;background:#eef8f3;color:#0c5b55;font-weight:700}

@@ -898,11 +898,11 @@
     if(sub&&sub.source==='stripe'&&sub.accessActive===false)return '<a class="button button-primary" href="paiement-studio.html">Réactiver mon abonnement</a>';
     return '<button class="button button-primary" type="button" data-licence-renew>Demander le renouvellement</button>';
   }
-  function openLicenceRenewal(){
+  function openLicenceRenewal(preferred){
     var sub=studioSubscriptionCached()||{};
     document.getElementById('studio-licence-renew-dialog')?.remove();
     var dialog=document.createElement('dialog');dialog.id='studio-licence-renew-dialog';dialog.className='admin-dialog campaign-rename-dialog';
-    var annual=sub.plan!=='monthly';
+    var annual=preferred?preferred==='annuelle':sub.plan!=='monthly';
     dialog.innerHTML='<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Licence Studio</p><h2>Demander le renouvellement</h2>'+
       '<p class="section-desc">L’équipe Me&amp;YouToo vous recontacte pour renouveler votre licence'+(licenceDay(sub.periodEnd)?' (fin actuelle : '+licenceFr(sub.periodEnd)+')':'')+'.</p>'+
       '<label class="field"><span>Formule souhaitée</span><select data-renew-formula><option value="annuelle"'+(annual?' selected':'')+'>Formule annuelle — Cockpit D&amp;I inclus</option><option value="mensuelle"'+(annual?'':' selected')+'>Formule mensuelle</option><option value="à définir">Je souhaite en parler</option></select></label>'+
@@ -952,12 +952,12 @@
       actions.innerHTML=stripeRenewing?'<p class="section-desc">Votre abonnement se renouvelle automatiquement.</p>':sub.source==='legacy_or_included'?'':licenceRenewAction(sub);
     }
   }
-  document.addEventListener('click',function(event){var b=event.target.closest('[data-licence-renew]');if(!b)return;event.preventDefault();openLicenceRenewal();});
+  document.addEventListener('click',function(event){var b=event.target.closest('[data-licence-renew]');if(!b)return;event.preventDefault();openLicenceRenewal(b.dataset.licenceRenew);});
   function applyStudioPlanRules(subscription){
     if(IS_ADMIN||!subscription)return;
     var main=document.querySelector('main.main');
     if(subscription.cockpitIncluded===false&&(CURRENT==='cockpit-dei.html'||CURRENT==='bilan-dei.html')&&main&&!main.querySelector('.studio-plan-upsell')){
-      main.innerHTML='<section class="card permission-denied studio-plan-upsell"><div class="permission-denied-icon">🔒</div><p class="eyebrow">Formule annuelle</p><h1>Le Cockpit de pilotage D&amp;I est inclus dans la formule annuelle</h1><p>Il réunit vos diagnostics, vos actions et vos objectifs diversité &amp; inclusion pour piloter votre politique dans la durée. Votre formule mensuelle donne accès à la création et au suivi de vos campagnes.</p><a class="button button-primary" href="paiement-studio.html?plan=annual">Passer à la formule annuelle</a> <a class="button button-secondary" href="accueil.html">Retour à l’accueil</a></section>';
+      main.innerHTML='<section class="card permission-denied studio-plan-upsell"><div class="permission-denied-icon">🔒</div><p class="eyebrow">Formule annuelle</p><h1>Le Cockpit de pilotage D&amp;I est inclus dans la formule annuelle</h1><p>Il réunit vos diagnostics, vos actions et vos objectifs diversité &amp; inclusion pour piloter votre politique dans la durée. Votre formule mensuelle donne accès à la création et au suivi de vos campagnes.</p>'+(subscription.source==='stripe'?'<a class="button button-primary" href="paiement-studio.html?plan=annual">Passer à la formule annuelle</a>':'<button class="button button-primary" type="button" data-licence-renew="annuelle">Demander la formule annuelle</button>')+' <a class="button button-secondary" href="accueil.html">Retour à l’accueil</a></section>';
     }
     var close=CURRENT==='parametrage.html'&&document.getElementById('close-date');
     if(close&&subscription.plan==='monthly'&&!document.querySelector('.studio-monthly-close-note')){
