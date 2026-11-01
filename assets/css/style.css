@@ -11275,7 +11275,7 @@ body.rp-sticky-preview-enabled .creation-sticky-actions #next-link{grid-column:4
 }
 .admin-linked-users > div {
   display: grid;
-  grid-template-columns: minmax(110px, .8fr) minmax(160px, 1.5fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px;
   align-items: center;
   padding: 8px 10px;
@@ -11285,6 +11285,24 @@ body.rp-sticky-preview-enabled .creation-sticky-actions #next-link{grid-column:4
 }
 .admin-linked-users span {
   font-weight: 700;
+  color: #173f64;
+}
+.admin-linked-users p {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+}
+.admin-linked-users select {
+  min-height: 36px;
+  max-width: 190px;
+  padding: 4px 8px;
+  border: 1px solid #cfdbe4;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: .85rem;
   color: #173f64;
 }
 .admin-linked-users small {
@@ -16873,3 +16891,5 @@ body.admin-home-active .admin-cockpit-kpis { display: none; }
 .admin-home-portfolio summary { padding: 6px 2px; color: #0d4c72; font-weight: 800; cursor: pointer; }
 .admin-home-portfolio .admin-overview-grid { margin-top: 10px; }
 @media (max-width: 760px) { .admin-home-deadlines { grid-template-columns: minmax(0, 1fr); } .admin-home-manager { flex-basis: auto; } }
+/* Fiche client dépliée : le bloc Abonnement suit les marges des autres blocs */
+.admin-client-expanded-content > .admin-subscription-card { margin: 18px 16px 0; }
