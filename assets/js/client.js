@@ -2388,12 +2388,14 @@
       placeholder: "SUPPRIMER",
       confirmLabel: "Supprimer définitivement",
     });
-    if (typed !== "SUPPRIMER") return;
+    if (typed === null) return;
+    if (String(typed).trim().toUpperCase() !== "SUPPRIMER")
+      return StudioModal.alert({ type: "warning", title: "Cockpit non supprimé", message: "Pour confirmer, tapez le mot SUPPRIMER." });
     try {
       await StudioAPI.request("/api/admin/organizations/" + organization.id, { method: "DELETE" });
       window.location.href = "admin.html";
     } catch (e) {
-      showError(e.message);
+      StudioModal.alert({ type: "error", title: "Suppression impossible", message: e.message });
     }
   }
 
