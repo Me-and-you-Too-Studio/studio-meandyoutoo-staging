@@ -116,18 +116,23 @@
     order.forEach(function(k){var its=groups[k],kd=kind(k),done=its.filter(function(a){return a.status==='done';}).length;
       rows.push(line('<span aria-hidden="true">'+esc(kd.icon)+'</span> '+esc(kd.label),its.length+' action'+(its.length>1?'s':'')+(done?' · '+done+' réalisée'+(done>1?'s':''):''),its.map(function(a){return mark(a,a.title);}).join(''),''));});
     var months=(ind.months||[]),nowY=now.getFullYear(),nowM=now.getMonth();
+    // Mois passé : on ne peut plus être accompagné, seulement saisir une action oubliée. Mois à venir : être accompagné ou planifier.
+    var pastYear=y<nowY;
     var gaps=MONTHS.map(function(name,m){
       if(months[m])return '<span class="dr-tl-cell"></span>';
-      var past=y<nowY||(y===nowY&&m<nowM),txt=past?'Mois vide':'Rien de prévu';
-      var btn=isClient?'<button type="button" class="dr-tl-gap'+(past?' is-past':'')+'" data-month="'+m+'" title="'+txt+' en '+MONTHS_LONG[m]+' : être accompagné"><span>'+txt+'</span><b>Être accompagné</b></button>'
-        :canEdit?'<button type="button" class="dr-tl-gap'+(past?' is-past':'')+'" data-add-month="'+m+'" title="'+txt+' en '+MONTHS_LONG[m]+' : ajouter une action"><span>'+txt+'</span><b>＋ Ajouter</b></button>':'<span class="dr-tl-cell'+(past?' is-past':'')+'">—</span>';
-      return btn;
+      var past=pastYear||(y===nowY&&m<nowM);
+      if(past)return canEdit?'<button type="button" class="dr-tl-gap is-past" data-add-month="'+m+'" title="Aucune action en '+MONTHS_LONG[m]+' '+y+' : saisir une action oubliée"><span>Aucune action</span><b>＋ Saisir</b></button>'
+        :'<span class="dr-tl-cell is-past">Aucune action</span>';
+      if(isClient)return '<button type="button" class="dr-tl-gap" data-month="'+m+'" title="Rien de prévu en '+MONTHS_LONG[m]+' : être accompagné"><span>Rien de prévu</span><b>Être accompagné</b></button>';
+      return canEdit?'<button type="button" class="dr-tl-gap" data-add-month="'+m+'" title="Rien de prévu en '+MONTHS_LONG[m]+' : ajouter une action"><span>Rien de prévu</span><b>＋ Ajouter</b></button>':'<span class="dr-tl-cell">—</span>';
     }).join('');
+    var gapsLabel=pastYear?'<strong>Mois sans action</strong><small>'+(canEdit?'Une action oubliée ? Saisissez-la':'Année terminée')+'</small>'
+      :'<strong>Mois à remplir</strong><small>Un mois vide casse la dynamique</small>';
     var axis=MONTHS.map(function(m,i){return '<span'+(y===nowY&&i===nowM?' class="is-current"':'')+'>'+m+'</span>';}).join('');
     var legend='<ul class="dr-tl-legend"><li class="st-in_progress">En cours / en diffusion</li><li class="st-done">Réalisé</li><li class="st-planned">Prévu</li></ul>';
     var empty=rows.length?'':'<p class="dr-empty">Aucune action ni diagnostic en '+y+'.</p>';
     return legend+'<div class="dr-tl-scroll"><div class="dr-tl-grid">'+line('','',axis,'','dr-tl-axis')+rows.join('')+
-      '<div class="dr-tl-row dr-tl-gaps"><div class="dr-tl-label"><strong>Mois à remplir</strong><small>Un mois vide casse la dynamique</small></div><div class="dr-tl-months">'+gaps+'</div><span class="dr-tl-note"></span></div></div></div>'+empty;
+      '<div class="dr-tl-row dr-tl-gaps"><div class="dr-tl-label">'+gapsLabel+'</div><div class="dr-tl-months">'+gaps+'</div><span class="dr-tl-note"></span></div></div></div>'+empty;
   }
   // Téléchargement d'un bloc en image PNG (html2canvas chargé au premier clic, comme pour le bilan PDF).
   function pngButton(id,name){return '<button type="button" class="dr-png" data-png="'+esc(id)+'" data-png-name="'+esc(name)+'" title="Télécharger en image PNG" data-png-ignore>⬇ PNG</button>';}
