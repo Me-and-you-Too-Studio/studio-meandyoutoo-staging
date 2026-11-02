@@ -536,13 +536,6 @@
           '" target="_blank" rel="noopener" title="Voir exactement le parcours répondant avec le contenu réel enregistré pour cette campagne">👁 Aperçu répondant</a>',
       );
     }
-    if (p.legacy_history && Number(p.legacy_pdf_count || 0) > 0) {
-      visible.push(
-        '<button class="campaign-btn" type="button" data-project-action="view-legacy-pdf" data-project-id="' +
-          id +
-          '" title="Ouvrir le PDF historique associé à cette campagne">📄 Voir le PDF importé</button>',
-      );
-    }
     if (p.status !== "draft") {
       more.push(
         content
@@ -818,49 +811,8 @@
     );
   }
 
-  async function openLegacyPdf(projectId, resource) {
-    var documentId = String(resource && (resource.documentId || resource.document_id) || "").trim();
-    if (!documentId) return false;
-    var previewTab = window.open("about:blank", "_blank");
-    try {
-      var url = window.StudioAPI.base() + "/api/projects/" + encodeURIComponent(projectId) + "/resource-library/" + encodeURIComponent(documentId) + "/download?inline=1";
-      var response = await fetch(url, { headers: { Authorization: "Bearer " + window.StudioAPI.token() } });
-      if (!response.ok) {
-        var payload = await response.json().catch(function () { return {}; });
-        throw new Error(payload.error || "Impossible d’ouvrir ce PDF.");
-      }
-      var blob = await response.blob();
-      var objectUrl = URL.createObjectURL(blob);
-      if (previewTab) previewTab.location.href = objectUrl;
-      else window.open(objectUrl, "_blank", "noopener");
-      window.setTimeout(function () { URL.revokeObjectURL(objectUrl); }, 60000);
-      return true;
-    } catch (error) {
-      if (previewTab) previewTab.close();
-      throw error;
-    }
-  }
-
-  async function viewLegacyPdf(projectId) {
-    var data = await StudioAPI.request("/api/projects/" + encodeURIComponent(projectId) + "/result-resources");
-    var resources = (Array.isArray(data.resources) ? data.resources : []).filter(function (item) {
-      return String(item && item.type || "").toLowerCase() === "document" && (item.documentId || item.document_id);
-    });
-    if (!resources.length) throw new Error("Aucun PDF historique consultable n’est actuellement rattaché à cette campagne.");
-    if (resources.length === 1) { await openLegacyPdf(projectId, resources[0]); return; }
-    document.getElementById("legacy-pdf-dialog")?.remove();
-    var dialog = document.createElement("dialog");
-    dialog.id = "legacy-pdf-dialog";
-    dialog.className = "admin-dialog campaign-rename-dialog";
-    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Documents de la campagne</p><h2>PDF associés à cette campagne</h2><p>Ouvrez le document que vous souhaitez vérifier.</p><div class="legacy-pdf-list">' + resources.map(function (resource, index) { return '<button type="button" class="button button-secondary" data-legacy-pdf-index="' + index + '">📄 ' + esc(resource.title || resource.filename || ("PDF " + (index + 1))) + '</button>'; }).join("") + '</div><div class="top-actions"><button class="button button-ghost" value="cancel">Fermer</button></div></form>';
-    document.body.append(dialog);
-    dialog.querySelectorAll("[data-legacy-pdf-index]").forEach(function (button) { button.onclick = function () { openLegacyPdf(projectId, resources[Number(button.dataset.legacyPdfIndex)]).catch(function (error) { StudioModal.alert({ title: "PDF indisponible", message: error.message || "Impossible d’ouvrir ce PDF.", confirmLabel: "Fermer" }); }); }; });
-    dialog.addEventListener("close", function () { dialog.remove(); });
-    dialog.showModal();
-  }
-
   async function projectAction(action, id) {
-    if(window.StudioAPI.clientPreview?.()&&action!=='view-legacy-pdf'){
+    if(window.StudioAPI.clientPreview?.()){
       await StudioModal.alert({title:'Consultation seule',message:'Revenez au dossier admin pour modifier, prolonger ou reprogrammer une campagne.',type:'info'});
       return;
     }
@@ -868,10 +820,6 @@
       return String(x.id) === String(id);
     });
     if (!p) return;
-    if (action === "view-legacy-pdf") {
-      await viewLegacyPdf(id);
-      return;
-    }
     if (action === "rename") {
       var internalName = await askInternalName(p);
       if (!internalName || internalName === campaignName(p)) return;
@@ -1056,7 +1004,7 @@
 
   function bindProjectActions() {
     document.querySelectorAll("[data-project-action]").forEach(function (b) {
-      if(window.StudioAPI.clientPreview?.()&&b.dataset.projectAction!=='view-legacy-pdf'){
+      if(window.StudioAPI.clientPreview?.()){
         b.disabled=true;b.setAttribute('aria-disabled','true');b.title='Consultation seule : revenez au dossier admin pour effectuer cette action.';
       }
       b.onclick = function (e) {
