@@ -17132,3 +17132,10 @@ body.sidebar-collapsed .profile-person-text { display: none; }
 .sp-setup-list li.is-done .sp-check { border-color: var(--green-blue-dark); background: var(--green-blue-dark); color: #fff; }
 @media (max-width: 900px) { .sp-setup-list { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .sp-setup-list { grid-template-columns: 1fr; } }
+/* Bas du menu : avec le logo client, la ligne du nom ne doit pas élargir le pied du menu (ni l'encart d'aide). */
+.sidebar-footer { grid-template-columns: minmax(0, 1fr); }
+.sidebar-footer .profile { min-width: 0; gap: 2px; }
+.sidebar-footer div.profile-person { gap: 8px; padding-right: 4px; }
+.profile-person-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-footer .profile-company-logo { width: 38px; height: 28px; }
+.sidebar-footer .sidebar-logout { flex-basis: 28px; width: 28px; }
