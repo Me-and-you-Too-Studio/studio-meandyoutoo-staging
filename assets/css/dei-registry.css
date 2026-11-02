@@ -220,3 +220,8 @@ button.dr-kpi:hover,button.dr-kpi:focus-visible{border-color:var(--green-blue,#0
 #dr-png-kpis>.dr-png{position:absolute;top:-30px;right:0}
 .dr-png{border:1px solid var(--line,#e2e7f1);background:#fff;border-radius:99px;padding:4px 10px;font:inherit;font-size:.74rem;font-weight:800;color:var(--green-blue,#007883);cursor:pointer;white-space:nowrap}
 .dr-png:hover{border-color:var(--green-blue,#007883)}
+/* Mois passé sans action : constat neutre (plus d'accompagnement possible), saisie après coup seulement. */
+.dr-tl-gap.is-past{background:#f5f7fb;border:1px dashed #d8dee9;color:#7a849c}
+.dr-tl-gap.is-past b{color:var(--muted,#54607e);font-weight:700}
+.dr-tl-gap.is-past:hover{border-color:var(--muted,#54607e)}
+.dr-tl-cell.is-past{min-height:44px;border-radius:8px;background:#f5f7fb;color:#7a849c;font-size:.68rem}
