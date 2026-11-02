@@ -38,7 +38,8 @@
   function qs(extra){var p=new URLSearchParams();if(organizationId)p.set('organizationId',organizationId);Object.keys(extra||{}).forEach(function(k){p.set(k,extra[k]);});var s=p.toString();return s?'?'+s:'';}
   function withOrg(body){if(organizationId)body.organizationId=organizationId;return body;}
   // Le calendrier d'un client : en mode admin, ouvert directement sur le client consulté.
-  function calendarHref(){return isAdmin?(organizationId?'calendrier.html?organizationId='+encodeURIComponent(organizationId):'calendrier.html'):'calendrier.html?audience=client';}
+  // from=cockpit : le calendrier affiche un bouton de retour au Cockpit.
+  function calendarHref(){return isAdmin?(organizationId?'calendrier.html?from=cockpit&organizationId='+encodeURIComponent(organizationId):'calendrier.html'):'calendrier.html?audience=client&from=cockpit';}
   function today(){return new Date().toISOString().slice(0,10);}
 
   function load(){
@@ -73,25 +74,80 @@
       kpi(num(ind.themes),'thématique'+(ind.themes>1?'s':'')+' couverte'+(ind.themes>1?'s':''),'sur l’année',null,'themes')+
       kpi(num(ind.monthsWithoutAction),'mois sans action',ind.monthsWithoutAction?'sur les mois déjà écoulés':'aucun trou sur les mois écoulés',ind.monthsWithoutAction?'is-alert':'is-ok','months')+
     '</div>';
-    var byMonth=MONTHS.map(function(){return [];});
-    list.forEach(function(it){if(String(it.date).slice(0,4)===String(state.year))byMonth[Number(String(it.date).slice(5,7))-1].push(it);});
-    var nowY=new Date().getFullYear(),nowM=new Date().getMonth();
-    var frise='<div class="dr-frise" role="list">'+byMonth.map(function(its,m){
-      var past=state.year<nowY||(state.year===nowY&&m<nowM),current=state.year===nowY&&m===nowM;
-      var body=its.map(function(it){var k=kind(it.kind);return '<button type="button" class="dr-pill st-'+esc(it.status)+'" data-focus="'+esc(it.type+'-'+it.id)+'" data-tip="'+esc(it.title)+'"><span class="dr-pill-text"><span aria-hidden="true">'+esc(k.icon)+'</span> '+esc(it.title)+'</span></button>';}).join('');
-      var empty=!its.length?(isClient?'<button type="button" class="dr-help" data-month="'+m+'">'+(past?'Mois sans action':'Rien de prévu')+'<span>Être accompagné →</span></button>':(canEdit?'<button type="button" class="dr-help" data-add-month="'+m+'">'+(past?'Mois sans action':'Rien de prévu')+'<span>＋ Ajouter</span></button>':'<span class="dr-none">—</span>')):'';
-      return '<div class="dr-month'+(current?' is-current':'')+(past&&!its.length?' is-gap':'')+'" role="listitem"><p class="dr-month-name">'+MONTHS[m]+'</p>'+body+empty+'</div>';
-    }).join('')+'</div>';
+    var frise=friseView(list,ind,canEdit);
     var rows=list.length?list.map(row).join(''):'<p class="dr-empty">Aucune action enregistrée pour '+state.year+'. '+(canEdit?'Ajoutez votre première action, ou demandez-nous de l’alimenter pour vous.':'')+'</p>';
     renderTabs();
     if(yearEl)yearEl.classList.toggle('is-tab-hidden',state.tab!=='apercu');
     if(state.tab==='prestataires'){root.innerHTML=providersView();return;}
     root.innerHTML=state.tab==='actions'
       ?head+'<div class="dr-list">'+rows+'</div>'
-      :head+cards+pilotageView()+'<div class="dr-sub-row"><h3 class="dr-sub">Frise de l’année</h3><a class="button button-ghost" href="'+calendarHref()+'">Ouvrir dans le calendrier →</a></div>'+frise;
+      :head+'<div class="dr-png-wrap" id="dr-png-kpis">'+pngButton('dr-png-kpis','chiffres-cles')+cards+'</div>'+pilotageView()+'<section class="dr-png-wrap dr-tl" id="dr-png-frise"><div class="dr-sub-row"><h3 class="dr-sub">Frise de l’année '+state.year+'</h3><div class="dr-sub-actions">'+pngButton('dr-png-frise','frise')+'<a class="button button-ghost" href="'+calendarHref()+'">Ouvrir dans le calendrier →</a></div></div>'+frise+'</section>';
     // Arrivée depuis le calendrier (?focus=action-12) : on montre l'action une seule fois.
     if(state.focus&&state.tab==='actions'){var target=document.getElementById('dr-'+state.focus);state.focus=null;
       if(target)setTimeout(function(){target.scrollIntoView({block:'center'});target.classList.add('is-focus');setTimeout(function(){target.classList.remove('is-focus');},2000);},200);}
+  }
+  // Frise de l'année, sur le modèle de celle du calendrier : une ligne par diagnostic, de son lancement à sa clôture,
+  // une ligne par type d'action (point pour une journée, barre sinon), puis les mois restés vides.
+  function friseView(list,ind,canEdit){
+    var y=state.year,y0=Date.UTC(y,0,1),y1=Date.UTC(y+1,0,1),DAY=864e5;
+    function ms(v){var p=String(v||'').slice(0,10).split('-');return Date.UTC(+p[0],+p[1]-1,+p[2]);}
+    function pct(t){return Math.max(0,Math.min(100,(t-y0)/(y1-y0)*100));}
+    function day(v){var d=new Date(String(v).slice(0,10)+'T12:00:00');return d.toLocaleDateString('fr-FR',d.getFullYear()===y?{day:'numeric',month:'short'}:{day:'numeric',month:'short',year:'numeric'});}
+    function range(it){var s=it.start||it.date;return day(s)+(it.end&&it.end!==s?' → '+day(it.end):'');}
+    var now=new Date(),nowT=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+    var todayLine=now.getFullYear()===y?'<i class="dr-tl-today" style="left:'+pct(nowT).toFixed(2)+'%" aria-hidden="true"></i>':'';
+    var statuses=state.data.statuses||{};
+    function mark(it,label){
+      var s=ms(it.start||it.date),e=(it.end?ms(it.end):s)+DAY,left=pct(s),width=pct(e)-left;
+      var st=it.type==='campaign'?(it.status==='done'?'Terminé':'En diffusion'):(statuses[it.status]||it.status);
+      var tip=it.title+' · '+range(it)+' · '+st,attrs=' data-focus="'+esc(it.type+'-'+it.id)+'" data-tip="'+esc(tip)+'" aria-label="'+esc(tip)+'"';
+      if(width<1.5)return '<button type="button" class="dr-tl-dot st-'+esc(it.status)+'" style="left:'+left.toFixed(2)+'%"'+attrs+'></button>';
+      return '<button type="button" class="dr-tl-bar st-'+esc(it.status)+(s<y0?' is-cut-start':'')+(e>y1?' is-cut-end':'')+'" style="left:'+left.toFixed(2)+'%;width:'+width.toFixed(2)+'%"'+attrs+'>'+(label&&width>=12?'<span>'+esc(label)+'</span>':'')+'</button>';
+    }
+    var inYear=list.filter(function(it){var s=String(it.start||it.date).slice(0,10),e=String(it.end||s).slice(0,10);return s<y+1+'-01-01'&&e>=y+'-01-01';});
+    function line(label,sub,marks,note,cls){return '<div class="dr-tl-row'+(cls?' '+cls:'')+'"><div class="dr-tl-label"><strong>'+label+'</strong>'+(sub?'<small>'+sub+'</small>':'')+'</div><div class="dr-tl-track">'+todayLine+marks+'</div><span class="dr-tl-note">'+(note||'')+'</span></div>';}
+    var rows=inYear.filter(function(it){return it.type==='campaign';}).map(function(c){
+      var left=c.end?Math.ceil((ms(c.end)+DAY-nowT)/DAY):null;
+      var note=c.status==='done'?'Terminé':left!=null&&left<=15?'Clôture dans '+left+' j':left!=null?'Encore '+left+' jours':'En diffusion';
+      return line('<span aria-hidden="true">'+esc(kind('diagnostic').icon)+'</span> '+esc(c.title),esc(range(c))+(c.people?' · '+num(c.people)+' participation'+(c.people>1?'s':''):''),mark(c,c.status==='done'?'Terminé':'En diffusion'),esc(note),'is-campaign');
+    });
+    var groups={},order=[];
+    inYear.filter(function(it){return it.type==='action';}).forEach(function(a){if(!groups[a.kind]){groups[a.kind]=[];order.push(a.kind);}groups[a.kind].push(a);});
+    order.forEach(function(k){var its=groups[k],kd=kind(k),done=its.filter(function(a){return a.status==='done';}).length;
+      rows.push(line('<span aria-hidden="true">'+esc(kd.icon)+'</span> '+esc(kd.label),its.length+' action'+(its.length>1?'s':'')+(done?' · '+done+' réalisée'+(done>1?'s':''):''),its.map(function(a){return mark(a,a.title);}).join(''),''));});
+    var months=(ind.months||[]),nowY=now.getFullYear(),nowM=now.getMonth();
+    var gaps=MONTHS.map(function(name,m){
+      if(months[m])return '<span class="dr-tl-cell"></span>';
+      var past=y<nowY||(y===nowY&&m<nowM),txt=past?'Mois vide':'Rien de prévu';
+      var btn=isClient?'<button type="button" class="dr-tl-gap'+(past?' is-past':'')+'" data-month="'+m+'" title="'+txt+' en '+MONTHS_LONG[m]+' : être accompagné"><span>'+txt+'</span><b>Être accompagné</b></button>'
+        :canEdit?'<button type="button" class="dr-tl-gap'+(past?' is-past':'')+'" data-add-month="'+m+'" title="'+txt+' en '+MONTHS_LONG[m]+' : ajouter une action"><span>'+txt+'</span><b>＋ Ajouter</b></button>':'<span class="dr-tl-cell'+(past?' is-past':'')+'">—</span>';
+      return btn;
+    }).join('');
+    var axis=MONTHS.map(function(m,i){return '<span'+(y===nowY&&i===nowM?' class="is-current"':'')+'>'+m+'</span>';}).join('');
+    var legend='<ul class="dr-tl-legend"><li class="st-in_progress">En cours / en diffusion</li><li class="st-done">Réalisé</li><li class="st-planned">Prévu</li></ul>';
+    var empty=rows.length?'':'<p class="dr-empty">Aucune action ni diagnostic en '+y+'.</p>';
+    return legend+'<div class="dr-tl-scroll"><div class="dr-tl-grid">'+line('','',axis,'','dr-tl-axis')+rows.join('')+
+      '<div class="dr-tl-row dr-tl-gaps"><div class="dr-tl-label"><strong>Mois à remplir</strong><small>Un mois vide casse la dynamique</small></div><div class="dr-tl-months">'+gaps+'</div><span class="dr-tl-note"></span></div></div></div>'+empty;
+  }
+  // Téléchargement d'un bloc en image PNG (html2canvas chargé au premier clic, comme pour le bilan PDF).
+  function pngButton(id,name){return '<button type="button" class="dr-png" data-png="'+esc(id)+'" data-png-name="'+esc(name)+'" title="Télécharger en image PNG" data-png-ignore>⬇ PNG</button>';}
+  var html2canvasReady=null;
+  function loadHtml2canvas(){
+    if(window.html2canvas)return Promise.resolve();
+    return html2canvasReady=html2canvasReady||new Promise(function(resolve,reject){var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';s.onload=resolve;s.onerror=function(){html2canvasReady=null;reject(new Error('Module image indisponible'));};document.head.appendChild(s);});
+  }
+  async function downloadPng(btn){
+    var el=document.getElementById(btn.getAttribute('data-png'));if(!el)return;
+    var label=btn.textContent;btn.disabled=true;btn.textContent='…';
+    try{
+      await loadHtml2canvas();
+      var canvas=await window.html2canvas(el,{scale:2,backgroundColor:'#ffffff',logging:false,windowWidth:Math.max(document.documentElement.clientWidth,1200),
+        // html2canvas rogne le bas du texte tronqué : dans la copie, pas de troncature ni de bouton « Être accompagné ».
+        onclone:function(doc){doc.querySelectorAll('.dr-tl-label strong,.dr-tl-bar span').forEach(function(n){n.style.overflow='visible';n.style.textOverflow='clip';});doc.querySelectorAll('.dr-tl-gap b').forEach(function(n){n.remove();});},ignoreElements:function(n){return n.hasAttribute&&(n.hasAttribute('data-png-ignore')||(n.classList&&n.classList.contains('button-ghost')&&n.tagName==='A'));}});
+      var slug=String(state.data.organizationName||'cockpit').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase();
+      var a=document.createElement('a');a.download='cockpit-dei-'+slug+'-'+state.year+'-'+btn.getAttribute('data-png-name')+'.png';a.href=canvas.toDataURL('image/png');document.body.appendChild(a);a.click();a.remove();
+    }catch(e){window.StudioModal.alert({title:'Image impossible',message:'Le téléchargement de l’image n’a pas abouti. '+(e.message||'')});}
+    finally{btn.disabled=false;btn.textContent=label;}
   }
   function renderTabs(){
     if(!tabsEl)return;
@@ -244,12 +300,12 @@
         '<div class="dp-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i style="width:'+pct+'%"></i></div>'+
         (canEdit?'<div class="dp-obj-tools">'+(manual?'<label class="dr-check"><input type="checkbox" data-obj-done="'+esc(o.id)+'"'+(o.done?' checked':'')+'> Atteint</label>':'')+'<button type="button" class="dr-link" data-obj-edit="'+esc(o.id)+'">Modifier</button><button type="button" class="dr-link" data-obj-delete="'+esc(o.id)+'">Retirer</button></div>':'')+'</li>';
     }).join('');
-    var objCard=state.data.perimeter?'':'<article class="dp-card"><header><h3>🎯 Objectifs '+state.year+'</h3>'+(canEdit&&p.objectives.length<p.maxObjectives?'<button type="button" class="button button-ghost" data-obj-add>＋ Fixer un objectif</button>':'')+'</header>'+
+    var objCard=state.data.perimeter?'':'<article class="dp-card dr-png-wrap" id="dr-png-objectifs"><header><h3>🎯 Objectifs '+state.year+'</h3>'+pngButton('dr-png-objectifs','objectifs')+(canEdit&&p.objectives.length<p.maxObjectives?'<button type="button" class="button button-ghost" data-obj-add>＋ Fixer un objectif</button>':'')+'</header>'+
       (objs?'<ul class="dp-objs">'+objs+'</ul>':'<p class="dr-empty">Fixez 3 à 5 objectifs pour l’année : la progression se calcule toute seule à partir de vos actions et de vos diagnostics.</p>'+
         (canEdit?'<div class="dp-suggest">'+[['actions_done',12,'12 actions réalisées'],['active_quarters',4,'Une action chaque trimestre'],['themes',5,'Couvrir 5 thématiques'],['people_reached',1000,'1 000 personnes touchées']].map(function(s){return '<button type="button" class="dr-chip-btn" data-obj-suggest="'+s[0]+':'+s[1]+'">＋ '+s[2]+'</button>';}).join('')+'</div>':''))+'</article>';
     // Trimestres
     var maxQ=Math.max(1,Math.max.apply(null,p.quarters.map(function(q){return q.done+q.planned+q.late;})));
-    var qCard='<article class="dp-card"><header><h3>📊 Prévu / réalisé par trimestre</h3></header><div class="dp-quarters">'+p.quarters.map(function(q){
+    var qCard='<article class="dp-card dr-png-wrap" id="dr-png-trimestres"><header><h3>📊 Prévu / réalisé par trimestre</h3>'+pngButton('dr-png-trimestres','trimestres')+'</header><div class="dp-quarters">'+p.quarters.map(function(q){
       var h=function(n){return Math.round(n/maxQ*100);};
       return '<div class="dp-q"><div class="dp-q-bars" aria-hidden="true"><i class="is-done" style="height:'+h(q.done)+'%"></i><i class="is-planned" style="height:'+h(q.planned)+'%"></i><i class="is-late" style="height:'+h(q.late)+'%"></i></div>'+
         '<strong>T'+q.quarter+'</strong><small>'+q.done+' réalisée'+(q.done>1?'s':'')+(q.planned?' · '+q.planned+' en cours ou prévue'+(q.planned>1?'s':''):'')+(q.late?' · <b>'+q.late+' en retard</b>':'')+'</small></div>';
@@ -482,6 +538,7 @@
     // La frise est dans la vue d'ensemble : on bascule sur l'onglet Actions pour montrer le détail.
     else if(t.hasAttribute('data-focus'))focusItem(t.getAttribute('data-focus'));
     else if(t.hasAttribute('data-kpi'))kpiDetail(t.getAttribute('data-kpi'));
+    else if(t.hasAttribute('data-png'))downloadPng(t);
   });
   if(tabsEl)tabsEl.addEventListener('click',function(ev){var t=ev.target.closest('[data-tab]');if(t)setTab(t.getAttribute('data-tab'));});
   window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(TABS[h]&&h!==state.tab&&state.data){state.tab=h;render();}});
