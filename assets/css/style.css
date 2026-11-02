@@ -17193,3 +17193,11 @@ body.sidebar-collapsed .sidebar-footer .profile-logout { display: none; }
 .admin-stats-todo-error { flex-basis: 100%; color: #b42318; font-size: .85rem; }
 .admin-stats-todo-empty { color: var(--green-blue-dark); font-weight: 700; margin: 0; }
 @media (max-width: 900px) { .admin-stats-todo-row { grid-template-columns: 1fr; } }
+
+/* Admin : « Stats à saisir » visible dans les chiffres et dans « À faire ». */
+.admin-client-pilot-kpis { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+@media (max-width: 1280px) { .admin-client-pilot-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .admin-client-pilot-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.admin-client-pilot-kpi.is-stats { background: #fff4e5; }
+.admin-client-pilot-kpi.is-stats .admin-client-pilot-icon { color: #b45f00; }
+.admin-home-tag.is-stats { background: #fff4e5; color: #8a4b00; }
