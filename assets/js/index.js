@@ -163,6 +163,7 @@
 
   // En-tête du parcours : score d'activation (jamais un score d'inclusion), chiffres clés, réussites et série.
   var ACTIVATION_INFO='Ce score mesure votre activité sur les sujets D&I, pas la mise en place du Studio ni le niveau d’inclusion de votre entreprise. Il combine quatre axes à parts égales : campagnes lancées (objectif 3), thématiques explorées (objectif 5), participation moyenne par rapport à vos objectifs (objectif 75 %, compté dès qu’un objectif est renseigné) et régularité (une campagne en cours ou lancée il y a moins de 6 mois).';
+  var PARTICIPATIONS_INFO='Questionnaires complétés depuis votre toute première campagne, tous packs confondus : c’est l’ampleur de votre démarche de sensibilisation. Le questionnaire étant anonyme, une même personne peut répondre plusieurs fois. Chiffres mis à jour chaque nuit.';
   function heroCard(g,themesTotal){
     var score=Math.max(0,Math.min(100,Number(g.activationScore)||0));
     var badges=missionAxes(g,themesTotal).reduce(function(list,a){return list.concat(a.badges);},[]);
@@ -173,7 +174,7 @@
         '<div><span class="sp-eyebrow">Votre parcours Studio</span><h3>Votre activité sur le Studio : '+score+' % <button type="button" class="admin-info-dot" data-info="'+esc(ACTIVATION_INFO)+'" aria-label="Comprendre le score d’activité" aria-haspopup="dialog">i</button></h3>'+
         (streak>=2?'<p class="sp-streak">🔥 '+streak+' trimestres consécutifs avec une campagne en cours</p>':streak===1?'<p class="sp-streak">Une campagne en cours ce trimestre : lancez-en une le trimestre prochain pour démarrer une série.</p>':'')+'</div></div>'+
       '<dl class="sp-kpis">'+
-        '<div><dt>Participations</dt><dd>'+number(g.respondentsTotal||0)+'</dd></div>'+
+        '<div><dt>Participations depuis votre première campagne <button type="button" class="admin-info-dot" data-info="'+esc(PARTICIPATIONS_INFO)+'" aria-label="Comprendre les participations" aria-haspopup="dialog">i</button></dt><dd>'+number(g.respondentsTotal||0)+'</dd></div>'+
         '<div><dt>Campagnes réalisées</dt><dd>'+number(g.launchedCampaigns)+'</dd></div>'+
         '<div><dt>Thématiques explorées</dt><dd>'+g.exploredThemes.length+'<small> / '+themesTotal+'</small></dd></div>'+
         '<div><dt>Participation moyenne</dt><dd>'+(g.averageParticipation==null?'—':g.averageParticipation+' %')+'</dd></div>'+
