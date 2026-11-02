@@ -17160,3 +17160,9 @@ body.sidebar-collapsed .profile-person-text { display: none; }
 body.sidebar-collapsed .sidebar-footer .profile-logout { display: none; }
 .sidebar-footer .help-card { margin-top: 8px; }
 .sidebar-footer .profile { padding-top: 2px; }
+
+/* Page Packs : fonctionnement des passations. */
+.rule-step { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 8px; border-radius: 50%; background: var(--green-blue-dark); color: #fff; font-size: 0.8rem; vertical-align: 1px; }
+.rules-subtitle { margin: 22px 0 8px; color: var(--royal-blue); font-size: 1.02rem; }
+.rules-list { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--muted); font-size: 0.92rem; }
+.rules-list strong { color: var(--royal-blue); }

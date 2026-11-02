@@ -37,9 +37,8 @@
     setStatus('Envoi de votre demande…','loading');
     try{
       var data=await StudioAPI.request('/api/me/pack-requests',{method:'POST',body:JSON.stringify({packCode:code})});
-      var expiry=data.request&&data.request.expires_at?new Date(String(data.request.expires_at).slice(0,10)+'T12:00:00').toLocaleDateString('fr-FR'):'dans 12 mois';
       setStatus('✓ Demande enregistrée. Elle attend la validation de Me&YouToo.','success');
-      if(window.StudioModal)await StudioModal.alert({eyebrow:'Demande enregistrée',title:'Votre demande a bien été envoyée',message:'Me&YouToo et les administrateurs ont été notifiés. Après validation, le pack sera valable jusqu’au '+expiry+'.',confirmLabel:'Fermer'});
+      if(window.StudioModal)await StudioModal.alert({eyebrow:'Demande enregistrée',title:'Votre demande a bien été envoyée',message:'Me&YouToo et les administrateurs ont été notifiés. Votre pack sera valable 12 mois à compter de sa validation.',confirmLabel:'Fermer'});
       window.dispatchEvent(new CustomEvent('studio:pack-requested',{detail:data}));
     }catch(error){setStatus(error.message||'Impossible d’envoyer la demande.','error');if(window.StudioModal)await StudioModal.alert({type:'error',eyebrow:'Demande de pack',title:'Envoi impossible',message:error.message||'Une erreur est survenue.',confirmLabel:'Fermer'});}
     finally{loadBalance();}
