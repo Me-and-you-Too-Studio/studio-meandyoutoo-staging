@@ -17139,3 +17139,24 @@ body.sidebar-collapsed .profile-person-text { display: none; }
 .profile-person-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sidebar-footer .profile-company-logo { width: 38px; height: 28px; }
 .sidebar-footer .sidebar-logout { flex-basis: 28px; width: 28px; }
+
+/* Déconnexion : lien libellé sous le nom, visible sans survol. */
+.sidebar-footer .profile-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 2px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--green-blue-dark);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.sidebar-footer .profile-logout:hover { color: var(--royal-blue); text-decoration: underline; }
+.sidebar-footer .profile-logout svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+body.sidebar-collapsed .sidebar-footer .profile-logout { display: none; }
+.sidebar-footer .help-card { margin-top: 8px; }
+.sidebar-footer .profile { padding-top: 2px; }
