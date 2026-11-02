@@ -17172,3 +17172,24 @@ body.sidebar-collapsed .sidebar-footer .profile-logout { display: none; }
 
 /* Accueil : participations pas encore lisibles. */
 .sp-kpis dd .sp-kpi-pending { display: block; color: var(--muted); font-size: .75rem; font-weight: 700; }
+
+/* Admin : vue « Stats à saisir ». */
+.admin-stats-todo { margin: 0 0 18px; }
+.admin-stats-todo[hidden] { display: none; }
+.admin-stats-todo h3 { margin: 0 0 4px; color: var(--royal-blue); }
+.admin-stats-todo > p { margin: 0 0 14px; color: var(--muted); }
+.admin-stats-todo-list { display: grid; gap: 10px; }
+.admin-stats-todo-row { display: grid; grid-template-columns: minmax(180px, 1.2fr) minmax(150px, .8fr) minmax(260px, 2fr); gap: 14px; align-items: center; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.admin-stats-todo-row.is-stale { border-color: #f4c27a; background: #fff8ec; }
+.admin-stats-todo-who, .admin-stats-todo-value { display: grid; gap: 2px; }
+.admin-stats-todo-who strong, .admin-stats-todo-value strong { color: var(--royal-blue); }
+.admin-stats-todo-who span, .admin-stats-todo-value small { color: var(--muted); font-size: .85rem; }
+.admin-stats-todo-who em { font-style: normal; font-size: .8rem; font-weight: 700; color: var(--green-blue-dark); }
+.admin-stats-todo-value .admin-stats-todo-stale { color: #b45f00; font-weight: 800; }
+.admin-stats-todo-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.admin-stats-todo-form { display: flex; gap: 6px; margin: 0; }
+.admin-stats-todo-form input { width: 120px; }
+.admin-stats-todo-link { font-size: .85rem; font-weight: 700; color: var(--green-blue-dark); }
+.admin-stats-todo-error { flex-basis: 100%; color: #b42318; font-size: .85rem; }
+.admin-stats-todo-empty { color: var(--green-blue-dark); font-weight: 700; margin: 0; }
+@media (max-width: 900px) { .admin-stats-todo-row { grid-template-columns: 1fr; } }
