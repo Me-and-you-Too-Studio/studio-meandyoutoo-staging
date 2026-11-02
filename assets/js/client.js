@@ -1079,7 +1079,9 @@
       eyebrow: "Invitations",
       type: "warning",
       title: "Inviter " + list.length + " personne" + (list.length > 1 ? "s" : "") + " de " + (organization.name || "ce client") + " ?",
-      message: "Un e-mail de création de mot de passe part maintenant à : " + list.map(contactDisplayName).join(", ") + ". Les autres clients ne sont pas concernés.",
+      message: "Un e-mail de création de mot de passe part maintenant à : " + list.map(contactDisplayName).join(", ") + ". " +
+        (organization.studio_licence_ends_at ? "" : "Sa licence Studio démarre aujourd’hui pour 12 mois ; son pack prend les mêmes dates s’il lui reste des crédits (sinon il devra racheter). ") +
+        "Les autres clients ne sont pas concernés.",
       cancelLabel: "Annuler",
       confirmLabel: "Envoyer les invitations",
     });
@@ -1088,7 +1090,8 @@
       const result = await StudioAPI.request("/api/admin/organizations/" + encodeURIComponent(organization.id) + "/pending-invitations/send", { method: "POST", body: "{}" });
       const sent = Array.isArray(result?.sent) ? result.sent : [];
       await load();
-      StudioModal.alert({ eyebrow: "Invitations", title: sent.length + " invitation" + (sent.length > 1 ? "s envoyées" : " envoyée"), message: sent.map((s) => s.email).join(", ") || "Aucune invitation en attente." });
+      const licence = result?.licence ? " Licence Studio démarrée le " + date(result.licence.startsAt) + " pour 12 mois" + (result.licence.packAligned ? ", pack aux mêmes dates." : " ; pack à 0 crédit inchangé (à racheter).") : "";
+      StudioModal.alert({ eyebrow: "Invitations", title: sent.length + " invitation" + (sent.length > 1 ? "s envoyées" : " envoyée"), message: (sent.map((s) => s.email).join(", ") || "Aucune invitation en attente.") + licence });
     } catch (error) {
       StudioModal.alert({ title: "Envoi impossible", message: error.message, type: "error" });
     }
