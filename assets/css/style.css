@@ -17217,3 +17217,21 @@ body.sidebar-collapsed .sidebar-footer .profile-logout { display: none; }
 .admin-stats-todo-link:hover { text-decoration: underline; }
 .admin-stats-todo-error { text-align: right; }
 @media (max-width: 900px) { .admin-stats-todo-row { grid-template-columns: 1fr; } .admin-stats-todo-actions { justify-items: start; } }
+
+/* Aide du Studio (aide.html) : recherche, familles d'articles, contact chat / e-mail. */
+.help-page .main { max-width: 1120px; }
+.help-hero { margin: 8px 0 22px; }
+.help-hero .lead { max-width: 760px; }
+.help-search { max-width: 640px; margin-top: 16px; }
+.help-state { color: var(--muted); font-weight: 700; }
+.help-groups { display: grid; gap: 26px; }
+.help-group h2 { margin: 0 0 10px; color: var(--royal-blue); font-size: 1.15rem; }
+.help-article-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.help-article-card { display: grid; gap: 6px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; background: #fff; color: inherit; text-decoration: none; transition: border-color .15s, box-shadow .15s; }
+.help-article-card:hover { border-color: var(--green-blue); box-shadow: 0 8px 22px rgba(39,58,100,.08); }
+.help-article-card strong { color: var(--royal-blue); }
+.help-article-card span { color: var(--muted); font-size: .88rem; line-height: 1.45; }
+.help-contact { margin-top: 28px; padding: 22px 24px; }
+.help-contact h2 { margin: 0 0 4px; color: var(--royal-blue); font-size: 1.1rem; }
+.help-contact p { margin: 0 0 14px; color: var(--muted); }
+.help-contact-actions { display: flex; flex-wrap: wrap; gap: 10px; }

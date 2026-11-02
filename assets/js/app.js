@@ -419,6 +419,7 @@
   var IS_ADMIN = Boolean(CURRENT_USER && CURRENT_USER.role === 'admin');
   var INTERFACE_MODE = IS_ADMIN && sessionStorage.getItem('studio_interface_mode') !== 'client' ? 'admin' : 'client';
   var ADMIN_PAGES = ['admin.html','client.html'];
+  if(ADMIN_PAGES.indexOf(CURRENT)<0&&!document.getElementById('hs-script-loader')){var hs=document.createElement('script');hs.id='hs-script-loader';hs.async=true;hs.defer=true;hs.src='https://js-eu1.hs-scripts.com/139575435.js';document.body.appendChild(hs);}
   var DUAL_MODE_PAGES = ['notifications.html','calendrier.html','cockpit-dei.html'];
   var REQUESTED_NOTIFICATION_AUDIENCE = new URLSearchParams(location.search).get('audience');
   if (IS_ADMIN && DUAL_MODE_PAGES.includes(CURRENT) && REQUESTED_NOTIFICATION_AUDIENCE === 'client') {
@@ -719,7 +720,7 @@
       '</div>' +
       '<nav class="nav">' + mainNavigation.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
       '<div class="sidebar-footer">' +
-        (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><a class="help-card-contact" href="contact-client.html"><span class="help-card-icon" aria-hidden="true">?</span><span><strong>Besoin d’aide&nbsp;?</strong><small>Contacter Me&amp;YouToo</small></span></a><div class="help-card-links"><button type="button" class="help-tour-button" data-tour-replay hidden>Revoir la visite</button><button type="button" class="help-tour-button help-news-button" data-news-open>Nouveautés <span class="help-news-count" data-news-count hidden></span></button></div></div>') +
+        (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><a class="help-card-contact" href="contact-client.html"><span class="help-card-icon" aria-hidden="true">?</span><span><strong>Besoin d’aide&nbsp;?</strong><small>Contacter Me&amp;YouToo</small></span></a><div class="help-card-links"><a class="help-tour-button" href="aide.html">Aide et FAQ</a><button type="button" class="help-tour-button" data-tour-replay hidden>Revoir la visite</button><button type="button" class="help-tour-button help-news-button" data-news-open>Nouveautés <span class="help-news-count" data-news-count hidden></span></button></div></div>') +
         switchButton +
         '<div class="profile"><div class="profile-person"><div class="avatar">' + avatarHtml + '</div><span class="profile-person-text"><strong class="profile-person-name">' + (CURRENT_USER ? (displayPersonName(CURRENT_USER.firstName) + ' ' + displayPersonName(CURRENT_USER.lastName)).trim() || CURRENT_USER.email : 'Compte') + '</strong><button class="profile-logout" type="button" data-logout><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg>Se déconnecter</button></span>' + clientLogoHtml + '</div></div>' +
       '</div>';
