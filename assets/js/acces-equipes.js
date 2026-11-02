@@ -133,7 +133,7 @@
       // Les campagnes du dossier, avec l’ajout et le retrait directement ici.
       return '<article class="card ae-folder"><h3>📁 '+esc(f.name)+'</h3><p class="ae-folder-label">Campagnes ('+inside.length+')</p>'+
         (inside.length?'<ul class="ae-folder-campaigns">'+inside.map(function(c){return '<li><span>'+esc(c.name)+'</span>'+(data.canEdit?'<button type="button" class="ae-link" data-unfile="'+esc(c.id)+'" aria-label="Retirer '+esc(c.name)+' du dossier">Retirer</button>':'')+'</li>';}).join('')+'</ul>':'<p class="ae-muted">Aucune campagne pour l’instant.</p>')+
-        (data.canEdit&&data.campaigns.length>inside.length?'<button class="button button-secondary ae-add-campaigns" type="button" data-add-campaigns="'+esc(f.id)+'">+ Ajouter des campagnes</button>':'')+
+        (data.canEdit&&unfiledCampaigns().length?'<button class="button button-secondary ae-add-campaigns" type="button" data-add-campaigns="'+esc(f.id)+'">+ Ajouter des campagnes</button>':'')+
         // Les actions du Cockpit (formations, conférences, dessins…) du dossier, rangées de la même façon.
         '<p class="ae-folder-label">Actions du Cockpit ('+acts.length+')</p>'+
         (acts.length?'<ul class="ae-folder-campaigns">'+acts.map(function(a){return '<li><span>'+esc(a.icon)+' '+esc(a.title)+' <small class="ae-muted">· '+esc(shortDate(a.date))+'</small></span>'+(data.canEdit?'<button type="button" class="ae-link" data-unfile-action="'+esc(a.id)+'" aria-label="Retirer '+esc(a.title)+' du dossier">Retirer</button>':'')+'</li>';}).join('')+'</ul>':'<p class="ae-muted">Aucune action pour l’instant.</p>')+
@@ -145,8 +145,9 @@
     }).join('');
   }
   function actions(){return data.actions||[];}
-  // Une action déjà rangée n’est plus proposée ailleurs : pour la changer de dossier, on la retire d’abord du sien.
+  // Une campagne ou une action déjà rangée n’est plus proposée ailleurs : pour la changer de dossier, on la retire d’abord du sien.
   function unfiledActions(){return actions().filter(function(a){return !a.teamFolderId;});}
+  function unfiledCampaigns(){return data.campaigns.filter(function(c){return !c.teamFolderId;});}
   // Actions sans dossier dont la thématique évoque un dossier existant (proposition calculée par l’API).
   function proposals(){return actions().filter(function(a){return !a.teamFolderId&&a.proposedFolderId;});}
   function shortDate(v){var d=new Date(String(v||'').slice(0,10)+'T12:00:00');return Number.isNaN(d.getTime())?'':d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});}
@@ -319,12 +320,11 @@
   // Ajouter des campagnes ou des actions à un dossier (cases à cocher, avec le dossier actuel de chacune),
   // ou ranger d’un coup les actions dont la thématique évoque un dossier (« proposals », cases cochées d’office).
   var adding=null;
-  function where(x){return x.teamFolderId?'actuellement dans « '+esc(folderName(x.teamFolderId))+' » (elle en sera retirée)':'sans dossier';}
   function openAdd(mode,folderId){
     adding={mode:mode,folderId:folderId};
-    var items,unfiledFirst=function(a,b){return (a.teamFolderId?1:0)-(b.teamFolderId?1:0);};
-    if(mode==='campaigns')items=data.campaigns.filter(function(c){return c.teamFolderId!==folderId;}).sort(unfiledFirst).map(function(c){return {id:c.id,title:c.name,sub:esc(c.theme||'')+' · '+where(c)};});
-    else if(mode==='actions')items=unfiledActions().map(function(a){return {id:a.id,title:a.icon+' '+a.title,sub:esc(a.kindLabel)+' · '+esc(shortDate(a.date))+(a.theme?' · '+esc(a.theme):'')+' · '+where(a)};});
+    var items;
+    if(mode==='campaigns')items=unfiledCampaigns().map(function(c){return {id:c.id,title:c.name,sub:esc(c.theme||'')+' · sans dossier'};});
+    else if(mode==='actions')items=unfiledActions().map(function(a){return {id:a.id,title:a.icon+' '+a.title,sub:esc(a.kindLabel)+' · '+esc(shortDate(a.date))+(a.theme?' · '+esc(a.theme):'')+' · sans dossier'};});
     else items=proposals().map(function(a){return {id:a.id,target:a.proposedFolderId,checked:true,title:a.icon+' '+a.title,sub:esc(a.kindLabel)+' · '+esc(shortDate(a.date))+' · '+esc(a.theme||'')+' → <strong>📁 '+esc(folderName(a.proposedFolderId))+'</strong>'};});
     $('ae-add-campaigns-title').textContent=mode==='proposals'?'Ranger les actions d’après leur thématique':'Ajouter des '+(mode==='actions'?'actions':'campagnes')+' à « '+folderName(folderId)+' »';
     $('ae-add-desc').textContent=mode==='proposals'?'Décochez celles qui doivent rester visibles de toute l’entreprise. Rien n’est rangé avant de cliquer sur « Ranger ».':'Cochez les '+(mode==='actions'?'actions':'campagnes')+' à ranger dans ce dossier : l’équipe du dossier les verra.';
