@@ -143,7 +143,7 @@
 
   // Missions en échelles progressives : pour chaque axe, le dernier palier franchi puis le prochain.
   function ladder(value,steps,label,unit){
-    if(value==null)return {reached:0,items:[]};
+    if(value==null)return {reached:0,items:[],badges:[]};
     var reached=steps.filter(function(s){return value>=s;}),next=steps.find(function(s){return value<s;});
     var items=[];
     if(reached.length)items.push({label:label(reached[reached.length-1]),done:true});
@@ -155,7 +155,7 @@
     var themeSteps=[2,3,5,8].filter(function(s){return s<themesTotal;}).concat(themesTotal>1?[themesTotal]:[]);
     return [
       ladder(g.launchedCampaigns,[1,2,5,10,20],function(s){return s===1?'Lancer votre première campagne':'Lancer '+s+' campagnes';}),
-      ladder(g.respondentsTotal,[50,100,250,500,1000,2500,5000,10000],function(s){return 'Atteindre '+number(s)+' répondants';}),
+      ladder(g.respondentsFromCredits?null:g.respondentsTotal,[50,100,250,500,1000,2500,5000,10000],function(s){return 'Atteindre '+number(s)+' répondants';}),
       ladder(g.bestParticipation||0,[50,75,100],function(s){return s===100?'Atteindre 100 % de votre objectif sur une campagne':'Atteindre '+s+' % de participation sur une campagne';},' %'),
       ladder(explored,themeSteps,function(s){return s===themesTotal?'Explorer toutes les thématiques ('+s+')':s===2?'Explorer une deuxième thématique':'Explorer '+s+' thématiques';})
     ];
@@ -174,7 +174,7 @@
         '<div><span class="sp-eyebrow">Votre parcours Studio</span><h3>Votre activité sur le Studio : '+score+' % <button type="button" class="admin-info-dot" data-info="'+esc(ACTIVATION_INFO)+'" aria-label="Comprendre le score d’activité" aria-haspopup="dialog">i</button></h3>'+
         (streak>=2?'<p class="sp-streak">🔥 '+streak+' trimestres consécutifs avec une campagne en cours</p>':streak===1?'<p class="sp-streak">Une campagne en cours ce trimestre : lancez-en une le trimestre prochain pour démarrer une série.</p>':'')+'</div></div>'+
       '<dl class="sp-kpis">'+
-        '<div><dt>Participations depuis votre première campagne <button type="button" class="admin-info-dot" data-info="'+esc(PARTICIPATIONS_INFO)+'" aria-label="Comprendre les participations" aria-haspopup="dialog">i</button></dt><dd>'+number(g.respondentsTotal||0)+'</dd></div>'+
+        '<div><dt>Participations depuis votre première campagne <button type="button" class="admin-info-dot" data-info="'+esc(PARTICIPATIONS_INFO)+'" aria-label="Comprendre les participations" aria-haspopup="dialog">i</button></dt><dd>'+(g.respondentsFromCredits?'—<small class="sp-kpi-pending">Chiffres en cours de récupération</small>':number(g.respondentsTotal||0))+'</dd></div>'+
         '<div><dt>Campagnes réalisées</dt><dd>'+number(g.launchedCampaigns)+'</dd></div>'+
         '<div><dt>Thématiques explorées</dt><dd>'+g.exploredThemes.length+'<small> / '+themesTotal+'</small></dd></div>'+
         '<div><dt>Participation moyenne</dt><dd>'+(g.averageParticipation==null?'—':g.averageParticipation+' %')+'</dd></div>'+
@@ -190,7 +190,7 @@
     var missions=axes.reduce(function(list,a){return list.concat(a.items);},[]);
     return '<article class="sp-card sp-missions">'+
       '<header class="sp-head"><span class="sp-eyebrow">Vos missions Studio</span><strong class="sp-figure">'+reached+'<small> palier'+(reached>1?'s':'')+'</small></strong></header>'+
-      (r!=null?'<p class="sp-meta">'+plural(r,g.respondentsFromCredits?'participation':'répondant')+(g.respondentsFromCredits?' d’après les passations utilisées de votre pack':' depuis votre première campagne')+' <button type="button" class="admin-info-dot" data-info="'+esc(RESPONDENTS_INFO)+'" aria-label="Comprendre le nombre de répondants" aria-haspopup="dialog">i</button></p>':'')+
+      (g.respondentsFromCredits?'<p class="sp-meta">Chiffres de participation en cours de récupération par Me&amp;YouToo.</p>':r!=null?'<p class="sp-meta">'+plural(r,'répondant')+' depuis votre première campagne <button type="button" class="admin-info-dot" data-info="'+esc(RESPONDENTS_INFO)+'" aria-label="Comprendre le nombre de répondants" aria-haspopup="dialog">i</button></p>':'')+
       '<ul class="sp-mission-list">'+missions.map(function(m){return '<li class="'+(m.done?'is-done':'')+'"><span class="sp-check" aria-hidden="true">'+(m.done?'✓':'')+'</span><span>'+esc(m.label)+(m.done?'':'<small>'+esc(m.hint)+'</small><i class="sp-mini-bar" aria-hidden="true"><b style="width:'+Math.min(100,m.progress)+'%"></b></i>')+'</span><span class="visually-hidden">'+(m.done?'palier franchi':'prochain palier')+'</span></li>';}).join('')+'</ul>'+
     '</article>';
   }

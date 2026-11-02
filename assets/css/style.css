@@ -17169,3 +17169,6 @@ body.sidebar-collapsed .sidebar-footer .profile-logout { display: none; }
 
 /* Chiffres clés : un libellé sur deux lignes ne décale pas le chiffre des cases voisines. */
 .sp-kpis div { display: flex; flex-direction: column; justify-content: space-between; }
+
+/* Accueil : participations pas encore lisibles. */
+.sp-kpis dd .sp-kpi-pending { display: block; color: var(--muted); font-size: .75rem; font-weight: 700; }
