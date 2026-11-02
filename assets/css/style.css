@@ -17033,3 +17033,76 @@ body.admin-home-active .admin-cockpit-kpis { display: none; }
   box-shadow: none;
 }
 .account-v2 .account-history-icon svg { width: 19px; height: 19px; }
+
+/* Menu latéral compact : pas de barre de défilement sur un écran courant, aide sur deux lignes, contact = accès à Mon compte. */
+.sidebar { padding: 18px 14px; scrollbar-width: none; }
+.sidebar::-webkit-scrollbar { display: none; }
+.sidebar .nav { gap: 1px; }
+.sidebar .nav a { padding: 7px 11px; font-size: 0.92rem; }
+.sidebar .nav-group { margin-top: 8px; }
+.sidebar .nav-separator { margin: 6px; }
+.sidebar-footer { gap: 8px; padding-top: 10px; }
+.sidebar-footer .help-card {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--sunny-yellow-soft);
+  border: 1px solid #ffe7a6;
+}
+.help-card-contact { display: flex; align-items: center; gap: 10px; color: var(--royal-blue); }
+.help-card-contact strong { display: block; margin: 0; font-size: 0.9rem; }
+.help-card-contact small { display: block; color: var(--green-blue-dark); font-weight: 700; font-size: 0.8rem; }
+.help-card-contact:hover small { text-decoration: underline; }
+.help-card-icon {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: #b07d00;
+  font-weight: 900;
+}
+.help-card-links { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 6px 0 0 38px; }
+.help-card-links .help-tour-button { margin: 0; font-size: 0.8rem; }
+.sidebar-footer .profile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+}
+.sidebar-footer .profile-person {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  margin-left: -8px;
+  border-radius: 12px;
+}
+.sidebar-footer .profile-person:hover { background: var(--royal-blue-tint); }
+.sidebar-footer .profile-person[aria-current="page"] { background: linear-gradient(135deg, var(--green-blue-soft), var(--royal-blue-soft)); }
+.sidebar-footer .avatar { flex: 0 0 34px; width: 34px; height: 34px; }
+.profile-person-text { flex: 1; min-width: 0; }
+.profile-person-text small { display: block; color: var(--muted); font-size: 0.76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-footer .profile-company-logo { flex: 0 0 auto; width: 44px; height: 30px; margin: 0; padding: 3px; }
+.sidebar-footer .sidebar-logout {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 10px;
+  color: var(--muted);
+}
+.sidebar-footer .sidebar-logout:hover { background: var(--royal-blue-tint); color: var(--royal-blue); }
+.sidebar-footer .sidebar-logout svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+body.sidebar-collapsed .sidebar-footer .sidebar-logout { display: none; }
+body.sidebar-collapsed .help-card-links,
+body.sidebar-collapsed .profile-person-text { display: none; }
+.account-hero-logo { display: grid; justify-items: center; gap: 4px; flex: 0 0 auto; }
+.account-hero-logo-edit { border: 0; background: none; padding: 0; color: var(--green-blue-dark); font: inherit; font-size: 0.78rem; font-weight: 800; text-decoration: underline; cursor: pointer; }
+.account-hero-logo-edit[hidden] { display: none; }

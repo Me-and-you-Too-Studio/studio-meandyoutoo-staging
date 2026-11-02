@@ -625,8 +625,7 @@
 
   var NAV_SECONDARY = [
     { separator: true },
-    { href: 'acces-equipes.html', label: 'Accès et équipes', permission:'manage_users', icon: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M15 14.5c3 0 6 2 6 5.5"/>' },
-    { href: 'account.html', label: 'Mon compte', icon: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>' }
+    { href: 'acces-equipes.html', label: 'Accès et équipes', permission:'manage_users', icon: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M15 14.5c3 0 6 2 6 5.5"/>' }
   ];
 
   var NAV_BOTTOM = [
@@ -692,6 +691,9 @@
     });
   }
 
+  // Un prénom ou un nom saisi tout en minuscules (ou majuscules) s'affiche avec une majuscule.
+  function displayPersonName(value){value=String(value||'').trim();if(!value||value!==value.toLowerCase()&&value!==value.toUpperCase())return value;return value.toLowerCase().replace(/(^|[\s'’-])(\p{L})/gu,function(m,sep,letter){return sep+letter.toUpperCase();});}
+
   function renderSidebar(){
     var root = document.getElementById('sidebar-root');
     if (!root) return;
@@ -716,9 +718,9 @@
       '</div>' +
       '<nav class="nav">' + mainNavigation.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
       '<div class="sidebar-footer">' +
-        (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><strong>Besoin d’aide&nbsp;?</strong><p>Une question sur votre campagne, vos contenus ou le fonctionnement du Studio&nbsp;?</p><button type="button" class="help-tour-button" data-tour-replay hidden>Revoir la visite de cette page</button><button type="button" class="help-tour-button help-news-button" data-news-open>Nouveautés du Studio <span class="help-news-count" data-news-count hidden></span></button><a class="button button-primary" href="contact-client.html">Contacter Me&YouToo</a></div>') +
+        (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><a class="help-card-contact" href="contact-client.html"><span class="help-card-icon" aria-hidden="true">?</span><span><strong>Besoin d’aide&nbsp;?</strong><small>Contacter Me&amp;YouToo</small></span></a><div class="help-card-links"><button type="button" class="help-tour-button" data-tour-replay hidden>Revoir la visite</button><button type="button" class="help-tour-button help-news-button" data-news-open>Nouveautés <span class="help-news-count" data-news-count hidden></span></button></div></div>') +
         switchButton +
-        '<div class="profile"><div class="profile-person"><div class="avatar">' + avatarHtml + '</div><strong class="profile-person-name">' + (CURRENT_USER ? ((CURRENT_USER.firstName || '') + ' ' + (CURRENT_USER.lastName || '')).trim() || CURRENT_USER.email : 'Compte') + '</strong></div><div class="profile-copy">' + clientLogoHtml + '<small>' + roleLabel + ' · ' + (CURRENT_USER ? (CURRENT_USER.organizationName || 'Me&YouToo') : '') + '</small><button class="sidebar-logout" type="button" data-logout>Se déconnecter</button></div></div>' +
+        '<div class="profile"><a class="profile-person" href="account.html"' + (CURRENT==='account.html'?' aria-current="page"':'') + ' title="Mon compte"><div class="avatar">' + avatarHtml + '</div><span class="profile-person-text"><strong class="profile-person-name">' + (CURRENT_USER ? (displayPersonName(CURRENT_USER.firstName) + ' ' + displayPersonName(CURRENT_USER.lastName)).trim() || CURRENT_USER.email : 'Compte') + '</strong><small>' + (adminInterface ? roleLabel : 'Mon compte') + (CURRENT_USER && CURRENT_USER.organizationName ? ' · ' + CURRENT_USER.organizationName : '') + '</small></span>' + clientLogoHtml + '</a><button class="sidebar-logout" type="button" data-logout title="Se déconnecter" aria-label="Se déconnecter"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg></button></div>' +
       '</div>';
   }
 
@@ -941,14 +943,12 @@
     }
     var card=document.getElementById('studio-licence-card');
     if(card){
-      var label=sub.source==='legacy_or_included'?'Accès inclus':(LICENCE_PLAN_LABELS[sub.plan]||'Licence Studio');
+      var label=LICENCE_PLAN_LABELS[sub.plan]||(sub.cockpitIncluded===false?LICENCE_PLAN_LABELS.monthly:LICENCE_PLAN_LABELS.annual);
       var how=sub.source==='stripe'?'Paiement en ligne':sub.source==='invoice'?'Sur facture':sub.source==='launch_offer'?'Offerte par Me&amp;YouToo':'Accompagnement Me&amp;YouToo';
       var end=licenceDay(sub.periodEnd);
       var state=sub.accessActive===false?'Terminée le '+licenceFr(end):sub.cancellationScheduled?'Résiliation programmée au '+licenceFr(end):end?'Active jusqu’au '+licenceFr(end):'Active, sans date de fin';
       card.querySelector('[data-licence-title]').textContent=label;
-      var features=card.querySelector('[data-licence-features]');
-      card.querySelector('[data-licence-state]').innerHTML=how+' · '+state+(sub.plan==='monthly'&&!features?'<br>Le Cockpit de pilotage D&amp;I est inclus dans la formule annuelle.':'');
-      if(features){features.hidden=false;features.innerHTML='<div><dt>Cockpit DEI</dt><dd>'+(sub.cockpitIncluded===false?'<a href="cockpit-dei.html?audience=client">Formule annuelle →</a>':'Inclus')+'</dd></div><div><dt>Création de campagnes</dt><dd>'+(sub.accessActive===false?'Suspendue':'Incluse')+'</dd></div>';}
+      card.querySelector('[data-licence-state]').innerHTML=how+' · '+state+(sub.cockpitIncluded===false?'<br>Le Cockpit de pilotage D&amp;I est inclus dans la formule annuelle.':'');
       var pill=document.querySelector('[data-licence-pill]');if(pill){pill.hidden=false;pill.textContent=label;}
       var actions=card.querySelector('[data-licence-actions]');
       var stripeRenewing=sub.source==='stripe'&&sub.accessActive!==false&&!sub.cancellationScheduled;
