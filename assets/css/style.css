@@ -17201,3 +17201,19 @@ body.sidebar-collapsed .sidebar-footer .profile-logout { display: none; }
 .admin-client-pilot-kpi.is-stats { background: #fff4e5; }
 .admin-client-pilot-kpi.is-stats .admin-client-pilot-icon { color: #b45f00; }
 .admin-home-tag.is-stats { background: #fff4e5; color: #8a4b00; }
+
+/* Admin « Stats à saisir » : colonnes resserrées, actions alignées à droite, contrôles homogènes ; filtres sur plusieurs lignes au lieu d'un défilement latéral. */
+#org-filter-chips { flex-wrap: wrap; overflow: visible; }
+.admin-stats-todo-row { grid-template-columns: minmax(0, 1fr) 170px 340px; gap: 18px; padding: 12px 18px; }
+.admin-stats-todo-actions { display: grid; justify-items: end; gap: 6px; }
+.admin-stats-todo-form { display: flex; align-items: center; gap: 8px; }
+.admin-stats-todo-form input { box-sizing: border-box; width: 120px; height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; font-weight: 700; color: var(--royal-blue); background: var(--surface); text-align: right; }
+.admin-stats-todo-form input:focus { outline: 2px solid var(--green-blue); outline-offset: 1px; }
+.admin-stats-todo-save { display: inline-flex; align-items: center; justify-content: center; height: 38px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--green-blue-dark); color: #fff; font: inherit; font-size: .88rem; font-weight: 800; text-decoration: none; cursor: pointer; box-shadow: none; }
+.admin-stats-todo-save:hover { filter: brightness(1.08); }
+.admin-stats-todo-save:disabled { opacity: .6; cursor: default; }
+.admin-stats-todo-links { display: flex; gap: 14px; }
+.admin-stats-todo-link { font-size: .82rem; font-weight: 700; color: var(--green-blue-dark); text-decoration: none; }
+.admin-stats-todo-link:hover { text-decoration: underline; }
+.admin-stats-todo-error { text-align: right; }
+@media (max-width: 900px) { .admin-stats-todo-row { grid-template-columns: 1fr; } .admin-stats-todo-actions { justify-items: start; } }

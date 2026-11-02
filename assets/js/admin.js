@@ -77,12 +77,12 @@
   function statsTodoRow(t){
     const p=t.p,o=t.o,name=p.campaign_name||p.title||'Campagne',dossier='client.html?organizationId='+encodeURIComponent(o.id);
     const value=p.legacy_stats_passations!=null?'<strong>'+fmt(p.legacy_stats_passations)+' passation'+(Number(p.legacy_stats_passations)>1?'s':'')+'</strong><small>'+(t.reason==='protected'?'saisi ':'lu ')+(t.days===0?'aujourd’hui':t.days===1?'hier':'il y a '+t.days+' jours')+'</small>':'<strong>Aucun chiffre</strong><small>Le client ne voit pas ses participations</small>';
-    const engine=t.link?'<a class="button button-secondary button-small" href="'+esc(t.link)+'" target="_blank" rel="noopener">Ouvrir les stats du moteur ↗</a>':'';
+    const engine=t.link?'<a class="admin-stats-todo-link" href="'+esc(t.link)+'" target="_blank" rel="noopener">Stats du moteur ↗</a>':'';
     const actions=t.reason==='protected'
-      ?engine+'<form class="admin-stats-todo-form" data-stats-todo-form="'+esc(p.id)+'"><label><span class="visually-hidden">Passations de '+esc(name)+'</span><input type="number" min="0" step="1" required placeholder="Passations" value="'+(p.legacy_stats_passations!=null?esc(p.legacy_stats_passations):'')+'"></label><button class="button button-primary button-small" type="submit">Enregistrer</button></form><a class="admin-stats-todo-link" href="'+dossier+'#client-credits">Crédits du pack →</a>'
+      ?'<form class="admin-stats-todo-form" data-stats-todo-form="'+esc(p.id)+'"><label><span class="visually-hidden">Passations de '+esc(name)+'</span><input type="number" min="0" step="1" required placeholder="Passations" value="'+(p.legacy_stats_passations!=null?esc(p.legacy_stats_passations):'')+'"></label><button class="admin-stats-todo-save" type="submit">Enregistrer</button></form><span class="admin-stats-todo-links">'+engine+'<a class="admin-stats-todo-link" href="'+dossier+'#client-credits">Crédits du pack →</a></span>'
       :t.reason==='link'
-        ?'<a class="button button-primary button-small" href="'+dossier+'">Ajouter le lien stats dans la fiche →</a>'
-        :'<span class="admin-stats-todo-error">'+esc(p.legacy_stats_last&&p.legacy_stats_last.error_message||'Erreur inconnue')+'</span><button class="button button-secondary button-small" type="button" data-stats-todo-refresh="'+esc(p.id)+'">Actualiser les stats</button>'+engine;
+        ?'<a class="admin-stats-todo-save" href="'+dossier+'">Ajouter le lien stats →</a>'
+        :'<span class="admin-stats-todo-error">'+esc(p.legacy_stats_last&&p.legacy_stats_last.error_message||'Erreur inconnue')+'</span><button class="admin-stats-todo-save" type="button" data-stats-todo-refresh="'+esc(p.id)+'">Actualiser les stats</button><span class="admin-stats-todo-links">'+engine+'</span>';
     return '<div class="admin-stats-todo-row'+(t.stale?' is-stale':'')+'"><div class="admin-stats-todo-who"><strong>'+esc(o.name)+'</strong><span>'+esc(name)+'</span><em>'+STATS_REASONS[t.reason]+'</em></div><div class="admin-stats-todo-value">'+value+(t.stale?'<small class="admin-stats-todo-stale">À mettre à jour</small>':'')+'</div><div class="admin-stats-todo-actions">'+actions+'</div></div>';
   }
   function renderStatsTodo(){
