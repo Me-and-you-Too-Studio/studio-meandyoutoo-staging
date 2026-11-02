@@ -7,7 +7,7 @@
   ['dei-calendar-link','dei-final-calendar-link'].forEach(function(id){
     var link=document.getElementById(id);
     var orgParam=new URLSearchParams(location.search).get('organizationId');
-    if(link)link.href=adminView?(orgParam?'calendrier.html?organizationId='+encodeURIComponent(orgParam):'calendrier.html'):'calendrier.html?audience=client';
+    if(link)link.href=adminView?(orgParam?'calendrier.html?from=cockpit&organizationId='+encodeURIComponent(orgParam):'calendrier.html?from=cockpit'):'calendrier.html?audience=client&from=cockpit';
   });
 
   // Mode admin (cockpit-dei.html?organizationId=…) : on saisit le registre d'un client ; le parcours ne concerne que le compte connecté.

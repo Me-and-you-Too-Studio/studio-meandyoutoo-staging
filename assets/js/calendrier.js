@@ -3,6 +3,10 @@
   const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
   const user=StudioAPI.user()||{};
   const isAdmin=user.role==='admin'&&StudioAPI.interfaceMode()!=='client';
+  // Ouvert depuis le Cockpit DEI (?from=cockpit) : bouton de retour, sur le même client pour l'admin.
+  (function(){const p=new URLSearchParams(location.search),bar=document.querySelector('.calendar-topbar .top-actions');if(p.get('from')!=='cockpit'||!bar)return;
+    const org=p.get('organizationId'),back=document.createElement('a');back.className='button button-secondary';back.id='calendar-back-cockpit';
+    back.href=isAdmin?(org?'cockpit-dei.html?organizationId='+encodeURIComponent(org):'cockpit-dei.html'):'cockpit-dei.html?audience=client';back.textContent='← Retour au Cockpit DEI';bar.prepend(back);})();
   const canManageTasks=isAdmin||Boolean(user.permissions&&user.permissions.manage_tasks);
   const state={view:'year',cursor:new Date(),campaigns:[],tasks:[],organizations:[],missingDates:0,taskFilter:'todo',deiActions:[],deiKinds:{}};
   const statusLabel=status=>status?window.StudioStatus.label(status,isAdmin):'';
