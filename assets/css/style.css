@@ -17166,3 +17166,6 @@ body.sidebar-collapsed .sidebar-footer .profile-logout { display: none; }
 .rules-subtitle { margin: 22px 0 8px; color: var(--royal-blue); font-size: 1.02rem; }
 .rules-list { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--muted); font-size: 0.92rem; }
 .rules-list strong { color: var(--royal-blue); }
+
+/* Chiffres clés : un libellé sur deux lignes ne décale pas le chiffre des cases voisines. */
+.sp-kpis div { display: flex; flex-direction: column; justify-content: space-between; }
