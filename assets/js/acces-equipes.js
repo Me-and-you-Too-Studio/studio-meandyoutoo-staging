@@ -137,7 +137,7 @@
         // Les actions du Cockpit (formations, conférences, dessins…) du dossier, rangées de la même façon.
         '<p class="ae-folder-label">Actions du Cockpit ('+acts.length+')</p>'+
         (acts.length?'<ul class="ae-folder-campaigns">'+acts.map(function(a){return '<li><span>'+esc(a.icon)+' '+esc(a.title)+' <small class="ae-muted">· '+esc(shortDate(a.date))+'</small></span>'+(data.canEdit?'<button type="button" class="ae-link" data-unfile-action="'+esc(a.id)+'" aria-label="Retirer '+esc(a.title)+' du dossier">Retirer</button>':'')+'</li>';}).join('')+'</ul>':'<p class="ae-muted">Aucune action pour l’instant.</p>')+
-        (data.canEdit&&actions().length>acts.length?'<button class="button button-secondary ae-add-campaigns" type="button" data-add-actions="'+esc(f.id)+'">+ Ajouter des actions</button>':'')+
+        (data.canEdit&&unfiledActions().length?'<button class="button button-secondary ae-add-campaigns" type="button" data-add-actions="'+esc(f.id)+'">+ Ajouter des actions</button>':'')+
         '<p class="ae-folder-label">Visible par</p><p>'+(team.length?team.map(function(u){return '👤 '+esc(name(u));}).join(' · '):'<span class="ae-muted">Personne de l’équipe pour l’instant</span>')+'</p>'+
         '<p class="ae-muted">+ '+everyone+' compte'+(everyone>1?'s':'')+' « Toutes les campagnes »</p>'+
         (ideas.length?'<p class="ae-ideas">'+(team.length?'Fonctions souvent associées':'Personne ne suit encore ce sujet. Les entreprises désignent souvent')+' : '+esc(ideas.join(' · '))+'</p>':'')+
@@ -145,6 +145,8 @@
     }).join('');
   }
   function actions(){return data.actions||[];}
+  // Une action déjà rangée n’est plus proposée ailleurs : pour la changer de dossier, on la retire d’abord du sien.
+  function unfiledActions(){return actions().filter(function(a){return !a.teamFolderId;});}
   // Actions sans dossier dont la thématique évoque un dossier existant (proposition calculée par l’API).
   function proposals(){return actions().filter(function(a){return !a.teamFolderId&&a.proposedFolderId;});}
   function shortDate(v){var d=new Date(String(v||'').slice(0,10)+'T12:00:00');return Number.isNaN(d.getTime())?'':d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});}
@@ -322,7 +324,7 @@
     adding={mode:mode,folderId:folderId};
     var items,unfiledFirst=function(a,b){return (a.teamFolderId?1:0)-(b.teamFolderId?1:0);};
     if(mode==='campaigns')items=data.campaigns.filter(function(c){return c.teamFolderId!==folderId;}).sort(unfiledFirst).map(function(c){return {id:c.id,title:c.name,sub:esc(c.theme||'')+' · '+where(c)};});
-    else if(mode==='actions')items=actions().filter(function(a){return a.teamFolderId!==folderId;}).sort(unfiledFirst).map(function(a){return {id:a.id,title:a.icon+' '+a.title,sub:esc(a.kindLabel)+' · '+esc(shortDate(a.date))+(a.theme?' · '+esc(a.theme):'')+' · '+where(a)};});
+    else if(mode==='actions')items=unfiledActions().map(function(a){return {id:a.id,title:a.icon+' '+a.title,sub:esc(a.kindLabel)+' · '+esc(shortDate(a.date))+(a.theme?' · '+esc(a.theme):'')+' · '+where(a)};});
     else items=proposals().map(function(a){return {id:a.id,target:a.proposedFolderId,checked:true,title:a.icon+' '+a.title,sub:esc(a.kindLabel)+' · '+esc(shortDate(a.date))+' · '+esc(a.theme||'')+' → <strong>📁 '+esc(folderName(a.proposedFolderId))+'</strong>'};});
     $('ae-add-campaigns-title').textContent=mode==='proposals'?'Ranger les actions d’après leur thématique':'Ajouter des '+(mode==='actions'?'actions':'campagnes')+' à « '+folderName(folderId)+' »';
     $('ae-add-desc').textContent=mode==='proposals'?'Décochez celles qui doivent rester visibles de toute l’entreprise. Rien n’est rangé avant de cliquer sur « Ranger ».':'Cochez les '+(mode==='actions'?'actions':'campagnes')+' à ranger dans ce dossier : l’équipe du dossier les verra.';
