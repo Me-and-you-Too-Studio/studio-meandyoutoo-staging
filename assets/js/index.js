@@ -254,7 +254,7 @@
       document.getElementById('draft-campaigns-count').textContent=number(data.summary&&data.summary.draft_campaigns);
       document.getElementById('used-passations-count').textContent=number(data.organization&&data.organization.passations_used);
       // Pack historique : les crédits ont été utilisés avant la date de pack connue du Studio, on ne la cite pas.
-      if(data.organization&&data.organization.pack_counted_by_engine)document.getElementById('used-passations-note').textContent='Sur votre pack en cours';
+      if(data.organization&&data.organization.legacy_pack)document.getElementById('used-passations-note').textContent='Sur votre pack en cours';
       else if(data.organization&&data.organization.pack_started_at)document.getElementById('used-passations-note').textContent='Depuis le '+dateFr(data.organization.pack_started_at)+', début de votre pack';
       document.getElementById('remaining-passations-count').textContent=data.organization&&data.organization.pack_unlimited?'Illimité':number(data.organization&&data.organization.passations_remaining);
       if(data.organization&&data.organization.pack_expires_at){
