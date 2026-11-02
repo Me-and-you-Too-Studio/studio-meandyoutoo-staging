@@ -745,8 +745,8 @@
   function situationResponseFormat(s){
     // Même priorité que l’aperçu répondant : aucun type déduit du nombre de réponses.
     const kind=s.response_kind||s.legacy_payload?.responseKind||s.legacy_payload?.kind;
-    if(kind==='rating')return {label:'Rating · Échelle',help:'Les réponses forment une échelle et sont présentées dans leur ordre.'};
-    if(kind==='choice')return {label:'Choice · Réponses proposées',help:'Les réponses sont présentées dans un ordre aléatoire dans l’aperçu répondant.'};
+    if(kind==='rating')return {label:'Échelle',help:'Les réponses forment une échelle et sont présentées dans leur ordre.'};
+    if(kind==='choice')return {label:'Réponses proposées',help:'Les réponses sont présentées dans un ordre aléatoire dans l’aperçu répondant.'};
     return {label:'Format non renseigné',help:'Aucun format explicite n’est enregistré. L’aperçu répondant utilise sa règle de compatibilité pour déterminer la présentation.'};
   }
 
@@ -1351,7 +1351,10 @@
       :campaignReadOnly
         ?`${status.count} situation${status.count>1?'s':''} dans cette campagne historique · consultation en lecture seule.`
       :status.rules.min!=null
-        ?`${status.count} situation${status.count>1?'s':''} retenue${status.count>1?'s':''} · ${status.rules.min} minimum (base du catalogue) et ${status.rules.max} maximum dans ce chapitre.`
+        // Sans bibliothèque, aucune situation ne peut être ajoutée : le maximum n'a pas de sens pour le client.
+        ?(hasLibrary
+          ?`${status.count} situation${status.count>1?'s':''} retenue${status.count>1?'s':''} · ${status.rules.min} minimum (base du catalogue) et ${status.rules.max} maximum dans ce chapitre.`
+          :`${status.count} situation${status.count>1?'s':''} retenue${status.count>1?'s':''} · ${status.rules.min} situation${status.rules.min>1?'s':''} dans ce chapitre (base du catalogue).`)
         :`${status.count} situations retenues · consultez les réponses et scores avant de modifier votre sélection.`;
 
     if(!effectiveChapterLocked&&!campaignReadOnly&&status.rules.min!=null&&status.count===status.rules.min){
