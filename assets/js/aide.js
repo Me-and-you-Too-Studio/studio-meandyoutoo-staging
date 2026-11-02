@@ -28,9 +28,10 @@ async function loadArticle(id){
     $('help-article-meta').textContent=a.updatedAt?'Mis à jour le '+formatDate(a.updatedAt):'';$('help-article-body').innerHTML=a.bodyHtml||'';}
   catch(e){$('help-article-title').textContent='Article indisponible';$('help-article-body').innerHTML='<p>Cet article ne peut pas être affiché pour le moment. <a href="aide.html">Revenir à l’aide</a></p>';}
 }
-// Chat HubSpot quand il est chargé sur la page ; sinon la page de contact de l'équipe.
+// Chat HubSpot quand il est chargé sur la page ; sinon la page de contact de l'équipe. Dans un article, un lien « #chat » fait de même.
 document.addEventListener('click',function(e){
-  if(!e.target.closest('[data-help-chat]'))return;
+  if(!e.target.closest('[data-help-chat], a[href="#chat"]'))return;
+  e.preventDefault();
   var w=window.HubSpotConversations&&window.HubSpotConversations.widget;
   if(w&&w.open){w.load&&w.status&&!w.status().loaded&&w.load();w.open();}else location.href='contact-client.html';
 });
