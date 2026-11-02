@@ -47,6 +47,7 @@
     requestedPublish = params.get("publish") === "1",
     requestedManage = params.get("manage") === "1";
   let organization = null,
+    invitationsEnabled = false,
     users = new Map(),
     projects = new Map(),
     catalogThemes = [],
@@ -1057,6 +1058,41 @@
       '">Supprimer</button></div></article>'
     );
   }
+  // Invitations envoyées client par client : responsables du compte en attente du go, et invitations préparées par le client
+  // (mêmes règles que l'API). Le bouton n'agit qu'une fois le go donné sur le serveur (STUDIO_INVITATIONS_ENABLED).
+  function invitationsToSend() {
+    return orgUsers(organization).filter((u) => u.invitation_pending === true &&
+      (u.access_level === "owner" || (u.suggestion_decision === "accepted" && u.invitation_prepared_at)));
+  }
+  function invitationsHtml() {
+    const list = invitationsToSend();
+    if (!list.length) return "";
+    const names = list.map((u) => esc(contactDisplayName(u))).join(", ");
+    return '<div class="admin-pack-alert"><div><strong>✉️ ' + list.length + ' invitation' + (list.length > 1 ? "s" : "") + ' à envoyer</strong><span>' + names +
+      (invitationsEnabled ? '' : ' · le bouton s’activera au go de la mise en production') + '</span></div><div><button class="button button-primary" type="button" id="client-send-invitations"' +
+      (invitationsEnabled ? '' : ' disabled title="Disponible après le go de la mise en production"') + '>Envoyer les invitations</button></div></div>';
+  }
+  async function sendClientInvitations() {
+    const list = invitationsToSend();
+    if (!invitationsEnabled || !list.length) return;
+    const ok = await StudioModal.confirm({
+      eyebrow: "Invitations",
+      type: "warning",
+      title: "Inviter " + list.length + " personne" + (list.length > 1 ? "s" : "") + " de " + (organization.name || "ce client") + " ?",
+      message: "Un e-mail de création de mot de passe part maintenant à : " + list.map(contactDisplayName).join(", ") + ". Les autres clients ne sont pas concernés.",
+      cancelLabel: "Annuler",
+      confirmLabel: "Envoyer les invitations",
+    });
+    if (!ok) return;
+    try {
+      const result = await StudioAPI.request("/api/admin/organizations/" + encodeURIComponent(organization.id) + "/pending-invitations/send", { method: "POST", body: "{}" });
+      const sent = Array.isArray(result?.sent) ? result.sent : [];
+      await load();
+      StudioModal.alert({ eyebrow: "Invitations", title: sent.length + " invitation" + (sent.length > 1 ? "s envoyées" : " envoyée"), message: sent.map((s) => s.email).join(", ") || "Aucune invitation en attente." });
+    } catch (error) {
+      StudioModal.alert({ title: "Envoi impossible", message: error.message, type: "error" });
+    }
+  }
   function contactDisplayName(u) {
     return [u?.first_name, u?.last_name].filter(Boolean).join(" ").trim() || u?.email || "Contact";
   }
@@ -1301,8 +1337,11 @@
     bindAdminComments($("#client-ads"));
     renderContacts();
     $("#client-users").innerHTML =
-      orgUsers(organization).map(userRow).join("") ||
-      '<div class="admin-empty"><strong>Aucun compte utilisateur</strong><span>Ajoutez un accès avec « + Ajouter un accès », ou reprenez ses contacts HubSpot depuis Clients › « Importer depuis HubSpot ».</span></div>';
+      invitationsHtml() +
+      (orgUsers(organization).map(userRow).join("") ||
+      '<div class="admin-empty"><strong>Aucun compte utilisateur</strong><span>Ajoutez un accès avec « + Ajouter un accès », ou reprenez ses contacts HubSpot depuis Clients › « Importer depuis HubSpot ».</span></div>');
+    const sendInvitations = $("#client-send-invitations");
+    if (sendInvitations) sendInvitations.onclick = sendClientInvitations;
     $("#client-credits").innerHTML =
       '<div class="admin-pack-heading"><div><span class="eyebrow">Gestion du pack</span><h2>Crédits et validité</h2><p>Les crédits utilisés sont recalculés à chaque lecture du moteur stats. Une correction à la main reste possible et prend le dessus.</p></div><span id="client-pack-status" class="admin-pack-status ' + (organization.pack_unlimited ? 'is-unlimited' : '') + '">' + (organization.pack_unlimited ? 'Pack illimité' : fmt(rem) + ' restants') + '</span></div>' +
       legacyCreditsHtml(rem) +
@@ -2496,6 +2535,7 @@
         return;
       }
       organization = data?.organization || null;
+      invitationsEnabled = data?.invitationsEnabled === true;
       if (!organization) {
         showError(
           "Dossier client introuvable. Revenez au cockpit clients et ouvrez un client.",
