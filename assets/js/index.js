@@ -162,15 +162,15 @@
   }
 
   // En-tête du parcours : score d'activation (jamais un score d'inclusion), chiffres clés, réussites et série.
-  var ACTIVATION_INFO='Ce score mesure l’utilisation de votre Studio, pas le niveau d’inclusion de votre entreprise. Il combine quatre axes à parts égales : campagnes lancées (objectif 3), thématiques explorées (objectif 5), participation moyenne par rapport à vos objectifs (objectif 75 %, compté dès qu’un objectif est renseigné) et régularité (une campagne en cours ou lancée il y a moins de 6 mois).';
+  var ACTIVATION_INFO='Ce score mesure votre activité sur les sujets D&I, pas la mise en place du Studio ni le niveau d’inclusion de votre entreprise. Il combine quatre axes à parts égales : campagnes lancées (objectif 3), thématiques explorées (objectif 5), participation moyenne par rapport à vos objectifs (objectif 75 %, compté dès qu’un objectif est renseigné) et régularité (une campagne en cours ou lancée il y a moins de 6 mois).';
   function heroCard(g,themesTotal){
     var score=Math.max(0,Math.min(100,Number(g.activationScore)||0));
     var badges=missionAxes(g,themesTotal).reduce(function(list,a){return list.concat(a.badges);},[]);
     var short={'Lancer votre première campagne':'Première campagne'};
     var streak=Number(g.quarterStreak)||0;
     return '<article class="sp-card sp-hero">'+
-      '<div class="sp-score" style="--score:'+score+'"><div class="sp-score-ring" role="img" aria-label="Studio activé à '+score+' %"><strong>'+score+'<small>%</small></strong></div>'+
-        '<div><span class="sp-eyebrow">Votre parcours Studio</span><h3>Votre Studio est activé à '+score+' % <button type="button" class="admin-info-dot" data-info="'+esc(ACTIVATION_INFO)+'" aria-label="Comprendre le score d’activation" aria-haspopup="dialog">i</button></h3>'+
+      '<div class="sp-score" style="--score:'+score+'"><div class="sp-score-ring" role="img" aria-label="Activité Studio : '+score+' %"><strong>'+score+'<small>%</small></strong></div>'+
+        '<div><span class="sp-eyebrow">Votre parcours Studio</span><h3>Votre activité sur le Studio : '+score+' % <button type="button" class="admin-info-dot" data-info="'+esc(ACTIVATION_INFO)+'" aria-label="Comprendre le score d’activité" aria-haspopup="dialog">i</button></h3>'+
         (streak>=2?'<p class="sp-streak">🔥 '+streak+' trimestres consécutifs avec une campagne en cours</p>':streak===1?'<p class="sp-streak">Une campagne en cours ce trimestre : lancez-en une le trimestre prochain pour démarrer une série.</p>':'')+'</div></div>'+
       '<dl class="sp-kpis">'+
         '<div><dt>Participations</dt><dd>'+number(g.respondentsTotal||0)+'</dd></div>'+
@@ -206,6 +206,30 @@
     '</article>';
   }
 
+  // Mise en place du Studio : quatre étapes de départ, distinctes du score d'activité. La carte disparaît une fois tout fait.
+  function setupCard(account,data){
+    var o=account&&account.organization||{},org=data.organization||{},g=data.gamification||{};
+    var steps=[
+      {done:!!(o.logo_url||o.logo_data),label:'Ajouter le logo de votre organisation',href:'account.html'},
+      {done:Array.isArray(account.users)&&account.users.length>1,label:'Inviter votre équipe',href:'acces-equipes.html'},
+      {done:!!(org.pack_unlimited||Number(org.passations_quota)>0),label:'Disposer d’un pack de passations',href:'packs.html'},
+      {done:Number(g.launchedCampaigns)>0,label:'Transmettre une première campagne',href:'bibliotheque.html'}
+    ];
+    var done=steps.filter(function(s){return s.done;}).length;
+    if(done===steps.length)return '';
+    return '<article class="sp-card sp-setup" id="studio-setup">'+
+      '<header class="sp-head"><span class="sp-eyebrow">Mise en place du Studio</span><strong class="sp-figure">'+done+'<small> / '+steps.length+'</small></strong></header>'+
+      '<ol class="sp-setup-list">'+steps.map(function(s){return '<li class="'+(s.done?'is-done':'')+'">'+(s.done?'<span class="sp-check" aria-hidden="true">✓</span><span>'+esc(s.label)+'</span><span class="visually-hidden">fait</span>':'<a href="'+s.href+'"><span class="sp-check" aria-hidden="true"></span><span>'+esc(s.label)+'</span><span aria-hidden="true">→</span></a>')+'</li>';}).join('')+'</ol>'+
+    '</article>';
+  }
+  async function renderSetup(data){
+    try{
+      var account=await window.StudioAPI.request('/api/me/account'),root=document.getElementById('studio-progress'),html=setupCard(account,data);
+      var old=document.getElementById('studio-setup');if(old)old.remove();
+      if(root&&html)root.insertAdjacentHTML('afterbegin',html);
+    }catch(e){}
+  }
+
   function renderGamification(data){
     var grid=document.querySelector('.stats-grid'),g=data.gamification,themes=Array.isArray(data.themes)?data.themes:[];
     if(!grid||!g)return;
@@ -216,6 +240,7 @@
       '<div class="sp-row">'+missionsCard(g,themes.length)+coverageCard(g,themes)+'</div>'+
     '</section>');
     // Les jauges se remplissent à l'affichage.
+    renderSetup(data);
     setTimeout(function(){document.querySelectorAll('#studio-progress .sp-bar-fill').forEach(function(bar){bar.style.width=bar.dataset.width+'%';});},60);
   }
 

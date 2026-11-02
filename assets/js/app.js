@@ -624,7 +624,8 @@
   ];
 
   var NAV_SECONDARY = [
-    { separator: true },
+    { group: 'Paramètres' },
+    { href: 'account.html', label: 'Mon compte', icon: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>' },
     { href: 'acces-equipes.html', label: 'Accès et équipes', permission:'manage_users', icon: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M15 14.5c3 0 6 2 6 5.5"/>' }
   ];
 
@@ -720,7 +721,7 @@
       '<div class="sidebar-footer">' +
         (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><a class="help-card-contact" href="contact-client.html"><span class="help-card-icon" aria-hidden="true">?</span><span><strong>Besoin d’aide&nbsp;?</strong><small>Contacter Me&amp;YouToo</small></span></a><div class="help-card-links"><button type="button" class="help-tour-button" data-tour-replay hidden>Revoir la visite</button><button type="button" class="help-tour-button help-news-button" data-news-open>Nouveautés <span class="help-news-count" data-news-count hidden></span></button></div></div>') +
         switchButton +
-        '<div class="profile"><a class="profile-person" href="account.html"' + (CURRENT==='account.html'?' aria-current="page"':'') + ' title="Mon compte"><div class="avatar">' + avatarHtml + '</div><span class="profile-person-text"><strong class="profile-person-name">' + (CURRENT_USER ? (displayPersonName(CURRENT_USER.firstName) + ' ' + displayPersonName(CURRENT_USER.lastName)).trim() || CURRENT_USER.email : 'Compte') + '</strong><small>' + (adminInterface ? roleLabel : 'Mon compte') + (CURRENT_USER && CURRENT_USER.organizationName ? ' · ' + CURRENT_USER.organizationName : '') + '</small></span>' + clientLogoHtml + '</a><button class="sidebar-logout" type="button" data-logout title="Se déconnecter" aria-label="Se déconnecter"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg></button></div>' +
+        '<div class="profile"><div class="profile-person"><div class="avatar">' + avatarHtml + '</div><span class="profile-person-text"><strong class="profile-person-name">' + (CURRENT_USER ? (displayPersonName(CURRENT_USER.firstName) + ' ' + displayPersonName(CURRENT_USER.lastName)).trim() || CURRENT_USER.email : 'Compte') + '</strong><small>' + roleLabel + (CURRENT_USER && CURRENT_USER.organizationName ? ' · ' + CURRENT_USER.organizationName : '') + '</small></span>' + clientLogoHtml + '</div><button class="sidebar-logout" type="button" data-logout title="Se déconnecter" aria-label="Se déconnecter"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg></button></div>' +
       '</div>';
   }
 
@@ -948,7 +949,7 @@
       var end=licenceDay(sub.periodEnd);
       var state=sub.accessActive===false?'Terminée le '+licenceFr(end):sub.cancellationScheduled?'Résiliation programmée au '+licenceFr(end):end?'Active jusqu’au '+licenceFr(end):'Active, sans date de fin';
       card.querySelector('[data-licence-title]').textContent=label;
-      card.querySelector('[data-licence-state]').innerHTML=how+' · '+state+(sub.cockpitIncluded===false?'<br>Le Cockpit de pilotage D&amp;I est inclus dans la formule annuelle.':'');
+      card.querySelector('[data-licence-state]').innerHTML=how+' · '+state+(sub.cockpitIncluded===false?'<br>Le Cockpit de pilotage D&amp;I et les ressources clients sont inclus dans la formule annuelle.':'');
       var pill=document.querySelector('[data-licence-pill]');if(pill){pill.hidden=false;pill.textContent=label;}
       var actions=card.querySelector('[data-licence-actions]');
       var stripeRenewing=sub.source==='stripe'&&sub.accessActive!==false&&!sub.cancellationScheduled;
@@ -956,11 +957,23 @@
     }
   }
   document.addEventListener('click',function(event){var b=event.target.closest('[data-licence-renew]');if(!b)return;event.preventDefault();openLicenceRenewal(b.dataset.licenceRenew);});
+  // Formule mensuelle : le Cockpit et les ressources clients sont réservés à la formule annuelle ; les ressources publiques restent accessibles.
+  function clientResourcesIncluded(subscription){return IS_ADMIN||!subscription||subscription.cockpitIncluded!==false;}
+  function annualUpgradeAction(subscription){
+    return subscription&&subscription.source==='stripe'?'<a class="button button-primary" href="paiement-studio.html?plan=annual">Passer à la formule annuelle</a>':'<button class="button button-primary" type="button" data-licence-renew="annuelle">Demander la formule annuelle</button>';
+  }
+  window.StudioPlan={
+    clientResourcesIncluded:function(){return clientResourcesIncluded(studioSubscriptionCached());},
+    upgradeAction:function(){return annualUpgradeAction(studioSubscriptionCached());}
+  };
   function applyStudioPlanRules(subscription){
     if(IS_ADMIN||!subscription)return;
     var main=document.querySelector('main.main');
     if(subscription.cockpitIncluded===false&&(CURRENT==='cockpit-dei.html'||CURRENT==='bilan-dei.html')&&main&&!main.querySelector('.studio-plan-upsell')){
-      main.innerHTML='<section class="card permission-denied studio-plan-upsell"><div class="permission-denied-icon">🔒</div><p class="eyebrow">Formule annuelle</p><h1>Le Cockpit de pilotage D&amp;I est inclus dans la formule annuelle</h1><p>Il réunit vos diagnostics, vos actions et vos objectifs diversité &amp; inclusion pour piloter votre politique dans la durée. Votre formule mensuelle donne accès à la création et au suivi de vos campagnes.</p>'+(subscription.source==='stripe'?'<a class="button button-primary" href="paiement-studio.html?plan=annual">Passer à la formule annuelle</a>':'<button class="button button-primary" type="button" data-licence-renew="annuelle">Demander la formule annuelle</button>')+' <a class="button button-secondary" href="accueil.html">Retour à l’accueil</a></section>';
+      main.innerHTML='<section class="card permission-denied studio-plan-upsell"><div class="permission-denied-icon">🔒</div><p class="eyebrow">Formule annuelle</p><h1>Le Cockpit de pilotage D&amp;I est inclus dans la formule annuelle</h1><p>Il réunit vos diagnostics, vos actions et vos objectifs diversité &amp; inclusion pour piloter votre politique dans la durée. Votre formule mensuelle donne accès à la création et au suivi de vos campagnes.</p>'+annualUpgradeAction(subscription)+' <a class="button button-secondary" href="accueil.html">Retour à l’accueil</a></section>';
+    }
+    if(!clientResourcesIncluded(subscription)&&CURRENT==='ressource-client.html'&&main&&!main.querySelector('.studio-plan-upsell')){
+      main.innerHTML='<section class="card permission-denied studio-plan-upsell"><div class="permission-denied-icon">🔒</div><p class="eyebrow">Formule annuelle</p><h1>Les ressources clients sont incluses dans la formule annuelle</h1><p>Elles sont réservées aux abonnés annuels. Votre formule mensuelle donne accès aux ressources publiques Me&amp;YouToo.</p>'+annualUpgradeAction(subscription)+' <a class="button button-secondary" href="ressources.html">Voir les ressources publiques</a></section>';
     }
     var close=CURRENT==='parametrage.html'&&document.getElementById('close-date');
     if(close&&subscription.plan==='monthly'&&!document.querySelector('.studio-monthly-close-note')){
@@ -997,6 +1010,7 @@
         applyStudioPlanRules(data.studioSubscription);
         applyLicenceNotices(data.studioSubscription);
         syncCockpitPlanBadge(data.studioSubscription);
+        document.dispatchEvent(new CustomEvent('studio:subscription',{detail:data.studioSubscription}));
       }
     }catch(e){}
   }
