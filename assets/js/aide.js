@@ -2,7 +2,7 @@
 'use strict';
 if(!window.StudioAPI||!StudioAPI.requireAuth())return;
 // Aide du Studio : articles de la catégorie « Aide Studio Me&YouToo » de la base HubSpot, lus par l'API (pas de compte HubSpot côté client).
-// Sous-catégories HubSpot → familles affichées, dans cet ordre ; une sous-catégorie absente d'ici est rangée dans « Autres questions ».
+// Familles = sous-catégories HubSpot de la catégorie d'aide, dans l'ordre de HubSpot (renvoyées par l'API) ; un article rangé directement dans la catégorie va dans « Autres questions ».
 var FAMILIES=[];
 var $=function(id){return document.getElementById(id);};
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -18,7 +18,7 @@ function render(){
   $('help-groups').innerHTML=groups.filter(function(g){return g.items.length;}).map(function(g){return '<section class="help-group"><h2>'+esc(g.name)+'</h2><div class="help-article-list">'+g.items.map(card).join('')+'</div></section>';}).join('');
 }
 async function loadList(){
-  try{var data=await StudioAPI.request('/api/help');items=(data&&data.items)||[];$('help-loading').hidden=true;if(!items.length){$('help-error').hidden=false;$('help-error').textContent='Les premiers articles d’aide arrivent bientôt. En attendant, écrivez-nous ou ouvrez le chat.';return;}render();}
+  try{var data=await StudioAPI.request('/api/help');items=(data&&data.items)||[];FAMILIES=(data&&data.groups)||[];$('help-loading').hidden=true;if(!items.length){$('help-error').hidden=false;$('help-error').textContent='Les premiers articles d’aide arrivent bientôt. En attendant, écrivez-nous ou ouvrez le chat.';return;}render();}
   catch(e){$('help-loading').hidden=true;$('help-error').hidden=false;}
 }
 async function loadArticle(id){
