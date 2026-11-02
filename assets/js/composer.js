@@ -215,7 +215,11 @@
     const root=$('composer-campaign-context');if(!root)return;
     const readOnly=Boolean(window.STUDIO_COMPOSER_READ_ONLY||document.body.dataset.campaignReadOnly==='true');
     const legacy=isLegacyClientCampaign(state.project);
-    if(readOnly||legacy){
+    // Campagne Studio multilingue : le client passe d'une langue de son périmètre à l'autre pour la composer.
+    const byCountryAll=projectCountryLocales(state.project);
+    const scopeLocales=state.country&&Array.isArray(byCountryAll[state.country])?byCountryAll[state.country]:(state.project?.locales||[]);
+    const studioMultilingual=new Set(scopeLocales.map(v=>String(v||'').trim().toLowerCase().replaceAll('_','-')).filter(Boolean)).size>1;
+    if(readOnly||legacy||studioMultilingual){
       const names={fr:'Français',nl:'Néerlandais','nl-be':'Néerlandais Belgique',en:'Anglais',de:'Allemand',es:'Espagnol',it:'Italien',pt:'Portugais',br:'Portugais Brésil',bg:'Bulgare',ja:'Japonais','ko-kr':'Coréen',pl:'Polonais',ro:'Roumain',ru:'Russe','sv-se':'Suédois',tr:'Turc',zf:'Chinois simplifié',zh:'Chinois traditionnel',cs:'Tchèque',sk:'Slovaque',id:'Indonésien',ar:'Arabe'};
       const byCountry=projectCountryLocales(state.project);
       const countryLocales=state.country&&Array.isArray(byCountry[state.country])?byCountry[state.country]:[];
@@ -224,7 +228,7 @@
         if(!locales.includes(state.locale))state.locale=locales.includes('fr')?'fr':locales[0];
         root.hidden=false;
         root.style.display='';
-        root.innerHTML=`<div class="theme-availability-pills"><strong>${legacy?'Langues de la campagne':'Langues disponibles'}</strong>${locales.map(loc=>`<button type="button" class="theme-availability-pill is-language ${loc===state.locale?'is-active':''}" data-composer-locale="${esc(loc)}" aria-pressed="${loc===state.locale?'true':'false'}">${esc(names[loc]||loc.toUpperCase())} (${esc(loc.toUpperCase())})</button>`).join('')}<small>${legacy?'Cliquez sur une langue pour afficher le contenu historique correspondant.':'Utilisez la mappemonde 🌐 sous chaque situation pour comparer les traductions.'}</small></div>`;
+        root.innerHTML=`<div class="theme-availability-pills"><strong>${legacy?'Langues de la campagne':'Langues disponibles'}</strong>${locales.map(loc=>`<button type="button" class="theme-availability-pill is-language ${loc===state.locale?'is-active':''}" data-composer-locale="${esc(loc)}" aria-pressed="${loc===state.locale?'true':'false'}">${esc(names[loc]||loc.toUpperCase())} (${esc(loc.toUpperCase())})</button>`).join('')}<small>${legacy?'Cliquez sur une langue pour afficher le contenu historique correspondant.':readOnly?'Utilisez la mappemonde 🌐 sous chaque situation pour comparer les traductions.':'Cliquez sur une langue pour composer dans cette langue. Vous pouvez aussi comparer les versions avec la mappemonde 🌐 de chaque situation.'}</small></div>`;
         root.querySelectorAll('[data-composer-locale]').forEach(button=>button.addEventListener('click',()=>switchLegacyLocale(button.dataset.composerLocale)));
         return;
       }
@@ -745,8 +749,8 @@
   function situationResponseFormat(s){
     // Même priorité que l’aperçu répondant : aucun type déduit du nombre de réponses.
     const kind=s.response_kind||s.legacy_payload?.responseKind||s.legacy_payload?.kind;
-    if(kind==='rating')return {label:'Échelle',help:'Les réponses forment une échelle et sont présentées dans leur ordre.'};
-    if(kind==='choice')return {label:'Réponses proposées',help:'Les réponses sont présentées dans un ordre aléatoire dans l’aperçu répondant.'};
+    if(kind==='rating')return {label:'Rating · Échelle',help:'Les réponses forment une échelle et sont présentées dans leur ordre.'};
+    if(kind==='choice')return {label:'Choice · Réponses proposées',help:'Les réponses sont présentées dans un ordre aléatoire dans l’aperçu répondant.'};
     return {label:'Format non renseigné',help:'Aucun format explicite n’est enregistré. L’aperçu répondant utilise sa règle de compatibilité pour déterminer la présentation.'};
   }
 
