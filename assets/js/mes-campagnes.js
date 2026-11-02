@@ -752,10 +752,12 @@
   }
 
   // Répondants lus chaque nuit sur la page stats du moteur (absents si le compte n'a pas accès aux résultats).
+  // Campagne historique : le moteur cumule depuis le premier lancement, renouvellements compris.
   function respondentsHtml(p) {
     if (p.legacy_stats_passations == null) return "";
     var count = Number(p.legacy_stats_passations) || 0;
     return '<div class="campaign-project-respondents">👥 <strong>' + count.toLocaleString("fr-FR") + "</strong> participation" + (count > 1 ? "s" : "") +
+      (isLegacyClientProject(p) ? " depuis le premier lancement" : "") +
       (p.legacy_stats_read_at ? '<span> · mis à jour le ' + dateFr(p.legacy_stats_read_at) + "</span>" : "") + " " + window.StudioGlossary.dot("participation") + "</div>";
   }
 

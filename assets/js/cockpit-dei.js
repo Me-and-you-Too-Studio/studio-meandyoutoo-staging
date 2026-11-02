@@ -26,7 +26,8 @@
   function num(v){return new Intl.NumberFormat('fr-FR').format(Number(v)||0);}
   function day(v){return v?new Date(String(v).slice(0,10)+'T12:00:00'):null;}
   function month(v){var d=day(v);return d?d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'Date à venir';}
-  function pct(c){return c.objective&&c.respondents!=null?Math.round(c.respondents/c.objective*100):null;}
+  // Campagne historique (cumulative) : participations comptées depuis le premier lancement, sans taux sur la période en cours.
+  function pct(c){return !c.cumulative&&c.objective&&c.respondents!=null?Math.round(c.respondents/c.objective*100):null;}
   // Série d'activité métier (pas de connexions) : trimestres consécutifs avec une campagne en diffusion.
   function quarterStreak(campaigns,now){
     var q=function(d){return d.getFullYear()*4+Math.floor(d.getMonth()/3);},active={};
@@ -47,7 +48,9 @@
     // Aucune campagne lue (stats protégées) : on reprend les passations utilisées du pack.
     var fromCredits=participations===0&&started.length>0&&Number(passationsUsed)>0;
     if(fromCredits)participations=Number(passationsUsed);
-    var first=started[0]?day(started[0].launch_date):null;
+    // Le moteur ne donne pas la date du premier lancement d'une campagne historique : ni date ni rythme hebdomadaire.
+    var cumulative=!fromCredits&&started.some(function(c){return c.cumulative&&c.respondents!=null;});
+    var first=!cumulative&&started[0]?day(started[0].launch_date):null;
     var days=first?Math.max(1,Math.round((now-first)/(1000*60*60*24))):0;
     var months=first?Math.max(1,Math.round(days/30.44)):0;
     var perWeek=days>=14?Math.round(participations/days*7):null;
@@ -58,7 +61,7 @@
       var p=pct(c),upcoming=c.status==='scheduled';
       return '<li class="dy-item'+(upcoming?' is-upcoming':'')+'"><span class="dy-dot" aria-hidden="true"></span>'+
         '<p class="dy-month">'+esc(month(c.launch_date))+'</p><strong>'+esc(c.name)+'</strong><span class="dy-theme">'+esc(c.theme_title||'')+'</span>'+
-        '<span class="dy-stats">'+(upcoming?'Programmée':(c.respondents==null?'Répondants bientôt disponibles':num(c.respondents)+' répondants'+(p!=null?' · <b>'+p+' %</b>':'')))+'</span></li>';
+        '<span class="dy-stats">'+(upcoming?'Programmée':(c.respondents==null?'Répondants bientôt disponibles':(c.cumulative?num(c.respondents)+' participation'+(c.respondents>1?'s':'')+' depuis le premier lancement':num(c.respondents)+' répondants')+(p!=null?' · <b>'+p+' %</b>':'')))+'</span></li>';
     }).join('');
 
     // Comparaison avec ses propres campagnes, jamais avec d'autres clients.
@@ -76,7 +79,7 @@
       '</div>';
     }
     root.innerHTML='<div class="dy-head"><p class="eyebrow">Votre parcours avec Me&amp;YouToo</p>'+
-        '<h2><span class="dy-count">'+num(participations)+'</span> participation'+(participations>1?'s':'')+' enregistrée'+(participations>1?'s':'')+(since?' depuis votre première campagne':'')+(fromCredits?'<small class="dy-source"> (d’après les passations utilisées de votre pack)</small>':'')+' <button type="button" class="admin-info-dot" data-info="'+esc(INFO)+'" aria-label="Comprendre les participations" aria-haspopup="dialog">i</button></h2>'+
+        '<h2><span class="dy-count">'+num(participations)+'</span> participation'+(participations>1?'s':'')+' enregistrée'+(participations>1?'s':'')+(cumulative?' depuis le premier lancement':since?' depuis votre première campagne':'')+(fromCredits?'<small class="dy-source"> (d’après les passations utilisées de votre pack)</small>':'')+' <button type="button" class="admin-info-dot" data-info="'+esc(INFO)+'" aria-label="Comprendre les participations" aria-haspopup="dialog">i</button></h2>'+
         '<p>'+(since?'Première campagne le '+esc(since)+' · actif depuis '+months+' mois'+(perWeek?' · environ '+num(perWeek)+' participations par semaine':'')+' · ':'')+campaigns.length+' campagne'+(campaigns.length>1?'s':'')+' · '+themes+' thématique'+(themes>1?'s':'')+' explorée'+(themes>1?'s':'')+'</p>'+(streak>=2?'<p class="dy-streak">🔥 '+streak+' trimestres consécutifs avec une campagne en cours</p>':'')+'</div>'+
       (items?'<ol class="dy-timeline">'+items+'</ol>':'<p class="dy-empty">Aucune campagne sur les 12 derniers mois.</p>')+
       bench+
