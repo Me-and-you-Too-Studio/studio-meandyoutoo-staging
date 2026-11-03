@@ -254,7 +254,7 @@
       message:'L’équipe Me&YouToo vous recontacte pour choisir l’autodiagnostic et préparer la campagne avec vous. Vous relisez et vous validez.',
       inputLabel:'Votre besoin (facultatif)',placeholder:'Ex. : un autodiagnostic sur le sexisme pour 300 collaborateurs en janvier',confirmLabel:'Envoyer ma demande'});
     if(message===null)return;
-    try{var r=await window.StudioAPI.request('/api/offer-requests',{method:'POST',body:JSON.stringify({source:'accueil',message:'Campagne à créer ensemble'+(message?' — '+message:''),context:{step:'premiers-pas'}})});
+    try{var r=await window.StudioAPI.request('/api/offer-requests',{method:'POST',body:JSON.stringify({source:'accueil',message:message||'',context:{step:'premiers-pas'}})});
       window.StudioModal.alert({eyebrow:'Être accompagné',title:'Demande transmise',type:'success',message:r.message||'Votre demande a bien été transmise.'});}
     catch(e){window.StudioModal.alert({title:'Envoi impossible',message:e.message});}
   });
