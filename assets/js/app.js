@@ -17,7 +17,7 @@
     configuration_submitted:SUBMITTED,
     review_pending:SUBMITTED,
     in_review:{label:'En relecture chez Me&YouToo',info:'L’équipe Me&YouToo relit votre configuration. Si des ajustements sont nécessaires, elle vous les propose et vous pourrez les valider.'},
-    client_validation_required:{label:'À vous de valider',adminLabel:'En attente du client',info:'Me&YouToo vous propose des corrections. Validez-les pour que la campagne puisse être programmée.'},
+    client_validation_required:{label:'À vous de valider',adminLabel:'En attente du client',info:'Me&YouToo vous a proposé des ajustements. Validez-les pour que la campagne puisse être programmée.'},
     ready_to_publish:{label:'Validée, en préparation',info:'Tout est validé. Me&YouToo prépare la mise en ligne de la campagne aux dates prévues.'},
     scheduled:{label:'Programmée',info:'La campagne s’ouvrira automatiquement à sa date de début. En attendant, préparez votre communication avec le kit.'},
     published:{label:'Publiée',info:'La campagne est validée et en ligne. Vos collaborateurs pourront répondre pendant sa période de diffusion.'},
