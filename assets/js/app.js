@@ -288,7 +288,7 @@
   var TUTORIALS={
     decouvrir:{title:'Découvrir le Studio',url:''},
     choisir:{title:'Choisir son diagnostic',url:''},
-    composer:{title:'Composer son diagnostic',url:''},
+    composer:{title:'Composer son diagnostic',url:'tutos/composer/index.html'},
     personnaliser:{title:'Personnaliser les profils',url:''},
     parametrer:{title:'Paramétrer sa campagne',url:'tutos/parametrer/index.html'},
     transmettre:{title:'Vérifier et transmettre sa configuration',url:''},
