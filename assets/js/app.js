@@ -124,7 +124,7 @@
       {target:'.sp-next, #quickstart .qs-steps',title:'Votre prochaine étape',text:'Le Studio vous indique toujours l’action du moment. Commencez par là.'},
       {target:'.topbar .button-primary, .top-actions .button-primary',title:'Créer votre première campagne',text:NEXT_STEPS_TEXT},
       {target:'.sp-pack, .stat-link',title:'Votre pack de passations',text:'Une passation correspond à un questionnaire complété. Votre pack est valable sur toutes les thématiques Me&YouToo.'},
-      {target:'.help-card',title:'Besoin d’aide ?',text:'Contactez Me&YouToo à tout moment. Vous pouvez aussi revoir cette visite depuis ce bloc.'}
+      {target:'.nav-section-aide',title:'Aide et visite guidée',text:'Retrouvez ici l’aide pas à pas, cette visite et les nouveautés du Studio. Pour nous joindre, le bloc « Besoin d’aide ? » en bas du menu.'}
     ]},
     'cockpit':{key:'cockpit-dei',auto:true,steps:[
       {target:'#dei-tabs',title:'Votre Cockpit DEI',text:'Pilotez et archivez toutes vos actions diversité & inclusion, année après année. Trois rubriques : la vue d’ensemble, le détail des actions et vos prestataires.'},
@@ -694,7 +694,11 @@
     { href: 'packs.html', label: 'Commander des passations', permission:'order_passations', icon: '<path d="M3 7h18v12H3z"/><path d="M16 12h5"/><path d="M6 7V5h12v2"/>' },
     { group: 'S’informer' },
     { href: 'offres.html', label: 'Nos solutions', icon: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>' },
-    { href: 'ressources.html', label: 'Ressources', icon: '<path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/>' }
+    { href: 'ressources.html', label: 'Ressources', icon: '<path d="M6 4h9l3 3v13H6z"/><path d="M14 4v4h4M9 13h6M9 17h4"/>' },
+    { group: 'Aide' },
+    { href: 'aide.html', label: 'Aide et FAQ', icon: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/>' },
+    { href: '#visite', label: 'Revoir la visite', tourReplay: true, icon: '<circle cx="12" cy="12" r="9"/><path d="m10 8.5 5 3.5-5 3.5z"/>' },
+    { href: '#nouveautes', label: 'Nouveautés', newsOpen: true, icon: '<path d="M12 3l2.4 5 5.6.8-4 3.9 1 5.5-5-2.7-5 2.7 1-5.5-4-3.9 5.6-.8z"/>' }
   ];
 
   var NAV_ADMIN = [
@@ -752,6 +756,8 @@
     var planBadge=notIncluded&&withIcon?'<b class="nav-plan-badge" title="Inclus dans la formule annuelle">Annuel</b>':'';
     var featured=item.featured?' class="nav-featured"':'';
     var notificationBadge=item.notificationBadge?'<b class="nav-notification-count" data-nav-notification-count hidden>0</b>':'';
+    if(item.newsOpen){actionAttr+=' data-news-open';notificationBadge='<b class="nav-notification-count help-news-count" data-news-count hidden></b>';}
+    if(item.tourReplay)actionAttr+=' data-tour-replay hidden';
     return '<a href="' + item.href + '" data-nav'+featured+actionAttr+ current + labelAttrs + locked + '>' + iconHtml + (allowed?'':'<b class="nav-lock" aria-hidden="true">🔒</b>') + item.label + planBadge + notificationBadge + '</a>';
   }
 
@@ -780,6 +786,20 @@
   // Un prénom ou un nom saisi tout en minuscules (ou majuscules) s'affiche avec une majuscule.
   function displayPersonName(value){value=String(value||'').trim();if(!value||value!==value.toLowerCase()&&value!==value.toUpperCase())return value;return value.toLowerCase().replace(/(^|[\s'’-])(\p{L})/gu,function(m,sep,letter){return sep+letter.toUpperCase();});}
 
+  // Chaque rubrique (Piloter, Lancer…) dans son propre bloc, pour la lire d'un coup d'œil.
+  function navSections(items){
+    var html='',open=false;
+    items.forEach(function(item){
+      if(item.group){
+        if(open)html+='</div>';
+        html+='<div class="nav-section nav-section-'+item.group.normalize('NFD').replace(/[^A-Za-z]/g,'').toLowerCase()+'">';
+        open=true;
+      }
+      html+=navLink(item,true);
+    });
+    return html+(open?'</div>':'');
+  }
+
   function renderSidebar(){
     var root = document.getElementById('sidebar-root');
     if (!root) return;
@@ -802,9 +822,9 @@
         '<div class="interface-badge ' + (adminInterface ? 'interface-badge-admin' : 'interface-badge-client') + '">' + roleLabel + '</div>' +
         '<div id="notification-root" class="sidebar-notification-root" aria-label="Notifications"></div>' +
       '</div>' +
-      '<nav class="nav">' + mainNavigation.map(function(i){ return navLink(i, true); }).join('') + '</nav>' +
+      '<nav class="nav">' + navSections(mainNavigation) + '</nav>' +
       '<div class="sidebar-footer">' +
-        (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><a class="help-card-contact" href="contact-client.html"><span class="help-card-icon" aria-hidden="true">?</span><span><strong>Besoin d’aide&nbsp;?</strong><small>Contacter Me&amp;YouToo</small></span></a><div class="help-card-links"><a class="help-tour-button" href="aide.html">Aide et FAQ</a><button type="button" class="help-tour-button" data-tour-replay hidden>Revoir la visite</button><button type="button" class="help-tour-button help-news-button" data-news-open>Nouveautés <span class="help-news-count" data-news-count hidden></span></button></div></div>') +
+        (adminInterface ? '<div class="admin-help-card"><strong>Espace d’administration</strong><p>Gérez les clients, leurs accès, leurs crédits et leurs demandes de packs.</p></div>' : '<div class="help-card"><a class="help-card-contact" href="contact-client.html"><span class="help-card-icon" aria-hidden="true">?</span><span><strong>Besoin d’aide&nbsp;?</strong><small>Contacter Me&amp;YouToo</small></span></a><a class="help-card-team" href="contact-client.html" aria-label="Voir l’équipe Me&amp;YouToo"><img src="assets/img/Ines%20Dauvergne%20basse%20def%20V2%20.jpg" alt=""><img src="assets/img/Soraya%20Khadir.jpg" alt=""><img src="assets/img/Carole%20Michelon.jpg" alt=""><span>Notre équipe</span></a></div>') +
         switchButton +
         '<div class="profile"><div class="profile-person"><div class="avatar">' + avatarHtml + '</div><span class="profile-person-text"><strong class="profile-person-name">' + (CURRENT_USER ? (displayPersonName(CURRENT_USER.firstName) + ' ' + displayPersonName(CURRENT_USER.lastName)).trim() || CURRENT_USER.email : 'Compte') + '</strong><button class="profile-logout" type="button" data-logout><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg>Se déconnecter</button></span>' + clientLogoHtml + '</div></div>' +
       '</div>';

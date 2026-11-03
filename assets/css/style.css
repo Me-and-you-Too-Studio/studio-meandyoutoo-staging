@@ -17282,3 +17282,22 @@ body.sidebar-collapsed .sidebar-footer .profile-logout { display: none; }
 .studio-guide-actions .button { padding: 8px 12px; font-size: .85rem; }
 .studio-guide-quit { margin-top: 10px; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: .8rem; text-decoration: underline; cursor: pointer; }
 @media (max-width: 640px) { .studio-guide { right: 12px; left: 12px; bottom: 84px; width: auto; } .studio-guide.is-collapsed { left: auto; } }
+
+/* Menu latéral : une rubrique par bloc gris clair, un groupe « Aide » dans le menu, le bloc jaune réservé au contact. */
+.sidebar .nav { gap: 5px; }
+.sidebar .nav-section a { padding: 5px 10px; }
+.nav-section { display: grid; gap: 0; padding: 5px 4px 3px; border-radius: 14px; background: #f3f5f8; }
+.sidebar .nav-section .nav-group { margin: 1px 9px 1px; color: #8a96ad; }
+.nav-section a span { background: #fff; }
+.nav-section a:hover { background: #e8edf4; }
+.nav-section a[aria-current="page"] { background: #fff; box-shadow: 0 1px 4px rgba(39, 58, 100, .08); }
+.nav a[hidden] { display: none; }
+.nav-section-aide { background: #edf6f7; }
+.nav-section-aide a span { color: var(--green-blue-dark); }
+.nav a .help-news-count { margin-left: auto; background: var(--sunny-yellow); color: var(--ink); }
+body.sidebar-collapsed .nav-section { padding: 0; background: none; }
+.help-card-team { display: flex; align-items: center; margin: 8px 0 0 38px; color: var(--muted); font-size: .76rem; font-weight: 700; }
+.help-card-team img { width: 24px; height: 24px; margin-right: -6px; border: 2px solid var(--sunny-yellow-soft); border-radius: 50%; object-fit: cover; object-position: center top; }
+.help-card-team span { margin-left: 12px; }
+.help-card-team:hover span { text-decoration: underline; }
+body.sidebar-collapsed .help-card-team { display: none; }
