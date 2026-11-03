@@ -38,7 +38,7 @@
 
   function start(){
     document.getElementById('bl-back').href=cockpitHref();
-    if(isAdmin&&!organizationId){doc.innerHTML='<p class="bl-loading">Ouvrez le bilan depuis le Cockpit DEI d’un client.</p>';return;}
+    if(isAdmin&&!organizationId){doc.innerHTML='<p class="bl-loading">Ouvrez le bilan depuis le Cockpit D&I d’un client.</p>';return;}
     Promise.all([StudioAPI.request('/api/dei/actions'+qs(year)),load(year-1),load(year+1)]).then(function(r){render(r[0],r[1],r[2]);})
       .catch(function(e){doc.innerHTML='<p class="bl-loading">Le bilan est momentanément indisponible. '+esc(e.message||'')+'</p>';});
   }
@@ -79,7 +79,7 @@
       (ind.planned?'<p class="bl-note">'+(ind.planned>1?num(ind.planned)+' autres actions en cours ou prévues':'1 autre action en cours ou prévue')+' sur l’année.</p>':'')+
       (pind&&(pind.actions||pind.peopleReached)?'<p class="bl-note">Les variations sont calculées par rapport à votre année '+(year-1)+'.</p>':'')+
       // Le bilan ne reflète que ce qui est saisi : on invite à compléter le Cockpit puis à le télécharger à nouveau.
-      '<div class="bl-complete"><strong>📝 Un bilan aussi complet que votre Cockpit</strong><p>Ce bilan reprend les actions enregistrées dans votre Cockpit DEI. Pour qu’il reflète tout ce que vous avez fait, ajoutez-y toutes vos actions de l’année, y compris celles menées en interne ou avec d’autres prestataires (événements, réseaux, enquêtes, formations…), puis téléchargez à nouveau votre bilan : il se met à jour automatiquement.</p></div>'+
+      '<div class="bl-complete"><strong>📝 Un bilan aussi complet que votre Cockpit</strong><p>Ce bilan reprend les actions enregistrées dans votre Cockpit D&I. Pour qu’il reflète tout ce que vous avez fait, ajoutez-y toutes vos actions de l’année, y compris celles menées en interne ou avec d’autres prestataires (événements, réseaux, enquêtes, formations…), puis téléchargez à nouveau votre bilan : il se met à jour automatiquement.</p></div>'+
       formatsBlock(d,list)+themesBlock(list)+
       '<h3>La frise de l’année</h3>'+frise(d,list)+'</section>';
 
@@ -132,7 +132,7 @@
     notices.forEach(function(n){html+='<div class="bl-notice"><strong>'+esc(n.title)+'</strong><p>'+esc(n.text)+'</p></div>';});
     html+='<h3>Temps forts à ne pas manquer</h3><ul class="bl-list">'+EVENTS.map(function(e){return '<li><span>'+esc(e[0])+'</span> '+esc(e[1])+'</li>';}).join('')+'</ul>'+
       '<div class="bl-cta"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&amp;YouToo"><div><strong>Construire votre plan '+(year+1)+' avec Me&amp;YouToo</strong>'+
-      '<p>Diagnostics comportementaux, conférences, formations, ateliers, vidéos et e-learning : nous vous aidons à bâtir une année D&amp;I continue, au plus près de vos enjeux. Demandez un accompagnement depuis votre Cockpit DEI ou écrivez-nous.</p><p class="bl-cta-link"><a href="mailto:contact@meandyoutoo.app">contact@meandyoutoo.app</a> · <a href="https://meandyoutoo.app/fr/">meandyoutoo.app</a></p></div></div>';
+      '<p>Diagnostics comportementaux, conférences, formations, ateliers, vidéos et e-learning : nous vous aidons à bâtir une année D&amp;I continue, au plus près de vos enjeux. Demandez un accompagnement depuis votre Cockpit D&I ou écrivez-nous.</p><p class="bl-cta-link"><a href="mailto:contact@meandyoutoo.app">contact@meandyoutoo.app</a> · <a href="https://meandyoutoo.app/fr/">meandyoutoo.app</a></p></div></div>';
     // Pied de page dans la dernière section : pas de page presque vide en fin de PDF.
     doc.innerHTML=html+'<footer class="bl-footer">Bilan généré avec le Studio Me&amp;YouToo · '+esc(org)+' · '+year+' · Contact : <a href="mailto:contact@meandyoutoo.app">contact@meandyoutoo.app</a></footer></section>';
     state.org=org;

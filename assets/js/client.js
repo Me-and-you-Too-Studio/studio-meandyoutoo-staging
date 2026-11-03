@@ -257,7 +257,7 @@
       track_orders: "Suivre les commandes de passations",
       view_calendar: "Voir le calendrier des campagnes",
       manage_tasks: "Créer et gérer les tâches",
-      view_dei_cockpit: "Accéder au Cockpit DEI",
+      view_dei_cockpit: "Accéder au Cockpit D&I",
     },
     permissionPresets = {
       owner: {
@@ -1718,7 +1718,7 @@
       '<label class="field"><span>Date de début</span><input id="admin-management-launch" type="date" value="' + esc(isoDay(p.launch_date || organization?.pack_started_at)) + '"></label>' +
       '<label class="field"><span>Date de fin</span><input id="admin-management-close" type="date" value="' + esc(isoDay(p.close_date || organization?.pack_expires_at)) + '"></label>' +
       '<label class="field"><span>Nom du commanditaire</span><input id="admin-management-commanditaire-name" maxlength="160" value="' + esc(p.commanditaire_name || "") + '" placeholder="Prénom Nom"></label>' +
-      '<label class="field"><span>Fonction du commanditaire</span><input id="admin-management-commanditaire-job" maxlength="160" value="' + esc(p.commanditaire_job_title || "") + '" placeholder="DRH, Responsable DEI…"></label>' +
+      '<label class="field"><span>Fonction du commanditaire</span><input id="admin-management-commanditaire-job" maxlength="160" value="' + esc(p.commanditaire_job_title || "") + '" placeholder="DRH, Responsable D&I…"></label>' +
       '<label class="field"><span>Email du commanditaire</span><input id="admin-management-commanditaire-email" type="email" maxlength="200" value="' + esc(p.commanditaire_email || "") + '" placeholder="prenom.nom@entreprise.com"></label>' +
       '<label class="field"><span>URL de la campagne</span><input id="admin-management-share-url" type="url" value="' + esc(p.communication_share_url || "") + '" placeholder="https://…"></label>' +
       '<label class="field"><span>URL analytics / statistiques</span><input id="admin-management-results-url" type="url" value="' + esc(p.communication_results_url || "") + '" placeholder="https://stats.meandyoutoo.app/…"></label>' +
