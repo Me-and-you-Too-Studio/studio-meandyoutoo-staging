@@ -44,6 +44,15 @@ document.addEventListener('click',function(e){
   var w=window.HubSpotConversations&&window.HubSpotConversations.widget;
   if(w&&w.open){w.load&&w.status&&!w.status().loaded&&w.load();w.open();}else location.href='contact-client.html';
 });
-var id=new URLSearchParams(location.search).get('id');
-if(/^\d+$/.test(String(id||'')))loadArticle(id);else{$('help-search').addEventListener('input',render);loadList();}
+// « Lire le guide » depuis un écran : aide.html?sujet=début du titre. La fiche trouvée s'ouvre ; sinon, la recherche est pré-remplie.
+function norm(v){return String(v||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[’']/g,"'").toLowerCase().trim();}
+async function openSubject(subject){
+  try{var data=await StudioAPI.request('/api/help'),list=(data&&data.items)||[],q=norm(subject);
+    var a=list.find(function(x){return norm(x.title).indexOf(q)===0;})||list.find(function(x){return norm(x.title).indexOf(q)>=0;});
+    if(a){history.replaceState(null,'','aide.html?id='+encodeURIComponent(a.id));loadArticle(a.id);return;}
+  }catch(e){}
+  history.replaceState(null,'','aide.html');$('help-search').value=subject;$('help-search').addEventListener('input',render);loadList();
+}
+var params=new URLSearchParams(location.search),id=params.get('id'),subject=params.get('sujet');
+if(/^\d+$/.test(String(id||'')))loadArticle(id);else if(subject)openSubject(subject);else{$('help-search').addEventListener('input',render);loadList();}
 })();

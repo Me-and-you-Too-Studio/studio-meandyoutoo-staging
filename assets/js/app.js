@@ -263,7 +263,10 @@
     offer:function(id){
       if(!TOURS[id])return;registeredTour=id;
       document.querySelectorAll('[data-tour-replay]').forEach(function(b){b.hidden=false;});
-      if(!isTeamView())setTimeout(function(){startTour(id,false);},400);
+      if(guideState())renderGuide();
+      // Pendant le parcours guidé, la visite de l'écran est montrée une fois par parcours, même déjà vue.
+      if(guideTourDue(TOURS[id]))setTimeout(function(){if(startTour(id,true))guideTourShown(TOURS[id]);},400);
+      else if(!isTeamView())setTimeout(function(){startTour(id,false);},400);
     },
     replay:function(){if(registeredTour)startTour(registeredTour,true);}
   };
@@ -332,6 +335,80 @@
     if(id)placeTutorial(id);
   }
 
+  // Fiche d'aide de chaque écran (page Aide, articles HubSpot) : un bouton « Lire le guide » près du titre.
+  // La fiche est retrouvée par le début de son titre, pour survivre à un article recréé dans HubSpot.
+  var PAGE_HELP={
+    'accueil.html':'Découvrir le Studio','bibliotheque.html':'Parcourir le catalogue','composer.html':'Composer votre diagnostic',
+    'personnalisation.html':'Personnaliser les profils','parametrage.html':'Paramétrer votre campagne','validation.html':'Vérifier et transmettre',
+    'mes-campagnes.html':'Où en est ma campagne','campagne-detail.html':'Où en est ma campagne','kit-communication.html':'Utiliser le kit de communication',
+    'calendrier.html':'Organiser l’année','cockpit-dei.html':'Piloter avec le Cockpit DEI','bilan-dei.html':'Le Bilan D&I annuel',
+    'acces-equipes.html':'Inviter un collègue','notifications.html':'Suivre vos notifications','account.html':'Gérer votre compte','packs.html':'Commander un pack'
+  };
+  function currentPage(){return location.pathname.split('/').pop()||'accueil.html';}
+  function pageHelp(page){return PAGE_HELP[page]||(/^theme(-[a-z-]+)?\.html$/.test(page)?PAGE_HELP['bibliotheque.html']:'');}
+  function helpUrl(subject){return 'aide.html?sujet='+encodeURIComponent(subject);}
+  function placeHelp(){
+    var subject=pageHelp(currentPage());if(!subject||document.querySelector('.studio-help-button'))return;
+    var html='<a class="studio-tuto-button studio-help-button" href="'+esc(helpUrl(subject))+'"><span aria-hidden="true">📖</span> Lire le guide</a>';
+    var tuto=document.querySelector('.studio-tuto-button:not(.studio-help-button)'),badge=document.querySelector('.step-time-badge'),actions=document.querySelector('.topbar .top-actions'),title=document.querySelector('.topbar .page-title, .page-title');
+    if(tuto)tuto.insertAdjacentHTML('afterend',html);
+    else if(badge)badge.insertAdjacentHTML('afterend',html);
+    else if(actions)actions.insertAdjacentHTML('afterbegin',html);
+    else if(title)title.insertAdjacentHTML('afterend',html);
+  }
+
+  // Parcours guidé « Ma première campagne » : un encart suit le client d'écran en écran, du catalogue à la transmission.
+  // Il s'appuie sur la visite de chaque écran (« Me montrer ») et sur sa fiche d'aide (« Lire le guide »).
+  // Lancé depuis l'accueil ou l'aide ; l'état est gardé par utilisateur dans le navigateur jusqu'à « Terminer » ou « Quitter ».
+  var GUIDE_STAGES=[
+    {page:/^bibliotheque\.html$/,href:'bibliotheque.html',title:'Choisir une thématique',text:'Parcourez le catalogue et ouvrez la thématique qui vous intéresse : sexisme, handicap, management inclusif… Rien n’est créé tant que vous ne commencez pas.'},
+    {page:/^theme(-[a-z-]+)?\.html$/,title:'Découvrir et commencer',text:'Lisez les chapitres, puis cliquez sur « Choisir ce thème et commencer ». Vous choisirez alors les pays et les langues de votre campagne.'},
+    {page:/^composer\.html$/,title:'Composer',text:'Ouvrez chaque chapitre et choisissez les situations à garder. Tout est enregistré au fur et à mesure : vous pouvez vous arrêter et reprendre plus tard.'},
+    {page:/^personnalisation\.html$/,title:'Personnaliser les profils',text:'Relisez les textes que chaque répondant découvre à la fin de son autodiagnostic. Adaptez le ton si vous le souhaitez, ou gardez-les tels quels.'},
+    {page:/^parametrage\.html$/,title:'Paramétrer',text:'Nom et adresse de la campagne, introduction, dates, puis les données d’analyse. Le niveau de vigilance vous aide à protéger l’anonymat.'},
+    {page:/^validation\.html$/,title:'Vérifier et transmettre',text:'Relisez le récapitulatif, cochez les vérifications, puis transmettez. Me&YouToo relit votre campagne avant la mise en ligne.'},
+    {page:/^(mes-campagnes|campagne-detail|kit-communication)\.html$/,href:'mes-campagnes.html',title:'Et ensuite ?',text:'Me&YouToo relit votre campagne et vous prévient par notification et par e-mail. En attendant, préparez votre communication avec le kit.',last:true}
+  ];
+  function guideKey(){var u=tourUser();return 'studio_guide_v1:'+(u&&u.id||'anonyme');}
+  function guideState(){try{var s=JSON.parse(localStorage.getItem(guideKey())||'null');return s&&s.on?s:null;}catch(e){return null;}}
+  function saveGuide(s){try{if(s)localStorage.setItem(guideKey(),JSON.stringify(s));else localStorage.removeItem(guideKey());}catch(e){}}
+  function guideStage(){var page=currentPage();for(var i=0;i<GUIDE_STAGES.length;i++)if(GUIDE_STAGES[i].page.test(page))return i;return -1;}
+  function guideTourDue(tour){var s=guideState();return Boolean(s&&tour&&guideStage()>=0&&(s.tours||[]).indexOf(tour.key)<0);}
+  function guideTourShown(tour){var s=guideState();if(!s)return;s.tours=(s.tours||[]).concat(tour.key);saveGuide(s);}
+  function startGuide(){saveGuide({on:true,tours:[],at:new Date().toISOString()});location.href=GUIDE_STAGES[0].href;}
+  function renderGuide(){
+    var s=guideState(),old=document.querySelector('.studio-guide');if(old)old.remove();if(!s)return;
+    var index=guideStage(),page=currentPage();
+    // Hors du parcours (aide, compte…), l'encart se réduit à un rappel qui ramène au dernier écran du parcours.
+    if(index<0){
+      var back=s.lastUrl||GUIDE_STAGES[0].href;
+      document.body.insertAdjacentHTML('beforeend','<aside class="studio-guide is-collapsed" aria-label="Parcours guidé"><a class="studio-guide-pill" href="'+esc(back)+'"><span aria-hidden="true">🧭</span> Reprendre ma première campagne</a></aside>');
+      return;
+    }
+    s.lastUrl=page+location.search;s.stage=index;saveGuide(s);
+    var stage=GUIDE_STAGES[index],subject=pageHelp(page),tuto=document.querySelector('.studio-tuto-button:not(.studio-help-button)');
+    var dots=GUIDE_STAGES.map(function(g,i){return '<li class="'+(i<index?'is-done':i===index?'is-current':'')+'" title="'+esc(g.title)+'"></li>';}).join('');
+    var el=document.createElement('aside');el.className='studio-guide'+(s.collapsed?' is-collapsed':'');el.setAttribute('aria-label','Parcours guidé : ma première campagne');
+    el.innerHTML='<button type="button" class="studio-guide-pill" data-guide-toggle aria-expanded="'+(!s.collapsed)+'"><span aria-hidden="true">🧭</span> Ma première campagne · étape '+(index+1)+' sur '+GUIDE_STAGES.length+'</button>'+
+      '<div class="studio-guide-body"><ol class="studio-guide-dots" aria-hidden="true">'+dots+'</ol><h2>'+esc(stage.title)+'</h2><p>'+esc(stage.text)+'</p>'+
+      '<div class="studio-guide-actions">'+(registeredTour?'<button type="button" class="button button-primary" data-tour-replay>Me montrer sur l’écran</button>':'')+
+      (subject?'<a class="button button-secondary" href="'+esc(helpUrl(subject))+'">📖 Lire le guide</a>':'')+
+      (tuto?'<button type="button" class="button button-secondary" data-tutorial="'+esc(tuto.dataset.tutorial)+'">▶ Voir le tuto</button>':'')+'</div>'+
+      '<button type="button" class="studio-guide-quit" data-guide-quit>'+(stage.last?'Terminer le parcours':'Quitter le parcours')+'</button></div>';
+    document.body.appendChild(el);
+  }
+  window.StudioGuide={start:startGuide,active:function(){return Boolean(guideState());}};
+  document.addEventListener('click',function(e){
+    var t=e.target.closest&&e.target.closest('[data-guide-start],[data-guide-toggle],[data-guide-quit]');if(!t)return;
+    e.preventDefault();
+    if(t.hasAttribute('data-guide-start')){startGuide();return;}
+    var s=guideState();if(!s)return;
+    if(t.hasAttribute('data-guide-quit'))saveGuide(null);else{s.collapsed=!s.collapsed;saveGuide(s);}
+    renderGuide();
+  });
+  // L'encart est redessiné quand la visite de l'écran est déclarée, pour proposer « Me montrer sur l'écran ».
+  function autoGuide(){if(guideState())renderGuide();}
+
   // Nouveautés : une bulle discrète en bas de l'écran présente ce qui a changé depuis la dernière visite,
   // et le bouton « Nouveautés » du bloc d'aide garde l'historique. Ajouter une entrée en tête de liste suffit
   // (id unique, jamais réutilisé) ; une fois la bulle fermée, toutes les nouveautés affichées sont marquées vues.
@@ -391,7 +468,7 @@
     var u=tourUser();if(!u||isTeamView())return;
     refreshNewsBadge();setTimeout(refreshNewsBadge,600);
     setTimeout(function(){
-      if(tourShownThisPage||tourState||!document.querySelector('.help-card'))return;
+      if(tourShownThisPage||tourState||guideState()||!document.querySelector('.help-card'))return;
       if(document.querySelector('dialog[open]'))return;
       showNewsBubble(unseenNews());
     },4500);
@@ -409,7 +486,7 @@
       el.innerHTML=window.StudioJourney.html(el.getAttribute('data-journey'),null,{stepsOnly:true});
     });
   }
-  function init(){decorate();autoOffer();autoTutorial();autoNews();}
+  function init(){decorate();autoOffer();autoTutorial();placeHelp();autoGuide();autoNews();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 

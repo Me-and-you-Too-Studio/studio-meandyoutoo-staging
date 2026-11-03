@@ -17261,3 +17261,24 @@ body.sidebar-collapsed .sidebar-footer .profile-logout { display: none; }
 .qs-help strong { display: block; color: var(--green-blue-dark); }
 .qs-help span { color: var(--green-blue-dark); font-size: .9rem; }
 @media (max-width: 640px) { .quickstart { padding: 18px 16px; } .qs-steps { grid-template-columns: 1fr; } }
+
+/* Parcours guidé « Ma première campagne » (app.js, GUIDE_STAGES) : encart fixe au-dessus du chat, réductible en pastille. */
+.qs-guide { margin-top: 8px; }
+.help-guide-start { margin: 14px 0 0; }
+.studio-help-button { text-decoration: none; }
+.studio-guide { position: fixed; right: 20px; bottom: 96px; z-index: 900; width: min(340px, calc(100vw - 32px)); border-radius: var(--radius-md); background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lg); border: 1px solid var(--green-blue); }
+.studio-guide-pill { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 14px; border: 0; border-radius: var(--radius-md) var(--radius-md) 0 0; background: var(--green-blue-soft); color: var(--green-blue-dark); font: inherit; font-size: .85rem; font-weight: 800; text-align: left; text-decoration: none; cursor: pointer; }
+.studio-guide.is-collapsed { width: auto; }
+.studio-guide.is-collapsed .studio-guide-pill { border-radius: var(--radius-md); }
+.studio-guide.is-collapsed .studio-guide-body { display: none; }
+.studio-guide-body { padding: 12px 16px 12px; }
+.studio-guide-dots { display: flex; gap: 6px; margin: 0 0 10px; padding: 0; list-style: none; }
+.studio-guide-dots li { flex: 1; height: 5px; border-radius: 3px; background: var(--line, #dfe5ea); }
+.studio-guide-dots li.is-done { background: var(--green-blue); opacity: .45; }
+.studio-guide-dots li.is-current { background: var(--green-blue); }
+.studio-guide-body h2 { margin: 0 0 6px; font-size: 1.05rem; }
+.studio-guide-body p { margin: 0 0 12px; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+.studio-guide-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.studio-guide-actions .button { padding: 8px 12px; font-size: .85rem; }
+.studio-guide-quit { margin-top: 10px; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: .8rem; text-decoration: underline; cursor: pointer; }
+@media (max-width: 640px) { .studio-guide { right: 12px; left: 12px; bottom: 84px; width: auto; } .studio-guide.is-collapsed { left: auto; } }
