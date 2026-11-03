@@ -231,14 +231,53 @@
     }catch(e){}
   }
 
+  // Premiers pas : tant que rien n'a été diffusé, l'accueil montre seulement le chemin court.
+  // Le parcours en 6 temps, les indicateurs (tous à zéro) et les missions attendent la première diffusion.
+  function isFirstSteps(data){
+    var g=data.gamification;
+    if(!g||g.launchedCampaigns)return false;
+    return !(data.recentProjects||[]).some(function(p){return p.legacy_history;});
+  }
+  function renderQuickstart(data){
+    var root=document.getElementById('quickstart');if(!root)return;
+    var preparing=!!(data.gamification&&data.gamification.campaignsInPreparation);
+    root.querySelectorAll('.qs-steps li').forEach(function(li){
+      var n=Number(li.getAttribute('data-step'));
+      li.classList.toggle('is-done',preparing&&n===1);
+      li.classList.toggle('is-current',preparing?n===2:n===1);
+    });
+    if(preparing){
+      document.getElementById('qs-self-text').textContent='Votre campagne est en préparation : reprenez-la là où vous l’avez laissée, puis transmettez-la pour relecture.';
+      var cta=document.getElementById('qs-self-cta');cta.textContent='Reprendre ma campagne';cta.href='mes-campagnes.html';
+    }
+    document.querySelectorAll('.dashboard-flow,.stats-grid').forEach(function(el){el.hidden=true;});
+    // Aucune campagne : la section vide redirait seulement « Explorer la bibliothèque ».
+    if(!(data.recentProjects||[]).length)recentRoot.closest('section').hidden=true;
+    root.hidden=false;
+  }
+  document.addEventListener('click',async function(ev){
+    if(!ev.target.closest('#qs-accompany'))return;
+    // Même circuit que « Être accompagné » du Cockpit : notification, e-mail, transaction HubSpot.
+    var message=await window.StudioModal.prompt({eyebrow:'Être accompagné',title:'Préparer ma première campagne avec Me&YouToo',
+      message:'L’équipe Me&YouToo vous recontacte pour choisir le diagnostic et préparer la campagne avec vous. Vous relisez et vous validez.',
+      inputLabel:'Votre besoin (facultatif)',placeholder:'Ex. : un diagnostic sexisme pour 300 collaborateurs en janvier',confirmLabel:'Envoyer ma demande'});
+    if(message===null)return;
+    try{var r=await window.StudioAPI.request('/api/offer-requests',{method:'POST',body:JSON.stringify({source:'accueil',message:'Première campagne accompagnée'+(message?' — '+message:''),context:{step:'premiers-pas'}})});
+      window.StudioModal.alert({eyebrow:'Être accompagné',title:'Demande transmise',type:'success',message:r.message||'Votre demande a bien été transmise.'});}
+    catch(e){window.StudioModal.alert({title:'Envoi impossible',message:e.message});}
+  });
+
   function renderGamification(data){
     var grid=document.querySelector('.stats-grid'),g=data.gamification,themes=Array.isArray(data.themes)?data.themes:[];
     if(!grid||!g)return;
     var old=document.getElementById('studio-progress');if(old)old.remove();
+    var first=isFirstSteps(data);
+    if(first)renderQuickstart(data);
+    // En premiers pas, on garde seulement la carte de configuration du compte (ajoutée par renderSetup).
     grid.insertAdjacentHTML('afterend','<section class="studio-progress" id="studio-progress" aria-label="Votre progression Studio">'+
-      (g.activationScore!=null?heroCard(g,themes.length):'')+
+      (first?'':(g.activationScore!=null?heroCard(g,themes.length):'')+
       '<div class="sp-row">'+packCard(data.organization,g.exploredThemes.length,themes.length,g)+nextCard(nextStep(g,data.organization,themes.length))+'</div>'+
-      '<div class="sp-row">'+missionsCard(g,themes.length)+coverageCard(g,themes)+'</div>'+
+      '<div class="sp-row">'+missionsCard(g,themes.length)+coverageCard(g,themes)+'</div>')+
     '</section>');
     // Les jauges se remplissent à l'affichage.
     renderSetup(data);
