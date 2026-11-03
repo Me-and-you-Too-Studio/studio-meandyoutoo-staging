@@ -413,6 +413,7 @@
   // et le bouton « Nouveautés » du bloc d'aide garde l'historique. Ajouter une entrée en tête de liste suffit
   // (id unique, jamais réutilisé) ; une fois la bulle fermée, toutes les nouveautés affichées sont marquées vues.
   var NEWS=[
+    {id:'2026-11-guide-premiere-campagne',date:'2026-11-03',title:'Laissez-vous guider pour votre première campagne',text:'Un parcours pas à pas vous accompagne du catalogue jusqu’à la transmission, écran par écran. Chaque écran a aussi son bouton « Lire le guide » vers la fiche d’aide correspondante.',href:'accueil.html',cta:'Lancer le parcours depuis l’accueil'},
     {id:'2026-10-relancer',date:'2026-10-30',title:'Relancez une campagne terminée',text:'Depuis la page d’une campagne terminée, reprogrammez-la avec les mêmes liens ou lancez une nouvelle thématique. Une campagne en cours peut aussi être prolongée.',href:'mes-campagnes.html',cta:'Voir mes campagnes'},
     {id:'2026-10-frise',date:'2026-10-30',title:'Où en est votre campagne ?',text:'Chaque campagne affiche maintenant ses 5 phases, de la création aux résultats, et indique qui doit agir : vous, Me&YouToo ou personne.',href:'mes-campagnes.html',cta:'Voir mes campagnes'},
     {id:'2026-10-visites',date:'2026-10-30',title:'Des visites guidées à chaque étape',text:'Une courte visite vous présente chaque écran la première fois. Pour la revoir, cliquez sur « Revoir la visite de cette page » dans le bloc d’aide.'},
