@@ -327,11 +327,24 @@
     root.innerHTML=`<p class="eyebrow">Contrôle qualité</p><h2 class="section-title">Relecture Me&YouToo</h2><div class="review-status ${adjustment?'is-adjustment':''}"><span>Statut actuel</span><strong>${adjustment?(isAdmin?'Ajustement demandé par le client':'En attente de retour Me&YouToo'):status}</strong></div>${!isAdmin&&project.review_work_in_progress?'<p class="review-client-confirmed"><strong>En cours de vérification par Me&YouToo.</strong> Vous consultez la dernière version transmise. Les corrections en cours restent privées jusqu’à leur envoi par notre équipe.</p>':''}${colorLegend}${adjustmentBanner}${project.status==='ready_to_publish'?`<p class="review-ready">✓ La configuration est validée. Me&YouToo prépare la campagne et ses liens avant leur mise à disposition.</p>`:''}${contentReviewHtml}${translationAlert}${commonReviewHtml||languageReviewHtml?`<div class="review-color-legend is-bottom" aria-label="Rappel de la légende des modifications">${colorLegend.replace(/^<div[^>]*>|<\/div>$/g,'')}</div>`:''}${actions}${history}`;
     bindReviewLanguages(root);
     document.querySelector('.topbar')?.after(root);
-    const call=async(url,body={})=>{try{await api(url,{method:'POST',body:JSON.stringify(body)});location.reload();}catch(e){$('validation-alert').hidden=false;$('validation-alert').textContent=e.message;}};
+    // Retour visible au bouton : « … en cours » pendant l'envoi, message de confirmation ou d'erreur dans une fenêtre
+    // (l'encadré d'alerte est en haut de page, hors de vue près des boutons de relecture).
+    const call=async(url,body={},{button=null,pending='Envoi en cours…',done=null}={})=>{
+      const label=button?.textContent;if(button){button.disabled=true;button.textContent=pending;}
+      try{
+        await api(url,{method:'POST',body:JSON.stringify(body)});
+        if(done)await window.StudioModal.alert({eyebrow:'Relecture',title:done.title,message:done.message,type:'success'});
+        location.reload();
+      }catch(e){
+        if(button){button.disabled=false;button.textContent=label;}
+        $('validation-alert').hidden=false;$('validation-alert').textContent=e.message;
+        await window.StudioModal.alert({eyebrow:'Relecture',title:'Envoi impossible',message:e.message,type:'error'});
+      }
+    };
     document.querySelectorAll('.review-edit-target').forEach(link=>link.addEventListener('click',async event=>{if(!isAdmin)return;if(['review_pending','configuration_submitted'].includes(project.status)){event.preventDefault();try{await api(`/api/admin/projects/${projectId}/review/start`,{method:'POST',body:'{}'});location.href=link.href;}catch(error){$('validation-alert').hidden=false;$('validation-alert').textContent=error.message;}}}));
     $('review-start')?.addEventListener('click',()=>call(`/api/admin/projects/${projectId}/review/start`));
-    $('review-minor')?.addEventListener('click',()=>call(`/api/admin/projects/${projectId}/review/complete`,{requiresClientValidation:false,summary:$('review-summary').value.trim()}));
-    $('review-major')?.addEventListener('click',()=>call(`/api/admin/projects/${projectId}/review/complete`,{requiresClientValidation:true,summary:$('review-summary').value.trim()}));
+    $('review-minor')?.addEventListener('click',event=>call(`/api/admin/projects/${projectId}/review/complete`,{requiresClientValidation:false,summary:$('review-summary').value.trim()},{button:event.currentTarget,pending:'Validation en cours…',done:{title:'Configuration validée',message:'La campagne passe en préparation. Le client voit la version validée.'}}));
+    $('review-major')?.addEventListener('click',event=>call(`/api/admin/projects/${projectId}/review/complete`,{requiresClientValidation:true,summary:$('review-summary').value.trim()},{button:event.currentTarget,pending:'Envoi au client…',done:{title:'Corrections envoyées au client',message:'Le client est prévenu et doit valider vos corrections avant la suite.'}}));
     document.querySelectorAll('.review-approve-one').forEach(button=>button.addEventListener('click',()=>call(`/api/projects/${projectId}/review/progress`,{acceptedKeys:[...new Set([...acceptedCorrections,button.dataset.correctionKey])]})));
     document.querySelectorAll('.review-adjust-one').forEach(button=>button.addEventListener('click',()=>openAdjustmentDialog(adjustmentTargets,call,button.dataset.correctionLabel)));
     $('review-accept-all')?.addEventListener('click',()=>call(`/api/projects/${projectId}/review/progress`,{acceptedKeys:correctionKeys}));
