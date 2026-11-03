@@ -483,7 +483,8 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
       else if(k<m&&(i===n||dp[i][k+1]>=dp[i+1]?.[k])){out+=`<ins>${esc(b[k])}</ins>`;k++;}
       else if(i<n){out+=`<del>${esc(a[i])}</del>`;i++;}
     }
-    return out;
+    // Passages contigus regroupés : un seul surlignage par passage, sans marge autour de chaque mot ou signe.
+    return out.replace(/<\/ins><ins(?: class="[^"]*")?>/g,'').replace(/<\/del><del>/g,'');
   }
   function settingsReviewBlock(reference,submitted,current){
     if(!isAdminReview())return '';
