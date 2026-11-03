@@ -121,7 +121,7 @@
     ]},
     'accueil-new':{key:'accueil',steps:[
       {title:'Bienvenue dans votre Studio',text:'Ici, vous créez vos campagnes à partir des diagnostics comportementaux Me&YouToo. Vos collaborateurs y répondent sous forme d’autodiagnostic : un questionnaire anonyme fait de situations concrètes de la vie au travail, à la fin duquel chacun découvre un profil et des pistes pour progresser.'},
-      {target:'.sp-next',title:'Votre prochaine étape',text:'Le Studio vous indique toujours l’action du moment. Commencez par là.'},
+      {target:'.sp-next, #quickstart .qs-steps',title:'Votre prochaine étape',text:'Le Studio vous indique toujours l’action du moment. Commencez par là.'},
       {target:'.topbar .button-primary, .top-actions .button-primary',title:'Créer votre première campagne',text:NEXT_STEPS_TEXT},
       {target:'.sp-pack, .stat-link',title:'Votre pack de passations',text:'Une passation correspond à un questionnaire complété. Votre pack est valable sur toutes les thématiques Me&YouToo.'},
       {target:'.help-card',title:'Besoin d’aide ?',text:'Contactez Me&YouToo à tout moment. Vous pouvez aussi revoir cette visite depuis ce bloc.'}
