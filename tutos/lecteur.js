@@ -6,8 +6,8 @@
 var T=window.TUTO;if(!T)return;
 var CARD=2.5,END=4;
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-// Rythme d’une voix posée : environ 3,2 mots par seconde, sans temps mort.
-function readTime(text){return Math.max(3,String(text).split(/\s+/).length/3.2+0.3);}
+// Rythme d’une voix posée (environ 3,2 mots par seconde), plus 2 secondes pour regarder l’écran.
+function readTime(text){return Math.max(5,String(text).split(/\s+/).length/3.2+2.3);}
 var root=document.getElementById('tuto');
 var imgs=[];T.scenes.forEach(function(s){if(imgs.indexOf(s.img)<0)imgs.push(s.img);});
 root.innerHTML='<div class="tuto-stage" role="region" aria-label="Tutoriel animé"><div class="tuto-frame"><div class="tuto-canvas">'+
