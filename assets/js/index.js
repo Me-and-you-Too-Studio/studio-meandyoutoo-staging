@@ -251,6 +251,8 @@
       var cta=document.getElementById('qs-self-cta');cta.textContent='Reprendre ma campagne';cta.href='mes-campagnes.html';
     }
     document.querySelectorAll('.dashboard-flow,.stats-grid').forEach(function(el){el.hidden=true;});
+    // Aucune campagne : la section vide redirait seulement « Explorer la bibliothèque ».
+    if(!(data.recentProjects||[]).length)recentRoot.closest('section').hidden=true;
     root.hidden=false;
   }
   document.addEventListener('click',async function(ev){
