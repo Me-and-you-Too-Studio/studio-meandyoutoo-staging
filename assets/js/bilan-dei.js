@@ -30,7 +30,7 @@
     return d.actions.map(function(a){return {kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,provider:a.led_by_meayt?'Me&YouToo':a.provider_name,documents:a.documents||[]};})
       .concat(d.campaigns.map(function(c){return {kind:'diagnostic',title:c.name,date:c.year_date||c.launch_date,start:c.launch_date,end:c.close_date,campaign:true,
         status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':'in_progress',
-        theme:c.theme_title,people:c.respondents,provider:'Me&YouToo',documents:[]};}))
+        theme:c.dei_theme||c.theme_title,people:c.respondents,provider:'Me&YouToo',documents:[]};}))
       .sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
   }
   function kindOf(d,k){return (d.kinds||{})[k]||{label:k,icon:'•'};}
