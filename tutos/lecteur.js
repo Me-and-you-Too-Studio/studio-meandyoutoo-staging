@@ -32,7 +32,7 @@ function plan(useAudio){
     var next=useAudio&&T.scenes[i+1]&&typeof T.scenes[i+1].at==='number'?T.scenes[i+1].at:at+readTime(s.text);
     total=next;
   });
-  if(useAudio&&audio&&audio.duration)total=Math.max(total,audio.duration);
+  if(useAudio&&audio&&isFinite(audio.duration))total=Math.max(total,audio.duration);
 }
 plan(false);
 if(T.audio){audio=new Audio(T.audio);audio.preload='auto';audio.addEventListener('loadedmetadata',function(){plan(true);render(true);});audio.addEventListener('error',function(){audio=null;plan(false);});}
