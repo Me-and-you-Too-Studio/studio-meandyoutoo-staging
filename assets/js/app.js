@@ -127,7 +127,7 @@
       {target:'.nav-section-aide',title:'Aide et visite guidée',text:'Retrouvez ici l’aide pas à pas, cette visite et les nouveautés du Studio. Pour nous joindre, le bloc « Besoin d’aide ? » en bas du menu.'}
     ]},
     'cockpit':{key:'cockpit-dei',auto:true,steps:[
-      {target:'#dei-tabs',title:'Votre Cockpit DEI',text:'Pilotez et archivez toutes vos actions diversité & inclusion, année après année. Trois rubriques : la vue d’ensemble, le détail des actions et vos prestataires.'},
+      {target:'#dei-tabs',title:'Votre Cockpit D&I',text:'Pilotez et archivez toutes vos actions diversité & inclusion, année après année. Trois rubriques : la vue d’ensemble, le détail des actions et vos prestataires.'},
       {target:'.dr-kpis',title:'Votre année en chiffres',text:'Actions menées, personnes touchées, formats et thématiques, mois sans action : tout se calcule à partir de vos actions et de vos campagnes de diagnostic.'},
       {target:'.dp-grid .dp-card',title:'Vos objectifs',text:'Fixez jusqu’à 5 objectifs : un enjeu stratégique (thématiques et publics visés) ou un objectif chiffré. Les objectifs « Proposé par Me&YouToo » vous aident à anticiper, comme la loi VSS.'},
       {target:'.dp-grid .dp-card:nth-child(3)',title:'Les prochaines échéances',text:'Les 60 prochains jours : actions prévues, campagnes, tâches et temps forts D&I. « Préparer » crée l’action en un clic.'},
@@ -341,7 +341,7 @@
     'accueil.html':'Découvrir le Studio','bibliotheque.html':'Parcourir le catalogue','composer.html':'Composer votre diagnostic',
     'personnalisation.html':'Personnaliser les profils','parametrage.html':'Paramétrer votre campagne','validation.html':'Vérifier et transmettre',
     'mes-campagnes.html':'Où en est ma campagne','campagne-detail.html':'Où en est ma campagne','kit-communication.html':'Utiliser le kit de communication',
-    'calendrier.html':'Organiser l’année','cockpit-dei.html':'Piloter avec le Cockpit DEI','bilan-dei.html':'Le Bilan D&I annuel',
+    'calendrier.html':'Organiser l’année','cockpit-dei.html':'Piloter avec le Cockpit D&I','bilan-dei.html':'Le Bilan D&I annuel',
     'acces-equipes.html':'Inviter un collègue','notifications.html':'Suivre vos notifications','account.html':'Gérer votre compte','packs.html':'Commander un pack'
   };
   function currentPage(){return location.pathname.split('/').pop()||'accueil.html';}
@@ -686,7 +686,7 @@
   var NAV_MAIN = [
     { href: 'accueil.html', label: 'Accueil', icon: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/>' },
     { group: 'Piloter' },
-    { href: 'cockpit-dei.html?audience=client', label: 'Cockpit DEI', permission:'view_dei_cockpit', featured: true, icon: '<path d="M4 19v-6M10 19V9M16 19V5M22 19H2"/><path d="m4 9 5-3 5 2 6-5"/>' },
+    { href: 'cockpit-dei.html?audience=client', label: 'Cockpit D&I', permission:'view_dei_cockpit', featured: true, icon: '<path d="M4 19v-6M10 19V9M16 19V5M22 19H2"/><path d="m4 9 5-3 5 2 6-5"/>' },
     { href: 'calendrier.html?audience=client', label: 'Calendrier', permission:'view_calendar', icon: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>' },
     { href: 'mes-campagnes.html', label: 'Mes campagnes', icon: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/>' },
     { group: 'Lancer' },

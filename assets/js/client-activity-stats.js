@@ -106,10 +106,10 @@
 
   // Section « Actions DEI » : registre des actions du Cockpit DEI du client.
   function deiBlock(d){
-    var title='<div class="cas-section-title"><h3>🧭 Actions DEI du Cockpit</h3><p>Registre des actions diversité &amp; inclusion saisies dans le Cockpit DEI du client. On mesure l\'activité et la continuité, jamais un niveau d\'inclusion.</p></div>';
+    var title='<div class="cas-section-title"><h3>🧭 Actions D&I du Cockpit</h3><p>Registre des actions diversité &amp; inclusion saisies dans le Cockpit D&I du client. On mesure l\'activité et la continuité, jamais un niveau d\'inclusion.</p></div>';
     if(!d)return title+'<div class="cas-notice">Le registre des actions n\'est pas disponible sur cet environnement.</div>';
     var t=d.totals;
-    if(!t.actions)return title+'<div class="cas-notice">Aucune action enregistrée dans le Cockpit DEI de ce client pour l\'instant.</div>';
+    if(!t.actions)return title+'<div class="cas-notice">Aucune action enregistrée dans le Cockpit D&I de ce client pour l\'instant.</div>';
     var monthNames=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
     var tiles=[
       [fmt(t.actions),'Actions enregistrées',fmt(t.this_year)+' en '+d.year],

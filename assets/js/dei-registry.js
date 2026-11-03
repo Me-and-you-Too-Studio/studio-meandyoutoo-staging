@@ -43,7 +43,7 @@
   function today(){return new Date().toISOString().slice(0,10);}
 
   function load(){
-    if(isAdmin&&!organizationId){root.innerHTML='<p class="dr-empty">Le registre des actions est propre à chaque client : ouvrez-le depuis le <a href="admin.html">dossier d’un client</a> (bouton « Cockpit DEI du client »).</p>';return Promise.resolve();}
+    if(isAdmin&&!organizationId){root.innerHTML='<p class="dr-empty">Le registre des actions est propre à chaque client : ouvrez-le depuis le <a href="admin.html">dossier d’un client</a> (bouton « Cockpit D&I du client »).</p>';return Promise.resolve();}
     root.setAttribute('aria-busy','true');
     return StudioAPI.request('/api/dei/actions'+qs({year:state.year})).then(function(d){state.data=d;render();})
       .catch(function(e){root.innerHTML='<p class="dr-empty">Le registre des actions est momentanément indisponible. '+esc(e.message||'')+'</p>';})
