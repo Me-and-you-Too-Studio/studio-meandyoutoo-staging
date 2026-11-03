@@ -32,7 +32,8 @@ function plan(useAudio){
     var next=useAudio&&T.scenes[i+1]&&typeof T.scenes[i+1].at==='number'?T.scenes[i+1].at:at+readTime(s.text);
     total=next;
   });
-  if(useAudio&&audio&&isFinite(audio.duration))total=Math.max(total,audio.duration);
+  // Avec la voix, la durée est celle du fichier audio (un peu de marge pour l’écran de fin).
+  if(useAudio&&audio&&isFinite(audio.duration))total=Math.max(starts[starts.length-1]+1,audio.duration+0.3);
 }
 plan(false);
 if(T.audio){audio=new Audio(T.audio);audio.preload='auto';audio.addEventListener('loadedmetadata',function(){plan(true);render(true);});audio.addEventListener('error',function(){audio=null;plan(false);});}
@@ -69,7 +70,7 @@ function render(force){
 }
 function tick(now){
   if(!playing)return;
-  if(audio&&!audio.paused)t=audio.currentTime;else{t+=(now-last)/1000;}
+  if(audio&&audio.ended)t=total;else if(audio&&!audio.paused)t=audio.currentTime;else{t+=(now-last)/1000;}
   last=now;
   if(t>=total){t=total;pause();}
   render();if(playing)requestAnimationFrame(tick);
