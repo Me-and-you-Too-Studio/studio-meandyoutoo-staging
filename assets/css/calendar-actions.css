@@ -16,3 +16,9 @@
 /* Infobulle */
 .cal-tl-action[data-tip]::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);background:#1b2a49;color:#fff;font-size:.78rem;font-weight:600;line-height:1.35;padding:6px 10px;border-radius:8px;white-space:nowrap;max-width:320px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .15s;z-index:20}
 .cal-tl-action[data-tip]:hover::after,.cal-tl-action[data-tip]:focus-visible::after{opacity:1}
+/* Légende de la frise : actions D&I (points pleins par statut) et temps forts DEI */
+.cal-tl-legend li.is-action::before,.cal-tl-legend li.is-dei::before{width:10px;height:10px;border-radius:50%}
+.cal-tl-legend li.is-action{--tl-color:#7c3aed}
+.cal-tl-legend li.is-action.st-in_progress{--tl-color:#d99a00}
+.cal-tl-legend li.is-action.st-done{--tl-color:#007883}
+.cal-tl-legend li.is-dei::before{background:conic-gradient(#b44fb3 0 25%,#eb6366 0 50%,#f2b824 0 75%,#5669a9 0)}

@@ -386,12 +386,19 @@
     const actionMarks=yearActions.map(a=>{
       const s=parseDate(a.action_date),e=parseDate(a.end_date),k=state.deiKinds[a.kind]||{};
       const label=`${k.icon?k.icon+' ':''}${a.title} · ${dayLabel(s)}${e&&!sameDay(s,e)?' → '+dayLabel(e):''} · ${actionStatusLabel[a.status]||''}`;
-      if(e&&!sameDay(s,e)){const to=new Date(e.getFullYear(),e.getMonth(),e.getDate()+1);return `<a class="cal-tl-action is-band st-${esc(a.status)}" href="${esc(actionHref(a))}" style="left:${pct(s).toFixed(2)}%;width:${Math.max(pct(to)-pct(s),0.8).toFixed(2)}%" data-tip="${esc(label)}" aria-label="${esc(label)}"><span>${esc(a.title)}</span></a>`;}
+      // Une action de quelques jours reste un point plein : une barre aussi étroite passerait pour un emplacement vide.
+      const to=e&&!sameDay(s,e)?new Date(e.getFullYear(),e.getMonth(),e.getDate()+1):null,bandWidth=to?pct(to)-pct(s):0;
+      if(bandWidth>=3)return `<a class="cal-tl-action is-band st-${esc(a.status)}" href="${esc(actionHref(a))}" style="left:${pct(s).toFixed(2)}%;width:${bandWidth.toFixed(2)}%" data-tip="${esc(label)}" aria-label="${esc(label)}"><span>${esc(a.title)}</span></a>`;
       return `<a class="cal-tl-action st-${esc(a.status)}" href="${esc(actionHref(a))}" style="left:${pct(s).toFixed(2)}%" data-tip="${esc(label)}" aria-label="${esc(label)}"></a>`;
     }).join('');
     const actionRow=yearActions.length?`<div class="cal-tl-row cal-tl-row-actions"><a class="cal-tl-label" href="${esc(isAdmin&&selectedOrg?'cockpit-dei.html?organizationId='+encodeURIComponent(selectedOrg)+'#actions':'cockpit-dei.html#actions')}"><strong>Actions D&amp;I</strong><small>${yearActions.length} action${yearActions.length>1?'s':''} du Cockpit DEI</small></a><div class="cal-tl-track">${todayLine}${actionMarks}</div><span class="cal-tl-note"></span></div>`:'';
     const empty=rows.length?'':`<div class="cal-tl-empty"><strong>Aucune campagne datée en ${year}.</strong> <a href="bibliotheque.html">Choisir une thématique →</a></div>`;
-    root.innerHTML=`<header class="cal-tl-head"><div><h3>Vos campagnes en ${year}</h3><p>Chaque barre va du lancement à la clôture. Cliquez sur une campagne pour l’ouvrir.</p></div><ul class="cal-tl-legend"><li class="is-scheduled">Programmée</li><li class="is-active">En diffusion</li><li class="is-closed">Terminée</li><li class="is-task">Tâche</li></ul></header><div class="cal-tl-grid"><div class="cal-tl-row cal-tl-axis" aria-hidden="true"><span class="cal-tl-label"></span><div class="cal-tl-track">${axis}</div><span class="cal-tl-note"></span></div>${rowHtml}${teamRow}${deiRow}${actionRow}</div>${empty}`;
+    // Titre, sous-titre et légende décrivent ce que la frise montre vraiment.
+    const shown=[rows.length?'les campagnes, du lancement à la clôture':'',tasks.length?'les tâches':'',yearActions.length?'les actions D&I':'',dei.length?'les temps forts DEI':''].filter(Boolean);
+    const intro=shown.length?(shown.length>1?shown.slice(0,-1).join(', ')+' et '+shown[shown.length-1]:shown[0])+'. Cliquez sur un élément pour l’ouvrir.':'';
+    const actionStatuses=['planned','in_progress','done'].filter(st=>yearActions.some(a=>(a.status||'planned')===st));
+    const legend=[rows.length?'<li class="is-scheduled">Programmée</li><li class="is-active">En diffusion</li><li class="is-closed">Terminée</li>':'',tasks.length?'<li class="is-task">Tâche</li>':'',actionStatuses.map(st=>`<li class="is-action st-${st}">Action ${esc(actionStatusLabel[st].toLowerCase())}</li>`).join(''),dei.length?'<li class="is-dei">Temps fort DEI</li>':''].join('');
+    root.innerHTML=`<header class="cal-tl-head"><div><h3>Votre année ${year}</h3>${intro?`<p>${esc(intro.charAt(0).toUpperCase()+intro.slice(1))}</p>`:''}</div>${legend?`<ul class="cal-tl-legend">${legend}</ul>`:''}</header><div class="cal-tl-grid"><div class="cal-tl-row cal-tl-axis" aria-hidden="true"><span class="cal-tl-label"></span><div class="cal-tl-track">${axis}</div><span class="cal-tl-note"></span></div>${rowHtml}${teamRow}${deiRow}${actionRow}</div>${empty}`;
     bindCampaignPopovers(root);bindDeiPopovers(root);
     root.querySelectorAll('[data-open-task]').forEach(b=>b.onclick=()=>switchToTasks(Number(b.dataset.openTask)));
   }
