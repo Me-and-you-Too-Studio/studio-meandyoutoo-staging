@@ -50,7 +50,10 @@
     }
     var headers={'Content-Type':'application/json',...(options.headers||{})};
     if(token())headers.Authorization='Bearer '+token();
-    var response=await fetch(resolveApiBase()+path,{...options,headers:headers});
+    // Un objet passé tel quel partirait en « [object Object] » : on le convertit en JSON.
+    var body=options.body;
+    if(body&&typeof body==='object'&&Object.getPrototypeOf(body)===Object.prototype)body=JSON.stringify(body);
+    var response=await fetch(resolveApiBase()+path,{...options,body:body,headers:headers});
     if(response.status===204)return null;
     var data=await response.json().catch(function(){return {};});
     if(response.status===401&&location.pathname.split('/').pop()!=='login.html'){
