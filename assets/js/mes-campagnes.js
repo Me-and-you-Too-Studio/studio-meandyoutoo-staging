@@ -384,7 +384,7 @@
       dialog.id = "campaign-extension-dialog";
       dialog.className = "admin-dialog campaign-lifecycle-dialog";
       dialog.innerHTML =
-        '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Campagne publiée</p><h2>Prolonger « ' +
+        '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">' + esc(lifecycleEyebrow(p)) + '</p><h2>Prolonger « ' +
         esc(campaignName(p)) +
         ' »</h2><p>La campagne et ses liens restent identiques. Seule la date de clôture change.</p><label class="field"><span>Clôture actuelle</span><strong>' +
         esc(dateFr(p.close_date)) +
@@ -923,7 +923,7 @@
     }
     if (action === "unpublish") {
       var okUnpublish = await StudioModal.confirm({
-        eyebrow: "Campagne publiée",
+        eyebrow: lifecycleEyebrow(p),
         type: "warning",
         title: "Dépublier « " + campaignName(p) + " » ?",
         message:
@@ -1154,6 +1154,11 @@
   function renderAlerts() {
     // Les alertes sont désormais présentées comme des signaux de pilotage dans les filtres.
     renderKpis();
+  }
+
+  // Sur-titre des fenêtres Prolonger / Dépublier : une campagne pas encore lancée est « programmée ».
+  function lifecycleEyebrow(p) {
+    return statusKey(p) === "scheduled" ? "Campagne programmée" : "Campagne publiée";
   }
 
   function statusKey(p) {

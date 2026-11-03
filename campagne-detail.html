@@ -221,7 +221,9 @@
 
   // Jauge de participation : répondants sur l'objectif déclaré au paramétrage, repères 50 / 75 / 100 %.
   function participationHtml(count,objective){
-    if(count==null||!objective)return '';
+    if(!objective)return '';
+    // Avant le lancement (pas encore de répondants), l'objectif enregistré reste visible.
+    if(count==null)return '<p class="campaign-objective-current">🎯 Objectif : <strong>'+Number(objective).toLocaleString('fr-FR')+'</strong> répondants</p>';
     var pct=participation(count,objective),shown=Math.min(100,pct),left=function(goal){return Math.max(0,Math.ceil(objective*goal/100)-count);};
     var message=pct>=100?'Objectif atteint ✓ Bravo, votre campagne a touché toutes les personnes visées.'
       :pct>=75?'75 % atteint 🔥 Plus que '+left(100).toLocaleString('fr-FR')+' répondants pour atteindre votre objectif.'
