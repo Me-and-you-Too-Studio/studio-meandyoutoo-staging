@@ -76,7 +76,7 @@
     configuration_submitted:IN_REVIEW,
     review_pending:IN_REVIEW,
     in_review:IN_REVIEW,
-    client_validation_required:{step:1,owner:'client',next:'Me&YouToo vous propose des corrections : validez-les pour passer à la mise en ligne.'},
+    client_validation_required:{step:1,owner:'client',next:'Me&YouToo vous a proposé des ajustements : validez-les pour passer à la mise en ligne.'},
     ready_to_publish:{step:2,owner:'team',next:'Me&YouToo prépare la mise en ligne aux dates prévues. Profitez-en pour préparer l’annonce à vos collaborateurs.'},
     scheduled:{step:2,owner:'auto',next:'La campagne s’ouvrira automatiquement à sa date de début. Préparez son annonce avec le kit de communication.'},
     published:{step:3,owner:'live',lead:'Pour aller plus loin',next:'Annoncez la campagne à vos collaborateurs avec le kit de communication.'},
