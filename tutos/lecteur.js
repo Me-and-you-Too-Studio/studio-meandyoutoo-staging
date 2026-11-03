@@ -4,9 +4,10 @@
 (function(){
 'use strict';
 var T=window.TUTO;if(!T)return;
-var CARD=3.5,END=4;
+var CARD=2.5,END=4;
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-function readTime(text){return Math.max(4.5,String(text).split(/\s+/).length/2.6+1.4);}
+// Rythme d’une voix posée : environ 3,2 mots par seconde, sans temps mort.
+function readTime(text){return Math.max(3,String(text).split(/\s+/).length/3.2+0.3);}
 var root=document.getElementById('tuto');
 var imgs=[];T.scenes.forEach(function(s){if(imgs.indexOf(s.img)<0)imgs.push(s.img);});
 root.innerHTML='<div class="tuto-stage" role="region" aria-label="Tutoriel animé"><div class="tuto-frame"><div class="tuto-canvas">'+
@@ -39,13 +40,14 @@ var t=0,playing=false,last=0,current=-2;
 function sceneAt(time){if(time<CARD&&!(audio&&T.scenes[0].at===0))return -1;for(var i=starts.length-1;i>=0;i--)if(time>=starts[i])return i;return -1;}
 function fmt(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
 // La capture garde ses proportions (1456 × 818) dans la place disponible.
-function fit(){var f=$('.tuto-frame'),w=f.clientWidth,h=f.clientHeight,r=1456/818;if(w/h>r)w=h*r;else h=w/r;canvas.style.width=w+'px';canvas.style.height=h+'px';}
+function fit(){var f=$('.tuto-frame'),w=f.clientWidth,h=f.clientHeight,r=1456/818;if(w/h>r)w=h*r;else h=w/r;if(w>1456){w=1456;h=818;}canvas.style.width=w+'px';canvas.style.height=h+'px';}
 function frame(s){
   imgEls.forEach(function(el){el.classList.toggle('is-on',el.getAttribute('src')===s.img);});
   var W=canvas.offsetWidth,H=canvas.offsetHeight,b=s.box;
   if(!b){caption.classList.remove('is-top');box.hidden=true;canvas.style.transform='';pointer.style.opacity=0;return;}
   box.hidden=false;box.style.left=b[0]+'%';box.style.top=b[1]+'%';box.style.width=b[2]+'%';box.style.height=b[3]+'%';
-  var k=s.zoom===false?1:Math.max(1,Math.min(1.7,82/b[2],78/b[3]));
+  // Pas d’agrandissement : chaque plan a sa propre capture, nette à taille réelle.
+  var k=1;
   var cx=(b[0]+b[2]/2)/100*W,cy=(b[1]+b[3]/2)/100*H;
   var tx=Math.min(0,Math.max(W-W*k,W/2-cx*k)),ty=Math.min(0,Math.max(H-H*k,H/2-cy*k));
   canvas.style.transform='translate('+tx+'px,'+ty+'px) scale('+k+')';
