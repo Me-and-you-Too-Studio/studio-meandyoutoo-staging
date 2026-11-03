@@ -287,7 +287,7 @@
   // Renseigner url (lien HubSpot de la vidéo) suffit à faire apparaître le bouton ; sans lien, il reste caché.
   var TUTORIALS={
     decouvrir:{title:'Découvrir le Studio',url:''},
-    choisir:{title:'Choisir son diagnostic',url:''},
+    choisir:{title:'Choisir son diagnostic',url:'tutos/choisir/index.html'},
     composer:{title:'Composer son diagnostic',url:'tutos/composer/index.html'},
     personnaliser:{title:'Personnaliser les profils',url:''},
     parametrer:{title:'Paramétrer sa campagne',url:'tutos/parametrer/index.html'},
