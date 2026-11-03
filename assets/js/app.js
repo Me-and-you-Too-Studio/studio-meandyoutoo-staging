@@ -290,7 +290,7 @@
     choisir:{title:'Choisir son diagnostic',url:''},
     composer:{title:'Composer son diagnostic',url:''},
     personnaliser:{title:'Personnaliser les profils',url:''},
-    parametrer:{title:'Paramétrer sa campagne',url:''},
+    parametrer:{title:'Paramétrer sa campagne',url:'tutos/parametrer/index.html'},
     transmettre:{title:'Vérifier et transmettre sa configuration',url:''},
     relecture:{title:'Suivre la relecture et demander un ajustement',url:''},
     diffuser:{title:'Préparer la communication et diffuser sa campagne',url:''}

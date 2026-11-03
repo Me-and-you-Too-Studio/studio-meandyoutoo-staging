@@ -43,12 +43,14 @@ function fit(){var f=$('.tuto-frame'),w=f.clientWidth,h=f.clientHeight,r=1456/81
 function frame(s){
   imgEls.forEach(function(el){el.classList.toggle('is-on',el.getAttribute('src')===s.img);});
   var W=canvas.offsetWidth,H=canvas.offsetHeight,b=s.box;
-  if(!b){box.hidden=true;canvas.style.transform='';pointer.style.opacity=0;return;}
+  if(!b){caption.classList.remove('is-top');box.hidden=true;canvas.style.transform='';pointer.style.opacity=0;return;}
   box.hidden=false;box.style.left=b[0]+'%';box.style.top=b[1]+'%';box.style.width=b[2]+'%';box.style.height=b[3]+'%';
   var k=s.zoom===false?1:Math.max(1,Math.min(1.7,82/b[2],78/b[3]));
   var cx=(b[0]+b[2]/2)/100*W,cy=(b[1]+b[3]/2)/100*H;
   var tx=Math.min(0,Math.max(W-W*k,W/2-cx*k)),ty=Math.min(0,Math.max(H-H*k,H/2-cy*k));
   canvas.style.transform='translate('+tx+'px,'+ty+'px) scale('+k+')';
+  // La légende passe en haut quand le cadre, une fois zoomé, occupe le bas de l'image.
+  caption.classList.toggle('is-top',((b[1]+b[3])/100*H*k+ty)/H>.68&&(b[1]/100*H*k+ty)/H>.3);
   pointer.style.opacity=1;pointer.style.left=Math.min(b[0]+b[2]*.62,96)+'%';pointer.style.top=Math.min(b[1]+b[3]*.55,94)+'%';
   pointer.classList.remove('is-click');setTimeout(function(){pointer.classList.add('is-click');},1150);
 }

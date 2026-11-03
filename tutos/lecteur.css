@@ -33,3 +33,4 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: #fff; font-f
 .tuto.show-text .tuto-transcript { display: block; }
 .tuto-transcript ol { margin: 0; padding-left: 20px; }
 @media (prefers-reduced-motion: reduce) { .tuto-canvas, .tuto-box, .tuto-pointer { transition: none; } }
+.tuto-caption.is-top { top: 4%; bottom: auto; }
