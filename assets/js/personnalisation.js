@@ -36,7 +36,7 @@
     if(!isAdmin()||!project?.review_mode)return profileDiffBlock(original,current);
     const saved=submittedProfile(id);if(!saved)return '<div class="composer-diff">Version transmise indisponible pour ce profil.</div>';
     const block=(before,after,label,admin=false)=>String(before??'')===String(after??'')?'':`<div class="composer-diff${admin?' is-admin-correction':''}"><div class="composer-diff-label">${esc(label)}</div><div class="composer-diff-text">${separatedDiffHtml(before,after)}</div></div>`;
-    return block(original,saved[key],'Adaptations transmises par le client')+block(saved[key],current,'Votre correction Me&YouToo · version de travail privée',true);
+    return block(original,saved[key],'Adaptations transmises par le client')+block(saved[key],current,'Votre correction Me&YouToo · visible par le client dès l’envoi des corrections',true);
   }
   function profileDiffBlock(original,current){
     if(!profileFieldChanged(current,original))return '';

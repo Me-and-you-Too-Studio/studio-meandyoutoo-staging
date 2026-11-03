@@ -493,7 +493,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
       return `<div class="composer-diff${admin?' is-admin-correction':''}"><div class="composer-diff-label">${esc(label)}</div><div class="composer-diff-text" style="white-space:pre-wrap">${afterHtml||'—'}</div>${hasRemovals?`<details class="admin-review-removed"><summary>Voir les passages supprimés du texte précédent</summary><div class="composer-diff-text" style="white-space:pre-wrap">${beforeHtml}</div></details>`:''}</div>`;
     };
     let html=reference==null?block(submitted,submitted,'Version transmise par le client'):String(reference)===String(submitted)?block(submitted,submitted,'Version transmise · identique au référentiel'):block(reference,submitted,'Version transmise par le client · ajouts en vert');
-    if(String(submitted)!==String(current))html+=block(submitted,current,'Votre correction Me&YouToo · version de travail privée',true);
+    if(String(submitted)!==String(current))html+=block(submitted,current,'Votre correction Me&YouToo · visible par le client dès l’envoi des corrections',true);
     return html;
   }
   function reviewLocaleValue(map,locale){const key=Object.keys(map||{}).find(k=>normalizeLocale(k)===normalizeLocale(locale));return key===undefined?undefined:map[key];}
