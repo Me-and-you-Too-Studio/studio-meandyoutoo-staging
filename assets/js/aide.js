@@ -8,7 +8,7 @@ var $=function(id){return document.getElementById(id);};
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function formatDate(value){var d=value?new Date(value):null;return d&&!isNaN(d)?new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'long',year:'numeric'}).format(d):'';}
 // Une couleur et une icône par famille, reconnues à leur nom ; une famille inconnue prend la couleur du Studio.
-var THEMES=[[/démarr/i,'🚀','#0d8791','#e3f4f5'],[/choisir|diagnostic/i,'🧭','#5669a9','#eceffa'],[/créer|campagne/i,'✏️','#eb6366','#fdeced'],[/diffus|suivre/i,'📣','#e8833a','#fdf0e4'],[/résultat|pilotage/i,'📊','#8a5cc7','#f3edfb'],[/abonnement|passation/i,'🎟️','#c99400','#fff6dd'],[/compte|accès|équipe/i,'👥','#2f80c4','#e8f2fb'],[/ressource|contact/i,'💬','#2e9d6a','#e5f5ec']];
+var THEMES=[[/démarr/i,'🚀','#0d8791','#e3f4f5'],[/choisir|diagnostic/i,'🧭','#5669a9','#eceffa'],[/créer|campagne/i,'✏️','#5f9a1c','#eef6e2'],[/diffus|suivre/i,'📣','#1592b5','#e2f3f8'],[/résultat|pilotage/i,'📊','#8a5cc7','#f3edfb'],[/abonnement|passation/i,'🎟️','#c99400','#fff6dd'],[/compte|accès|équipe/i,'👥','#2f80c4','#e8f2fb'],[/ressource|contact/i,'💬','#2e9d6a','#e5f5ec']];
 function theme(name){var t=THEMES.find(function(x){return x[0].test(String(name||''));});return t?{icon:t[1],color:t[2],soft:t[3]}:{icon:'💡',color:'#007883',soft:'#e6f4f5'};}
 function themeStyle(t){return '--fam:'+t.color+';--fam-soft:'+t.soft;}
 function slug(name){return 'famille-'+String(name||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}

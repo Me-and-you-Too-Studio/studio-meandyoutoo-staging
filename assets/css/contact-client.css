@@ -1,0 +1,27 @@
+/* Page Contact client : expertise des interlocutrices, reprise de la section « Notre expertise » du site public. */
+.contact-client-team { align-items: stretch; }
+.contact-client-team .team-card { gap: 6px; }
+.contact-client-team .team-actions { margin-top: auto; }
+.team-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0 0 12px; }
+.team-tags b {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--royal-blue);
+  font-size: .74rem;
+  font-weight: 800;
+}
+.team-bio { margin: 0 0 14px; color: var(--muted); font-size: .86rem; line-height: 1.55; text-align: left; }
+
+.contact-expertise { margin-top: 24px; padding: 28px 30px; }
+.contact-expertise h2 { margin: 2px 0 12px; color: var(--royal-blue); font-size: 1.3rem; }
+.contact-expertise > p { max-width: 880px; margin: 0 0 12px; color: var(--muted); line-height: 1.6; }
+.contact-expertise-split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+.contact-expertise-split > div { padding: 18px 20px; border-radius: 16px; background: var(--surface-soft); }
+.contact-expertise-split strong { color: var(--royal-blue); }
+.contact-expertise-split p { margin: 8px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+@media (max-width: 720px) {
+  .contact-expertise { padding: 22px 20px; }
+  .contact-expertise-split { grid-template-columns: 1fr; }
+}
