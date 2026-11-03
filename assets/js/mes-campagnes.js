@@ -440,7 +440,9 @@
       shareText: share ? "disponible" : "en attente Me&YouToo",
       resultsText: can("view_results")
         ? results
-          ? "disponibles"
+          ? notStartedYet(p)
+            ? "dès le lancement (" + dateFr(p.launch_date) + ")"
+            : "disponibles"
           : "non disponibles"
         : "accès non autorisé",
     };
@@ -1083,8 +1085,14 @@
     return end >= today && end <= addDays(today, 14);
   }
 
+  // Lien des résultats renseigné dès la programmation : rien à consulter avant le lancement.
+  function notStartedYet(p) {
+    var start = String(p.launch_date || "").slice(0, 10);
+    return Boolean(start) && start > new Date().toISOString().slice(0, 10);
+  }
+
   function hasResults(p) {
-    return can("view_results") && Boolean(String(p.communication_results_url || "").trim());
+    return can("view_results") && Boolean(String(p.communication_results_url || "").trim()) && !notStartedYet(p);
   }
 
   function matchesPeriod(p) {

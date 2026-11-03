@@ -830,7 +830,17 @@
     function navigate(item){var url=item.dataset.notificationUrl;if(url)location.href=url;}
     function toggle(item){var isRead=item.dataset.notificationRead==='1',path='/api/notifications/'+item.dataset.notificationId+(isRead?'/unread':'/read')+'?audience='+notificationAudience;return StudioAPI.request(path,{method:'PATCH',body:'{}'}).catch(function(){}).then(load);}
     function bindItems(){list.querySelectorAll('[data-notification-id]').forEach(function(item){item.querySelector('.notification-item-main').onclick=function(){navigate(item);};item.querySelector('.notification-item-check').onclick=function(){toggle(item);};item.querySelector('.notification-item-delete').onclick=function(event){event.stopPropagation();dismiss(item);};});} function dismiss(item){/* Suppression personnelle : les collègues gardent la notification. */item.classList.add('is-removing');return StudioAPI.request('/api/notifications/'+encodeURIComponent(item.dataset.notificationId)+'?audience='+notificationAudience,{method:'DELETE'}).catch(function(){item.classList.remove('is-removing');}).then(load);}
-    bell.onclick=function(){panel.hidden=!panel.hidden;bell.setAttribute('aria-expanded',panel.hidden?'false':'true');document.body.classList.toggle('notification-panel-open',!panel.hidden);if(!panel.hidden)load();};
+    // Panneau ouvert depuis la barre latérale : collé à droite de la barre, où qu'elle soit (page centrée sur grand écran),
+    // sans dépasser de l'écran. En dessous de 760 px, la règle CSS mobile s'applique.
+    function placePanel(){
+      panel.style.left='';
+      if(panel.hidden||!shell.classList.contains('notification-placement-sidebar')||window.innerWidth<=760)return;
+      var bar=shell.closest('.sidebar')||document.querySelector('.sidebar');if(!bar)return;
+      var left=bar.getBoundingClientRect().right+12,width=panel.getBoundingClientRect().width||400;
+      panel.style.left=Math.max(8,Math.min(left,window.innerWidth-width-8))+'px';
+    }
+    window.addEventListener('resize',placePanel);
+    bell.onclick=function(){panel.hidden=!panel.hidden;bell.setAttribute('aria-expanded',panel.hidden?'false':'true');document.body.classList.toggle('notification-panel-open',!panel.hidden);placePanel();if(!panel.hidden)load();};
     shell.querySelector('.notification-read-all').onclick=async function(){try{await StudioAPI.request('/api/notifications/read-all?audience='+notificationAudience,{method:'PATCH',body:'{}'});load();}catch(error){}};
     document.addEventListener('click',function(event){if(!panel.hidden&&!shell.contains(event.target)){panel.hidden=true;bell.setAttribute('aria-expanded','false');document.body.classList.remove('notification-panel-open');}});
     document.addEventListener('keydown',function(event){if(event.key==='Escape'&&!panel.hidden){panel.hidden=true;bell.setAttribute('aria-expanded','false');document.body.classList.remove('notification-panel-open');bell.focus();}});
