@@ -147,14 +147,7 @@
 </fieldset>
 <fieldset>
 <legend>Passations disponibles</legend>
-<p class="section-desc">Les passations sont mutualisées au niveau de votre entreprise. Vérifiez que votre solde couvre le nombre de répondants estimé pour cette campagne.</p>
-<div class="respondent-volume-card">
-<div class="field">
-<label for="nb-respondents">Nombre total de répondants estimé <span class="optional-label">Facultatif</span><span class="field-help"><button class="field-help-button" type="button" aria-label="À quoi sert cette estimation ?">?</button><span class="field-help-content" role="tooltip">Cette estimation compare votre besoin au solde disponible. Elle ne consomme aucune passation à ce stade.</span></span></label>
-<input id="nb-respondents" type="number" min="1" placeholder="Ex. 250">
-<span class="hint">Ce nombre alimente automatiquement la valeur « Prévues ici » ci-dessous.</span>
-</div>
-</div>
+<p class="section-desc">Les passations sont mutualisées au niveau de votre entreprise. Vérifiez que votre solde couvre le nombre de répondants estimé, renseigné dans « Données d’analyse utiles ».</p>
 <div id="param-credit-card" class="passation-credit-card">
 <div>
 <h3>Chargement de votre pack…</h3>
@@ -187,6 +180,13 @@
 <legend>Données d’analyse utiles <span class="oblig-badge">Au moins 1 requise</span>
 </legend>
 <p class="section-desc">Ces questions sont posées aux répondants avant l’autodiagnostic afin d’analyser les tendances collectives par grands groupes.</p>
+<div class="respondent-volume-card">
+<div class="field">
+<label for="nb-respondents">Nombre total de répondants estimé <span class="optional-label">Facultatif</span><span class="field-help"><button class="field-help-button" type="button" aria-label="À quoi sert cette estimation ?">?</button><span class="field-help-content" role="tooltip">Ce total sert de référence pour les effectifs de chaque réponse ci-dessous et pour le niveau de vigilance. Il alimente aussi « Prévues ici » dans votre pack et l’objectif de participation de la campagne. Il ne consomme aucune passation.</span></span></label>
+<input id="nb-respondents" type="number" min="1" placeholder="Ex. 250">
+<span class="hint">Les effectifs de chaque réponse doivent correspondre à ce total. Il alimente aussi « Prévues ici » dans votre pack de passations.</span>
+</div>
+</div>
 <div class="anonymity-guide">
 <div class="anonymity-guide-title">🔒 Anonymat et qualité d’analyse</div>
 <p>Choisissez uniquement les critères utiles. Des groupes trop petits ou un trop grand nombre de critères peuvent rendre certains croisements difficiles à exploiter.</p>
@@ -258,7 +258,7 @@
 <script src="assets/js/project-context.js?v=20261031-perimetre-1">
 </script>
 <script src="assets/js/content-adjustment.js?v=20260903-nested-adjustment-1"></script>
-<script src="assets/js/parametrage.js?v=20261103-surlignage-2">
+<script src="assets/js/parametrage.js?v=20261103-vigilance-1">
 </script>
 <script src="assets/js/pack-requests.js?v=20261102-packs-1"></script>
 <script src="assets/js/preview-launcher.js?v=20261019-client-wording-1"></script></body>
