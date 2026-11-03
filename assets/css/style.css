@@ -7879,6 +7879,15 @@ body.sidebar-collapsed .nav-plan-badge {
   background: #e0a322;
   color: #fff;
 }
+/* Étape faite et onglet ouvert : reste verte (faite), l'onglet ouvert est signalé par un contour. */
+.studio-process-step.is-done.is-current {
+  border-color: #0d8791;
+  background: #f4fbfa;
+  box-shadow: 0 0 0 2px rgba(13, 135, 145, 0.22);
+}
+.studio-process-step.is-done.is-current span {
+  background: #0d8791;
+}
 #submit-project.is-disabled {
   opacity: 0.48;
   cursor: not-allowed;
