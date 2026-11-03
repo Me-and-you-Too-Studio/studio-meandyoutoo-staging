@@ -239,26 +239,9 @@
     if(!g||(g.startedCampaigns!=null?g.startedCampaigns:g.launchedCampaigns))return false;
     return !(data.recentProjects||[]).some(function(p){return p.legacy_history;});
   }
+  // Le bloc aide à créer une campagne (seul ou accompagné) ; les campagnes déjà commencées se suivent dans « Mes campagnes récentes ».
   function renderQuickstart(data){
     var root=document.getElementById('quickstart');if(!root)return;
-    var g=data.gamification||{},next=g.nextScheduled;
-    // Les brouillons ne comptent pas dans campaignsInPreparation (campagnes transmises, en relecture…).
-    var preparing=!!(g.campaignsInPreparation||(data.summary&&data.summary.draft_campaigns));
-    var current=next?3:(preparing?2:1);
-    root.querySelectorAll('.qs-steps li').forEach(function(li){
-      var n=Number(li.getAttribute('data-step'));
-      li.classList.toggle('is-done',n<current);
-      li.classList.toggle('is-current',n===current);
-    });
-    var text=document.getElementById('qs-self-text'),cta=document.getElementById('qs-self-cta');
-    if(next){
-      root.querySelector('.qs-steps li[data-step="3"] strong').textContent=next.launchDate?'Diffusion le '+dateFr(next.launchDate):'Diffusion programmée';
-      text.textContent='« '+next.name+' » est programmée'+(next.launchDate?' pour le '+dateFr(next.launchDate):'')+'. D’ici là, préparez vos collaborateurs avec le kit de communication.';
-      cta.textContent='Voir mes campagnes';cta.href='mes-campagnes.html';
-    }else if(preparing){
-      text.textContent='Votre campagne est en préparation : reprenez-la là où vous l’avez laissée, puis transmettez-la pour relecture.';
-      cta.textContent='Reprendre ma campagne';cta.href='mes-campagnes.html';
-    }
     document.querySelectorAll('.dashboard-flow,.stats-grid').forEach(function(el){el.hidden=true;});
     // Aucune campagne : la section vide redirait seulement « Explorer la bibliothèque ».
     if(!(data.recentProjects||[]).length)recentRoot.closest('section').hidden=true;
@@ -267,11 +250,11 @@
   document.addEventListener('click',async function(ev){
     if(!ev.target.closest('#qs-accompany'))return;
     // Même circuit que « Être accompagné » du Cockpit : notification, e-mail, transaction HubSpot.
-    var message=await window.StudioModal.prompt({eyebrow:'Être accompagné',title:'Préparer ma première campagne avec Me&YouToo',
-      message:'L’équipe Me&YouToo vous recontacte pour choisir le diagnostic et préparer la campagne avec vous. Vous relisez et vous validez.',
-      inputLabel:'Votre besoin (facultatif)',placeholder:'Ex. : un diagnostic sexisme pour 300 collaborateurs en janvier',confirmLabel:'Envoyer ma demande'});
+    var message=await window.StudioModal.prompt({eyebrow:'Être accompagné',title:'Créer ma campagne avec Me&YouToo',
+      message:'L’équipe Me&YouToo vous recontacte pour choisir l’autodiagnostic et préparer la campagne avec vous. Vous relisez et vous validez.',
+      inputLabel:'Votre besoin (facultatif)',placeholder:'Ex. : un autodiagnostic sur le sexisme pour 300 collaborateurs en janvier',confirmLabel:'Envoyer ma demande'});
     if(message===null)return;
-    try{var r=await window.StudioAPI.request('/api/offer-requests',{method:'POST',body:JSON.stringify({source:'accueil',message:'Première campagne accompagnée'+(message?' — '+message:''),context:{step:'premiers-pas'}})});
+    try{var r=await window.StudioAPI.request('/api/offer-requests',{method:'POST',body:JSON.stringify({source:'accueil',message:'Campagne à créer ensemble'+(message?' — '+message:''),context:{step:'premiers-pas'}})});
       window.StudioModal.alert({eyebrow:'Être accompagné',title:'Demande transmise',type:'success',message:r.message||'Votre demande a bien été transmise.'});}
     catch(e){window.StudioModal.alert({title:'Envoi impossible',message:e.message});}
   });
