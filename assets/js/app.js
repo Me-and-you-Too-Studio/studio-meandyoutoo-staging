@@ -419,7 +419,7 @@
   var IS_ADMIN = Boolean(CURRENT_USER && CURRENT_USER.role === 'admin');
   var INTERFACE_MODE = IS_ADMIN && sessionStorage.getItem('studio_interface_mode') !== 'client' ? 'admin' : 'client';
   var ADMIN_PAGES = ['admin.html','client.html'];
-  if(ADMIN_PAGES.indexOf(CURRENT)<0&&!document.getElementById('hs-script-loader')){var hs=document.createElement('script');hs.id='hs-script-loader';hs.async=true;hs.defer=true;hs.src='https://js-eu1.hs-scripts.com/139575435.js';document.body.appendChild(hs);}
+  if(ADMIN_PAGES.indexOf(CURRENT)<0&&!document.getElementById('hs-script-loader')){var hs=document.createElement('script');hs.id='hs-script-loader';hs.async=true;hs.defer=true;hs.src='https://js-eu1.hs-scripts.com/139575435.js';document.body.appendChild(hs);/* Le bouton du chat HubSpot occupe le coin bas droit : la carte Nouveautés passe au-dessus, le bouton Haut de page à sa gauche. */if(!document.getElementById('studio-chat-spacing')){var chatCss=document.createElement('style');chatCss.id='studio-chat-spacing';chatCss.textContent='.studio-news{bottom:100px}.studio-back-to-top{right:100px}@media(max-width:980px){.studio-news{bottom:calc(100px + env(safe-area-inset-bottom,0px))}.studio-back-to-top{right:88px}}';document.head.appendChild(chatCss);}}
   var DUAL_MODE_PAGES = ['notifications.html','calendrier.html','cockpit-dei.html'];
   var REQUESTED_NOTIFICATION_AUDIENCE = new URLSearchParams(location.search).get('audience');
   if (IS_ADMIN && DUAL_MODE_PAGES.includes(CURRENT) && REQUESTED_NOTIFICATION_AUDIENCE === 'client') {
