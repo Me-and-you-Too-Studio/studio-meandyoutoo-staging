@@ -1,0 +1,12 @@
+/* Encart du Catalogue vers Into The Shift (diagnostics hors D&I) */
+.its-bridge { display: grid; grid-template-columns: 150px 1fr; gap: 26px; align-items: center; margin-top: 32px; padding: 24px 28px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: linear-gradient(135deg, #f7fbfd 0%, #fff 60%); }
+.its-bridge-brand { display: grid; place-items: center; min-height: 90px; padding: 16px; border-radius: var(--radius-md); background: #0d4c72; }
+.its-bridge-brand img { display: block; width: 100%; max-width: 130px; height: auto; }
+.its-bridge h2 { margin: 0 0 6px; color: var(--royal-blue); font-size: 1.2rem; }
+.its-bridge p { margin: 0 0 16px; color: var(--muted); line-height: 1.55; max-width: 820px; }
+.its-bridge .button-its { background: #0d4c72; border-color: #0d4c72; color: #fff; }
+.its-bridge .button-its:hover { filter: brightness(.95); }
+@media (max-width: 720px) {
+  .its-bridge { grid-template-columns: 1fr; padding: 20px; }
+  .its-bridge-brand { min-height: 90px; }
+}
