@@ -176,7 +176,10 @@
     'parametrage':{key:'creation-parametrage',auto:true,steps:[
       {target:'nav.steps',title:'Étape 4 : paramétrer',text:'Vous renseignez ici ce que verront vos collaborateurs et les informations de diffusion.'},
       {target:'#settings-form fieldset:nth-of-type(2)',title:'L’introduction',text:'Adaptez le texte d’accueil à votre organisation. Si votre campagne a plusieurs langues, personnalisez-en une et confiez les autres à Me&YouToo.'},
-      {target:'#settings-form fieldset:nth-of-type(3)',title:'Les dates',text:'La campagne s’ouvrira et se fermera automatiquement à ces dates. Prévoyez au moins cinq jours avant le lancement pour la relecture.'}
+      {target:'#settings-form fieldset:nth-of-type(3)',title:'Les dates',text:'La campagne s’ouvrira et se fermera automatiquement à ces dates. Prévoyez au moins cinq jours avant le lancement pour la relecture.'},
+      {target:'#settings-form fieldset:nth-of-type(4)',title:'Vos passations',text:'Le Studio compare votre solde aux passations prévues pour cette campagne. S’il ne suffit pas, vous pouvez commander un pack d’ici.'},
+      {target:'#settings-form fieldset:nth-of-type(5)',title:'Les données d’analyse',text:'Âge, fonction, région… Ces questions, posées avant l’autodiagnostic, permettent de lire les résultats par grands groupes. Choisissez-en au moins une.'},
+      {target:'.anonymity-top-grid, .anonymity-metric',title:'Le niveau de vigilance',text:'Le Studio estime le plus petit groupe obtenu en croisant vos données d’analyse. En dessous de 8 personnes, il vous propose des critères à retirer ou à regrouper pour protéger l’anonymat.'}
     ]},
     'acces-equipes':{key:'acces-equipes',steps:[
       {target:'#ae-explain',title:'Accès et équipes',text:'Ici, vous décidez qui peut faire quoi dans le Studio, et qui voit quelles campagnes. Prenez une minute pour lire ces trois principes.'},
@@ -188,10 +191,13 @@
       {target:'#ae-progress',title:'Votre progression',text:'La frise suit votre paramétrage. Une étape repasse « à faire » si la situation change, par exemple quand une nouvelle personne arrive sans équipe.'}
     ]},
     'validation':{key:'creation-validation',auto:true,steps:[
-      {target:'nav.steps',title:'Dernière étape : transmettre',text:'Vérifiez votre configuration, puis transmettez-la. Me&YouToo la relit avant la mise en ligne et vous prévient par notification et par e-mail.'}
+      {target:'nav.steps',title:'Dernière étape : transmettre',text:'Vérifiez votre configuration, puis transmettez-la. Me&YouToo la relit avant la mise en ligne et vous prévient par notification et par e-mail.'},
+      {target:'.validation-summary',title:'Le récapitulatif',text:'Le nom, le titre et les dates se corrigent encore ici. Le nombre de situations et les données d’analyse sont rappelés pour une dernière relecture.'},
+      {target:'#validation-credit',title:'Vos passations',text:'Le Studio vérifie que votre pack couvre les passations prévues. Une demande de pack en attente est indiquée ici.'},
+      {target:'#submit-project',title:'Transmettre',text:'Cochez les vérifications, puis transmettez. Me&YouToo relit la campagne et vous propose des corrections si besoin, que vous validerez.'}
     ]}
   };
-  var PAGE_TOURS={'cockpit-dei.html':'cockpit','bibliotheque.html':'catalogue','kit-communication.html':'kit','mes-campagnes.html':'mes-campagnes','campagne-detail.html':'campagne-detail','composer.html':'composer','personnalisation.html':'personnalisation','parametrage.html':'parametrage'};
+  var PAGE_TOURS={'validation.html':'validation','cockpit-dei.html':'cockpit','bibliotheque.html':'catalogue','kit-communication.html':'kit','mes-campagnes.html':'mes-campagnes','campagne-detail.html':'campagne-detail','composer.html':'composer','personnalisation.html':'personnalisation','parametrage.html':'parametrage'};
   var tourState=null,registeredTour=null,tourShownThisPage=false;
   function tourUser(){try{return window.StudioAPI&&StudioAPI.user()||JSON.parse(localStorage.getItem('studio_user')||'null');}catch(e){return null;}}
   function seenKey(tour){var u=tourUser();return 'studio_tour_seen_v1:'+(u&&u.id||'anonyme')+':'+tour.key;}
