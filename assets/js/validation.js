@@ -12,7 +12,7 @@
     return out.replace(/<\/ins><ins(?: class="[^"]*")?>/g,'').replace(/<\/del><del>/g,'');
   }
   function readableWordDiff(before,after,admin=false){
-    const diff=wordDiff(before,after,admin),current=diff.replace(/<del>[\s\S]*?<\/del>/g,''),previous=diff.replace(/<ins\b[^>]*>[\s\S]*?<\/ins>/g,'');
+    const diff=wordDiff(before,after,admin),current=diff.replace(/<del>[\s\S]*?<\/del>/g,'').replace(/<\/ins>(\s+)<ins(?: class="[^"]*")?>/g,'$1'),previous=diff.replace(/<ins\b[^>]*>[\s\S]*?<\/ins>/g,'').replace(/<\/del>(\s+)<del>/g,'$1');
     return `<div class="review-diff-current" style="white-space:pre-wrap">${current||'—'}</div>${diff.includes('<del>')?`<details class="review-removed-text"><summary>Voir les passages supprimés du texte précédent</summary><div style="white-space:pre-wrap">${previous}</div></details>`:''}`;
   }
   const reviewLocale=locale=>String(locale||'').trim().toLowerCase().replaceAll('_','-');

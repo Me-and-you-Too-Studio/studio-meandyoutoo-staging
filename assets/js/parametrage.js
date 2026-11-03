@@ -490,7 +490,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
     if(!isAdminReview())return '';
     if(submitted==null)return '<div class="composer-diff">Version transmise indisponible pour cet élément ; aucune comparaison supposée.</div>';
     const block=(before,after,label,admin=false)=>{
-      const diff=reviewWordDiff(before,after),hasRemovals=diff.includes('<del>'),afterHtml=diff.replace(/<del>[\s\S]*?<\/del>/g,''),beforeHtml=diff.replace(/<ins>[\s\S]*?<\/ins>/g,'');
+      const diff=reviewWordDiff(before,after),hasRemovals=diff.includes('<del>'),afterHtml=diff.replace(/<del>[\s\S]*?<\/del>/g,'').replace(/<\/ins>(\s+)<ins>/g,'$1'),beforeHtml=diff.replace(/<ins>[\s\S]*?<\/ins>/g,'').replace(/<\/del>(\s+)<del>/g,'$1');
       return `<div class="composer-diff${admin?' is-admin-correction':''}"><div class="composer-diff-label">${esc(label)}</div><div class="composer-diff-text" style="white-space:pre-wrap">${afterHtml||'—'}</div>${hasRemovals?`<details class="admin-review-removed"><summary>Voir les passages supprimés du texte précédent</summary><div class="composer-diff-text" style="white-space:pre-wrap">${beforeHtml}</div></details>`:''}</div>`;
     };
     let html=reference==null?block(submitted,submitted,'Version transmise par le client'):String(reference)===String(submitted)?block(submitted,submitted,'Version transmise · identique au référentiel'):block(reference,submitted,'Version transmise par le client · ajouts en vert');
@@ -542,7 +542,7 @@ function requiredGenderTheme(slug){return ['sexisme','mixite','allie-mixite'].in
       let host=$('client-review-intro');if(!host){host=document.createElement('div');host.id='client-review-intro';input.after(host);}
       const reference=reviewLocaleValue(introReferenceVariants,socioContextLocale);
       if(reference==null||stripHtml(reference)===input.value){host.innerHTML='';return;}
-      const diff=reviewWordDiff(stripHtml(reference),input.value),after=diff.replace(/<del>[\s\S]*?<\/del>/g,''),before=diff.replace(/<ins>[\s\S]*?<\/ins>/g,'');
+      const diff=reviewWordDiff(stripHtml(reference),input.value),after=diff.replace(/<del>[\s\S]*?<\/del>/g,'').replace(/<\/ins>(\s+)<ins>/g,'$1'),before=diff.replace(/<ins>[\s\S]*?<\/ins>/g,'').replace(/<\/del>(\s+)<del>/g,'$1');
       host.innerHTML=`<div class="composer-diff"><div class="composer-diff-label">Vos modifications · ${esc(localeLabel(socioContextLocale))} · ajouts en vert</div><div class="composer-diff-text" style="white-space:pre-wrap">${after||'—'}</div>${diff.includes('<del>')?`<details class="admin-review-removed"><summary>Voir les passages supprimés du texte précédent</summary><div class="composer-diff-text" style="white-space:pre-wrap">${before}</div></details>`:''}</div>`;
       return;
     }

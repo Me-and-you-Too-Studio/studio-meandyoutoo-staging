@@ -568,7 +568,7 @@
   }
   function separatedDiffHtml(original,current){
     const diff=wordDiffHtml(original,current);
-    const after=diff.replace(/<del>[\s\S]*?<\/del>/g,''),before=diff.replace(/<ins>[\s\S]*?<\/ins>/g,'');
+    const after=diff.replace(/<del>[\s\S]*?<\/del>/g,'').replace(/<\/ins>(\s+)<ins>/g,'$1'),before=diff.replace(/<ins>[\s\S]*?<\/ins>/g,'').replace(/<\/del>(\s+)<del>/g,'$1');
     return `${after||'—'}${diff.includes('<del>')?`<details class="admin-review-removed"><summary>Voir les passages supprimés du texte précédent</summary><div class="composer-diff-text" style="white-space:pre-wrap">${before}</div></details>`:''}`;
   }
   function wordDiffHtml(original,current){
