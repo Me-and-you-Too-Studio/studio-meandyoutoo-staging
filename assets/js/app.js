@@ -178,7 +178,7 @@
       {target:'#settings-form fieldset:nth-of-type(2)',title:'L’introduction',text:'Adaptez le texte d’accueil à votre organisation. Si votre campagne a plusieurs langues, personnalisez-en une et confiez les autres à Me&YouToo.'},
       {target:'#settings-form fieldset:nth-of-type(3)',title:'Les dates',text:'La campagne s’ouvrira et se fermera automatiquement à ces dates. Prévoyez au moins cinq jours avant le lancement pour la relecture.'},
       {target:'#settings-form fieldset:nth-of-type(4)',title:'Vos passations',text:'Le Studio compare votre solde aux passations prévues pour cette campagne. S’il ne suffit pas, vous pouvez commander un pack d’ici.'},
-      {target:'#settings-form fieldset:nth-of-type(5)',title:'Les données d’analyse',text:'Âge, fonction, région… Ces questions, posées avant l’autodiagnostic, permettent de lire les résultats par grands groupes. Choisissez-en au moins une.'},
+      {target:'#settings-form fieldset:nth-of-type(5) legend',title:'Les données d’analyse',text:'Âge, fonction, région… Ces questions, posées avant l’autodiagnostic, permettent de lire les résultats par grands groupes. Choisissez-en au moins une.'},
       {target:'.anonymity-top-grid, .anonymity-metric',title:'Le niveau de vigilance',text:'Le Studio estime le plus petit groupe obtenu en croisant vos données d’analyse. En dessous de 8 personnes, il vous propose des critères à retirer ou à regrouper pour protéger l’anonymat.'}
     ]},
     'acces-equipes':{key:'acces-equipes',steps:[
