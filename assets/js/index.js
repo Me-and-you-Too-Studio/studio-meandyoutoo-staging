@@ -233,22 +233,31 @@
 
   // Premiers pas : tant que rien n'a été diffusé, l'accueil montre seulement le chemin court.
   // Le parcours en 6 temps, les indicateurs (tous à zéro) et les missions attendent la première diffusion.
+  // Une campagne programmée n'est pas encore diffusée : elle ne fait pas sortir des premiers pas.
   function isFirstSteps(data){
     var g=data.gamification;
-    if(!g||g.launchedCampaigns)return false;
+    if(!g||(g.startedCampaigns!=null?g.startedCampaigns:g.launchedCampaigns))return false;
     return !(data.recentProjects||[]).some(function(p){return p.legacy_history;});
   }
   function renderQuickstart(data){
     var root=document.getElementById('quickstart');if(!root)return;
-    var preparing=!!(data.gamification&&data.gamification.campaignsInPreparation);
+    var g=data.gamification||{},next=g.nextScheduled;
+    // Les brouillons ne comptent pas dans campaignsInPreparation (campagnes transmises, en relecture…).
+    var preparing=!!(g.campaignsInPreparation||(data.summary&&data.summary.draft_campaigns));
+    var current=next?3:(preparing?2:1);
     root.querySelectorAll('.qs-steps li').forEach(function(li){
       var n=Number(li.getAttribute('data-step'));
-      li.classList.toggle('is-done',preparing&&n===1);
-      li.classList.toggle('is-current',preparing?n===2:n===1);
+      li.classList.toggle('is-done',n<current);
+      li.classList.toggle('is-current',n===current);
     });
-    if(preparing){
-      document.getElementById('qs-self-text').textContent='Votre campagne est en préparation : reprenez-la là où vous l’avez laissée, puis transmettez-la pour relecture.';
-      var cta=document.getElementById('qs-self-cta');cta.textContent='Reprendre ma campagne';cta.href='mes-campagnes.html';
+    var text=document.getElementById('qs-self-text'),cta=document.getElementById('qs-self-cta');
+    if(next){
+      root.querySelector('.qs-steps li[data-step="3"] strong').textContent=next.launchDate?'Diffusion le '+dateFr(next.launchDate):'Diffusion programmée';
+      text.textContent='« '+next.name+' » est programmée'+(next.launchDate?' pour le '+dateFr(next.launchDate):'')+'. D’ici là, préparez vos collaborateurs avec le kit de communication.';
+      cta.textContent='Voir mes campagnes';cta.href='mes-campagnes.html';
+    }else if(preparing){
+      text.textContent='Votre campagne est en préparation : reprenez-la là où vous l’avez laissée, puis transmettez-la pour relecture.';
+      cta.textContent='Reprendre ma campagne';cta.href='mes-campagnes.html';
     }
     document.querySelectorAll('.dashboard-flow,.stats-grid').forEach(function(el){el.hidden=true;});
     // Aucune campagne : la section vide redirait seulement « Explorer la bibliothèque ».
