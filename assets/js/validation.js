@@ -255,6 +255,13 @@
     translationRequestPanel('intro',pendingIntroTranslationRequests());
   }
 
+  // Libellé des blocs de langue selon l'avancement : à relire (Me&YouToo), à valider (client), puis relu(s).
+  function reviewLanguageState(count){
+    const status=project?.status;
+    if(['configuration_submitted','review_pending','in_review'].includes(status))return 'à relire';
+    if(status==='client_validation_required')return 'à valider';
+    return count>1?'relus':'relu';
+  }
   function reviewPanel(){
     let root=$('review-workflow');if(!root){root=document.createElement('section');root.id='review-workflow';root.className='card review-workflow';document.querySelector('.validation-summary').after(root);}
     const summary=project.review_summary||'Aucun commentaire de relecture pour le moment.',isAdmin=currentUser?.role==='admin',status=isAdmin&&project.status==='client_validation_required'?'En attente du retour client':statusLabel(project.status);
@@ -309,7 +316,7 @@
       const count=new Set([...clientRows,...requestedRows,...otherRows].map(row=>row[0])).size+translatedRows.length;
       const name=`${reviewLocaleNames[locale]||locale.toUpperCase()} (${locale.toUpperCase()})`;
       const workingOnly=locale===workingLocale&&!diffusionLocales.has(locale);
-      return `<details class="review-history review-language-group" data-review-locale="${esc(locale)}"${reviewOpenLanguages.has(locale)?' open':''}><summary>${workingOnly?'Version de travail · ':''}${esc(name)} · ${count} élément${count>1?'s':''} à relire</summary>${workingOnly?'<p>Cette version sert à préparer les contenus. Elle ne fait pas partie des langues de diffusion de la campagne.</p>':''}${renderComparisons(clientRows,requestedRows,otherRows)}${translationChangesPanel(locale)}</details>`;
+      return `<details class="review-history review-language-group" data-review-locale="${esc(locale)}"${reviewOpenLanguages.has(locale)?' open':''}><summary>${workingOnly?'Version de travail · ':''}${esc(name)} · ${count} élément${count>1?'s':''} ${reviewLanguageState(count)}</summary>${workingOnly?'<p>Cette version sert à préparer les contenus. Elle ne fait pas partie des langues de diffusion de la campagne.</p>':''}${renderComparisons(clientRows,requestedRows,otherRows)}${translationChangesPanel(locale)}</details>`;
     }).join('');
     const translationAlert=isAdmin&&translationChangesError?`<p class="composer-alert">Le contrôle des versions linguistiques n’a pas pu être chargé : ${esc(translationChangesError)}</p>`:'';
     const cloneHistoryNotice=clone.isClone&&!cloneBaseline?'<p class="composer-alert">Cette copie a été créée avant l’enregistrement du contenu de départ. Les adaptations héritées et les changements réalisés ensuite ne peuvent pas être distingués de façon fiable. Les corrections Me&YouToo restent comparées à la version transmise. Consultez les situations, profils et paramètres pour vérifier l’ensemble du contenu.</p>':'';
