@@ -59,7 +59,8 @@ function frame(s){
 function render(force){
   if(force)fit();
   var i=sceneAt(t);
-  startCard.hidden=i!==-1||t>=CARD;endCard.hidden=t<total;
+  // L’écran titre reste affiché tant que la lecture n’a pas commencé (avec la voix, le premier plan démarre à 0).
+  startCard.hidden=(playing||t>0)&&(i!==-1||t>=CARD);endCard.hidden=t<total;
   if(i!==current||force){current=i;if(i>=0){frame(T.scenes[i]);caption.textContent=T.scenes[i].text;}else caption.textContent='';}
   if(t>=total)caption.textContent='';
   segs.forEach(function(seg,k){var a=starts[k],b=k+1<starts.length?starts[k+1]:total;seg.style.width=Math.max(0,Math.min(1,(t-a)/(b-a)))*100+'%';});
