@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suivre la relecture — Tutoriel Studio Me&amp;YouToo</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="stylesheet" href="../lecteur.css?v=20261103-8">
+</head>
+<body>
+<div class="tuto" id="tuto"></div>
+<script>
+// Captures du 3 novembre 2026 : compte de démonstration Fatou Diallo, Entreprise Exemple, campagne #350
+// « Sexisme – démo relecture » (une correction proposée par Carole côté admin, puis validée par Fatou).
+// La fenêtre « Demander un ajustement » a été ouverte puis annulée : aucune demande envoyée.
+// Captures 8 à 10 du 4 novembre 2026, la 9 refaite avec le nouveau QR code : la même campagne après sa publication par Carole (encart « Campagne concernée » masqué : il affiche l’e-mail ; notification de la capture 8 retouchée au texte corrigé, celle reçue sur #350 datant d’avant la correction).
+// Cadres en % de la capture : [gauche, haut, largeur, hauteur]. Pour caler la voix : audio:'voix.mp3' et « at » (secondes) sur chaque plan.
+window.TUTO={
+  eyebrow:'Tutoriel · Après la transmission',
+  title:'Suivre la relecture et valider les corrections',
+  intro:'Me&YouToo relit votre campagne et vous propose des corrections : comment les consulter, les valider ou demander un ajustement, puis retrouver vos liens une fois la campagne programmée. Environ 2 minutes 10, avec le son.',
+  // Voix de Carole Michelon (enregistrée le 4 novembre 2026 en deux prises : plan 11 repris, niveau égalisé ; nettoyée, pauses ramenées à 1,2 s) ; « at » = début de chaque phrase.
+  audio:'voix.mp3?v=1',
+  scenes:[
+    {at:0,img:'ecran-1.png',box:[13.5,17.1,3.3,5.9],text:'Après votre transmission, Me&YouToo relit votre campagne. Vous êtes prévenu par une notification et par e-mail.'},
+    {at:7.65,img:'ecran-1.png',box:[19.4,19.6,24.4,12],text:'Quand des corrections vous sont proposées, la notification « Votre validation est nécessaire » apparaît. Cliquez dessus.'},
+    {at:14.75,img:'ecran-2.png',box:[7.6,40.5,84.7,21],text:'Me&YouToo a terminé sa relecture et vous propose des ajustements. C’est maintenant à vous d’agir : validez-les pour passer à la mise en ligne.'},
+    {at:22.39,img:'ecran-2.png',box:[8,86.5,32,4.6],text:'Les couleurs vous aident à lire les changements : rouge pour ce qui est supprimé, vert pour vos ajouts, violet pour les corrections de Me&YouToo.'},
+    {at:30.95,img:'ecran-3.png',box:[8,9.5,84.2,54],text:'Pour chaque élément, comparez votre version et la version corrigée par Me&YouToo, puis décidez si la correction vous convient.'},
+    {at:38.69,img:'ecran-3.png',box:[60,32.5,32,5],text:'La correction apparaît en violet : vous voyez tout de suite ce que Me&YouToo a changé dans votre texte.'},
+    {at:44.83,img:'ecran-3.png',box:[9.3,83.8,81.6,5.8],text:'Le résumé de la relecture vous explique ce qui a été modifié et pourquoi : prenez le temps de le lire avant de répondre.'},
+    {at:52.21,img:'ecran-3.png',box:[60.3,57.8,24,4.2],text:'Si la correction vous convient, cliquez sur « Cette correction me convient ». Sinon, demandez un ajustement.'},
+    {at:58.97,img:'ecran-4.png',box:[17.8,25.8,64.5,31],text:'Pour un ajustement, choisissez la nature de la demande et cochez le texte précis à reprendre.'},
+    {at:65.23,img:'ecran-5.png',box:[17.8,65.6,64.5,13.9],text:'Expliquez le résultat attendu, puis cliquez sur « Vérifier et envoyer ». Votre campagne reste verrouillée pendant ce temps.'},
+    {at:73.23,img:'ecran-6.png',box:[9.3,65.4,81.6,12.4],text:'Quand toutes les corrections sont validées, cliquez sur « Confirmer ma validation » : c’est ce qui permet à Me&YouToo de passer à la mise en ligne.'},
+    {at:82.05,img:'ecran-7.png',box:[8,36.7,84.2,11],text:'C’est fait : Me&YouToo prépare la mise en ligne. Vous serez prévenu dès que les liens de votre campagne seront disponibles.'},
+    {at:89.39,img:'ecran-8.png',box:[20.5,19.6,24.5,12],text:'Quand tout est prêt, la notification « Votre campagne est programmée » apparaît. Cliquez dessus pour accéder à vos liens de diffusion.'},
+    {at:97.71,img:'ecran-9.png',box:[22.2,17.3,67.2,22.4],text:'Vous arrivez sur vos liens : celui de la campagne et celui des résultats. Ne diffusez pas le lien de la campagne avant la date de lancement.'},
+    {at:106.49,img:'ecran-9.png',box:[22.2,63.6,34,27.2],text:'Votre QR code est prêt aussi, avec votre logo s’il est renseigné dans votre compte : téléchargez-le en PNG, ou en SVG pour l’impression.'},
+    {at:114.71,img:'ecran-10.png',box:[2.9,39,89,24.8],text:'Dans le suivi de votre campagne, la relecture est terminée : vous êtes à l’étape « Mise en ligne », avec le statut « Programmée ».'},
+    {at:122.83,img:'ecran-10.png',box:[1.2,69.7,92.3,7],text:'Votre campagne s’ouvrira automatiquement à sa date de début et se fermera toute seule à la fin.'}
+  ],
+  end:{title:'Votre campagne est programmée',text:'Prochaine étape : annoncer votre campagne avec le kit de communication. Une question ? Le chat et l’équipe Me&YouToo sont là pour vous.'}
+};
+</script>
+<script src="../lecteur.js?v=20261103-8"></script>
+</body>
+</html>
