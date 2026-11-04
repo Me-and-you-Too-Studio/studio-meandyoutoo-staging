@@ -6,7 +6,7 @@
 <title>Kit de communication — Studio Me&YouToo</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20261104-temps-global-2">
+<link rel="stylesheet" href="assets/css/style.css?v=20261104-qr-2">
 <style>
 [data-kit-tab]:disabled,[data-process-tab]:disabled{opacity:.45;cursor:not-allowed}
 </style>
@@ -91,8 +91,8 @@
         <div class="kit-url"><div><div class="kit-url-label">URL de la campagne</div><div class="kit-url-value" id="share-url">En préparation par Me&YouToo</div></div><div class="top-actions"><button class="button button-secondary" type="button" id="share-copy" disabled>Copier</button><a class="button button-secondary" id="share-open" href="#" target="_blank" rel="noopener" aria-disabled="true">Ouvrir</a></div></div>
         <div class="kit-url"><div><div class="kit-url-label">URL des résultats</div><div class="kit-url-value" id="results-url">En préparation par Me&YouToo</div></div><div class="top-actions"><button class="button button-secondary" type="button" id="results-copy" disabled>Copier</button><a class="button button-secondary" id="results-open" href="#" target="_blank" rel="noopener" aria-disabled="true">Ouvrir</a></div></div>
       </section><section class="card kit-block" id="qrBlock">
-        <p class="eyebrow">Diffusion</p><h2 class="section-title">▦ QR code</h2><p class="section-desc">Le QR code est généré automatiquement à partir du lien de campagne. Il peut être intégré dans vos affiches, intranet ou supports de lancement.</p>
-        <div id="qr-ready" class="qr-wrap" hidden><img id="qr-image" class="kit-qr-image" alt="QR code de la campagne"><a class="button button-secondary" id="qr-download" target="_blank" rel="noopener">Télécharger le QR code</a></div>
+        <p class="eyebrow">Diffusion</p><h2 class="section-title">▦ QR code</h2><p class="section-desc">Le QR code est généré automatiquement à partir du lien de campagne. Il reprend le logo de votre entreprise, s’il est renseigné dans votre compte, et peut être intégré dans vos affiches, intranet ou supports de lancement.</p>
+        <div id="qr-ready" class="qr-wrap" hidden><div id="qr-image" class="kit-qr-image" role="img" aria-label="QR code de la campagne"></div><div class="kit-qr-actions"><button type="button" class="button button-secondary" data-qr-download="png">Télécharger en PNG</button><button type="button" class="button button-secondary" data-qr-download="svg">Télécharger en SVG (impression)</button></div></div>
         <div id="qr-empty" class="kit-empty">Le QR code apparaîtra dès que le lien de diffusion sera disponible.</div>
       </section></div>
       <div class="kit-tab-panel" data-kit-panel="delivery" hidden><section class="card kit-block" id="resourcesBlock">
@@ -126,7 +126,7 @@
       <button class="button button-danger" id="kit-delete-confirm" type="button">Supprimer</button>
     </div>
   </div>
-<script src="assets/js/api.js?v=20261103-json-1"></script><script src="assets/js/app.js?v=20261104-tuto-8"></script><script src="assets/js/project-context.js?v=20261031-perimetre-1"></script><script src="assets/js/kit-communication.js?v=20261104-programmee-1"></script>
+<script src="assets/js/api.js?v=20261103-json-1"></script><script src="assets/js/app.js?v=20261104-tuto-8"></script><script src="assets/js/project-context.js?v=20261031-perimetre-1"></script><script src="assets/js/vendor/qr-code-styling-1.9.2.js"></script><script src="assets/js/kit-qr.js?v=20261104-qr-1"></script><script src="assets/js/kit-communication.js?v=20261104-qr-1"></script>
 </div>
 
 </body></html>
