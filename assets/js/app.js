@@ -1186,6 +1186,23 @@
     },true);
     lockPreviewActions();new MutationObserver(lockPreviewActions).observe(document.body,{childList:true,subtree:true});
   }
+  // Frise de création : temps moyen de chaque étape sous son nom, et le total au bout.
+  var STEP_MINUTES={"Choisir":5,"Composer":10,"Personnaliser":5,"Paramétrer":5,"Transmettre":2};
+  function setupStepTimes(){
+    document.querySelectorAll("nav.steps").forEach(function(nav){
+      var total=0;
+      nav.querySelectorAll(".step").forEach(function(step){
+        var num=step.querySelector(".step-num"),label=step.textContent.replace(num?num.textContent:"","").trim(),min=STEP_MINUTES[label];
+        if(!min||step.querySelector(".step-time"))return;
+        total+=min;
+        var text=document.createElement("span");text.className="step-text";
+        while(num&&num.nextSibling)text.appendChild(num.nextSibling);
+        text.insertAdjacentHTML("beforeend","<small class=\"step-time\">⏱ "+min+" min</small>");
+        step.appendChild(text);
+      });
+      if(total&&!nav.querySelector(".steps-total"))nav.insertAdjacentHTML("beforeend","<span class=\"steps-total\">Au total : environ "+total+" minutes</span>");
+    });
+  }
   function setupScrollNavigation(){
     if(document.getElementById('studio-back-to-top'))return;
     var button=document.createElement('button');
@@ -1321,6 +1338,7 @@
   setupSidebarCollapse();
   setupActionMenus();
   setupScrollNavigation();
+  setupStepTimes();
   setupStudioSubscriptionAccess();
   setTimeout(trackProductActivity,0);
   setTimeout(teamAccessReminder,0);
