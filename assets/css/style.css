@@ -17313,3 +17313,7 @@ body.sidebar-collapsed .help-card-team { display: none; }
 .creation-time > span:first-child { font-size: 1.9rem; line-height: 1; }
 .creation-time strong { display: block; font-size: 1.2rem; font-weight: 900; line-height: 1.25; }
 .creation-time small { display: block; margin-top: 3px; font-size: 0.88rem; font-weight: 600; opacity: 0.92; }
+
+/* QR code du kit : rendu dans un canvas, boutons de téléchargement empilés. */
+.kit-qr-image canvas { display: block; width: 100%; height: 100%; }
+.kit-qr-actions { display: grid; gap: 10px; }
