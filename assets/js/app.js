@@ -292,7 +292,7 @@
     personnaliser:{title:'Personnaliser les profils',url:'tutos/personnaliser/index.html'},
     parametrer:{title:'Paramétrer sa campagne',url:'tutos/parametrer/index.html'},
     transmettre:{title:'Vérifier et transmettre sa configuration',url:'tutos/transmettre/index.html'},
-    relecture:{title:'Suivre la relecture et demander un ajustement',url:''},
+    relecture:{title:'Suivre la relecture et demander un ajustement',url:'tutos/relecture/index.html'},
     diffuser:{title:'Préparer la communication et diffuser sa campagne',url:'tutos/diffuser/index.html'}
   };
   var PAGE_TUTORIALS={'accueil.html':'decouvrir','bibliotheque.html':'choisir','composer.html':'composer','personnalisation.html':'personnaliser','parametrage.html':'parametrer','validation.html':'transmettre','kit-communication.html':'diffuser'};
