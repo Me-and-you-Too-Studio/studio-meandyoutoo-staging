@@ -16789,7 +16789,7 @@ nav.steps[hidden] { display: none; }
 .studio-tuto-button { display: inline-flex; align-items: center; gap: 6px; margin: 8px 0 0 8px; padding: 7px 12px; border: 1px solid var(--green-blue); border-radius: 999px; background: var(--surface); color: var(--green-blue-dark); font: inherit; font-size: .85rem; font-weight: 800; cursor: pointer; }
 .studio-tuto-button small { color: var(--muted); font-weight: 600; }
 .studio-tuto-button:hover, .studio-tuto-button:focus-visible { background: var(--green-blue-soft); }
-.studio-tuto-dialog { width: min(1500px, calc(100vw - 24px)); max-width: none; max-height: calc(100vh - 16px); padding: 0; border: 0; border-radius: var(--radius-md); }
+.studio-tuto-dialog { width: min(1500px, calc(100vw - 24px)); max-width: none; max-height: calc(100vh - 16px); padding: 0; background: var(--surface); border: 0; border-radius: var(--radius-md); }
 .studio-tuto-dialog::backdrop { background: rgba(27, 42, 73, .6); }
 .studio-tuto-shell { position: relative; padding: 10px 14px 14px; }
 .studio-tuto-shell h2 { margin: 0 40px 8px 0; font-size: 1.2rem; color: var(--ink); }
