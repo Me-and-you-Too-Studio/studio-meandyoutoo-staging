@@ -1200,8 +1200,15 @@
         text.insertAdjacentHTML("beforeend","<small class=\"step-time\">⏱ "+min+" min</small>");
         step.appendChild(text);
       });
-      if(total&&!nav.querySelector(".steps-total"))nav.insertAdjacentHTML("beforeend","<span class=\"steps-total\">Au total : environ "+total+" minutes</span>");
+      if(total&&!nav.querySelector(".steps-total"))nav.insertAdjacentHTML("beforeend","<span class=\"steps-total\"><span aria-hidden=\"true\">⏱</span> Création complète : environ "+total+" minutes</span>");
     });
+  }
+  // Temps global d’une création, annoncé avant de commencer : accueil, catalogue et pages thématiques.
+  function setupCreationTime(){
+    var page=/^(bibliotheque|theme)/.test(CURRENT),anchor=document.querySelector("#quickstart .section-desc")||(page&&document.querySelector(".topbar .lead"));
+    if(!anchor||document.querySelector(".creation-time"))return;
+    var total=Object.keys(STEP_MINUTES).reduce(function(sum,key){return sum+STEP_MINUTES[key];},0);
+    anchor.insertAdjacentHTML("afterend","<p class=\"creation-time\"><span aria-hidden=\"true\">⏱</span><span><strong>Créer une campagne prend environ "+total+" minutes</strong><small>Du choix de l’autodiagnostic à la transmission. Tout est enregistré : vous pouvez vous arrêter et reprendre.</small></span></p>");
   }
   function setupScrollNavigation(){
     if(document.getElementById('studio-back-to-top'))return;
@@ -1339,6 +1346,7 @@
   setupActionMenus();
   setupScrollNavigation();
   setupStepTimes();
+  setupCreationTime();
   setupStudioSubscriptionAccess();
   setTimeout(trackProductActivity,0);
   setTimeout(teamAccessReminder,0);
