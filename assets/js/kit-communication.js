@@ -37,6 +37,10 @@
   function kitValidated(){return ['ready_to_publish','scheduled','published','active','closed','completed'].includes(project?.status);}
   function diffusionAvailable(){return isAdminDeliveryMode||(kitValidated()&&Boolean(communication.linksUpdatedAt||communication.links_updated_at));}
   function hasDelivery(){return availableAssets.some(asset=>asset.kind==='meayt_delivery')||Boolean(String(communication.videoDownloadUrl||communication.video_download_url||'').trim());}
+  // Une campagne reste « programmée » tant que sa date de début n'est pas arrivée.
+  function campaignPhase(){const launch=String(project?.launch_date||'').slice(0,10),today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Paris'});if(['closed','completed'].includes(project?.status))return 'closed';if(!['scheduled','published','active'].includes(project?.status))return 'preparing';return launch&&launch>today?'scheduled':'live';}
+  function linksReady(){return kitValidated()&&Boolean(communication.linksUpdatedAt||communication.links_updated_at);}
+  function renderKitTexts(){const phase=linksReady()?campaignPhase():'preparing',launch=formatLongDate(project?.launch_date);$('kit-process-title').textContent={scheduled:'Votre campagne est programmée, voici la suite',live:'Votre campagne est publiée, voici la suite',closed:'Votre campagne est terminée'}[phase]||'Votre configuration est transmise, voici la suite';$('links-desc').textContent={scheduled:`Vos liens et votre QR code sont prêts. Ne diffusez pas le lien de passation avant la date de lancement, le ${launch}.`,live:'Vos liens et votre QR code sont prêts à être diffusés.',closed:'Retrouvez ici les liens de votre campagne.'}[phase]||'Les liens sont mis à disposition par Me&YouToo une fois la configuration vérifiée et la campagne préparée. Ne diffusez pas le lien de passation avant la date officielle de lancement.';}
   function kitTabLocked(name){return !isAdminDeliveryMode&&((name==='delivery'&&(!kitValidated()||!hasDelivery()))||(name==='diffusion'&&!diffusionAvailable()));}
   function renderKitAvailability(){
     document.querySelectorAll('[data-kit-tab],[data-process-tab]').forEach(button=>{
@@ -48,7 +52,8 @@
     let note=$('kit-preparation-note');
     if(!note){note=document.createElement('p');note.id='kit-preparation-note';note.className='kit-client-waiting';document.querySelector('[data-kit-tab]')?.parentElement.after(note);}
     note.hidden=isAdminDeliveryMode||(diffusionAvailable()&&hasDelivery());
-    note.textContent='Transmettez vos éléments graphiques. Les liens et le QR code seront accessibles après validation et préparation par Me&YouToo. L’onglet « Livraison Me&YouToo » sera activé dès qu’un fichier ou une vidéo sera mis à votre disposition après validation.';
+    note.textContent=diffusionAvailable()?'Vos liens et votre QR code sont disponibles. L’onglet « Livraison Me&YouToo » sera activé dès qu’un fichier ou une vidéo sera mis à votre disposition.':'Transmettez vos éléments graphiques. Les liens et le QR code seront accessibles après validation et préparation par Me&YouToo. L’onglet « Livraison Me&YouToo » sera activé dès qu’un fichier ou une vidéo sera mis à votre disposition après validation.';
+    renderKitTexts();
     const active=document.querySelector('[data-kit-tab].is-active');
     if(active&&kitTabLocked(active.dataset.kitTab))activateKitTab('graphics');
   }
