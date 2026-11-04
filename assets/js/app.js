@@ -291,7 +291,7 @@
     composer:{title:'Composer son diagnostic',url:'tutos/composer/index.html'},
     personnaliser:{title:'Personnaliser les profils',url:'tutos/personnaliser/index.html'},
     parametrer:{title:'Paramétrer sa campagne',url:'tutos/parametrer/index.html'},
-    transmettre:{title:'Vérifier et transmettre sa configuration',url:''},
+    transmettre:{title:'Vérifier et transmettre sa configuration',url:'tutos/transmettre/index.html'},
     relecture:{title:'Suivre la relecture et demander un ajustement',url:''},
     diffuser:{title:'Préparer la communication et diffuser sa campagne',url:''}
   };
