@@ -1205,7 +1205,7 @@
   }
   // Temps global d’une création, annoncé avant de commencer : accueil, catalogue et pages thématiques.
   function setupCreationTime(){
-    var page=/^(bibliotheque|theme)/.test(CURRENT),anchor=document.querySelector("#quickstart .section-desc")||(page&&document.querySelector(".topbar .lead"));
+    var anchor=/^(accueil|bibliotheque|theme)/.test(CURRENT)&&document.querySelector(".topbar .lead");
     if(!anchor||document.querySelector(".creation-time"))return;
     var total=Object.keys(STEP_MINUTES).reduce(function(sum,key){return sum+STEP_MINUTES[key];},0);
     anchor.insertAdjacentHTML("afterend","<p class=\"creation-time\"><span aria-hidden=\"true\">⏱</span><span><strong>Créer une campagne prend environ "+total+" minutes</strong><small>Du choix de l’autodiagnostic à la transmission. Tout est enregistré : vous pouvez vous arrêter et reprendre.</small></span></p>");
