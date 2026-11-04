@@ -17318,3 +17318,8 @@ body.sidebar-collapsed .help-card-team { display: none; }
 /* QR code du kit : rendu dans un canvas, boutons de téléchargement empilés. */
 .kit-qr-image canvas { display: block; width: 100%; height: 100%; }
 .kit-qr-actions { display: grid; gap: 10px; }
+
+/* Cockpit clients : retirer une alerte de « À faire » et la remettre. */
+.admin-home-dismiss { flex: 0 0 auto; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #8a96ad; font-size: 1.2rem; line-height: 1; cursor: pointer; }
+.admin-home-dismiss:hover, .admin-home-dismiss:focus-visible { background: #edf2f6; color: var(--royal-blue); }
+.admin-home-todos.is-dismissed { margin-top: 6px; opacity: .75; }
