@@ -17301,3 +17301,10 @@ body.sidebar-collapsed .nav-section { padding: 0; background: none; }
 .help-card-team span { margin-left: 12px; }
 .help-card-team:hover span { text-decoration: underline; }
 body.sidebar-collapsed .help-card-team { display: none; }
+
+/* Frise de création : temps moyen sous chaque étape et total. */
+.steps { align-items: center; }
+.step-text { display: flex; flex-direction: column; line-height: 1.15; }
+.step-time { color: #086f78; font-size: 0.76rem; font-weight: 800; }
+.steps-total { margin-left: auto; padding: 6px 12px; border: 1px solid #b9dfe1; border-radius: 999px; background: #f3fbfa; color: #17355f; font-size: 0.82rem; font-weight: 900; }
+@media (max-width: 720px) { .steps-total { margin-left: 0; } }
