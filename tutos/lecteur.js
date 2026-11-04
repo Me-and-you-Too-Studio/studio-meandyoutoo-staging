@@ -9,15 +9,16 @@ function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){retur
 // Rythme d’une voix posée (environ 3,2 mots par seconde), plus 2 secondes pour regarder l’écran.
 function readTime(text){return Math.max(5,String(text).split(/\s+/).length/3.2+2.3);}
 var root=document.getElementById('tuto');
+var LOGO='<img class="tuto-logo" src="../../assets/img/brand/logo-studio-blue.png" alt="Le Studio Me&amp;YouToo">';
 var imgs=[];T.scenes.forEach(function(s){if(imgs.indexOf(s.img)<0)imgs.push(s.img);});
 root.innerHTML='<div class="tuto-stage" role="region" aria-label="Tutoriel animé"><div class="tuto-frame"><div class="tuto-canvas">'+
   imgs.map(function(src){return '<img src="'+esc(src)+'" alt="">';}).join('')+
   '<div class="tuto-box" hidden></div><svg class="tuto-pointer" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2l15 11-6.5 1.2L16 21l-3 1.4-3.6-6.8L4 20z" fill="#fff" stroke="#1d2b4f" stroke-width="1.6" stroke-linejoin="round"/></svg></div></div>'+
   '<p class="tuto-caption" aria-live="polite"></p>'+
-  '<div class="tuto-card" data-card="start"><p class="eyebrow">'+esc(T.eyebrow||'Tutoriel')+'</p><h1>'+esc(T.title)+'</h1><p>'+esc(T.intro||'')+'</p><button type="button" class="tuto-big" data-play>▶ Lancer le tutoriel</button></div>'+
-  '<div class="tuto-card" data-card="end" hidden><p class="eyebrow">C’est terminé</p><h1>'+esc(T.end&&T.end.title||'À vous de jouer')+'</h1><p>'+esc(T.end&&T.end.text||'')+'</p><button type="button" class="tuto-big" data-restart>↺ Revoir</button></div></div>'+
+  '<div class="tuto-card" data-card="start">'+LOGO+'<p class="eyebrow">'+esc(T.eyebrow||'Tutoriel')+'</p><h1>'+esc(T.title)+'</h1><p>'+esc(T.intro||'')+'</p><button type="button" class="tuto-big" data-play>▶ Lancer le tutoriel</button></div>'+
+  '<div class="tuto-card" data-card="end" hidden>'+LOGO+'<p class="eyebrow">C’est terminé</p><h1>'+esc(T.end&&T.end.title||'À vous de jouer')+'</h1><p>'+esc(T.end&&T.end.text||'')+'</p><button type="button" class="tuto-big" data-restart>↺ Revoir</button></div></div>'+
   '<div class="tuto-bar"><button type="button" data-toggle aria-label="Lecture">▶</button><button type="button" data-prev aria-label="Plan précédent">⏮</button><button type="button" data-next aria-label="Plan suivant">⏭</button>'+
-  '<div class="tuto-track" aria-hidden="true">'+T.scenes.map(function(){return '<span><i></i></span>';}).join('')+'</div><span class="tuto-time"></span><button type="button" data-text aria-pressed="false">Texte</button></div>'+
+  '<div class="tuto-track" aria-hidden="true">'+T.scenes.map(function(){return '<span><i></i></span>';}).join('')+'</div><span class="tuto-time"></span><button type="button" data-text aria-pressed="false">Texte</button><button type="button" data-full aria-label="Plein écran" title="Plein écran">⛶</button></div>'+
   '<div class="tuto-transcript"><ol>'+T.scenes.map(function(s){return '<li>'+esc(s.text)+'</li>';}).join('')+'</ol></div>';
 var $=function(sel){return root.querySelector(sel);};
 var canvas=$('.tuto-canvas'),box=$('.tuto-box'),pointer=$('.tuto-pointer'),caption=$('.tuto-caption'),startCard=$('[data-card="start"]'),endCard=$('[data-card="end"]');
@@ -84,6 +85,7 @@ root.addEventListener('click',function(e){
   else if(el.matches('[data-toggle]'))playing?pause():play();
   else if(el.matches('[data-prev]')){var i=sceneAt(t);seek(i>0?starts[i-1]:0);}
   else if(el.matches('[data-next]')){var j=sceneAt(t)+1;seek(j<starts.length?starts[j]:total);}
+  else if(el.matches('[data-full]')){if(document.fullscreenElement)document.exitFullscreen();else if(root.requestFullscreen)root.requestFullscreen();}
   else if(el.matches('[data-text]')){var on=root.classList.toggle('show-text');el.setAttribute('aria-pressed',String(on));}
   else if(el.matches('.tuto-track')){var r=el.getBoundingClientRect(),k=Math.floor((e.clientX-r.left)/r.width*starts.length);seek(starts[Math.max(0,Math.min(starts.length-1,k))]);}
   else if(el.matches('.tuto-stage'))playing?pause():play();
