@@ -289,7 +289,7 @@
     decouvrir:{title:'Découvrir le Studio',url:''},
     choisir:{title:'Choisir son diagnostic',url:'tutos/choisir/index.html'},
     composer:{title:'Composer son diagnostic',url:'tutos/composer/index.html'},
-    personnaliser:{title:'Personnaliser les profils',url:''},
+    personnaliser:{title:'Personnaliser les profils',url:'tutos/personnaliser/index.html'},
     parametrer:{title:'Paramétrer sa campagne',url:'tutos/parametrer/index.html'},
     transmettre:{title:'Vérifier et transmettre sa configuration',url:''},
     relecture:{title:'Suivre la relecture et demander un ajustement',url:''},
