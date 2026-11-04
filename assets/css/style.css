@@ -17306,5 +17306,10 @@ body.sidebar-collapsed .help-card-team { display: none; }
 .steps { align-items: center; }
 .step-text { display: flex; flex-direction: column; line-height: 1.15; }
 .step-time { color: #086f78; font-size: 0.76rem; font-weight: 800; }
-.steps-total { margin-left: auto; padding: 6px 12px; border: 1px solid #b9dfe1; border-radius: 999px; background: #f3fbfa; color: #17355f; font-size: 0.82rem; font-weight: 900; }
-@media (max-width: 720px) { .steps-total { margin-left: 0; } }
+.steps-total { margin-left: auto; padding: 9px 16px; border-radius: 999px; background: var(--royal-blue); color: #fff; font-size: 1rem; font-weight: 900; }
+@media (max-width: 720px) { .steps-total { margin-left: 0; width: 100%; text-align: center; } }
+/* Temps global annoncé avant de commencer. */
+.creation-time { display: flex; align-items: center; gap: 14px; width: fit-content; max-width: 100%; margin: 16px 0; padding: 14px 20px; border-radius: 16px; background: var(--royal-blue); color: #fff; }
+.creation-time > span:first-child { font-size: 1.9rem; line-height: 1; }
+.creation-time strong { display: block; font-size: 1.2rem; font-weight: 900; line-height: 1.25; }
+.creation-time small { display: block; margin-top: 3px; font-size: 0.88rem; font-weight: 600; opacity: 0.92; }
