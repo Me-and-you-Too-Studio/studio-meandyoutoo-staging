@@ -16789,12 +16789,13 @@ nav.steps[hidden] { display: none; }
 .studio-tuto-button { display: inline-flex; align-items: center; gap: 6px; margin: 8px 0 0 8px; padding: 7px 12px; border: 1px solid var(--green-blue); border-radius: 999px; background: var(--surface); color: var(--green-blue-dark); font: inherit; font-size: .85rem; font-weight: 800; cursor: pointer; }
 .studio-tuto-button small { color: var(--muted); font-weight: 600; }
 .studio-tuto-button:hover, .studio-tuto-button:focus-visible { background: var(--green-blue-soft); }
-.studio-tuto-dialog { width: min(1080px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: var(--radius-md); }
+.studio-tuto-dialog { width: min(1500px, calc(100vw - 24px)); max-width: none; max-height: calc(100vh - 16px); padding: 0; border: 0; border-radius: var(--radius-md); }
 .studio-tuto-dialog::backdrop { background: rgba(27, 42, 73, .6); }
-.studio-tuto-shell { position: relative; padding: 20px 22px 22px; }
-.studio-tuto-shell h2 { margin: 2px 40px 14px 0; font-size: 1.2rem; color: var(--ink); }
+.studio-tuto-shell { position: relative; padding: 10px 14px 14px; }
+.studio-tuto-shell h2 { margin: 0 40px 8px 0; font-size: 1.2rem; color: var(--ink); }
 .studio-tuto-shell .studio-modal-close { position: absolute; top: 14px; right: 14px; }
-.studio-tuto-player { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius-sm); overflow: hidden; background: #000; }
+/* Hauteur calculée pour afficher les captures à leur taille réelle (1456 × 818) dès que la fenêtre le permet : réduites, elles deviennent floues. */
+.studio-tuto-player { position: relative; height: min(calc((min(1500px, 100vw - 24px) - 28px) * .562 + 52px), calc(100vh - 92px)); border-radius: var(--radius-sm); overflow: hidden; background: #000; }
 .studio-tuto-player video, .studio-tuto-player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 /* Nouveautés : bulle discrète en bas à droite + historique dans une fenêtre */
 .studio-news { position: fixed; right: 20px; bottom: 20px; z-index: 900; width: min(360px, calc(100vw - 24px)); padding: 18px 20px 16px; border-radius: var(--radius-md); background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lg); border-top: 4px solid var(--sunny-yellow); animation: studio-news-in .3s ease-out; }
