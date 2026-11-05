@@ -4,6 +4,9 @@
 (function(){
 'use strict';
 var T=window.TUTO;if(!T)return;
+// Typographie : espace insécable autour des guillemets et avant : ; ? ! pour éviter un » seul en début de ligne.
+var nbsp=function(t){return String(t||'').replace(/«\s+/g,'«\u00a0').replace(/\s+([»:;?!])/g,'\u00a0$1');};
+T.scenes.forEach(function(s){s.text=nbsp(s.text);});if(T.end)T.end.text=nbsp(T.end.text);T.intro=nbsp(T.intro);
 var CARD=2.5,END=4;
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 // Rythme d’une voix posée (environ 3,2 mots par seconde), plus 2 secondes pour regarder l’écran.
