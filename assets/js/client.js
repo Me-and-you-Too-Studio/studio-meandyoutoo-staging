@@ -1044,6 +1044,11 @@
       " · activité " +
       dateTime(u.last_seen_at || u.last_login_at) +
       "</small></div><div>" +
+      // Une personne en attente s'invite depuis sa ligne, par exemple devant elle.
+      (u.invitation_pending
+        ? '<button type="button" data-send-invitation="' + esc(u.id) + '" style="background:#007883;color:#fff' +
+          (invitationsEnabled ? '">' : ';opacity:.5" disabled title="Disponible après le go de la mise en production">') + "Envoyer</button>"
+        : "") +
       (u.must_change_password && u.active
         ? '<button data-resend-client="' + u.id + '">Renvoyer</button>'
         : "") +
@@ -1069,13 +1074,6 @@
   // Le bouton n'agit qu'une fois le go donné sur le serveur (STUDIO_INVITATIONS_ENABLED).
   function invitationsToSend() {
     return orgUsers(organization).filter((u) => u.invitation_pending === true);
-  }
-  // Une ligne et un bouton par personne : l'admin invite chacune à son tour, par exemple devant elle.
-  function invitationsHtml() {
-    return invitationsToSend().map((u) =>
-      '<div class="admin-pack-alert"><div><strong>✉️ Invitation à envoyer</strong><span>' + esc(contactDisplayName(u)) + ' · ' + esc(u.email || '') +
-      (invitationsEnabled ? '' : ' · le bouton s’activera au go de la mise en production') + '</span></div><div><button class="button button-primary" type="button" data-send-invitation="' + esc(u.id) + '"' +
-      (invitationsEnabled ? '' : ' disabled title="Disponible après le go de la mise en production"') + '>Envoyer</button></div></div>').join("");
   }
   async function sendClientInvitation(userId) {
     const user = invitationsToSend().find((u) => String(u.id) === String(userId));
@@ -1352,7 +1350,6 @@
     bindAdminComments($("#client-ads"));
     renderContacts();
     $("#client-users").innerHTML =
-      invitationsHtml() +
       (orgUsers(organization).map(userRow).join("") ||
       '<div class="admin-empty"><strong>Aucun compte utilisateur</strong><span>Ajoutez un accès avec « + Ajouter un accès », ou reprenez ses contacts HubSpot depuis Clients › « Importer depuis HubSpot ».</span></div>');
     $$("[data-send-invitation]").forEach((button) => { button.onclick = () => sendClientInvitation(button.dataset.sendInvitation); });
