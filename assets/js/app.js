@@ -294,9 +294,10 @@
     transmettre:{title:'Vérifier et transmettre sa configuration',url:'tutos/transmettre/index.html'},
     relecture:{title:'Suivre la relecture et demander un ajustement',url:'tutos/relecture/index.html'},
     diffuser:{title:'Préparer la communication et diffuser sa campagne',url:'tutos/diffuser/index.html'},
-    droits:{title:'Comprendre les droits d’accès',url:'tutos/droits/index.html'}
+    droits:{title:'Comprendre les droits d’accès',url:'tutos/droits/index.html'},
+    cockpit:{title:'Piloter avec le Cockpit D&I',url:'tutos/cockpit/index.html'}
   };
-  var PAGE_TUTORIALS={'accueil.html':'decouvrir','acces-equipes.html':'droits','bibliotheque.html':'choisir','composer.html':'composer','personnalisation.html':'personnaliser','parametrage.html':'parametrer','validation.html':'transmettre','kit-communication.html':'diffuser'};
+  var PAGE_TUTORIALS={'accueil.html':'decouvrir','acces-equipes.html':'droits','cockpit-dei.html':'cockpit','bibliotheque.html':'choisir','composer.html':'composer','personnalisation.html':'personnaliser','parametrage.html':'parametrer','validation.html':'transmettre','kit-communication.html':'diffuser'};
   function openTutorial(id){
     var t=TUTORIALS[id];if(!t||!t.url)return;
     var dialog=document.createElement('dialog');dialog.className='studio-modal studio-tuto-dialog';dialog.setAttribute('aria-labelledby','studio-tuto-title');
@@ -323,6 +324,7 @@
     if(badge)badge.insertAdjacentHTML('afterend',html);
     else if(actions)actions.insertAdjacentHTML('afterbegin',html);
     else if(title)title.insertAdjacentHTML('afterend',html);
+    else{var hero=document.querySelector('.dei-hero-actions');if(hero)hero.insertAdjacentHTML('beforeend',html);}
   }
   window.StudioTutorial={
     // Une page peut changer de tutoriel après chargement (la transmission devient le suivi de relecture).
