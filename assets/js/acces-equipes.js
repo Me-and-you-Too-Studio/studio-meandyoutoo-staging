@@ -101,9 +101,9 @@
     var list=data.users.filter(function(u){return u.canInvite;});
     $('ae-invitations').hidden=!list.length||!data.canEdit;
     $('ae-invitations-title').textContent=data.invitationsEnabled?'Invitations à envoyer':'Invitations à préparer';
-    $('ae-invitations-desc').textContent=data.invitationsEnabled?'Ces personnes sont intégrées à votre compte mais n’ont encore rien reçu. Envoyez leur invitation quand vous le souhaitez, par exemple après une annonce interne.':'Ces personnes sont intégrées à votre compte. Préparez dès maintenant leur invitation (adresse, mot d’accompagnement) : elle partira automatiquement à la mise en production du Studio. Rien n’est envoyé pour l’instant.';
+    $('ae-invitations-desc').textContent=data.invitationsEnabled?'Ces personnes sont intégrées à votre compte mais n’ont encore rien reçu. Envoyez leur invitation quand vous le souhaitez, par exemple après une annonce interne.':'Ces personnes sont intégrées à votre compte. Préparez dès maintenant leur invitation (adresse, mot d’accompagnement) : elle partira à la mise en production du Studio. Rien n’est envoyé pour l’instant.';
     $('ae-invitation-list').innerHTML=list.map(function(u){
-      // Avant le go, l’invitation est « préparée » : elle partira automatiquement à la mise en production.
+      // Avant le go, l’invitation est « préparée » : elle partira à la mise en production.
       var ready=u.invitationPreparedAt&&!data.invitationsEnabled;
       return '<article class="ae-row"><div class="ae-row-person"><strong>'+nameHtml(u)+'</strong><span>'+esc(u.email||'')+'</span>'+(ready?'<small>✓ Invitation prête le '+esc(new Date(u.invitationPreparedAt).toLocaleDateString("fr-FR"))+' : elle partira à la mise en production</small>':'')+'</div><div>'+scopeBadge(u)+'</div>'+
         '<div class="ae-row-actions"><button class="button '+(ready?'button-secondary':'button-primary')+'" type="button" data-invite="'+esc(u.id)+'">'+(data.invitationsEnabled?'Envoyer l’invitation':ready?'Modifier l’invitation':'Préparer l’invitation')+'</button>'+
@@ -267,7 +267,7 @@
     $('ae-invite-dialog').close();
     var who=name(inviting);
     await act(function(){return api('/api/team-access/users/'+inviting.id+'/invite',{method:'POST',body:JSON.stringify({email:email,message:$('ae-invite-message').value.trim()})});},
-      data.invitationsEnabled?{title:'Invitation envoyée',message:who+' va recevoir son invitation par e-mail.'}:{title:'Invitation prête',message:'Aucun e-mail n’est parti. L’invitation de '+who+' partira automatiquement à la mise en production du Studio, avec votre mot d’accompagnement. Vous pouvez la modifier d’ici là.'});
+      data.invitationsEnabled?{title:'Invitation envoyée',message:who+' va recevoir son invitation par e-mail.'}:{title:'Invitation prête',message:'Aucun e-mail n’est parti. L’invitation de '+who+' partira à la mise en production du Studio, avec votre mot d’accompagnement. Vous pouvez la modifier d’ici là.'});
   };
   document.querySelectorAll('dialog [data-close]').forEach(function(b){b.onclick=function(){b.closest('dialog').close();};});
 
