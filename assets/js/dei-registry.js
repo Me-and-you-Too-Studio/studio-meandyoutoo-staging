@@ -55,7 +55,8 @@
     return StudioAPI.request('/api/dei/reviews'+qs()).then(function(r){state.reviews=r.actions||[];state.reviewAgain=r.again||{};}).catch(function(){state.reviews=[];});
   }
   function reviewRow(id){return (state.reviews||[]).find(function(x){return String(x.id)===String(id);})||null;}
-  function canReview(){return isClient&&Boolean(state.data&&state.data.canEdit);}
+  // Me&YouToo à la place du client ne note pas : le bouton n'apparaît pas.
+  function canReview(){return isClient&&Boolean(state.data&&state.data.canEdit)&&!(StudioAPI.clientPreview&&StudioAPI.clientPreview());}
   function starsText(n){return '★★★★★'.slice(0,n)+'☆☆☆☆☆'.slice(0,5-n);}
   function againLabel(k){return (state.reviewAgain||{})[k]||k;}
   function stars(n){return '<span class="dr-stars" role="img" aria-label="'+n+' sur 5">'+starsText(n)+'</span>';}
