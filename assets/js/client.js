@@ -1089,8 +1089,19 @@
     try {
       const result = await StudioAPI.request("/api/admin/organizations/" + encodeURIComponent(organization.id) + "/pending-invitations/send", { method: "POST", body: "{}" });
       const sent = Array.isArray(result?.sent) ? result.sent : [];
+      const delivered = sent.filter((s) => s.sent !== false), failed = sent.filter((s) => s.sent === false);
       await load();
       const licence = result?.licence ? " Licence Studio démarrée le " + date(result.licence.startsAt) + " pour 12 mois" + (result.licence.packAligned ? ", pack aux mêmes dates." : " ; pack à 0 crédit inchangé (à racheter).") : "";
+      if (failed.length) {
+        StudioModal.alert({
+          eyebrow: "Invitations",
+          type: "error",
+          title: failed.length + " invitation" + (failed.length > 1 ? "s non parties" : " non partie"),
+          message: "Rien n’a été reçu par : " + failed.map((s) => s.email).join(", ") + ". " + (failed.length > 1 ? "Ces personnes restent" : "Cette personne reste") + " en attente : relancez « Envoyer les invitations » depuis ce dossier." +
+            (delivered.length ? " Envoyée" + (delivered.length > 1 ? "s" : "") + " : " + delivered.map((s) => s.email).join(", ") + "." : "") + licence,
+        });
+        return;
+      }
       StudioModal.alert({ eyebrow: "Invitations", title: sent.length + " invitation" + (sent.length > 1 ? "s envoyées" : " envoyée"), message: (sent.map((s) => s.email).join(", ") || "Aucune invitation en attente.") + licence });
     } catch (error) {
       StudioModal.alert({ title: "Envoi impossible", message: error.message, type: "error" });
