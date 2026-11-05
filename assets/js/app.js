@@ -197,7 +197,7 @@
       {target:'#submit-project',title:'Transmettre',text:'Cochez les vérifications, puis transmettez. Me&YouToo relit la campagne et vous propose des corrections si besoin, que vous validerez.'}
     ]}
   };
-  var PAGE_TOURS={'validation.html':'validation','cockpit-dei.html':'cockpit','bibliotheque.html':'catalogue','kit-communication.html':'kit','mes-campagnes.html':'mes-campagnes','campagne-detail.html':'campagne-detail','composer.html':'composer','personnalisation.html':'personnalisation','parametrage.html':'parametrage'};
+  var PAGE_TOURS={'validation.html':'validation','cockpit-dei.html':'cockpit','account.html':'acces','bibliotheque.html':'catalogue','kit-communication.html':'kit','mes-campagnes.html':'mes-campagnes','campagne-detail.html':'campagne-detail','composer.html':'composer','personnalisation.html':'personnalisation','parametrage.html':'parametrage'};
   var tourState=null,registeredTour=null,tourShownThisPage=false;
   function tourUser(){try{return window.StudioAPI&&StudioAPI.user()||JSON.parse(localStorage.getItem('studio_user')||'null');}catch(e){return null;}}
   function seenKey(tour){var u=tourUser();return 'studio_tour_seen_v1:'+(u&&u.id||'anonyme')+':'+tour.key;}
@@ -295,7 +295,8 @@
     relecture:{title:'Suivre la relecture et demander un ajustement',url:'tutos/relecture/index.html'},
     diffuser:{title:'Préparer la communication et diffuser sa campagne',url:'tutos/diffuser/index.html'},
     droits:{title:'Comprendre les droits d’accès',url:'tutos/droits/index.html'},
-    cockpit:{title:'Piloter avec le Cockpit D&I',url:'tutos/cockpit/index.html'}
+    cockpit:{title:'Piloter avec le Cockpit D&I',url:'tutos/cockpit/index.html'},
+    acces:{title:'Gérer votre compte et vos accès',url:'tutos/acces/index.html'}
   };
   var PAGE_TUTORIALS={'accueil.html':'decouvrir','acces-equipes.html':'droits','cockpit-dei.html':'cockpit','bibliotheque.html':'choisir','composer.html':'composer','personnalisation.html':'personnaliser','parametrage.html':'parametrer','validation.html':'transmettre','kit-communication.html':'diffuser'};
   function openTutorial(id){
@@ -320,7 +321,7 @@
   function placeTutorial(id){
     document.querySelectorAll('.studio-tuto-button').forEach(function(b){b.remove();});
     var html=tutorialButton(id);if(!html)return;
-    var badge=document.querySelector('.step-time-badge'),actions=document.querySelector('.topbar .top-actions'),title=document.querySelector('.topbar .page-title');
+    var badge=document.querySelector('.step-time-badge'),actions=document.querySelector('.topbar .top-actions'),title=document.querySelector('.topbar .page-title, .page-title');
     if(badge)badge.insertAdjacentHTML('afterend',html);
     else if(actions)actions.insertAdjacentHTML('afterbegin',html);
     else if(title)title.insertAdjacentHTML('afterend',html);
