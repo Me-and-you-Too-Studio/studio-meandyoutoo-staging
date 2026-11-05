@@ -1023,11 +1023,11 @@
   }
   function userRow(u) {
     const status = u.invitation_pending
-        ? "En attente de son invitation"
+        ? "Invitation à envoyer"
         : !u.active
         ? "Désactivé"
         : u.must_change_password
-          ? "Invitation à finaliser"
+          ? "Invitation envoyée"
           : "Activé",
       level = accessLabels[u.access_level] || accessLabels.manager;
     return (
@@ -1135,7 +1135,7 @@
       ? others.map((u) => '<article class="admin-contact-card"><span class="admin-contact-kicker">Contact associé</span><strong>' +
           esc(contactDisplayName(u)) + StudioHubspot.link('contact', u.hubspot_contact_id) + '</strong><span>' + esc(u.job_title || "Fonction non renseignée") +
           '</span><a href="mailto:' + esc(u.email || "") + '">' + esc(u.email || "—") +
-          '</a><small>' + esc(accessLabels[u.access_level] || accessLabels.manager) + (u.active === false ? (u.invitation_pending ? ' · en attente du go' : ' · désactivé') : '') + '</small></article>').join("")
+          '</a><small>' + esc(accessLabels[u.access_level] || accessLabels.manager) + (u.active === false ? (u.invitation_pending ? ' · invitation à envoyer' : ' · désactivé') : '') + '</small></article>').join("")
       : '<article class="admin-contact-card"><span class="admin-contact-kicker">Contacts associés</span><strong>Aucun autre contact</strong><span>Le contact principal est le seul compte rattaché.</span></article>';
     $("#client-contacts").innerHTML = principalHtml + associatedHtml;
   }
@@ -1209,7 +1209,7 @@
     const choices = administrators.filter((a) => a.active !== false || a.invitation_pending || String(a.id) === current);
     box.querySelector("select").innerHTML = '<option value="">Non attribuée</option>' + choices.map((a) =>
       '<option value="' + esc(a.id) + '"' + (String(a.id) === current ? " selected" : "") + ">" + esc([a.first_name, a.last_name].filter(Boolean).join(" ") || a.email) +
-      (a.invitation_pending ? " (en attente du go)" : "") + "</option>").join("");
+      (a.invitation_pending ? " (invitation à envoyer)" : "") + "</option>").join("");
   }
   function render() {
     const ps = sortProjects(orgProjects(organization)),
@@ -1418,7 +1418,7 @@
       const start=async(userId)=>{const body=userId==='standard'?{previewMode:'standard'}:{userId};const result=await StudioAPI.request(path,{method:'POST',body:JSON.stringify(body)});StudioAPI.startClientPreview(result);location.href='accueil.html';};
       if(!accounts.length){await start('standard');return;}
       const dialog=document.createElement('dialog');dialog.className='admin-dialog';dialog.setAttribute('aria-labelledby','client-preview-title');
-      dialog.innerHTML=`<form><button class="admin-dialog-close" type="button" data-preview-close aria-label="Fermer">×</button><p class="eyebrow">Vue client · Consultation seule</p><h2 id="client-preview-title">Voir l’espace de ${esc(organization.name||'ce client')}</h2><p>Prévisualisez avec les droits standards d’un responsable client, ou choisissez les droits d’un compte existant.</p><label class="field"><span>Droits à prévisualiser</span><select data-preview-user style="width:100%;min-width:0;max-width:100%"><option value="standard">Droits standards du responsable client</option>${accounts.map(u=>`<option value="${esc(u.id)}">${esc([u.firstName,u.lastName].filter(Boolean).join(' ')||u.email)} — ${esc(u.email)}${u.accessLevel==='owner'?' · Responsable du compte':''}${u.invitationPending?' · en attente du go':''}</option>`).join('')}</select></label><p data-preview-error role="alert" hidden></p><div class="top-actions"><button type="button" class="button button-secondary" data-preview-close>Annuler</button><button type="submit" class="button button-primary">Ouvrir la vue client</button></div></form>`;
+      dialog.innerHTML=`<form><button class="admin-dialog-close" type="button" data-preview-close aria-label="Fermer">×</button><p class="eyebrow">Vue client · Consultation seule</p><h2 id="client-preview-title">Voir l’espace de ${esc(organization.name||'ce client')}</h2><p>Prévisualisez avec les droits standards d’un responsable client, ou choisissez les droits d’un compte existant.</p><label class="field"><span>Droits à prévisualiser</span><select data-preview-user style="width:100%;min-width:0;max-width:100%"><option value="standard">Droits standards du responsable client</option>${accounts.map(u=>`<option value="${esc(u.id)}">${esc([u.firstName,u.lastName].filter(Boolean).join(' ')||u.email)} — ${esc(u.email)}${u.accessLevel==='owner'?' · Responsable du compte':''}${u.invitationPending?' · invitation à envoyer':''}</option>`).join('')}</select></label><p data-preview-error role="alert" hidden></p><div class="top-actions"><button type="button" class="button button-secondary" data-preview-close>Annuler</button><button type="submit" class="button button-primary">Ouvrir la vue client</button></div></form>`;
       document.body.append(dialog);
       const close=()=>{dialog.close();dialog.remove();};
       dialog.querySelectorAll('[data-preview-close]').forEach(b=>b.onclick=close);
@@ -2205,7 +2205,7 @@
       '</span><div><strong>' + esc(((user.first_name || "") + " " + (user.last_name || "")).trim() || user.email) +
       '</strong><span>' + esc(user.email || "") + '</span><small>' +
       (currentOrganization ? "Client actuel : " + esc(currentOrganization.name || currentOrganization.id) : "Aucun client actuellement rattaché") +
-      (user.invitation_pending ? " · en attente de son invitation" : user.active === false ? " · compte désactivé" : "") +
+      (user.invitation_pending ? " · invitation à envoyer" : user.active === false ? " · compte désactivé" : "") +
       '</small>' +
       (movesFromAnotherClient
         ? '<em class="user-existing-reassignment">Le rattachement actuel sera remplacé par ' + esc(organization.name || "ce client") + '.</em>'
@@ -2240,7 +2240,7 @@
       return '<article class="user-existing-result ' + (attached ? 'is-attached' : '') + '">' +
         '<div><strong>' + esc(((user.first_name || "") + " " + (user.last_name || "")).trim() || user.email) + '</strong>' +
         '<span>' + esc(user.email || "") + '</span>' +
-        '<small>' + esc(currentLabel ? "Client actuel : " + currentLabel : "Aucun client rattaché") + (user.invitation_pending ? " · En attente de son invitation" : user.active === false ? " · Compte désactivé" : "") + '</small></div>' +
+        '<small>' + esc(currentLabel ? "Client actuel : " + currentLabel : "Aucun client rattaché") + (user.invitation_pending ? " · Invitation à envoyer" : user.active === false ? " · Compte désactivé" : "") + '</small></div>' +
         (attached
           ? '<span class="badge badge-muted">Déjà sur ce client</span>'
           : '<button class="button button-secondary" type="button" data-select-existing-user="' + esc(user.id) + '">Sélectionner</button>') +

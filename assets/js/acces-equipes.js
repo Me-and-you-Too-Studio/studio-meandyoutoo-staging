@@ -51,7 +51,7 @@
     if(u.suggestion==='refused')return ' <span class="badge badge-muted">Refusée par le client'+(u.suggestionDecidedAt?' le '+new Date(u.suggestionDecidedAt).toLocaleDateString('fr-FR'):'')+'</span>';
     if(u.status==='active')return '';
     if(u.canInvite)return ' <span class="badge badge-warning">Invitation à envoyer</span>';
-    if(u.status==='pending')return ' <span class="badge badge-muted">En attente du go</span>';
+    if(u.status==='pending')return ' <span class="badge badge-muted">Invitation à envoyer</span>';
     return ' <span class="badge badge-muted">Désactivé</span>';
   }
   function perimeterText(p){

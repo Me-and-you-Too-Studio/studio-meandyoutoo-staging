@@ -17,7 +17,7 @@
   let data = null, changed = false, focusId = null;
   // Ce qui est coché ou ouvert survit aux rechargements de la liste.
   const picked = new Set(), pickedContacts = new Map(), openBoxes = new Set(), contactsCache = new Map();
-  const STATUS = { existing: 'déjà un compte Studio', personal: 'adresse personnelle', no_email: 'sans e-mail', pending: '✓ repris — en attente du go', active: '✓ repris — compte actif', disabled: '✓ repris — compte désactivé' };
+  const STATUS = { existing: 'déjà un compte Studio', personal: 'adresse personnelle', no_email: 'sans e-mail', pending: '✓ repris — invitation à envoyer', active: '✓ repris — compte actif', disabled: '✓ repris — compte désactivé' };
   const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
 
   const link = c => `<a href="${esc(c.hubspotUrl)}" target="_blank" rel="noopener">Fiche HubSpot ↗</a>`;
@@ -29,7 +29,7 @@
   const rowKey = c => ({ id: c.organization ? `${c.id}~${c.organization.id}` : c.id });
   const parseKey = k => { const [companyId, orgId] = String(k).split('~'); return { companyId, orgId: orgId || null }; };
   const orgQuery = orgId => orgId ? '?organizationId=' + encodeURIComponent(orgId) : '';
-  const usersSummary = o => [o.pendingUsers ? `${plural(o.pendingUsers, 'contact')} en attente du go` : '', o.activeUsers ? `${plural(o.activeUsers, 'compte')} actif${o.activeUsers > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || 'Aucun contact repris';
+  const usersSummary = o => [o.pendingUsers ? `${plural(o.pendingUsers, 'contact')}, invitation à envoyer` : '', o.activeUsers ? `${plural(o.activeUsers, 'compte')} actif${o.activeUsers > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || 'Aucun contact repris';
 
   function render(message) {
     const all = data.companies;
@@ -38,7 +38,7 @@
     dialog.innerHTML = `<form method="dialog"><button type="button" class="admin-dialog-close" data-hs-close aria-label="Fermer">×</button>
       <h2>Importer les clients depuis HubSpot</h2>
       <p class="admin-dialog-intro">${all.length} entreprises au stade « Client » dans HubSpot. Une entreprise qui existe déjà dans le Studio se <strong>rattache</strong> ; les autres se <strong>créent</strong>.
-        Les contacts repris restent <strong>en attente du go</strong> : personne ne reçoit d’e-mail avant la mise en production.</p>
+        Les contacts repris gardent le statut <strong>Invitation à envoyer</strong> : personne ne reçoit d’e-mail avant la mise en production.</p>
       ${message ? `<p class="hs-clients-message">${message}</p>` : ''}
       <div class="hs-managers">${tool('managers', { id: 'all' }, 'Chargées de compte depuis HubSpot')}${box('managers', { id: 'all' })}</div>
       ${(data.orphanOrganizations || []).length ? `<h3>Rattachement à revoir (${data.orphanOrganizations.length})</h3><p class="hs-clients-hint">Ces clients du Studio sont rattachés à une entreprise HubSpot introuvable (supprimée). Détachez-les : ils deviennent alors disponibles dans « Rattacher à… ».</p>
@@ -217,7 +217,7 @@
         t.disabled = true;
         const r = await addContacts(companyId, ids, orgId);
         changed = true; contactsCache.delete(key); pickedContacts.delete(key); focusId = key;
-        return load(`${plural(r.added.length, 'contact')} repris pour ${esc(r.organization.name)}, en attente du go.` + (r.skipped.length ? ` Non repris : ${r.skipped.map(s => esc(s.email) + ' (' + esc(s.reason) + ')').join(', ')}.` : ''));
+        return load(`${plural(r.added.length, 'contact')} repris pour ${esc(r.organization.name)}, invitation à envoyer.` + (r.skipped.length ? ` Non repris : ${r.skipped.map(s => esc(s.email) + ' (' + esc(s.reason) + ')').join(', ')}.` : ''));
       }
       // « Créer les clients cochés » en bas, ou « Créer dans le Studio » sur une seule entreprise.
       if (t.hasAttribute('data-hs-create') || t.dataset.hsCreateOne) {
@@ -234,7 +234,7 @@
           try { added += (await addContacts(companyId, contactIds, org.id)).added.length; pickedContacts.delete(companyId); contactsCache.delete(companyId); } catch (e) { failed.push(org.name); }
         }
         openBoxes.add('linked');
-        load(`${plural(r.created.length, 'client')} créé${r.created.length > 1 ? 's' : ''}, ${plural(added, 'contact')} en attente du go. Ils sont dans « Déjà rattachés ».` +
+        load(`${plural(r.created.length, 'client')} créé${r.created.length > 1 ? 's' : ''}, ${plural(added, 'contact')}, invitation à envoyer. Ils sont dans « Déjà rattachés ».` +
           (r.skipped.length ? ` Non créés : ${r.skipped.map(s => esc(s.name) + ' (' + esc(s.reason) + ')').join(', ')}.` : '') +
           (failed.length ? ` Contacts non repris pour : ${failed.map(esc).join(', ')} (réessayez depuis « Déjà rattachés »).` : ''));
       }
