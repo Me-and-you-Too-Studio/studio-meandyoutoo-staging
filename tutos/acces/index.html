@@ -16,27 +16,29 @@
 window.TUTO={
   eyebrow:'Tutoriel · Compte et accès',
   title:'Gérer votre compte et vos accès',
-  intro:'Votre compte, vos collègues, leurs droits, les dossiers d’équipe et « Qui voit quoi » : décidez qui peut faire quoi, et qui voit quelles campagnes. Environ 2 minutes 50.',
+  intro:'Votre compte, vos collègues, leurs droits, les dossiers d’équipe et « Qui voit quoi » : décidez qui peut faire quoi, et qui voit quelles campagnes. Environ 2 minutes 25, avec le son.',
+  // Voix de Carole Michelon (enregistrée le 5 novembre 2026 en deux prises : plan 3 repris, niveau égalisé ; bruit de fond retiré, pauses ramenées à 1,2 s) ; « at » = début de chaque phrase.
+  audio:'voix.mp3?v=1',
   scenes:[
-    {img:'ecran-1.png',box:[18.4,24.3,81.2,28.4],text:'Dans « Mon compte », retrouvez votre solde de passations, la validité de votre pack et votre formule. Le solde est commun à toute l’entreprise.'},
-    {img:'ecran-1.png',box:[18.4,55,40,43],text:'Votre profil regroupe votre fonction, votre e-mail et votre téléphone. Cliquez sur « Modifier mes informations » pour les tenir à jour, ou changez votre photo.'},
-    {img:'ecran-1.png',box:[59.7,55,39.9,43],text:'Ajoutez le logo de votre organisation : c’est important, car il s’affiche partout. Il apparaît dans le Studio pour tous vos utilisateurs, sur votre Bilan D&I et au centre de vos QR codes. Sans logo, le QR code porte celui de Me&YouToo.'},
-    {img:'ecran-2.png',box:[18.1,47,81.5,9.9],text:'Vos campagnes et vos résultats ne sont visibles que par les personnes autorisées de votre organisation. Votre mot de passe se change ici.'},
-    {img:'ecran-2.png',box:[18.1,59.2,81.5,40.8],text:'Pour inviter un collègue, cliquez sur « Ajouter un accès ». Chaque compte s’affiche ici, avec son niveau d’accès et ce qu’il peut voir.'},
-    {img:'ecran-3.png',box:[35.4,9.8,29.4,36.5],text:'Renseignez son prénom, son nom, sa fonction et son e-mail professionnel, puis choisissez son niveau d’accès dans la liste.'},
-    {img:'ecran-3.png',box:[35.4,49,29.2,43],text:'Les droits s’ajustent un par un si besoin. Cliquez ensuite sur « Créer et inviter » pour ouvrir son compte et l’inviter.'},
-    {img:'ecran-4.png',box:[20.4,29.4,77.4,13.4],text:'Dans « Accès et équipes », trois principes : le niveau d’accès dit ce qu’une personne peut faire, le périmètre ce qu’elle voit, et les dossiers regroupent campagnes et actions.'},
-    {img:'ecran-5.png',box:[29,8.8,42.8,75.9],text:'Il y a quatre niveaux : responsable du compte, gestionnaire de campagnes, contributeur et lecture seule. Ce tableau compare leurs droits, que vous pouvez ajuster personne par personne.'},
-    {img:'ecran-6.png',box:[18.1,58.8,19.6,41.2],text:'Créez un dossier par sujet ou par équipe, par exemple Handicap, puis ajoutez-y vos campagnes et vos actions du Cockpit. L’équipe du dossier les voit.'},
-    {img:'ecran-6.png',box:[18.1,11.3,81.5,36.2],text:'Attention : une campagne ou une action sans dossier n’est visible que des comptes « Toutes les campagnes ». Le Studio vous signale ce qui reste à ranger : choisissez simplement un dossier sur chaque ligne.'},
-    {img:'ecran-7.png',box:[20,3,77.7,72.5],text:'Vous pouvez aussi changer le dossier de chaque campagne directement dans cette liste, et même y créer un nouveau dossier : c’est le moyen le plus rapide de tout ranger d’un coup.'},
-    {img:'ecran-8.png',box:[18.1,42.6,81.5,37.7],text:'« Qui voit quoi » résume chaque compte : ce qu’il peut faire et ce qu’il voit. Un signal d’alerte repère tout compte qui ne voit aucune campagne.'},
-    {img:'ecran-4.png',box:[20.4,82.5,12.4,13],text:'Me&YouToo peut vous suggérer des personnes à intégrer. Vous décidez : aucun e-mail ne leur est envoyé tant que vous ne cliquez pas sur « Envoyer l’invitation ».'},
-    {img:'ecran-4.png',box:[18.4,71,81.2,27.5],text:'La frise suit votre paramétrage en six étapes, jusqu’à la vérification de « Qui voit quoi ». Une étape repasse à faire si la situation change, par exemple quand une personne arrive.'}
+    {at:0,img:'ecran-1.png',box:[18.4,24.3,81.2,28.4],text:'Dans « Mon compte », retrouvez votre solde de passations, la validité de votre pack et votre formule. Le solde est commun à toute l’entreprise.'},
+    {at:8.75,img:'ecran-1.png',box:[18.4,55,40,43],text:'Votre profil regroupe votre fonction, votre e-mail et votre téléphone. Cliquez sur « Modifier mes informations » pour les tenir à jour, ou changez votre photo.'},
+    {at:17.81,img:'ecran-1.png',box:[59.7,55,39.9,43],text:'Ajoutez le logo de votre organisation : c’est important, car il s’affiche partout. Il apparaît dans le Studio pour tous vos utilisateurs, sur votre Bilan D&I et au centre de vos QR codes. Sans logo, le QR code porte celui de Me&YouToo.'},
+    {at:33.43,img:'ecran-2.png',box:[18.1,47,81.5,9.9],text:'Vos campagnes et vos résultats ne sont visibles que par les personnes autorisées de votre organisation. Votre mot de passe se change ici.'},
+    {at:41.51,img:'ecran-2.png',box:[18.1,59.2,81.5,40.8],text:'Pour inviter un collègue, cliquez sur « Ajouter un accès ». Chaque compte s’affiche ici, avec son niveau d’accès et ce qu’il peut voir.'},
+    {at:48.63,img:'ecran-3.png',box:[35.4,9.8,29.4,36.5],text:'Renseignez son prénom, son nom, sa fonction et son e-mail professionnel, puis choisissez son niveau d’accès dans la liste.'},
+    {at:56.09,img:'ecran-3.png',box:[35.4,49,29.2,43],text:'Les droits s’ajustent un par un si besoin. Cliquez ensuite sur « Créer et inviter » pour ouvrir son compte et l’inviter.'},
+    {at:63.05,img:'ecran-4.png',box:[20.4,29.4,77.4,13.4],text:'Dans « Accès et équipes », trois principes : le niveau d’accès dit ce qu’une personne peut faire, le périmètre ce qu’elle voit, et les dossiers regroupent campagnes et actions.'},
+    {at:72.39,img:'ecran-5.png',box:[29,8.8,42.8,75.9],text:'Il y a quatre niveaux : responsable du compte, gestionnaire de campagnes, contributeur et lecture seule. Ce tableau compare leurs droits, que vous pouvez ajuster personne par personne.'},
+    {at:82.99,img:'ecran-6.png',box:[18.1,58.8,19.6,41.2],text:'Créez un dossier par sujet ou par équipe, par exemple Handicap, puis ajoutez-y vos campagnes et vos actions du Cockpit. L’équipe du dossier les voit.'},
+    {at:92.31,img:'ecran-6.png',box:[18.1,11.3,81.5,36.2],text:'Attention : une campagne ou une action sans dossier n’est visible que des comptes « Toutes les campagnes ». Le Studio vous signale ce qui reste à ranger : choisissez simplement un dossier sur chaque ligne.'},
+    {at:104.07,img:'ecran-7.png',box:[20,3,77.7,72.5],text:'Vous pouvez aussi changer le dossier de chaque campagne directement dans cette liste, et même y créer un nouveau dossier : c’est le moyen le plus rapide de tout ranger d’un coup.'},
+    {at:112.63,img:'ecran-8.png',box:[18.1,42.6,81.5,37.7],text:'« Qui voit quoi » résume chaque compte : ce qu’il peut faire et ce qu’il voit. Un signal d’alerte repère tout compte qui ne voit aucune campagne.'},
+    {at:121.91,img:'ecran-4.png',box:[20.4,82.5,12.4,13],text:'Me&YouToo peut vous suggérer des personnes à intégrer. Vous décidez : aucun e-mail ne leur est envoyé tant que vous ne cliquez pas sur « Envoyer l’invitation ».'},
+    {at:131.33,img:'ecran-4.png',box:[18.4,71,81.2,27.5],text:'La frise suit votre paramétrage en six étapes, jusqu’à la vérification de « Qui voit quoi ». Une étape repasse à faire si la situation change, par exemple quand une personne arrive.'}
   ],
   end:{title:'Vos accès sont en place',text:'Prochaine étape : inviter vos collègues et ranger vos campagnes dans leurs dossiers. Une question ? Le chat et l’équipe Me&YouToo sont là pour vous.'}
 };
 </script>
-<script src="../lecteur.js?v=20261104-9"></script>
+<script src="../lecteur.js?v=20261105-10"></script>
 </body>
 </html>
