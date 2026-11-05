@@ -293,9 +293,10 @@
     parametrer:{title:'Paramétrer sa campagne',url:'tutos/parametrer/index.html'},
     transmettre:{title:'Vérifier et transmettre sa configuration',url:'tutos/transmettre/index.html'},
     relecture:{title:'Suivre la relecture et demander un ajustement',url:'tutos/relecture/index.html'},
-    diffuser:{title:'Préparer la communication et diffuser sa campagne',url:'tutos/diffuser/index.html'}
+    diffuser:{title:'Préparer la communication et diffuser sa campagne',url:'tutos/diffuser/index.html'},
+    droits:{title:'Comprendre les droits d’accès',url:'tutos/droits/index.html'}
   };
-  var PAGE_TUTORIALS={'accueil.html':'decouvrir','bibliotheque.html':'choisir','composer.html':'composer','personnalisation.html':'personnaliser','parametrage.html':'parametrer','validation.html':'transmettre','kit-communication.html':'diffuser'};
+  var PAGE_TUTORIALS={'accueil.html':'decouvrir','acces-equipes.html':'droits','bibliotheque.html':'choisir','composer.html':'composer','personnalisation.html':'personnaliser','parametrage.html':'parametrer','validation.html':'transmettre','kit-communication.html':'diffuser'};
   function openTutorial(id){
     var t=TUTORIALS[id];if(!t||!t.url)return;
     var dialog=document.createElement('dialog');dialog.className='studio-modal studio-tuto-dialog';dialog.setAttribute('aria-labelledby','studio-tuto-title');
