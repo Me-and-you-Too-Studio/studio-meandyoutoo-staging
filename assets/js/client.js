@@ -1022,7 +1022,9 @@
     );
   }
   function userRow(u) {
-    const status = !u.active
+    const status = u.invitation_pending
+        ? "En attente de son invitation"
+        : !u.active
         ? "Désactivé"
         : u.must_change_password
           ? "Invitation à finaliser"
@@ -1047,13 +1049,18 @@
         : "") +
       '<button data-edit-client="' +
       u.id +
-      '">Modifier</button><button data-toggle-client="' +
-      u.id +
-      '" data-active="' +
-      (u.active ? "false" : "true") +
-      '">' +
-      (u.active ? "Désactiver" : "Réactiver") +
-      '</button><button class="danger" data-delete-client="' +
+      '">Modifier</button>' +
+      // Un compte en attente s'active à l'envoi de son invitation, pas avec « Réactiver ».
+      (u.invitation_pending
+        ? ""
+        : '<button data-toggle-client="' +
+          u.id +
+          '" data-active="' +
+          (u.active ? "false" : "true") +
+          '">' +
+          (u.active ? "Désactiver" : "Réactiver") +
+          "</button>") +
+      '<button class="danger" data-delete-client="' +
       u.id +
       '">Supprimer</button></div></article>'
     );
