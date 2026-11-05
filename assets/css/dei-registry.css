@@ -261,3 +261,8 @@ button.dr-kpi:hover,button.dr-kpi:focus-visible{border-color:var(--green-blue,#0
 .dei-solutions-link{transition:transform .15s,box-shadow .15s}
 .dei-solutions-link:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(0,120,131,.3)}
 .dr-tab b{font-weight:400}
+/* Les deux lignes de boutons du Cockpit restent visibles au défilement. */
+.dei-sticky-bar{position:sticky;top:0;z-index:6;margin:0 0 18px;padding:10px 0 8px;background:#fbfcfe;box-shadow:0 8px 12px -10px rgba(39,58,100,.25)}
+.dei-sticky-bar .dei-hero-actions{margin:0 0 10px;align-items:center}
+.dei-sticky-bar .dr-tabs{position:static;margin:0}
+@media(max-width:760px){.dei-sticky-bar{position:static;box-shadow:none}.dei-sticky-bar .dr-tabs{position:sticky;top:0}}
