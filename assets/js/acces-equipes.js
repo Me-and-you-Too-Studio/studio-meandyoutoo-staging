@@ -113,15 +113,18 @@
   function renderFolders(){
     var everyone=data.users.filter(function(u){return u.suggestion!=='pending'&&(u.accessLevel==='owner'||u.scope==='all');}).length;
     // On nomme ce qui n'est rangé nulle part (campagne ou action du Cockpit, avec son type et sa date), pour que le client s'y retrouve.
-    var loose=unfiledCampaigns().map(function(c){return {icon:'📣',title:c.name,sub:['Campagne',c.theme].filter(Boolean).join(' · ')};})
-      .concat(unfiledActions().map(function(a){return {icon:a.icon,title:a.title,sub:[a.kindLabel,shortDate(a.date),a.theme].filter(Boolean).join(' · ')};}));
-    var looseRows=function(list){return '<ul class="ae-unfiled-list">'+list.map(function(x){return '<li><span class="ae-unfiled-icon" aria-hidden="true">'+esc(x.icon)+'</span><span><strong>'+esc(x.title)+'</strong><small>'+esc(x.sub)+'</small></span></li>';}).join('')+'</ul>';};
+    var looseCampaigns=unfiledCampaigns(),looseActions=unfiledActions();
+    var loose=looseCampaigns.map(function(c){return {attr:'data-campaign="'+esc(c.id)+'"',icon:'📣',title:c.name,sub:['Campagne de diagnostic',c.theme].filter(Boolean).join(' · ')};})
+      .concat(looseActions.map(function(a){return {attr:'data-cockpit-action="'+esc(a.id)+'"',icon:a.icon,title:a.title,sub:['Action du Cockpit',a.kindLabel,shortDate(a.date),a.theme].filter(Boolean).join(' · ')};}));
+    var looseRows=function(list){return '<ul class="ae-unfiled-list">'+list.map(function(x){return '<li><span class="ae-unfiled-icon" aria-hidden="true">'+esc(x.icon)+'</span><span class="ae-unfiled-name"><strong>'+esc(x.title)+'</strong><small>'+esc(x.sub)+'</small></span>'+
+      (data.canEdit?'<label class="ae-row-field"><span>Dossier d’équipe</span><select '+x.attr+'><option value="">Aucun dossier</option>'+folderOptions('',false)+'<option value="new">➕ Créer un dossier…</option></select></label>':'')+'</li>';}).join('')+'</ul>';};
     var shown=loose.slice(0,5),rest=loose.slice(5),many=loose.length>1;
+    var looseCount=[looseCampaigns.length?looseCampaigns.length+' campagne'+(looseCampaigns.length>1?'s':'')+' de diagnostic':'',looseActions.length?looseActions.length+' action'+(looseActions.length>1?'s':'')+' du Cockpit':''].filter(Boolean).join(' et ');
     $('ae-unfiled').hidden=!loose.length||!data.teamFolders.length;
-    $('ae-unfiled').innerHTML='<p class="ae-unfiled-title">'+(many?loose.length+' éléments pas encore rangés':'1 élément pas encore rangé')+' dans un dossier</p>'+
-      '<p>Seuls les comptes « Toutes les campagnes » '+(many?'les':'le')+' voient.</p>'+looseRows(shown)+
+    $('ae-unfiled').innerHTML='<p class="ae-unfiled-title">'+looseCount+' pas encore rangée'+(many?'s':'')+' dans un dossier</p>'+
+      '<p>Seuls les comptes « Toutes les campagnes » '+(many?'les':'la')+' voient.'+(data.canEdit?' Choisissez un dossier sur chaque ligne pour '+(many?'les':'la')+' ranger.':'')+'</p>'+looseRows(shown)+
       (rest.length?'<details class="ae-unfiled-more"><summary>Voir '+(rest.length>1?'les '+rest.length+' autres':'l’autre')+'</summary>'+looseRows(rest)+'</details>':'')+
-      '<p class="ae-unfiled-help">Pour '+(many?'les':'le')+' ranger, cliquez sur « + Ajouter… » dans le dossier voulu. Une action de toute l’entreprise, comme un séminaire de direction, peut rester sans dossier.</p>';
+      '<p class="ae-unfiled-help"><strong>Campagne de diagnostic :</strong> un questionnaire diffusé à vos collaborateurs. <strong>Action du Cockpit :</strong> tout le reste de votre démarche, comme une formation, une conférence ou un atelier. Une action de toute l’entreprise, comme un séminaire de direction, peut rester sans dossier.</p>';
     var proposed=proposals();
     $('ae-actions-proposal').hidden=!proposed.length||!data.canEdit;
     $('ae-actions-proposal-text').textContent=proposed.length+' action'+(proposed.length>1?'s':'')+' du Cockpit évoque'+(proposed.length>1?'nt':'')+' un de vos dossiers d’après leur thématique ('+Array.from(new Set(proposed.map(function(a){return folderName(a.proposedFolderId);}))).join(', ')+').';
@@ -134,7 +137,7 @@
       var team=data.users.filter(function(u){return u.suggestion!=='pending'&&u.accessLevel!=='owner'&&u.scope==='folders'&&u.folderIds.indexOf(f.id)>=0;});
       var ideas=functionsFor(f.name),inside=data.campaigns.filter(function(c){return c.teamFolderId===f.id;}),acts=actions().filter(function(a){return a.teamFolderId===f.id;});
       // Les campagnes du dossier, avec l’ajout et le retrait directement ici.
-      return '<article class="card ae-folder"><h3>📁 '+esc(f.name)+'</h3><p class="ae-folder-label">Campagnes ('+inside.length+')</p>'+
+      return '<article class="card ae-folder"><h3>📁 '+esc(f.name)+'</h3><p class="ae-folder-label">Campagnes de diagnostic ('+inside.length+')</p>'+
         (inside.length?'<ul class="ae-folder-campaigns">'+inside.map(function(c){return '<li><span>'+esc(c.name)+'</span>'+(data.canEdit?'<button type="button" class="ae-link" data-unfile="'+esc(c.id)+'" aria-label="Retirer '+esc(c.name)+' du dossier">Retirer</button>':'')+'</li>';}).join('')+'</ul>':'<p class="ae-muted">Aucune campagne pour l’instant.</p>')+
         (data.canEdit&&unfiledCampaigns().length?'<button class="button button-secondary ae-add-campaigns" type="button" data-add-campaigns="'+esc(f.id)+'">+ Ajouter des campagnes</button>':'')+
         // Les actions du Cockpit (formations, conférences, dessins…) du dossier, rangées de la même façon.
@@ -407,19 +410,21 @@
   function openLevels(){$('ae-levels-title').textContent='Ce que permet chaque niveau d’accès';$('ae-levels-body').innerHTML=levelsTable();$('ae-levels-dialog').showModal();}
   document.querySelectorAll('[data-open-levels]').forEach(function(b){b.onclick=openLevels;});
   document.addEventListener('change',async function(e){
-    var s=e.target.closest('select[data-campaign]');if(!s)return;
+    var s=e.target.closest('select[data-campaign],select[data-cockpit-action]');if(!s)return;
+    var isCampaign=Boolean(s.dataset.campaign),itemId=isCampaign?s.dataset.campaign:s.dataset.cockpitAction;
+    var folderPath='/api/team-access/'+(isCampaign?'campaigns/':'actions/')+itemId+'/folder';
     if(s.value==='new'){
-      var campaignId=s.dataset.campaign,campaign=data.campaigns.find(function(c){return c.id===campaignId;});
-      s.value=(campaign&&campaign.teamFolderId)||'';
+      var item=(isCampaign?data.campaigns:actions()).find(function(x){return x.id===itemId;});
+      s.value=(item&&item.teamFolderId)||'';
       var name=await askFolderName();if(!name)return;
       await act(async function(){
         var created=await api('/api/team-access/folders',{method:'POST',body:JSON.stringify({name:name})});
         var folder=created.folder||data.teamFolders[data.teamFolders.length-1];
-        await api('/api/team-access/campaigns/'+campaignId+'/folder',{method:'PUT',body:JSON.stringify({teamFolderId:folder.id})});
+        await api(folderPath,{method:'PUT',body:JSON.stringify({teamFolderId:folder.id})});
       });
       return;
     }
-    await act(function(){return api('/api/team-access/campaigns/'+s.dataset.campaign+'/folder',{method:'PUT',body:JSON.stringify({teamFolderId:s.value||null})});});
+    await act(function(){return api(folderPath,{method:'PUT',body:JSON.stringify({teamFolderId:s.value||null})});});
   });
   function askFolderName(){
     return StudioModal.prompt({title:'Nouveau dossier d’équipe',message:'Un dossier par sujet ou par équipe, par exemple « Handicap » ou « Sexisme et harcèlement ».',inputLabel:'Nom du dossier',required:true,confirmLabel:'Créer'});
