@@ -177,7 +177,7 @@
     $('ae-campaigns').hidden=!data.canEdit||!data.campaigns.length;
     $('ae-campaign-list').innerHTML=data.campaigns.map(function(c){
       return '<div class="ae-row ae-campaign"><div class="ae-row-person"><strong>'+esc(c.name)+'</strong><span>'+esc(c.theme||'')+' · '+esc(window.StudioStatus?StudioStatus.label(c.status):c.status)+'</span></div>'+
-        '<label class="ae-row-field"><span>Dossier d’équipe</span><select data-campaign="'+esc(c.id)+'"'+(data.teamFolders.length?'':' disabled')+'><option value="">Aucun dossier</option>'+folderOptions(c.teamFolderId||'',false)+'</select></label></div>';
+        '<label class="ae-row-field"><span>Dossier d’équipe</span><select data-campaign="'+esc(c.id)+'"><option value="">Aucun dossier</option>'+folderOptions(c.teamFolderId||'',false)+'<option value="new">➕ Créer un dossier…</option></select></label></div>';
     }).join('');
   }
   function render(){
@@ -405,10 +405,24 @@
   document.querySelectorAll('[data-open-levels]').forEach(function(b){b.onclick=openLevels;});
   document.addEventListener('change',async function(e){
     var s=e.target.closest('select[data-campaign]');if(!s)return;
+    if(s.value==='new'){
+      var campaignId=s.dataset.campaign,campaign=data.campaigns.find(function(c){return c.id===campaignId;});
+      s.value=(campaign&&campaign.teamFolderId)||'';
+      var name=await askFolderName();if(!name)return;
+      await act(async function(){
+        var created=await api('/api/team-access/folders',{method:'POST',body:JSON.stringify({name:name})});
+        var folder=created.folder||data.teamFolders[data.teamFolders.length-1];
+        await api('/api/team-access/campaigns/'+campaignId+'/folder',{method:'PUT',body:JSON.stringify({teamFolderId:folder.id})});
+      });
+      return;
+    }
     await act(function(){return api('/api/team-access/campaigns/'+s.dataset.campaign+'/folder',{method:'PUT',body:JSON.stringify({teamFolderId:s.value||null})});});
   });
+  function askFolderName(){
+    return StudioModal.prompt({title:'Nouveau dossier d’équipe',message:'Un dossier par sujet ou par équipe, par exemple « Handicap » ou « Sexisme et harcèlement ».',inputLabel:'Nom du dossier',required:true,confirmLabel:'Créer'});
+  }
   $('ae-add-folder').onclick=async function(){
-    var label=await StudioModal.prompt({title:'Nouveau dossier d’équipe',message:'Un dossier par sujet ou par équipe, par exemple « Handicap » ou « Sexisme et harcèlement ».',inputLabel:'Nom du dossier',required:true,confirmLabel:'Créer'});
+    var label=await askFolderName();
     if(label)await act(function(){return api('/api/team-access/folders',{method:'POST',body:JSON.stringify({name:label})});});
   };
   $('ae-review').onclick=function(){act(function(){return api('/api/team-access/review',{method:'POST'});},{title:'Merci',message:'Vérification enregistrée. Elle vous sera redemandée après tout changement d’équipe ou d’accès.'});};
