@@ -80,7 +80,7 @@
 .dr-provider-lines a{color:var(--green-blue,#007883);text-decoration:none;overflow-wrap:anywhere}
 .dr-provider-pick{align-items:flex-end}
 .dr-stars{color:#d99a00;letter-spacing:1px}
-.dr-stars.is-empty{color:#cfd6e4;font-size:1.15rem}
+.dr-stars.is-empty{color:#a9b3c7;font-size:1.15rem}
 .dr-review-box{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--royal-blue-tint,#f5f7fb)}
 .dr-review-title{margin:0;font-weight:700;font-size:.85rem}
 .dr-review-box .dr-review-line{margin-top:2px}
