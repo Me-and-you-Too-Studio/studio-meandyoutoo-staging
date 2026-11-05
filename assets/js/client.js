@@ -1071,45 +1071,40 @@
     return orgUsers(organization).filter((u) => u.invitation_pending === true &&
       (u.access_level === "owner" || (u.suggestion_decision === "accepted" && u.invitation_prepared_at)));
   }
+  // Une ligne et un bouton par personne : l'admin invite chacune à son tour, par exemple devant elle.
   function invitationsHtml() {
-    const list = invitationsToSend();
-    if (!list.length) return "";
-    const names = list.map((u) => esc(contactDisplayName(u))).join(", ");
-    return '<div class="admin-pack-alert"><div><strong>✉️ ' + list.length + ' invitation' + (list.length > 1 ? "s" : "") + ' à envoyer</strong><span>' + names +
-      (invitationsEnabled ? '' : ' · le bouton s’activera au go de la mise en production') + '</span></div><div><button class="button button-primary" type="button" id="client-send-invitations"' +
-      (invitationsEnabled ? '' : ' disabled title="Disponible après le go de la mise en production"') + '>Envoyer les invitations</button></div></div>';
+    return invitationsToSend().map((u) =>
+      '<div class="admin-pack-alert"><div><strong>✉️ Invitation à envoyer</strong><span>' + esc(contactDisplayName(u)) + ' · ' + esc(u.email || '') +
+      (invitationsEnabled ? '' : ' · le bouton s’activera au go de la mise en production') + '</span></div><div><button class="button button-primary" type="button" data-send-invitation="' + esc(u.id) + '"' +
+      (invitationsEnabled ? '' : ' disabled title="Disponible après le go de la mise en production"') + '>Envoyer</button></div></div>').join("");
   }
-  async function sendClientInvitations() {
-    const list = invitationsToSend();
-    if (!invitationsEnabled || !list.length) return;
+  async function sendClientInvitation(userId) {
+    const user = invitationsToSend().find((u) => String(u.id) === String(userId));
+    if (!invitationsEnabled || !user) return;
+    const name = contactDisplayName(user);
     const ok = await StudioModal.confirm({
-      eyebrow: "Invitations",
+      eyebrow: "Invitation",
       type: "warning",
-      title: "Inviter " + list.length + " personne" + (list.length > 1 ? "s" : "") + " de " + (organization.name || "ce client") + " ?",
-      message: "Un e-mail de création de mot de passe part maintenant à : " + list.map(contactDisplayName).join(", ") + ". " +
-        (organization.studio_licence_ends_at ? "" : "Sa licence Studio démarre aujourd’hui pour 12 mois ; son pack prend les mêmes dates s’il lui reste des crédits (sinon il devra racheter). ") +
-        "Les autres clients ne sont pas concernés.",
+      title: "Inviter " + name + " ?",
+      message: "Un e-mail de création de mot de passe part maintenant à " + (user.email || name) + ". " +
+        (organization.studio_licence_ends_at ? "" : "La licence Studio de " + (organization.name || "ce client") + " démarre aujourd’hui pour 12 mois ; son pack prend les mêmes dates s’il lui reste des crédits (sinon il devra racheter). ") +
+        "Personne d’autre ne reçoit d’e-mail.",
       cancelLabel: "Annuler",
-      confirmLabel: "Envoyer les invitations",
+      confirmLabel: "Envoyer",
     });
     if (!ok) return;
     try {
-      const result = await StudioAPI.request("/api/admin/organizations/" + encodeURIComponent(organization.id) + "/pending-invitations/send", { method: "POST", body: "{}" });
-      const sent = Array.isArray(result?.sent) ? result.sent : [];
-      const delivered = sent.filter((s) => s.sent !== false), failed = sent.filter((s) => s.sent === false);
+      const result = await StudioAPI.request("/api/admin/organizations/" + encodeURIComponent(organization.id) + "/pending-invitations/send", { method: "POST", body: JSON.stringify({ userId: user.id }) });
+      const sent = Array.isArray(result?.sent) ? result.sent[0] : null;
       await load();
       const licence = result?.licence ? " Licence Studio démarrée le " + date(result.licence.startsAt) + " pour 12 mois" + (result.licence.packAligned ? ", pack aux mêmes dates." : " ; pack à 0 crédit inchangé (à racheter).") : "";
-      if (failed.length) {
-        StudioModal.alert({
-          eyebrow: "Invitations",
-          type: "error",
-          title: failed.length + " invitation" + (failed.length > 1 ? "s non parties" : " non partie"),
-          message: "Rien n’a été reçu par : " + failed.map((s) => s.email).join(", ") + ". " + (failed.length > 1 ? "Ces personnes restent" : "Cette personne reste") + " en attente : relancez « Envoyer les invitations » depuis ce dossier." +
-            (delivered.length ? " Envoyée" + (delivered.length > 1 ? "s" : "") + " : " + delivered.map((s) => s.email).join(", ") + "." : "") + licence,
-        });
-        return;
+      if (!sent) {
+        StudioModal.alert({ eyebrow: "Invitation", title: "Rien à envoyer", message: "Cette invitation n’est plus à envoyer." });
+      } else if (sent.sent === false) {
+        StudioModal.alert({ eyebrow: "Invitation", type: "error", title: "Invitation non partie", message: "Rien n’a été reçu par " + sent.email + ". Cette personne reste à inviter : cliquez à nouveau sur « Envoyer »." });
+      } else {
+        StudioModal.alert({ eyebrow: "Invitation", title: "Invitation envoyée", message: sent.email + "." + licence });
       }
-      StudioModal.alert({ eyebrow: "Invitations", title: sent.length + " invitation" + (sent.length > 1 ? "s envoyées" : " envoyée"), message: (sent.map((s) => s.email).join(", ") || "Aucune invitation en attente.") + licence });
     } catch (error) {
       StudioModal.alert({ title: "Envoi impossible", message: error.message, type: "error" });
     }
@@ -1361,8 +1356,7 @@
       invitationsHtml() +
       (orgUsers(organization).map(userRow).join("") ||
       '<div class="admin-empty"><strong>Aucun compte utilisateur</strong><span>Ajoutez un accès avec « + Ajouter un accès », ou reprenez ses contacts HubSpot depuis Clients › « Importer depuis HubSpot ».</span></div>');
-    const sendInvitations = $("#client-send-invitations");
-    if (sendInvitations) sendInvitations.onclick = sendClientInvitations;
+    $$("[data-send-invitation]").forEach((button) => { button.onclick = () => sendClientInvitation(button.dataset.sendInvitation); });
     $("#client-credits").innerHTML =
       '<div class="admin-pack-heading"><div><span class="eyebrow">Gestion du pack</span><h2>Crédits et validité</h2><p>Les crédits utilisés sont recalculés à chaque lecture du moteur stats. Une correction à la main reste possible et prend le dessus.</p></div><span id="client-pack-status" class="admin-pack-status ' + (organization.pack_unlimited ? 'is-unlimited' : '') + '">' + (organization.pack_unlimited ? 'Pack illimité' : fmt(rem) + ' restants') + '</span></div>' +
       legacyCreditsHtml(rem) +
