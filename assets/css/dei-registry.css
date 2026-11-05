@@ -52,7 +52,7 @@
 .dr-empty{color:var(--muted,#54607e)}
 .dr-dialog{border:0;border-radius:16px;padding:0;width:min(620px,calc(100vw - 32px));box-shadow:0 20px 60px rgba(0,0,0,.25)}
 .dr-dialog::backdrop{background:rgba(27,42,73,.45)}
-.dr-dialog form{display:flex;flex-direction:column;gap:12px;padding:24px;max-height:85vh;overflow:auto}
+.dr-dialog form{display:flex;flex-direction:column;gap:12px;padding:24px;max-height:85vh;overflow:hidden auto}
 .dr-dialog h2{margin:0 0 4px}
 .dr-field{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:.9rem;flex:1;min-width:140px}
 .dr-field input,.dr-field select,.dr-field textarea{font:inherit;font-weight:400;border:1px solid var(--line,#e2e7f1);border-radius:10px;padding:9px 11px;background:#fff}
