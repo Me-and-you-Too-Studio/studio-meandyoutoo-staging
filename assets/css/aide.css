@@ -207,9 +207,10 @@
 }
 
 /* FAQ interne : sommaire du chapitre et réponses trouvées par la recherche */
-.faq-internal-summary{margin:0 0 24px;padding:16px 20px;border-radius:12px;background:var(--fam-soft,#e6f4f5)}
+.faq-internal-summary{margin:4px 0 28px;padding:14px 18px;border:1px solid var(--line);border-radius:12px;background:#fff}
 .faq-internal-summary ul{margin:8px 0 0;padding-left:18px}
 .faq-internal-summary li{margin:4px 0}
+.faq-internal-summary a{color:var(--fam,#007883)}
 .faq-internal-summary li.is-sub{margin-left:16px}
 .faq-internal-found{margin:0;padding-left:18px}
 .faq-internal-found li{margin:4px 0}

@@ -31,7 +31,7 @@ async function loadList(){
 function buildSummary(){
   var titles=[].filter.call($('help-article-body').querySelectorAll('h2,h3'),function(h){return h.textContent.trim();});
   titles.forEach(function(h,i){h.id='question-'+i;});
-  var box=$('faq-internal-summary');box.hidden=titles.length<2;
+  var box=$('faq-internal-summary');box.hidden=titles.length<2;$('help-article-body').prepend(box);
   box.querySelector('ul').innerHTML=titles.map(function(h){return '<li'+(h.tagName==='H3'?' class="is-sub"':'')+'><a href="#'+h.id+'">'+esc(h.textContent.trim())+'</a></li>';}).join('');
   var target=location.hash&&document.getElementById(location.hash.slice(1));if(target)target.scrollIntoView({behavior:'instant'});
 }
