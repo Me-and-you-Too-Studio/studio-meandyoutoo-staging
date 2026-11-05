@@ -205,3 +205,13 @@
   .help-article-banner { margin: 0 0 16px; }
   #help-article-view .private-resource-body > ol > li { padding-left: 52px; }
 }
+
+/* FAQ interne : sommaire du chapitre et réponses trouvées par la recherche */
+.faq-internal-summary{margin:0 0 24px;padding:16px 20px;border-radius:12px;background:var(--fam-soft,#e6f4f5)}
+.faq-internal-summary ul{margin:8px 0 0;padding-left:18px}
+.faq-internal-summary li{margin:4px 0}
+.faq-internal-summary li.is-sub{margin-left:16px}
+.faq-internal-found{margin:0;padding-left:18px}
+.faq-internal-found li{margin:4px 0}
+.help-article-card a{color:inherit;text-decoration:none}
+.faq-internal-found a{color:var(--fam,#007883);text-decoration:underline}
