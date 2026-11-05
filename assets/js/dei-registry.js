@@ -60,13 +60,13 @@
   function againLabel(k){return (state.reviewAgain||{})[k]||k;}
   function stars(n){return '<span class="dr-stars" role="img" aria-label="'+n+' sur 5">'+starsText(n)+'</span>';}
   function reviewLine(r){return stars(r.rating)+' <span class="dr-review-again">Je referais appel : '+esc(againLabel(r.again))+'</span>';}
-  // Résumé d'une fiche : moyenne, nombre d'avis, réponses « Oui ». Pas de classement entre prestataires.
+  // Résumé d'une fiche : moyenne, nombre d'avis, réponses données. Pas de classement entre prestataires.
   function reviewSummary(rows){
     var done=rows.filter(function(x){return x.review;}),n=done.length;
     if(!n)return '';
     var avg=done.reduce(function(s,x){return s+x.review.rating;},0)/n;
-    var yes=done.filter(function(x){return x.review.again==='yes';}).length;
-    return '<p class="dr-review-summary"><span class="dr-stars" aria-hidden="true">★</span> '+avg.toFixed(1).replace('.',',')+' · '+n+' avis · Je referais appel : '+yes+' sur '+n+'</p>';
+    var again=Object.keys(state.reviewAgain||{}).map(function(k){var c=done.filter(function(x){return x.review.again===k;}).length;return c?c+' × '+againLabel(k).toLowerCase():'';}).filter(Boolean).join(', ');
+    return '<p class="dr-review-summary"><span class="dr-stars" aria-hidden="true">★</span> '+avg.toFixed(1).replace('.',',')+' · '+n+' avis</p><p class="dr-row-meta">Je referais appel : '+esc(again)+'</p>';
   }
   function providerRows(key){return (state.reviews||[]).filter(function(x){return key==='meayt'?x.led_by_meayt:String(x.provider_id)===String(key);});}
   var REVIEW_SCALE=['Très éloignée de nos attentes','Éloignée de nos attentes','En partie conforme à nos attentes','Conforme à nos attentes','Tout à fait conforme à nos attentes'];
