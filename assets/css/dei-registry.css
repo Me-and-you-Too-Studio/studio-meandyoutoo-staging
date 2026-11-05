@@ -261,8 +261,19 @@ button.dr-kpi:hover,button.dr-kpi:focus-visible{border-color:var(--green-blue,#0
 .dei-solutions-link{transition:transform .15s,box-shadow .15s}
 .dei-solutions-link:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(0,120,131,.3)}
 .dr-tab b{font-weight:400}
-/* Les deux lignes de boutons du Cockpit restent visibles au défilement. */
-.dei-sticky-bar{position:sticky;top:0;z-index:6;margin:0 0 18px;padding:10px 0 8px;background:#fbfcfe;box-shadow:0 8px 12px -10px rgba(39,58,100,.25)}
-.dei-sticky-bar .dei-hero-actions{margin:0 0 10px;align-items:center}
-.dei-sticky-bar .dr-tabs{position:static;margin:0}
-@media(max-width:760px){.dei-sticky-bar{position:static;box-shadow:none}.dei-sticky-bar .dr-tabs{position:sticky;top:0}}
+/* En-tête du Cockpit : bandeau coloré, puis une seule barre (onglets à gauche, boutons à droite) qui reste visible au défilement. */
+.dr-admin-banner[hidden]{display:none}
+.dei-cockpit-hero.dei-cockpit-hero-live{position:relative;overflow:hidden;margin:8px 0 14px;padding:28px 34px;border-radius:var(--radius-lg,22px);background:linear-gradient(120deg,var(--royal-blue,#273a64) 0%,#1f5d84 55%,var(--green-blue,#007883) 100%);box-shadow:var(--shadow-md,0 12px 28px rgba(39,58,100,.14))}
+.dei-cockpit-hero-live::before{content:"";position:absolute;width:240px;height:240px;right:-60px;top:-90px;border-radius:50%;background:rgba(255,192,0,.2);pointer-events:none}
+.dei-cockpit-hero-live::after{content:"";position:absolute;width:150px;height:150px;right:150px;bottom:-100px;border-radius:50%;background:rgba(120,205,235,.22);pointer-events:none}
+.dei-cockpit-hero-live .dei-cockpit-hero-copy{position:relative}
+.dei-cockpit-hero-live .eyebrow{color:var(--sunny-yellow,#ffc000)}
+.dei-cockpit-hero-live .dei-cockpit-hero-copy h1{margin:2px 0 6px;font-size:clamp(2rem,3.4vw,2.8rem);color:#fff}
+.dei-cockpit-hero-live .dei-cockpit-subtitle{margin:0 0 8px;font-size:clamp(1.05rem,1.6vw,1.3rem);color:#fff}
+.dei-cockpit-hero-live .dei-cockpit-intro{font-size:.95rem;line-height:1.55;color:rgba(255,255,255,.85)}
+.dei-sticky-bar{position:sticky;top:8px;z-index:6;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px;margin:0 0 18px;padding:8px 10px;border:1px solid var(--line,#e2e8f0);border-radius:16px;background:#fff;box-shadow:0 8px 20px rgba(39,58,100,.08)}
+.dei-sticky-bar .dr-tabs{position:static;margin:0;padding:0;background:none;overflow:visible}
+.dei-sticky-bar .dei-hero-actions{margin:0;gap:8px;align-items:center}
+.dei-sticky-bar .dei-hero-actions .button{padding:8px 14px;font-size:.9rem}
+.dei-sticky-bar .studio-tuto-button{margin:0}
+@media(max-width:760px){.dei-cockpit-hero.dei-cockpit-hero-live{padding:22px 20px}.dei-sticky-bar{position:static;box-shadow:none}.dei-sticky-bar .dr-tabs{position:sticky;top:0;overflow-x:auto}}
