@@ -286,7 +286,7 @@
   // Tutoriels vidéo : un bouton « ▶ Tuto » sur chaque étape, qui ouvre la vidéo dans une fenêtre.
   // Renseigner url (lien HubSpot de la vidéo) suffit à faire apparaître le bouton ; sans lien, il reste caché.
   var TUTORIALS={
-    decouvrir:{title:'Découvrir le Studio',url:''},
+    decouvrir:{title:'Découvrir le Studio',url:'tutos/decouvrir/index.html'},
     choisir:{title:'Choisir son diagnostic',url:'tutos/choisir/index.html'},
     composer:{title:'Composer son diagnostic',url:'tutos/composer/index.html'},
     personnaliser:{title:'Personnaliser les profils',url:'tutos/personnaliser/index.html'},
