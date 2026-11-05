@@ -45,9 +45,83 @@
   function load(){
     if(isAdmin&&!organizationId){root.innerHTML='<p class="dr-empty">Le registre des actions est propre à chaque client : ouvrez-le depuis le <a href="admin.html">dossier d’un client</a> (bouton « Cockpit D&I du client »).</p>';return Promise.resolve();}
     root.setAttribute('aria-busy','true');
-    return StudioAPI.request('/api/dei/actions'+qs({year:state.year})).then(function(d){state.data=d;render();})
+    return Promise.all([StudioAPI.request('/api/dei/actions'+qs({year:state.year})),loadReviews()]).then(function(r){state.data=r[0];render();})
       .catch(function(e){root.innerHTML='<p class="dr-empty">Le registre des actions est momentanément indisponible. '+esc(e.message||'')+'</p>';})
       .finally(function(){root.removeAttribute('aria-busy');});
+  }
+
+  // Avis sur les actions réalisées, toutes années confondues. Sans réponse de l'API, le Cockpit reste utilisable sans les avis.
+  function loadReviews(){
+    return StudioAPI.request('/api/dei/reviews'+qs()).then(function(r){state.reviews=r.actions||[];state.reviewAgain=r.again||{};}).catch(function(){state.reviews=[];});
+  }
+  function reviewRow(id){return (state.reviews||[]).find(function(x){return String(x.id)===String(id);})||null;}
+  function canReview(){return isClient&&Boolean(state.data&&state.data.canEdit);}
+  function starsText(n){return '★★★★★'.slice(0,n)+'☆☆☆☆☆'.slice(0,5-n);}
+  function againLabel(k){return (state.reviewAgain||{})[k]||k;}
+  function stars(n){return '<span class="dr-stars" role="img" aria-label="'+n+' sur 5">'+starsText(n)+'</span>';}
+  function reviewLine(r){return stars(r.rating)+' <span class="dr-review-again">Je referais appel : '+esc(againLabel(r.again))+'</span>';}
+  // Résumé d'une fiche : moyenne, nombre d'avis, réponses « Oui ». Pas de classement entre prestataires.
+  function reviewSummary(rows){
+    var done=rows.filter(function(x){return x.review;}),n=done.length;
+    if(!n)return '';
+    var avg=done.reduce(function(s,x){return s+x.review.rating;},0)/n;
+    var yes=done.filter(function(x){return x.review.again==='yes';}).length;
+    return '<p class="dr-review-summary"><span class="dr-stars" aria-hidden="true">★</span> '+avg.toFixed(1).replace('.',',')+' · '+n+' avis · Je referais appel : '+yes+' sur '+n+'</p>';
+  }
+  function providerRows(key){return (state.reviews||[]).filter(function(x){return key==='meayt'?x.led_by_meayt:String(x.provider_id)===String(key);});}
+  var REVIEW_SCALE=['Très éloignée de nos attentes','Éloignée de nos attentes','En partie conforme à nos attentes','Conforme à nos attentes','Tout à fait conforme à nos attentes'];
+  function reviewDialog(id){
+    var a=reviewRow(id);if(!a)return;
+    var r=a.review||{},dlg=document.createElement('dialog');dlg.className='dr-dialog';
+    var again=state.reviewAgain||{};
+    dlg.innerHTML='<form><h2>Votre avis sur cette action</h2><p class="dr-row-meta">'+esc(a.title)+' · '+esc(fmtDate(a.action_date))+'</p>'+
+      '<fieldset class="dr-rating"><legend>Cette action a-t-elle répondu à vos attentes ?</legend><div class="dr-rating-stars">'+
+      [1,2,3,4,5].map(function(n){return '<label title="'+esc(REVIEW_SCALE[n-1])+'"><input type="radio" name="rating" value="'+n+'" required'+(r.rating===n?' checked':'')+'><span aria-hidden="true">★</span><span class="dr-sr">'+n+' sur 5 : '+esc(REVIEW_SCALE[n-1])+'</span></label>';}).join('')+
+      '</div><p class="dr-rating-caption" data-caption></p></fieldset>'+
+      '<fieldset class="dr-rating"><legend>Je referais appel à '+(a.led_by_meayt?'Me&amp;YouToo':'ce prestataire')+'</legend><div class="dr-chips">'+
+      Object.keys(again).map(function(k){return '<label class="dr-chip"><input type="radio" name="again" value="'+esc(k)+'" required'+(r.again===k?' checked':'')+'><span>'+esc(again[k])+'</span></label>';}).join('')+'</div></fieldset>'+
+      '<label class="dr-field"><span>Commentaire (facultatif)</span><textarea name="comment" rows="4" maxlength="1000" placeholder="Ce qui a bien fonctionné, ce qui serait à ajuster la prochaine fois. Parlez de la prestation, pas de la personne.">'+esc(r.comment||'')+'</textarea></label>'+
+      '<p class="dr-review-privacy">'+(a.led_by_meayt?'🔓 Cet avis porte sur une action de Me&amp;YouToo : notre équipe peut le lire.':'🔒 Cet avis reste interne à votre entreprise : il n’est jamais transmis au prestataire, et Me&amp;YouToo ne le voit pas.')+'</p>'+
+      '<p class="dr-error" hidden></p><div class="dr-dialog-actions">'+(a.review?'<button type="button" class="button button-ghost" data-review-remove>Retirer l’avis</button>':'')+
+      '<button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
+    document.body.appendChild(dlg);
+    var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error'),caption=dlg.querySelector('[data-caption]');
+    var labels=[].slice.call(dlg.querySelectorAll('.dr-rating-stars label'));
+    function paint(){var v=Number((form.elements.rating.value)||0);labels.forEach(function(l,i){l.classList.toggle('is-on',i<v);});caption.textContent=v?REVIEW_SCALE[v-1]:'';}
+    form.addEventListener('change',paint);paint();
+    dlg.addEventListener('close',function(){dlg.remove();});
+    dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
+    var url='/api/dei/actions/'+encodeURIComponent(a.id)+'/review';
+    var removeBtn=dlg.querySelector('[data-review-remove]');
+    if(removeBtn)removeBtn.onclick=async function(){
+      try{await StudioAPI.request(url,{method:'DELETE'});dlg.close();load();}catch(e){err.textContent=e.message||'Suppression impossible';err.hidden=false;}
+    };
+    form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
+      if(!form.checkValidity()){form.reportValidity();return;}
+      var f=new FormData(form);
+      try{await StudioAPI.request(url,{method:'PUT',body:JSON.stringify({rating:Number(f.get('rating')),again:f.get('again'),comment:f.get('comment')})});dlg.close();load();}
+      catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
+    };
+    dlg.showModal();
+  }
+  // Détail d'une fiche : les actions réalisées avec ce prestataire et leurs avis.
+  function reviewsDialog(key,name){
+    var rows=providerRows(key),dlg=document.createElement('dialog');dlg.className='dr-dialog';
+    dlg.innerHTML='<form method="dialog"><h2>Avis sur '+esc(name)+'</h2>'+reviewSummary(rows)+'<div class="dr-review-list">'+rows.map(function(a){var r=a.review;
+      return '<article class="dr-review"><h4>'+esc(a.title)+'</h4><p class="dr-row-meta">'+esc(fmtDate(a.action_date))+'</p>'+
+        (r?'<p class="dr-review-line">'+reviewLine(r)+'</p>'+(r.comment?'<p class="dr-row-notes">'+esc(r.comment)+'</p>':'')+'<p class="dr-row-meta">'+esc([r.author,'mis à jour le '+fmtDate(String(r.updatedAt).slice(0,10))].filter(Boolean).join(' · '))+'</p>':'<p class="dr-row-meta">Pas encore d’avis</p>')+
+        (canReview()?'<button type="button" class="dr-link" data-review="'+esc(a.id)+'">'+(r?'Modifier l’avis':'Donner un avis')+'</button>':'')+'</article>';
+    }).join('')+'</div><div class="dr-dialog-actions"><button type="submit" class="button button-ghost">Fermer</button></div></form>';
+    document.body.appendChild(dlg);
+    dlg.addEventListener('close',function(){dlg.remove();});
+    dlg.addEventListener('click',function(ev){var t=ev.target.closest('[data-review]');if(t){var id=t.getAttribute('data-review');dlg.close();reviewDialog(id);}});
+    dlg.showModal();
+  }
+  function reviewsFooter(key,name){
+    var rows=providerRows(key);if(!rows.length)return '';
+    var n=rows.filter(function(x){return x.review;}).length;
+    if(!n&&!canReview())return '';
+    return reviewSummary(rows)+'<button type="button" class="dr-link" data-reviews="'+esc(key)+'" data-name="'+esc(name)+'">'+(n?'Voir les avis →':'Donner un avis →')+'</button>';
   }
 
   // Actions du registre + campagnes de diagnostic, dans un même format d'affichage.
@@ -167,16 +241,19 @@
   function providersView(){
     var d=state.data,list=d.providers||[],canEdit=d.canEdit;
     var head='<div class="dr-head"><div><p class="eyebrow">Annuaire</p><h2>'+(organizationId?'Prestataires de '+esc(d.organizationName||'ce client'):'Vos prestataires D&amp;I')+'</h2>'+
-      '<p>Cabinets, formateurs, associations, intervenants : gardez leurs coordonnées à portée de main et reliez-les à vos actions. Renseignez uniquement des coordonnées professionnelles.</p></div>'+
+      '<p>Cabinets, formateurs, associations, intervenants : gardez leurs coordonnées à portée de main et reliez-les à vos actions. Renseignez uniquement des coordonnées professionnelles.</p>'+
+      '<p class="dr-review-privacy">'+(isAdmin?'🔒 Les avis de ce client sur ses prestataires sont masqués à Me&amp;YouToo : seuls ceux sur nos propres actions apparaissent ici.':'🔒 Vos avis sur vos prestataires restent internes à votre entreprise : ils ne leur sont jamais transmis et Me&amp;YouToo ne les voit pas. Seuls vos avis sur les actions de Me&amp;YouToo sont lus par notre équipe.')+'</p></div>'+
       (canEdit?'<div class="dr-head-actions"><button type="button" class="button button-primary" data-provider-add>＋ Ajouter un prestataire</button></div>':'')+'</div>';
-    if(!list.length)return head+'<p class="dr-empty">Aucun prestataire enregistré pour le moment.</p>';
-    return head+'<div class="dr-providers">'+list.map(function(p){
+    // Me&YouToo n'a pas de fiche dans l'annuaire : sa carte n'apparaît que s'il a mené des actions réalisées.
+    var meayt=providerRows('meayt').length?'<article class="dr-provider"><h4>Me&amp;YouToo</h4><p class="dr-row-meta">Actions animées par Me&amp;YouToo</p>'+reviewsFooter('meayt','Me&YouToo')+'</article>':'';
+    if(!list.length&&!meayt)return head+'<p class="dr-empty">Aucun prestataire enregistré pour le moment.</p>';
+    return head+'<div class="dr-providers">'+meayt+list.map(function(p){
       var contact=[p.first_name,p.last_name].filter(Boolean).join(' ');
       return '<article class="dr-provider"><h4>'+esc(p.company||contact)+'</h4>'+(p.company&&contact?'<p class="dr-provider-contact">'+esc(contact)+'</p>':'')+
         (p.specialty?'<p class="dr-row-meta">'+esc(p.specialty)+'</p>':'')+
         '<p class="dr-provider-lines">'+(p.email?'<a href="mailto:'+esc(p.email)+'">✉ '+esc(p.email)+'</a>':'')+(p.phone?'<a href="tel:'+esc(p.phone.replace(/\s+/g,''))+'">☎ '+esc(p.phone)+'</a>':'')+'</p>'+
         (p.notes?'<p class="dr-row-notes">'+esc(p.notes)+'</p>':'')+
-        '<p class="dr-row-meta">'+(p.actions_count?p.actions_count+' action'+(p.actions_count>1?'s':'')+' rattachée'+(p.actions_count>1?'s':''):'Aucune action rattachée')+'</p>'+
+        '<p class="dr-row-meta">'+(p.actions_count?p.actions_count+' action'+(p.actions_count>1?'s':'')+' rattachée'+(p.actions_count>1?'s':''):'Aucune action rattachée')+'</p>'+reviewsFooter(p.id,p.company||contact)+
         (canEdit?'<div class="dr-row-tools"><button type="button" class="button button-ghost" data-provider-edit="'+esc(p.id)+'">Modifier</button><button type="button" class="button button-ghost" data-provider-delete="'+esc(p.id)+'">Supprimer</button></div>':'')+'</article>';
     }).join('')+'</div>';
   }
@@ -206,7 +283,7 @@
   }
   async function removeProvider(id){
     var p=(state.data.providers||[]).find(function(x){return String(x.id)===String(id);});if(!p)return;
-    var ok=await window.StudioModal.confirm({eyebrow:'Prestataires',title:'Supprimer « '+providerName(p)+' » ?',message:'Ses coordonnées seront effacées. Les actions rattachées sont conservées, sans prestataire.',confirmLabel:'Supprimer'});
+    var ok=await window.StudioModal.confirm({eyebrow:'Prestataires',title:'Supprimer « '+providerName(p)+' » ?',message:'Ses coordonnées et les avis qui le concernent seront effacés. Les actions rattachées sont conservées, sans prestataire.',confirmLabel:'Supprimer'});
     if(!ok)return;
     try{await StudioAPI.request('/api/dei/providers/'+encodeURIComponent(id)+qs(),{method:'DELETE'});load();}catch(e){window.StudioModal.alert({title:'Suppression impossible',message:e.message});}
   }
@@ -265,6 +342,7 @@
   function row(it){
     var k=kind(it.kind),st=(state.data.statuses||{})[it.status]||it.status,canEdit=state.data.canEdit&&it.type==='action';
     var when=fmtDate(it.start||it.date)+(it.end&&it.end!==it.date?' → '+fmtDate(it.end):'');
+    var rv=it.type==='action'&&it.status==='done'?reviewRow(it.id):null;
     var meta=[it.theme,it.audience,it.people!=null?num(it.people)+(it.type==='campaign'?' participations':' personnes touchées'):'',it.provider?'avec '+it.provider:'',it.recommended?recoTip(it.campaignId):''].filter(Boolean).map(esc).join(' · ');
     var docs=(it.documents||[]).map(function(doc){return '<span class="dr-doc"><button type="button" class="dr-link" data-download="'+esc(it.id)+':'+esc(doc.id)+'" data-filename="'+esc(doc.filename)+'">📎 '+esc(doc.filename)+'</button>'+(canEdit?'<button type="button" class="dr-x" data-doc-delete="'+esc(it.id)+':'+esc(doc.id)+'" aria-label="Retirer '+esc(doc.filename)+'">×</button>':'')+'</span>';}).join('');
     var tools=it.type==='campaign'
@@ -274,7 +352,8 @@
     return '<article class="dr-row" id="dr-'+esc(it.type+'-'+it.id)+'"><div class="dr-row-icon" aria-hidden="true">'+esc(k.icon)+'</div><div class="dr-row-main">'+
       '<p class="dr-row-kind">'+esc(it.type==='campaign'?'Diagnostic comportemental · Studio':k.label)+(it.meayt?' <span class="dr-badge is-meayt">Animée par Me&amp;YouToo</span>':'')+(it.recommended?' <span class="dr-badge is-reco">Recommandée par Me&amp;YouToo</span>':'')+' <span class="dr-badge st-'+esc(it.status)+'">'+esc(st)+'</span></p>'+
       '<h4>'+esc(it.title)+'</h4><p class="dr-row-when">'+esc(when)+'</p>'+(meta?'<p class="dr-row-meta">'+meta+'</p>':'')+(it.notes?'<p class="dr-row-notes">'+esc(it.notes)+'</p>':'')+
-      (docs?'<div class="dr-docs">'+docs+'</div>':'')+'<div class="dr-row-tools">'+tools+'</div></div></article>';
+      (rv&&rv.review?'<p class="dr-review-line">'+reviewLine(rv.review)+'</p>'+(rv.review.comment?'<p class="dr-row-notes">'+esc(rv.review.comment)+'</p>':''):'')+
+      (docs?'<div class="dr-docs">'+docs+'</div>':'')+'<div class="dr-row-tools">'+tools+(rv&&canReview()?'<button type="button" class="dr-link" data-review="'+esc(it.id)+'">'+(rv.review?'Modifier l’avis':'☆ Donner un avis')+'</button>':'')+'</div></div></article>';
   }
 
   // ── Saisie ──
@@ -454,6 +533,12 @@
     };
     form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
       if(!form.checkValidity()){form.reportValidity();return;}
+      // Un avis porte sur un prestataire : il ne suit pas l'action vers un autre.
+      var reviewed=action&&reviewRow(action.id);
+      if(reviewed&&reviewed.review&&form.elements.providerId.value!==String(currentProvider||'')){
+        var keep=await window.StudioModal.confirm({eyebrow:'Registre des actions',title:'Changer de prestataire ?',message:'L’avis donné sur cette action sera effacé, car il concerne le prestataire actuel.',confirmLabel:'Changer'});
+        if(!keep)return;
+      }
       var f=new FormData(form),body=withOrg({kind:f.get('kind'),title:f.get('title'),actionDate:f.get('actionDate'),endDate:f.get('endDate'),status:f.get('status'),
         theme:readMulti(form,'theme'),peopleReached:f.get('peopleReached'),audience:f.get('audience'),notes:f.get('notes'),providerId:f.get('providerId'),offerId:a.offer_id||null});
       if(isAdmin){body.campaignId=f.get('campaignId');body.recommended=f.get('recommended')==='on';}
@@ -540,6 +625,8 @@
     else if(t.hasAttribute('data-provider-add'))providerDialog(null);
     else if(t.hasAttribute('data-provider-edit'))providerDialog((state.data.providers||[]).find(function(p){return String(p.id)===t.getAttribute('data-provider-edit');}));
     else if(t.hasAttribute('data-provider-delete'))removeProvider(t.getAttribute('data-provider-delete'));
+    else if(t.hasAttribute('data-review'))reviewDialog(t.getAttribute('data-review'));
+    else if(t.hasAttribute('data-reviews'))reviewsDialog(t.getAttribute('data-reviews'),t.getAttribute('data-name'));
     // La frise est dans la vue d'ensemble : on bascule sur l'onglet Actions pour montrer le détail.
     else if(t.hasAttribute('data-focus'))focusItem(t.getAttribute('data-focus'));
     else if(t.hasAttribute('data-kpi'))kpiDetail(t.getAttribute('data-kpi'));
