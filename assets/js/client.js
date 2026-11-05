@@ -1058,7 +1058,7 @@
       '">Supprimer</button></div></article>'
     );
   }
-  // Invitations envoyées client par client : responsables du compte en attente du go, et invitations préparées par le client
+  // Invitations envoyées client par client : responsables du compte en attente du go, personnes ajoutées par un admin et invitations préparées par le client
   // (mêmes règles que l'API). Le bouton n'agit qu'une fois le go donné sur le serveur (STUDIO_INVITATIONS_ENABLED).
   function invitationsToSend() {
     return orgUsers(organization).filter((u) => u.invitation_pending === true &&
@@ -1089,8 +1089,19 @@
     try {
       const result = await StudioAPI.request("/api/admin/organizations/" + encodeURIComponent(organization.id) + "/pending-invitations/send", { method: "POST", body: "{}" });
       const sent = Array.isArray(result?.sent) ? result.sent : [];
+      const delivered = sent.filter((s) => s.sent !== false), failed = sent.filter((s) => s.sent === false);
       await load();
       const licence = result?.licence ? " Licence Studio démarrée le " + date(result.licence.startsAt) + " pour 12 mois" + (result.licence.packAligned ? ", pack aux mêmes dates." : " ; pack à 0 crédit inchangé (à racheter).") : "";
+      if (failed.length) {
+        StudioModal.alert({
+          eyebrow: "Invitations",
+          type: "error",
+          title: failed.length + " invitation" + (failed.length > 1 ? "s non parties" : " non partie"),
+          message: "Rien n’a été reçu par : " + failed.map((s) => s.email).join(", ") + ". " + (failed.length > 1 ? "Ces personnes restent" : "Cette personne reste") + " en attente : relancez « Envoyer les invitations » depuis ce dossier." +
+            (delivered.length ? " Envoyée" + (delivered.length > 1 ? "s" : "") + " : " + delivered.map((s) => s.email).join(", ") + "." : "") + licence,
+        });
+        return;
+      }
       StudioModal.alert({ eyebrow: "Invitations", title: sent.length + " invitation" + (sent.length > 1 ? "s envoyées" : " envoyée"), message: (sent.map((s) => s.email).join(", ") || "Aucune invitation en attente.") + licence });
     } catch (error) {
       StudioModal.alert({ title: "Envoi impossible", message: error.message, type: "error" });
@@ -2154,7 +2165,7 @@
     });
     if (!editing && normalized === "existing") {
       if (saveButton) {
-        saveButton.textContent = selectedExistingUser?.active === false
+        saveButton.textContent = selectedExistingUser?.active === false && !selectedExistingUser.invitation_pending
           ? "Rattacher et réactiver"
           : selectedExistingUser
             ? "Rattacher à " + (organization.name || "ce client")
@@ -2163,7 +2174,7 @@
       }
     } else if (saveButton) {
       saveButton.disabled = false;
-      saveButton.textContent = editing ? "Enregistrer les droits" : "Créer et envoyer l’invitation";
+      saveButton.textContent = editing ? "Enregistrer les droits" : "Créer le compte";
     }
   }
   function selectExistingUser(user) {
@@ -2187,7 +2198,7 @@
       '</span><div><strong>' + esc(((user.first_name || "") + " " + (user.last_name || "")).trim() || user.email) +
       '</strong><span>' + esc(user.email || "") + '</span><small>' +
       (currentOrganization ? "Client actuel : " + esc(currentOrganization.name || currentOrganization.id) : "Aucun client actuellement rattaché") +
-      (user.active === false ? " · compte désactivé" : "") +
+      (user.invitation_pending ? " · en attente de son invitation" : user.active === false ? " · compte désactivé" : "") +
       '</small>' +
       (movesFromAnotherClient
         ? '<em class="user-existing-reassignment">Le rattachement actuel sera remplacé par ' + esc(organization.name || "ce client") + '.</em>'
@@ -2222,7 +2233,7 @@
       return '<article class="user-existing-result ' + (attached ? 'is-attached' : '') + '">' +
         '<div><strong>' + esc(((user.first_name || "") + " " + (user.last_name || "")).trim() || user.email) + '</strong>' +
         '<span>' + esc(user.email || "") + '</span>' +
-        '<small>' + esc(currentLabel ? "Client actuel : " + currentLabel : "Aucun client rattaché") + (user.active === false ? " · Compte désactivé" : "") + '</small></div>' +
+        '<small>' + esc(currentLabel ? "Client actuel : " + currentLabel : "Aucun client rattaché") + (user.invitation_pending ? " · En attente de son invitation" : user.active === false ? " · Compte désactivé" : "") + '</small></div>' +
         (attached
           ? '<span class="badge badge-muted">Déjà sur ce client</span>'
           : '<button class="button button-secondary" type="button" data-select-existing-user="' + esc(user.id) + '">Sélectionner</button>') +
@@ -2478,7 +2489,7 @@
         userId: selectedExistingUser.id,
         accessLevel: $("#user-access-level").value,
         permissions: selectedPermissions(),
-        reactivate: selectedExistingUser.active === false,
+        reactivate: selectedExistingUser.active === false && !selectedExistingUser.invitation_pending,
         replaceExistingOrganization: replacesAnotherClient,
       };
       try {
