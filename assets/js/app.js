@@ -197,7 +197,7 @@
       {target:'#submit-project',title:'Transmettre',text:'Cochez les vérifications, puis transmettez. Me&YouToo relit la campagne et vous propose des corrections si besoin, que vous validerez.'}
     ]}
   };
-  var PAGE_TOURS={'validation.html':'validation','cockpit-dei.html':'cockpit','account.html':'acces','bibliotheque.html':'catalogue','kit-communication.html':'kit','mes-campagnes.html':'mes-campagnes','campagne-detail.html':'campagne-detail','composer.html':'composer','personnalisation.html':'personnalisation','parametrage.html':'parametrage'};
+  var PAGE_TOURS={'validation.html':'validation','cockpit-dei.html':'cockpit','bibliotheque.html':'catalogue','kit-communication.html':'kit','mes-campagnes.html':'mes-campagnes','campagne-detail.html':'campagne-detail','composer.html':'composer','personnalisation.html':'personnalisation','parametrage.html':'parametrage'};
   var tourState=null,registeredTour=null,tourShownThisPage=false;
   function tourUser(){try{return window.StudioAPI&&StudioAPI.user()||JSON.parse(localStorage.getItem('studio_user')||'null');}catch(e){return null;}}
   function seenKey(tour){var u=tourUser();return 'studio_tour_seen_v1:'+(u&&u.id||'anonyme')+':'+tour.key;}
@@ -298,7 +298,7 @@
     cockpit:{title:'Piloter avec le Cockpit D&I',url:'tutos/cockpit/index.html'},
     acces:{title:'Gérer votre compte et vos accès',url:'tutos/acces/index.html'}
   };
-  var PAGE_TUTORIALS={'accueil.html':'decouvrir','acces-equipes.html':'droits','cockpit-dei.html':'cockpit','bibliotheque.html':'choisir','composer.html':'composer','personnalisation.html':'personnaliser','parametrage.html':'parametrer','validation.html':'transmettre','kit-communication.html':'diffuser'};
+  var PAGE_TUTORIALS={'accueil.html':'decouvrir','acces-equipes.html':'droits','cockpit-dei.html':'cockpit','account.html':'acces','bibliotheque.html':'choisir','composer.html':'composer','personnalisation.html':'personnaliser','parametrage.html':'parametrer','validation.html':'transmettre','kit-communication.html':'diffuser'};
   function openTutorial(id){
     var t=TUTORIALS[id];if(!t||!t.url)return;
     var dialog=document.createElement('dialog');dialog.className='studio-modal studio-tuto-dialog';dialog.setAttribute('aria-labelledby','studio-tuto-title');
