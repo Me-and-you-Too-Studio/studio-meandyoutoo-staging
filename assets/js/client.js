@@ -1065,11 +1065,10 @@
       '">Supprimer</button></div></article>'
     );
   }
-  // Invitations envoyées client par client : responsables du compte en attente du go, personnes ajoutées par un admin et invitations préparées par le client
-  // (mêmes règles que l'API). Le bouton n'agit qu'une fois le go donné sur le serveur (STUDIO_INVITATIONS_ENABLED).
+  // Toute personne en attente peut être invitée ici par l'admin ; le client peut aussi le faire de son côté tant que ce n'est pas fait.
+  // Le bouton n'agit qu'une fois le go donné sur le serveur (STUDIO_INVITATIONS_ENABLED).
   function invitationsToSend() {
-    return orgUsers(organization).filter((u) => u.invitation_pending === true &&
-      (u.access_level === "owner" || (u.suggestion_decision === "accepted" && u.invitation_prepared_at)));
+    return orgUsers(organization).filter((u) => u.invitation_pending === true);
   }
   // Une ligne et un bouton par personne : l'admin invite chacune à son tour, par exemple devant elle.
   function invitationsHtml() {
