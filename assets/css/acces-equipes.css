@@ -168,14 +168,33 @@
 .ae-unfiled-name { flex: 1 1 280px; min-width: 0; }
 .ae-unfiled-list .ae-row-field { flex: 0 1 300px; }
 
-/* Dossiers d’équipe : une ligne par dossier, dépliable. */
-.ae-folder summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 14px 20px; cursor: pointer; list-style: none; }
-.ae-folder summary::-webkit-details-marker { display: none; }
-.ae-folder summary::after { content: "⌄"; margin-left: auto; color: var(--green-blue); font-size: 1.2rem; font-weight: 800; line-height: 1; transition: transform .15s; }
-.ae-folder[open] summary::after { transform: rotate(180deg); }
-.ae-folder summary:hover .ae-folder-name { color: var(--green-blue-dark); }
-.ae-folder-name { flex: 0 0 200px; min-width: 0; color: var(--royal-blue); font-size: 1.05rem; font-weight: 800; }
-.ae-folder-pill { padding: 3px 10px; border-radius: 999px; background: var(--surface-soft); color: var(--royal-blue); font-size: .82rem; font-weight: 700; }
-.ae-folder-pill.is-empty { background: var(--warning-soft); color: var(--warning); }
-.ae-folder-body { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 22px; padding: 2px 20px 16px; border-top: 1px solid var(--line); }
-@media (max-width: 900px) { .ae-folder-name { flex-basis: 100%; } .ae-folder-body { grid-template-columns: minmax(0, 1fr); } }
+/* Dossiers d’équipe : tableau de colonnes, comme les transactions HubSpot. Les colonnes ont la même hauteur et leurs cartes défilent. */
+.ae-folder-grid { display: flex; align-items: stretch; gap: 12px; padding-bottom: 8px; overflow-x: auto; }
+.ae-folder-grid > .ae-empty { flex: 1 1 auto; }
+.ae-board-col { flex: 0 0 280px; display: flex; flex-direction: column; min-width: 0; padding: 10px; border: 2px solid transparent; border-radius: 16px; background: #f1f4f8; transition: border-color .15s, background .15s; }
+.ae-board-col.is-drop-target { border-color: var(--green-blue); background: var(--green-blue-soft); }
+.ae-board-head { display: flex; align-items: center; gap: 8px; padding: 2px 4px 8px; }
+.ae-board-head h3 { min-width: 0; margin: 0; overflow: hidden; color: var(--royal-blue); font-size: 1rem; text-overflow: ellipsis; white-space: nowrap; }
+.ae-board-count { padding: 1px 8px; border-radius: 999px; background: #fff; color: var(--royal-blue); font-size: .78rem; font-weight: 800; }
+.ae-board-tools { display: flex; gap: 2px; margin-left: auto; }
+.ae-board-tools button { padding: 3px 5px; border: 0; border-radius: 8px; background: transparent; font-size: .82rem; cursor: pointer; }
+.ae-board-tools button:hover { background: #fff; }
+.ae-board-cards { display: grid; align-content: start; gap: 6px; flex: 1 1 auto; max-height: 340px; margin: 0; padding: 0 2px 2px 0; overflow-y: auto; list-style: none; }
+.ae-board-card { display: flex; gap: 8px; align-items: flex-start; padding: 9px 8px 9px 10px; border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: 0 1px 3px rgba(39, 58, 100, .06); }
+.ae-board-card[draggable="true"] { cursor: grab; }
+.ae-board-card:hover { border-color: var(--green-blue); }
+.ae-board-card.is-dragging { opacity: .5; }
+.ae-board-text { flex: 1 1 auto; min-width: 0; }
+.ae-board-text strong, .ae-board-text small { display: block; }
+.ae-board-text strong { color: var(--royal-blue); font-size: .88rem; line-height: 1.3; }
+.ae-board-text small { margin-top: 2px; color: var(--muted); font-size: .76rem; }
+.ae-board-remove { flex: 0 0 auto; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #8a96ad; font-size: 1rem; line-height: 1; cursor: pointer; }
+.ae-board-remove:hover { background: #edf2f6; color: var(--royal-blue); }
+.ae-board-empty { flex: 1 1 auto; margin: 0; padding: 18px 8px; border: 1px dashed #cfd8e6; border-radius: 12px; color: var(--muted); font-size: .85rem; text-align: center; }
+.ae-board-foot { margin-top: 8px; padding: 8px 4px 0; border-top: 1px solid #dfe5ee; font-size: .82rem; }
+.ae-board-foot .ae-link { margin-right: 12px; font-size: .84rem; font-weight: 700; color: var(--green-blue-dark); }
+.ae-board-foot p { margin: 4px 0 0; }
+.ae-board-who { color: var(--royal-blue); font-weight: 700; }
+.ae-board-who.is-empty { color: var(--warning); }
+.ae-board-ideas { margin-top: 4px; color: var(--muted); }
+.ae-board-ideas summary { font-weight: 700; cursor: pointer; }
