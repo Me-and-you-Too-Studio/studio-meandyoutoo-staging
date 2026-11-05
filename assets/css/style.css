@@ -17265,7 +17265,7 @@ body.sidebar-collapsed .sidebar-footer .profile-logout { display: none; }
 
 /* Parcours guidé « Ma première campagne » (app.js, GUIDE_STAGES) : encart fixe au-dessus du chat, réductible en pastille. */
 .qs-guide { margin-top: 8px; }
-.help-guide-start { margin: 14px 0 0; }
+.help-guide-start { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 0; }
 .studio-help-button { text-decoration: none; }
 .studio-guide { position: fixed; right: 20px; bottom: 96px; z-index: 900; width: min(340px, calc(100vw - 32px)); border-radius: var(--radius-md); background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lg); border: 1px solid var(--green-blue); }
 .studio-guide-pill { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 14px; border: 0; border-radius: var(--radius-md) var(--radius-md) 0 0; background: var(--green-blue-soft); color: var(--green-blue-dark); font: inherit; font-size: .85rem; font-weight: 800; text-align: left; text-decoration: none; cursor: pointer; }
