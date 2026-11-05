@@ -48,6 +48,7 @@
     requestedManage = params.get("manage") === "1";
   let organization = null,
     invitationsEnabled = false,
+    licenceDefined = false,
     users = new Map(),
     projects = new Map(),
     catalogThemes = [],
@@ -1047,7 +1048,8 @@
       // Une personne en attente s'invite depuis sa ligne, par exemple devant elle.
       (u.invitation_pending
         ? '<button type="button" data-send-invitation="' + esc(u.id) + '" style="background:#007883;color:#fff' +
-          (invitationsEnabled ? '">' : ';opacity:.5" disabled title="Disponible après le go de la mise en production">') + "Envoyer</button>"
+          (!invitationsEnabled ? ';opacity:.5" disabled title="Disponible après le go de la mise en production">'
+            : !licenceDefined ? ';opacity:.5" disabled title="Définissez d’abord la licence de ce client">' : '">') + "Envoyer</button>"
         : "") +
       (u.must_change_password && u.active
         ? '<button data-resend-client="' + u.id + '">Renvoyer</button>'
@@ -1075,17 +1077,60 @@
   function invitationsToSend() {
     return orgUsers(organization).filter((u) => u.invitation_pending === true);
   }
+  // Licence du client : à choisir avant la première invitation, depuis le dossier.
+  const LICENCE_LABELS = { annual_invoice: "Annuelle sur facture", monthly_invoice: "Mensuelle sur facture", launch: "Offerte – lancement" };
+  function licenceHtml() {
+    const end = organization.studio_licence_ends_at;
+    if (end) return '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px"><span>Licence Studio : <strong>' + esc(LICENCE_LABELS[organization.studio_licence_plan] || "Licence") + "</strong> · du " + date(organization.studio_licence_starts_at) + " au " + date(end) + '</span><button class="button button-ghost" type="button" data-client-licence>Modifier la licence</button></div>';
+    if (licenceDefined) return "";
+    return '<div class="admin-pack-alert"><div><strong>Licence à définir</strong><span>Choisissez la formule et la date de départ avant d’envoyer les invitations.</span></div><div><button class="button button-primary" type="button" data-client-licence>Définir la licence</button></div></div>';
+  }
+  function openClientLicence() {
+    document.getElementById("client-licence-dialog")?.remove();
+    const day = (value) => String(value || "").slice(0, 10), has = Boolean(organization.studio_licence_ends_at);
+    const today = new Date().toISOString().slice(0, 10);
+    const addMonths = (text, months) => {
+      const [y, m, d] = text.split("-").map(Number), next = new Date(Date.UTC(y, m - 1 + months, d));
+      if (next.getUTCDate() !== d) next.setUTCDate(0);
+      return next.toISOString().slice(0, 10);
+    };
+    const endFor = (plan, start) => addMonths(start, plan === "monthly_invoice" ? 1 : 12);
+    const plan0 = LICENCE_LABELS[organization.studio_licence_plan] ? organization.studio_licence_plan : "annual_invoice";
+    const start0 = has ? day(organization.studio_licence_starts_at) || today : today;
+    const dialog = document.createElement("dialog");
+    dialog.id = "client-licence-dialog";
+    dialog.className = "admin-dialog campaign-rename-dialog";
+    dialog.innerHTML = '<form method="dialog"><button class="admin-dialog-close" value="cancel" aria-label="Fermer">×</button><p class="eyebrow">Licence Studio</p><h2>' + esc(organization.name || "") + '</h2>' +
+      '<label class="field"><span>Formule</span><select data-licence-plan>' + Object.entries(LICENCE_LABELS).map(([key, label]) => '<option value="' + key + '"' + (key === plan0 ? " selected" : "") + ">" + label + "</option>").join("") + "</select></label>" +
+      '<p class="section-desc">' + (has ? "Le renouvellement ne change pas les dates du pack." : "Si le client a encore des crédits, son pack démarre à la même date, pour 12 mois.") + "</p>" +
+      '<div class="admin-licence-dates"><label class="field"><span>Début</span><input type="date" data-licence-start value="' + start0 + '"></label><label class="field"><span>Fin</span><input type="date" data-licence-end value="' + (has ? day(organization.studio_licence_ends_at) : endFor(plan0, start0)) + '"></label></div>' +
+      '<p class="form-error" data-licence-error hidden></p><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" type="button" data-licence-save>Enregistrer</button></div></form>';
+    document.body.append(dialog);
+    const plan = dialog.querySelector("[data-licence-plan]"), start = dialog.querySelector("[data-licence-start]"), end = dialog.querySelector("[data-licence-end]"), error = dialog.querySelector("[data-licence-error]");
+    const resetEnd = () => { if (start.value) end.value = endFor(plan.value, start.value); };
+    plan.onchange = resetEnd;
+    start.onchange = resetEnd;
+    dialog.querySelector("[data-licence-save]").onclick = async () => {
+      error.hidden = true;
+      if (!start.value || !end.value || end.value <= start.value) { error.textContent = "La fin doit être postérieure au début."; error.hidden = false; return; }
+      try {
+        await StudioAPI.request("/api/admin/organizations/" + encodeURIComponent(organization.id) + "/studio-licence", { method: "PUT", body: JSON.stringify({ plan: plan.value, startsAt: start.value, endsAt: end.value }) });
+        dialog.close();
+        dialog.remove();
+        await load();
+      } catch (e) { error.textContent = e.message; error.hidden = false; }
+    };
+    dialog.showModal();
+  }
   async function sendClientInvitation(userId) {
     const user = invitationsToSend().find((u) => String(u.id) === String(userId));
-    if (!invitationsEnabled || !user) return;
+    if (!invitationsEnabled || !licenceDefined || !user) return;
     const name = contactDisplayName(user);
     const ok = await StudioModal.confirm({
       eyebrow: "Invitation",
       type: "warning",
       title: "Inviter " + name + " ?",
-      message: "Un e-mail de création de mot de passe part maintenant à " + (user.email || name) + ". " +
-        (organization.studio_licence_ends_at ? "" : "La licence Studio de " + (organization.name || "ce client") + " démarre aujourd’hui pour 12 mois ; son pack prend les mêmes dates s’il lui reste des crédits (sinon il devra racheter). ") +
-        "Personne d’autre ne reçoit d’e-mail.",
+      message: "Un e-mail de création de mot de passe part maintenant à " + (user.email || name) + ". Personne d’autre ne reçoit d’e-mail.",
       cancelLabel: "Annuler",
       confirmLabel: "Envoyer",
     });
@@ -1094,13 +1139,12 @@
       const result = await StudioAPI.request("/api/admin/organizations/" + encodeURIComponent(organization.id) + "/pending-invitations/send", { method: "POST", body: JSON.stringify({ userId: user.id }) });
       const sent = Array.isArray(result?.sent) ? result.sent[0] : null;
       await load();
-      const licence = result?.licence ? " Licence Studio démarrée le " + date(result.licence.startsAt) + " pour 12 mois" + (result.licence.packAligned ? ", pack aux mêmes dates." : " ; pack à 0 crédit inchangé (à racheter).") : "";
       if (!sent) {
         StudioModal.alert({ eyebrow: "Invitation", title: "Rien à envoyer", message: "Cette invitation n’est plus à envoyer." });
       } else if (sent.sent === false) {
         StudioModal.alert({ eyebrow: "Invitation", type: "error", title: "Invitation non partie", message: "Rien n’a été reçu par " + sent.email + ". Cette personne reste à inviter : cliquez à nouveau sur « Envoyer »." });
       } else {
-        StudioModal.alert({ eyebrow: "Invitation", title: "Invitation envoyée", message: sent.email + "." + licence });
+        StudioModal.alert({ eyebrow: "Invitation", title: "Invitation envoyée", message: sent.email + "." });
       }
     } catch (error) {
       StudioModal.alert({ title: "Envoi impossible", message: error.message, type: "error" });
@@ -1350,8 +1394,9 @@
     bindAdminComments($("#client-ads"));
     renderContacts();
     $("#client-users").innerHTML =
-      (orgUsers(organization).map(userRow).join("") ||
+      licenceHtml() + (orgUsers(organization).map(userRow).join("") ||
       '<div class="admin-empty"><strong>Aucun compte utilisateur</strong><span>Ajoutez un accès avec « + Ajouter un accès », ou reprenez ses contacts HubSpot depuis Clients › « Importer depuis HubSpot ».</span></div>');
+    $$("[data-client-licence]").forEach((button) => { button.onclick = openClientLicence; });
     $$("[data-send-invitation]").forEach((button) => { button.onclick = () => sendClientInvitation(button.dataset.sendInvitation); });
     $("#client-credits").innerHTML =
       '<div class="admin-pack-heading"><div><span class="eyebrow">Gestion du pack</span><h2>Crédits et validité</h2><p>Les crédits utilisés sont recalculés à chaque lecture du moteur stats. Une correction à la main reste possible et prend le dessus.</p></div><span id="client-pack-status" class="admin-pack-status ' + (organization.pack_unlimited ? 'is-unlimited' : '') + '">' + (organization.pack_unlimited ? 'Pack illimité' : fmt(rem) + ' restants') + '</span></div>' +
@@ -2547,6 +2592,7 @@
       }
       organization = data?.organization || null;
       invitationsEnabled = data?.invitationsEnabled === true;
+      licenceDefined = data?.licenceDefined === true;
       if (!organization) {
         showError(
           "Dossier client introuvable. Revenez au cockpit clients et ouvrez un client.",
