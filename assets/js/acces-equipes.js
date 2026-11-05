@@ -113,12 +113,15 @@
   function renderFolders(){
     var everyone=data.users.filter(function(u){return u.suggestion!=='pending'&&(u.accessLevel==='owner'||u.scope==='all');}).length;
     // On nomme ce qui n'est rangé nulle part (campagne ou action du Cockpit, avec son type et sa date), pour que le client s'y retrouve.
-    var loose=data.campaigns.filter(function(c){return !c.teamFolderId;}).map(function(c){return 'la campagne « '+c.name+' »';})
-      .concat(actions().filter(function(a){return !a.teamFolderId;}).map(function(a){return 'l’action du Cockpit « '+a.title+' » ('+[a.kindLabel,shortDate(a.date)].filter(Boolean).join(', ')+')';}));
-    var shown=loose.slice(0,5),more=loose.length-shown.length;
+    var loose=unfiledCampaigns().map(function(c){return {icon:'📣',title:c.name,sub:['Campagne',c.theme].filter(Boolean).join(' · ')};})
+      .concat(unfiledActions().map(function(a){return {icon:a.icon,title:a.title,sub:[a.kindLabel,shortDate(a.date),a.theme].filter(Boolean).join(' · ')};}));
+    var looseRows=function(list){return '<ul class="ae-unfiled-list">'+list.map(function(x){return '<li><span class="ae-unfiled-icon" aria-hidden="true">'+esc(x.icon)+'</span><span><strong>'+esc(x.title)+'</strong><small>'+esc(x.sub)+'</small></span></li>';}).join('')+'</ul>';};
+    var shown=loose.slice(0,5),rest=loose.slice(5),many=loose.length>1;
     $('ae-unfiled').hidden=!loose.length||!data.teamFolders.length;
-    $('ae-unfiled').textContent='Pas encore rangé'+(loose.length>1?'es':'e')+' dans un dossier : '+(more?shown.join(', ')+' et '+more+' autre'+(more>1?'s':''):shown.slice(0,-1).join(', ')+(shown.length>1?' et ':'')+shown[shown.length-1])+
-      '. Seuls les comptes « Toutes les campagnes » '+(loose.length>1?'les':'la')+' voient. Pour '+(loose.length>1?'les':'la')+' ranger, cliquez sur « + Ajouter… » dans le dossier voulu. Une action de toute l’entreprise, comme un séminaire de direction, peut rester sans dossier.';
+    $('ae-unfiled').innerHTML='<p class="ae-unfiled-title">'+(many?loose.length+' éléments pas encore rangés':'1 élément pas encore rangé')+' dans un dossier</p>'+
+      '<p>Seuls les comptes « Toutes les campagnes » '+(many?'les':'le')+' voient.</p>'+looseRows(shown)+
+      (rest.length?'<details class="ae-unfiled-more"><summary>Voir '+(rest.length>1?'les '+rest.length+' autres':'l’autre')+'</summary>'+looseRows(rest)+'</details>':'')+
+      '<p class="ae-unfiled-help">Pour '+(many?'les':'le')+' ranger, cliquez sur « + Ajouter… » dans le dossier voulu. Une action de toute l’entreprise, comme un séminaire de direction, peut rester sans dossier.</p>';
     var proposed=proposals();
     $('ae-actions-proposal').hidden=!proposed.length||!data.canEdit;
     $('ae-actions-proposal-text').textContent=proposed.length+' action'+(proposed.length>1?'s':'')+' du Cockpit évoque'+(proposed.length>1?'nt':'')+' un de vos dossiers d’après leur thématique ('+Array.from(new Set(proposed.map(function(a){return folderName(a.proposedFolderId);}))).join(', ')+').';
