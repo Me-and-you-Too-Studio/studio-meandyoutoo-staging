@@ -246,7 +246,7 @@
     $('ae-invite-preview').innerHTML='<p>Bonjour '+esc(inviting.firstName||'')+',</p><p>'+esc(inviter?inviter+' vous invite à rejoindre le Studio Me&YouToo de l’entreprise '+org+'.':'L’équipe Me&YouToo vient de créer pour vous un accès au Studio Me&YouToo, rattaché à l’entreprise '+org+'.')+'</p>'+
       (note?'<blockquote>'+esc(note)+'</blockquote>':'')+
       '<div class="ae-preview-studio"><p><strong>'+esc(PRESENTATION.lead)+'</strong></p><ul>'+PRESENTATION.points.map(function(p){return '<li>'+esc(p)+'</li>';}).join('')+'</ul>'+(access?'<p><strong>Votre accès :</strong> '+esc(access)+'</p>':'')+'</div>'+
-      '<p><span class="ae-fake-button">Créer mon mot de passe</span></p><p class="ae-muted">Ce lien est personnel, utilisable une seule fois et valable 72 heures.</p>';
+      '<p><span class="ae-fake-button">Créer mon mot de passe</span></p><p class="ae-muted">Ce lien est personnel, utilisable une seule fois et valable 72 heures. Lien expiré ? Contactez Me&amp;YouToo pour en recevoir un nouveau.</p>';
   }
   async function openInvite(user){
     inviting=user;
