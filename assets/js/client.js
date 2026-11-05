@@ -1079,11 +1079,19 @@
   }
   // Licence du client : à choisir avant la première invitation, depuis le dossier.
   const LICENCE_LABELS = { annual_invoice: "Annuelle sur facture", monthly_invoice: "Mensuelle sur facture", launch: "Offerte – lancement" };
-  function licenceHtml() {
+  function renderLicence() {
+    let box = $("#client-licence-summary");
+    if (!box) {
+      $("#client-account-manager")?.insertAdjacentHTML("afterend", '<div id="client-licence-summary" class="client-account-manager" style="display:flex;flex-wrap:wrap"></div>');
+      box = $("#client-licence-summary");
+      if (!box) return;
+    }
     const end = organization.studio_licence_ends_at;
-    if (end) return '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px"><span>Licence Studio : <strong>' + esc(LICENCE_LABELS[organization.studio_licence_plan] || "Licence") + "</strong> · du " + date(organization.studio_licence_starts_at) + " au " + date(end) + '</span><button class="button button-ghost" type="button" data-client-licence>Modifier la licence</button></div>';
-    if (licenceDefined) return "";
-    return '<div class="admin-pack-alert"><div><strong>Licence à définir</strong><span>Choisissez la formule et la date de départ avant d’envoyer les invitations.</span></div><div><button class="button button-primary" type="button" data-client-licence>Définir la licence</button></div></div>';
+    box.innerHTML = "<span>Licence Studio</span>" + (end
+      ? "<strong>" + esc(LICENCE_LABELS[organization.studio_licence_plan] || "Licence") + "</strong> · du " + date(organization.studio_licence_starts_at) + " au " + date(end) + ' <button class="button button-ghost" type="button" data-client-licence>Modifier</button>'
+      : licenceDefined
+        ? "<strong>Abonnement en ligne</strong>"
+        : '<strong style="color:#b42318">À définir avant d’inviter</strong> <button class="button button-primary" type="button" data-client-licence>Définir la licence</button>');
   }
   function openClientLicence() {
     document.getElementById("client-licence-dialog")?.remove();
@@ -1259,6 +1267,7 @@
     // Fiche entreprise HubSpot à côté du nom du client.
     if (organization.hubspot_company_id) $("#client-name").insertAdjacentHTML("beforeend", StudioHubspot.link("company", organization.hubspot_company_id));
     renderAccountManager();
+    renderLicence();
     const clientLogo = $("#client-logo");
     const clientLogoUpload = $("#client-logo-upload");
     const clientLogoUploadLabel = $("#client-logo-upload-label");
@@ -1394,7 +1403,7 @@
     bindAdminComments($("#client-ads"));
     renderContacts();
     $("#client-users").innerHTML =
-      licenceHtml() + (orgUsers(organization).map(userRow).join("") ||
+      (orgUsers(organization).map(userRow).join("") ||
       '<div class="admin-empty"><strong>Aucun compte utilisateur</strong><span>Ajoutez un accès avec « + Ajouter un accès », ou reprenez ses contacts HubSpot depuis Clients › « Importer depuis HubSpot ».</span></div>');
     $$("[data-client-licence]").forEach((button) => { button.onclick = openClientLicence; });
     $$("[data-send-invitation]").forEach((button) => { button.onclick = () => sendClientInvitation(button.dataset.sendInvitation); });
