@@ -61,6 +61,16 @@
   function againLabel(k){return (state.reviewAgain||{})[k]||k;}
   function stars(n){return '<span class="dr-stars" role="img" aria-label="'+n+' sur 5">'+starsText(n)+'</span>';}
   function reviewLine(r){return stars(r.rating)+' <span class="dr-review-again">Je referais appel : '+esc(againLabel(r.again))+'</span>';}
+  // Invitation visible : cinq étoiles vides, pour que l'avis se repère sur la ligne avant d'être donné.
+  function reviewCta(attrs){return '<button type="button" class="dr-review-cta" '+attrs+'><span class="dr-stars is-empty" aria-hidden="true">★★★★★</span><span><strong>Donner mon avis</strong> <small>étoiles et commentaire</small></span></button>';}
+  // Bloc « avis » d'une action réalisée : l'avis et son commentaire s'il existe, sinon l'invitation.
+  function reviewBox(rv,id){
+    if(!rv)return '';
+    if(!rv.review)return canReview()?'<div class="dr-review-box">'+reviewCta('data-review="'+esc(id)+'"')+'</div>':'';
+    return '<div class="dr-review-box"><p class="dr-review-title">'+(canReview()?'Votre avis':'Avis du client')+'</p><p class="dr-review-line">'+reviewLine(rv.review)+'</p>'+
+      (rv.review.comment?'<p class="dr-review-comment">'+esc(rv.review.comment)+'</p>':'')+
+      (canReview()?'<button type="button" class="dr-link" data-review="'+esc(id)+'">Modifier l’avis</button>':'')+'</div>';
+  }
   // Résumé d'une fiche : moyenne, nombre d'avis, réponses données. Pas de classement entre prestataires.
   function reviewSummary(rows){
     var done=rows.filter(function(x){return x.review;}),n=done.length;
@@ -111,7 +121,7 @@
     dlg.innerHTML='<form method="dialog"><h2>Avis sur '+esc(name)+'</h2>'+reviewSummary(rows)+'<div class="dr-review-list">'+rows.map(function(a){var r=a.review;
       return '<article class="dr-review"><h4>'+esc(a.title)+'</h4><p class="dr-row-meta">'+esc(fmtDate(a.action_date))+'</p>'+
         (r?'<p class="dr-review-line">'+reviewLine(r)+'</p>'+(r.comment?'<p class="dr-row-notes">'+esc(r.comment)+'</p>':'')+'<p class="dr-row-meta">'+esc([r.author,'mis à jour le '+fmtDate(String(r.updatedAt).slice(0,10))].filter(Boolean).join(' · '))+'</p>':'<p class="dr-row-meta">Pas encore d’avis</p>')+
-        (canReview()?'<button type="button" class="dr-link" data-review="'+esc(a.id)+'">'+(r?'Modifier l’avis':'Donner un avis')+'</button>':'')+'</article>';
+        (canReview()?(r?'<button type="button" class="dr-link" data-review="'+esc(a.id)+'">Modifier l’avis</button>':reviewCta('data-review="'+esc(a.id)+'"')):'')+'</article>';
     }).join('')+'</div><div class="dr-dialog-actions"><button type="submit" class="button button-ghost">Fermer</button></div></form>';
     document.body.appendChild(dlg);
     dlg.addEventListener('close',function(){dlg.remove();});
@@ -122,7 +132,8 @@
     var rows=providerRows(key);if(!rows.length)return '';
     var n=rows.filter(function(x){return x.review;}).length;
     if(!n&&!canReview())return '';
-    return reviewSummary(rows)+'<button type="button" class="dr-link" data-reviews="'+esc(key)+'" data-name="'+esc(name)+'">'+(n?'Voir les avis →':'Donner un avis →')+'</button>';
+    var attrs='data-reviews="'+esc(key)+'" data-name="'+esc(name)+'"';
+    return n?reviewSummary(rows)+'<button type="button" class="dr-link" '+attrs+'>Voir les avis et commentaires →</button>':reviewCta(attrs);
   }
 
   // Actions du registre + campagnes de diagnostic, dans un même format d'affichage.
@@ -349,12 +360,12 @@
     var tools=it.type==='campaign'
       ?'<a class="dr-link" href="campagne-detail.html?projectId='+encodeURIComponent(it.id)+(organizationId?'':'')+'">Voir la campagne →</a>'
       :((canEdit?'<button type="button" class="button button-ghost" data-edit="'+esc(it.id)+'">Modifier</button><label class="button button-ghost dr-upload">Joindre un document<input type="file" accept="application/pdf,image/png,image/jpeg" data-upload="'+esc(it.id)+'" hidden></label><button type="button" class="button button-ghost" data-delete="'+esc(it.id)+'">Supprimer</button>':'')+
-        (isClient?'<button type="button" class="dr-link" data-accompany="'+esc(it.id)+'">Être accompagné sur cette action →</button>':''));
+        (isClient&&it.status!=='done'?'<button type="button" class="dr-link" data-accompany="'+esc(it.id)+'">Être accompagné sur cette action →</button>':''));
     return '<article class="dr-row" id="dr-'+esc(it.type+'-'+it.id)+'"><div class="dr-row-icon" aria-hidden="true">'+esc(k.icon)+'</div><div class="dr-row-main">'+
       '<p class="dr-row-kind">'+esc(it.type==='campaign'?'Diagnostic comportemental · Studio':k.label)+(it.meayt?' <span class="dr-badge is-meayt">Animée par Me&amp;YouToo</span>':'')+(it.recommended?' <span class="dr-badge is-reco">Recommandée par Me&amp;YouToo</span>':'')+' <span class="dr-badge st-'+esc(it.status)+'">'+esc(st)+'</span></p>'+
       '<h4>'+esc(it.title)+'</h4><p class="dr-row-when">'+esc(when)+'</p>'+(meta?'<p class="dr-row-meta">'+meta+'</p>':'')+(it.notes?'<p class="dr-row-notes">'+esc(it.notes)+'</p>':'')+
-      (rv&&rv.review?'<p class="dr-review-line">'+reviewLine(rv.review)+'</p>'+(rv.review.comment?'<p class="dr-row-notes">'+esc(rv.review.comment)+'</p>':''):'')+
-      (docs?'<div class="dr-docs">'+docs+'</div>':'')+'<div class="dr-row-tools">'+tools+(rv&&canReview()?'<button type="button" class="dr-link" data-review="'+esc(it.id)+'">'+(rv.review?'Modifier l’avis':'☆ Donner un avis')+'</button>':'')+'</div></div></article>';
+      reviewBox(rv,it.id)+
+      (docs?'<div class="dr-docs">'+docs+'</div>':'')+'<div class="dr-row-tools">'+tools+'</div></div></article>';
   }
 
   // ── Saisie ──
