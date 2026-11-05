@@ -45,11 +45,11 @@
 .ae-page select:focus-visible { border-color: var(--green-blue); box-shadow: var(--focus); }
 .ae-page select:disabled { background-color: var(--surface-soft); color: var(--muted); cursor: not-allowed; }
 .ae-row-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.ae-folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-.ae-page .ae-folder { padding: 20px 22px; display: flex; flex-direction: column; gap: 4px; }
+.ae-folder-grid { display: grid; gap: 10px; }
+.ae-page .ae-folder { padding: 0; }
 .ae-folder h3 { margin: 0; font-size: 1.08rem; }
 .ae-folder p { margin: 2px 0; }
-.ae-folder .ae-row-actions { margin-top: auto; padding-top: 10px; }
+.ae-folder .ae-row-actions { padding-top: 10px; }
 .ae-folder-count { color: var(--muted); font-size: .9rem; }
 .ae-folder-label { margin-top: 10px !important; font-size: .78rem; font-weight: 700; color: var(--muted); }
 .ae-ideas { margin-top: 8px !important; font-size: .85rem; padding: 10px 12px; border-radius: 10px; background: var(--sunny-yellow-soft); color: var(--warning); line-height: 1.45; }
@@ -167,3 +167,15 @@
 .ae-unfiled .ae-unfiled-help { margin-top: 12px; font-size: .9rem; }
 .ae-unfiled-name { flex: 1 1 280px; min-width: 0; }
 .ae-unfiled-list .ae-row-field { flex: 0 1 300px; }
+
+/* Dossiers d’équipe : une ligne par dossier, dépliable. */
+.ae-folder summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 14px 20px; cursor: pointer; list-style: none; }
+.ae-folder summary::-webkit-details-marker { display: none; }
+.ae-folder summary::after { content: "⌄"; margin-left: auto; color: var(--green-blue); font-size: 1.2rem; font-weight: 800; line-height: 1; transition: transform .15s; }
+.ae-folder[open] summary::after { transform: rotate(180deg); }
+.ae-folder summary:hover .ae-folder-name { color: var(--green-blue-dark); }
+.ae-folder-name { flex: 0 0 200px; min-width: 0; color: var(--royal-blue); font-size: 1.05rem; font-weight: 800; }
+.ae-folder-pill { padding: 3px 10px; border-radius: 999px; background: var(--surface-soft); color: var(--royal-blue); font-size: .82rem; font-weight: 700; }
+.ae-folder-pill.is-empty { background: var(--warning-soft); color: var(--warning); }
+.ae-folder-body { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 22px; padding: 2px 20px 16px; border-top: 1px solid var(--line); }
+@media (max-width: 900px) { .ae-folder-name { flex-basis: 100%; } .ae-folder-body { grid-template-columns: minmax(0, 1fr); } }

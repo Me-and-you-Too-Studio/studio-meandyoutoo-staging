@@ -137,19 +137,26 @@
       var team=data.users.filter(function(u){return u.suggestion!=='pending'&&u.accessLevel!=='owner'&&u.scope==='folders'&&u.folderIds.indexOf(f.id)>=0;});
       var ideas=functionsFor(f.name),inside=data.campaigns.filter(function(c){return c.teamFolderId===f.id;}),acts=actions().filter(function(a){return a.teamFolderId===f.id;});
       // Les campagnes du dossier, avec l’ajout et le retrait directement ici.
-      return '<article class="card ae-folder"><h3>📁 '+esc(f.name)+'</h3><p class="ae-folder-label">Campagnes de diagnostic ('+inside.length+')</p>'+
+      var plural=function(n,word){return n+' '+word+(n>1?'s':'');};
+      var seenBy=team.length?team.map(name).join(', '):'Personne de l’équipe';
+      return '<details class="card ae-folder" data-folder="'+esc(f.id)+'"'+(openFolders[f.id]?' open':'')+'><summary><span class="ae-folder-name">📁 '+esc(f.name)+'</span>'+
+        '<span class="ae-folder-pill">📣 '+plural(inside.length,'campagne')+'</span><span class="ae-folder-pill">🎯 '+plural(acts.length,'action')+'</span>'+
+        '<span class="ae-folder-pill'+(team.length?'':' is-empty')+'">👥 '+esc(seenBy)+'</span></summary><div class="ae-folder-body"><div><p class="ae-folder-label">Campagnes de diagnostic ('+inside.length+')</p>'+
         (inside.length?'<ul class="ae-folder-campaigns">'+inside.map(function(c){return '<li><span>'+esc(c.name)+'</span>'+(data.canEdit?'<button type="button" class="ae-link" data-unfile="'+esc(c.id)+'" aria-label="Retirer '+esc(c.name)+' du dossier">Retirer</button>':'')+'</li>';}).join('')+'</ul>':'<p class="ae-muted">Aucune campagne pour l’instant.</p>')+
         (data.canEdit&&unfiledCampaigns().length?'<button class="button button-secondary ae-add-campaigns" type="button" data-add-campaigns="'+esc(f.id)+'">+ Ajouter des campagnes</button>':'')+
         // Les actions du Cockpit (formations, conférences, dessins…) du dossier, rangées de la même façon.
-        '<p class="ae-folder-label">Actions du Cockpit ('+acts.length+')</p>'+
+        '</div><div><p class="ae-folder-label">Actions du Cockpit ('+acts.length+')</p>'+
         (acts.length?'<ul class="ae-folder-campaigns">'+acts.map(function(a){return '<li><span>'+esc(a.icon)+' '+esc(a.title)+' <small class="ae-muted">· '+esc(shortDate(a.date))+'</small></span>'+(data.canEdit?'<button type="button" class="ae-link" data-unfile-action="'+esc(a.id)+'" aria-label="Retirer '+esc(a.title)+' du dossier">Retirer</button>':'')+'</li>';}).join('')+'</ul>':'<p class="ae-muted">Aucune action pour l’instant.</p>')+
         (data.canEdit&&unfiledActions().length?'<button class="button button-secondary ae-add-campaigns" type="button" data-add-actions="'+esc(f.id)+'">+ Ajouter des actions</button>':'')+
-        '<p class="ae-folder-label">Visible par</p><p>'+(team.length?team.map(function(u){return '👤 '+esc(name(u));}).join(' · '):'<span class="ae-muted">Personne de l’équipe pour l’instant</span>')+'</p>'+
+        '</div><div><p class="ae-folder-label">Visible par</p><p>'+(team.length?team.map(function(u){return '👤 '+esc(name(u));}).join(' · '):'<span class="ae-muted">Personne de l’équipe pour l’instant</span>')+'</p>'+
         '<p class="ae-muted">+ '+everyone+' compte'+(everyone>1?'s':'')+' « Toutes les campagnes »</p>'+
         (ideas.length?'<p class="ae-ideas">'+(team.length?'Fonctions souvent associées':'Personne ne suit encore ce sujet. Les entreprises désignent souvent')+' : '+esc(ideas.join(' · '))+'</p>':'')+
-        (data.canEdit?'<div class="ae-row-actions"><button class="button button-ghost" type="button" data-rename="'+esc(f.id)+'">Renommer</button><button class="button button-ghost" type="button" data-delete-folder="'+esc(f.id)+'">Supprimer</button></div>':'')+'</article>';
+        (data.canEdit?'<div class="ae-row-actions"><button class="button button-ghost" type="button" data-rename="'+esc(f.id)+'">Renommer</button><button class="button button-ghost" type="button" data-delete-folder="'+esc(f.id)+'">Supprimer</button></div>':'')+'</div></div></details>';
     }).join('');
   }
+  // Un dossier déplié le reste quand la page se met à jour, par exemple après avoir rangé une campagne.
+  var openFolders={};
+  document.addEventListener('toggle',function(e){var d=e.target;if(d.matches&&d.matches('details[data-folder]'))openFolders[d.dataset.folder]=d.open;},true);
   function actions(){return data.actions||[];}
   // Une campagne ou une action déjà rangée n’est plus proposée ailleurs : pour la changer de dossier, on la retire d’abord du sien.
   function unfiledActions(){return actions().filter(function(a){return !a.teamFolderId;});}
