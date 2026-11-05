@@ -44,6 +44,12 @@ document.addEventListener('click',function(e){
   var w=window.HubSpotConversations&&window.HubSpotConversations.widget;
   if(w&&w.open){w.load&&w.status&&!w.status().loaded&&w.load();w.open();}else location.href='contact-client.html';
 });
+// Dans un article, un lien vers un tutoriel ouvre la vidéo dans la fenêtre du Studio, refermable, plutôt que dans un nouvel onglet.
+document.addEventListener('click',function(e){
+  var link=e.target.closest&&e.target.closest('a[href*="/tutos/"]'),m=link&&link.getAttribute('href').match(/\/tutos\/([a-z-]+)\/index\.html/);
+  if(!m||!window.StudioTutorial)return;
+  e.preventDefault();window.StudioTutorial.open(m[1]);
+});
 // « Lire le guide » depuis un écran : aide.html?sujet=début du titre. La fiche trouvée s'ouvre ; sinon, la recherche est pré-remplie.
 function norm(v){return String(v||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[’']/g,"'").toLowerCase().trim();}
 async function openSubject(subject){
