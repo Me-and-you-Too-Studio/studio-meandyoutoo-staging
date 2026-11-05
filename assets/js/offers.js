@@ -8,6 +8,16 @@
   try{user=window.StudioAPI&&StudioAPI.user?StudioAPI.user():null;}catch(e){}
   var isAdmin=mode==='studio'&&Boolean(user&&user.role==='admin')&&new URLSearchParams(location.search).get('audience')!=='client';
   var isClient=mode==='studio'&&Boolean(user&&user.role==='client');
+  // Ouvert depuis le Cockpit D&I (?from=cockpit) : bouton de retour, sur le même client pour l'admin.
+  (function(){
+    var p=new URLSearchParams(location.search),head=document.querySelector('.page-head');
+    if(mode!=='studio'||p.get('from')!=='cockpit'||!head)return;
+    var org=p.get('organizationId'),back=document.createElement('a');
+    back.className='button button-secondary offers-back-cockpit';
+    back.href=isAdmin?(org?'cockpit-dei.html?organizationId='+encodeURIComponent(org):'cockpit-dei.html'):'cockpit-dei.html?audience=client';
+    back.textContent='← Retour au Cockpit D&I';
+    head.prepend(back);
+  })();
   // Formulaire HubSpot « Studio Me&YouToo – Demande d'information offre » (visiteurs non connectés).
   // Tant que le GUID est vide, le bouton public renvoie vers la page Contact.
   var HUBSPOT_PORTAL_ID='139575435',PUBLIC_FORM_GUID='167becb7-4700-4c9f-aa77-a92641d721da';

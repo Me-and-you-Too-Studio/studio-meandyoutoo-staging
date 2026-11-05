@@ -28,7 +28,7 @@
     return picked.concat(splitValues(form.elements[name+'__other']&&form.elements[name+'__other'].value)).join(', ');
   }
   // Onglets du cockpit (mémorisés dans l'adresse : #apercu, #actions, #prestataires).
-  var TABS={apercu:'Vue d’ensemble',actions:'Actions',prestataires:'Prestataires'};
+  var TABS={apercu:'Vue d’ensemble',actions:'Actions',prestataires:'Prestataires'},TAB_ICONS={apercu:'🧭',actions:'🎯',prestataires:'🤝'};
   var tabsEl=document.getElementById('dei-tabs'),yearEl=document.getElementById('dei-year');
   var state={year:Number(params.get('year'))||new Date().getFullYear(),data:null,tab:TABS[location.hash.slice(1)]?location.hash.slice(1):'apercu',focus:/^action-\d+$/.test(params.get('focus')||'')?params.get('focus'):null};
 
@@ -251,7 +251,7 @@
     if(!tabsEl)return;
     var counts={actions:items().length,prestataires:(state.data.providers||[]).length};
     tabsEl.hidden=false;
-    tabsEl.innerHTML=Object.keys(TABS).map(function(k){return '<button type="button" role="tab" class="dr-tab'+(k===state.tab?' is-current':'')+'" aria-selected="'+(k===state.tab)+'" data-tab="'+k+'">'+esc(TABS[k])+(counts[k]!=null?' <span>'+counts[k]+'</span>':'')+'</button>';}).join('');
+    tabsEl.innerHTML=Object.keys(TABS).map(function(k){return '<button type="button" role="tab" class="dr-tab'+(k===state.tab?' is-current':'')+'" aria-selected="'+(k===state.tab)+'" data-tab="'+k+'"><b aria-hidden="true">'+TAB_ICONS[k]+'</b>'+esc(TABS[k])+(counts[k]!=null?' <span>'+counts[k]+'</span>':'')+'</button>';}).join('');
   }
   function setTab(tab){state.tab=tab;try{history.replaceState(null,'','#'+tab);}catch(e){}render();window.scrollTo({top:(tabsEl||root).getBoundingClientRect().top+window.scrollY-16,behavior:'smooth'});}
 

@@ -10,6 +10,10 @@
     if(link)link.href=adminView?(orgParam?'calendrier.html?from=cockpit&organizationId='+encodeURIComponent(orgParam):'calendrier.html?from=cockpit'):'calendrier.html?audience=client&from=cockpit';
   });
 
+  // « Nos solutions » garde l'origine, pour proposer le retour au Cockpit, sur le même client pour l'admin.
+  var solutionsLink=document.getElementById('dei-solutions-link'),solutionsOrg=new URLSearchParams(location.search).get('organizationId');
+  if(solutionsLink&&adminView)solutionsLink.href=solutionsOrg?'offres.html?from=cockpit&organizationId='+encodeURIComponent(solutionsOrg):'offres.html?from=cockpit';
+
   // Mode admin (cockpit-dei.html?organizationId=…) : on saisit le registre d'un client ; le parcours ne concerne que le compte connecté.
   var adminOrganizationId=isAdmin?new URLSearchParams(location.search).get('organizationId'):null;
   if(adminOrganizationId){

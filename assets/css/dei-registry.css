@@ -67,10 +67,11 @@
 .dei-cockpit-hero-live .dei-cockpit-intro{max-width:820px}
 .dei-registry{margin-top:8px}
 .dr-tabs{position:sticky;top:0;z-index:5;display:flex;gap:4px;margin:8px 0 18px;padding:6px;background:var(--royal-blue-tint,#f5f7fb);border-radius:14px;overflow-x:auto}
-.dr-tab{flex:0 0 auto;border:0;background:transparent;border-radius:10px;padding:9px 16px;font:inherit;font-weight:700;color:var(--ink,#273a64);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-.dr-tab span{font-size:.75rem;background:#fff;border-radius:999px;padding:1px 8px;color:var(--muted,#54607e)}
-.dr-tab.is-current{background:#fff;box-shadow:0 2px 8px rgba(39,58,100,.12)}
-.dr-tab.is-current span{background:var(--royal-blue,#273a64);color:#fff}
+.dr-tab{flex:0 0 auto;border:1px solid #cfd8e6;background:#fff;border-radius:10px;padding:9px 16px;font:inherit;font-weight:700;color:var(--ink,#273a64);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:border-color .15s,box-shadow .15s,transform .15s}
+.dr-tab:hover{border-color:var(--green-blue,#007883);box-shadow:0 4px 12px rgba(39,58,100,.12);transform:translateY(-1px)}
+.dr-tab span{font-size:.75rem;background:var(--royal-blue-tint,#f5f7fb);border-radius:999px;padding:1px 8px;color:var(--muted,#54607e)}
+.dr-tab.is-current{background:var(--royal-blue,#273a64);border-color:var(--royal-blue,#273a64);color:#fff}
+.dr-tab.is-current span{background:#fff;color:var(--royal-blue,#273a64)}
 .is-tab-hidden{display:none!important}
 .dr-providers{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
 .dr-provider{background:#fff;border:1px solid var(--line,#e2e7f1);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
@@ -253,3 +254,6 @@ button.dr-kpi:hover,button.dr-kpi:focus-visible{border-color:var(--green-blue,#0
 .dr-tl-gap.is-past b{color:var(--muted,#54607e);font-weight:700}
 .dr-tl-gap.is-past:hover{border-color:var(--muted,#54607e)}
 .dr-tl-cell.is-past{min-height:44px;border-radius:8px;background:#f5f7fb;color:#7a849c;font-size:.68rem}
+.dei-solutions-link{transition:transform .15s,box-shadow .15s}
+.dei-solutions-link:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(0,120,131,.3)}
+.dr-tab b{font-weight:400}
