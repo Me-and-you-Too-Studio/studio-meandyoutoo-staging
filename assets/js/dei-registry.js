@@ -264,7 +264,7 @@
       '<p class="dr-review-privacy">'+(isAdmin?'🔒 Les avis de ce client sur ses prestataires sont masqués à Me&amp;YouToo : seuls ceux sur nos propres actions apparaissent ici.':'🔒 Vos avis sur vos prestataires restent internes à votre entreprise : ils ne leur sont jamais transmis et Me&amp;YouToo ne les voit pas. Seuls vos avis sur les actions de Me&amp;YouToo sont lus par notre équipe.')+'</p></div>'+
       (canEdit?'<div class="dr-head-actions"><button type="button" class="button button-primary" data-provider-add>＋ Ajouter un prestataire</button></div>':'')+'</div>';
     // Me&YouToo n'a pas de fiche dans l'annuaire : sa carte n'apparaît que s'il a mené des actions réalisées.
-    var meayt=providerRows('meayt').length?'<article class="dr-provider"><h4>Me&amp;YouToo</h4><p class="dr-row-meta">Actions animées par Me&amp;YouToo</p>'+reviewsFooter('meayt','Me&YouToo')+'</article>':'';
+    var meayt=providerRows('meayt').length?'<article class="dr-provider"><h4 class="dr-meayt-by">'+MEAYT_LOGO+'Me&amp;YouToo</h4><p class="dr-row-meta">Actions animées par Me&amp;YouToo</p>'+reviewsFooter('meayt','Me&YouToo')+'</article>':'';
     if(!list.length&&!meayt)return head+'<p class="dr-empty">Aucun prestataire enregistré pour le moment.</p>';
     return head+'<div class="dr-providers">'+meayt+list.map(function(p){
       var contact=[p.first_name,p.last_name].filter(Boolean).join(' ');
@@ -357,12 +357,14 @@
     setTimeout(function(){var el=document.getElementById('dr-'+focus);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('is-focus');setTimeout(function(){el.classList.remove('is-focus');},1600);}},150);}
 
   function campaignName(id){var c=((state.data.diagnostics||{}).campaigns||[]).find(function(x){return String(x.id)===String(id);});return c?c.name:'';}
+  var MEAYT_LOGO='<img class="dr-meayt-logo" src="assets/img/brand/logo-meayt-small.png" alt="">';
   function recoTip(id){var n=campaignName(id);return 'Recommandée lors de la restitution'+(n?' du diagnostic « '+n+' »':' de votre diagnostic');}
   function row(it){
     var k=kind(it.kind),st=(state.data.statuses||{})[it.status]||it.status,canEdit=state.data.canEdit&&it.type==='action';
     var when=fmtDate(it.start||it.date)+(it.end&&it.end!==it.date?' → '+fmtDate(it.end):'');
     var rv=it.type==='action'&&it.status==='done'?reviewRow(it.id):null;
-    var meta=[it.theme,it.audience,it.people!=null?num(it.people)+(it.type==='campaign'?' participations':' personnes touchées'):'',it.provider?'avec '+it.provider:'',it.recommended?recoTip(it.campaignId):''].filter(Boolean).map(esc).join(' · ');
+    var by=it.meayt?'<span class="dr-meayt-by">avec '+MEAYT_LOGO+'Me&amp;YouToo</span>':it.provider?esc('avec '+it.provider):'';
+    var meta=[it.theme,it.audience,it.people!=null?num(it.people)+(it.type==='campaign'?' participations':' personnes touchées'):''].filter(Boolean).map(esc).concat(by?[by]:[],it.recommended?[esc(recoTip(it.campaignId))]:[]).join(' · ');
     var docs=(it.documents||[]).map(function(doc){return '<span class="dr-doc"><button type="button" class="dr-link" data-download="'+esc(it.id)+':'+esc(doc.id)+'" data-filename="'+esc(doc.filename)+'">📎 '+esc(doc.filename)+'</button>'+(canEdit?'<button type="button" class="dr-x" data-doc-delete="'+esc(it.id)+':'+esc(doc.id)+'" aria-label="Retirer '+esc(doc.filename)+'">×</button>':'')+'</span>';}).join('');
     var tools=it.type==='campaign'
       ?'<a class="dr-link" href="campagne-detail.html?projectId='+encodeURIComponent(it.id)+(organizationId?'':'')+'">Voir la campagne →</a>'

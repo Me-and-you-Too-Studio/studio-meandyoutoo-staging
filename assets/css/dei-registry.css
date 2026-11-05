@@ -33,6 +33,10 @@
 .dr-row{display:flex;gap:14px;background:#fff;border:1px solid var(--line,#e2e7f1);border-radius:14px;padding:14px 16px;transition:box-shadow .3s}
 .dr-row.is-focus{box-shadow:0 0 0 3px var(--green-blue,#007883)}
 .dr-row-icon{font-size:1.4rem;line-height:1}
+.dr-meayt-by{display:inline-flex;align-items:center;gap:5px;vertical-align:middle}
+.dr-meayt-logo{height:24px;width:auto;flex:none}
+.dr-provider h4.dr-meayt-by{display:flex;gap:8px}
+.dr-provider h4 .dr-meayt-logo{height:32px}
 .dr-row-main{flex:1;min-width:0}
 .dr-row-main h4{margin:2px 0;font-size:1.02rem}
 .dr-row-kind{margin:0;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--green-blue,#007883);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
