@@ -69,6 +69,7 @@
     if(!rv.review)return canReview()?'<div class="dr-review-box">'+reviewCta('data-review="'+esc(id)+'"')+'</div>':'';
     return '<div class="dr-review-box"><p class="dr-review-title">'+(canReview()?'Votre avis':'Avis du client')+'</p><p class="dr-review-line">'+reviewLine(rv.review)+'</p>'+
       (rv.review.comment?'<p class="dr-review-comment">'+esc(rv.review.comment)+'</p>':'')+
+      (rv.review.reminderDate?'<p class="dr-row-meta">🔔 Rappel prévu le '+esc(fmtDate(rv.review.reminderDate))+'</p>':'')+
       (canReview()?'<button type="button" class="dr-link" data-review="'+esc(id)+'">Modifier l’avis</button>':'')+'</div>';
   }
   // Résumé d'une fiche : moyenne, nombre d'avis, réponses données. Pas de classement entre prestataires.
@@ -92,6 +93,9 @@
       '<fieldset class="dr-rating"><legend>Je referais appel à '+(a.led_by_meayt?'Me&amp;YouToo':'ce prestataire')+'</legend><div class="dr-chips">'+
       Object.keys(again).map(function(k){return '<label class="dr-chip"><input type="radio" name="again" value="'+esc(k)+'" required'+(r.again===k?' checked':'')+'><span>'+esc(again[k])+'</span></label>';}).join('')+'</div></fieldset>'+
       '<label class="dr-field"><span>Commentaire (facultatif)</span><textarea name="comment" rows="4" maxlength="1000" placeholder="Ce qui a bien fonctionné, ce qui serait à ajuster la prochaine fois. Parlez de la prestation, pas de la personne.">'+esc(r.comment||'')+'</textarea></label>'+
+      '<label class="dr-check"><input type="checkbox" name="reminder"'+(r.reminderDate?' checked':'')+'> Prévoir un rappel</label>'+
+      '<div data-reminder'+(r.reminderDate?'':' hidden')+'><label class="dr-field"><span>Date du rappel</span><input type="date" name="reminderDate" value="'+esc(r.reminderDate||'')+'"></label>'+
+      '<p class="dr-row-meta">Une tâche « Recontacter '+(a.led_by_meayt?'Me&amp;YouToo':'ce prestataire')+' » s’ajoute à votre Calendrier, visible par votre équipe, sans la note ni le commentaire.</p></div>'+
       '<p class="dr-review-privacy">'+(a.led_by_meayt?'🔓 Cet avis porte sur une action de Me&amp;YouToo : notre équipe peut le lire.':'🔒 Cet avis reste interne à votre entreprise : il n’est jamais transmis au prestataire, et Me&amp;YouToo ne le voit pas.')+'</p>'+
       '<p class="dr-error" hidden></p><div class="dr-dialog-actions">'+(a.review?'<button type="button" class="button button-ghost" data-review-remove>Retirer l’avis</button>':'')+
       '<button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
@@ -100,6 +104,9 @@
     var labels=[].slice.call(dlg.querySelectorAll('.dr-rating-stars label'));
     function paint(){var v=Number((form.elements.rating.value)||0);labels.forEach(function(l,i){l.classList.toggle('is-on',i<v);});caption.textContent=v?REVIEW_SCALE[v-1]:'';}
     form.addEventListener('change',paint);paint();
+    var reminderBox=dlg.querySelector('[data-reminder]'),reminderDate=form.elements.reminderDate;
+    function syncReminder(){var on=form.elements.reminder.checked;reminderBox.hidden=!on;reminderDate.required=on;}
+    form.elements.reminder.addEventListener('change',syncReminder);syncReminder();
     dlg.addEventListener('close',function(){dlg.remove();});
     dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
     var url='/api/dei/actions/'+encodeURIComponent(a.id)+'/review';
@@ -110,7 +117,7 @@
     form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
       if(!form.checkValidity()){form.reportValidity();return;}
       var f=new FormData(form);
-      try{await StudioAPI.request(url,{method:'PUT',body:JSON.stringify({rating:Number(f.get('rating')),again:f.get('again'),comment:f.get('comment')})});dlg.close();load();}
+      try{await StudioAPI.request(url,{method:'PUT',body:JSON.stringify({rating:Number(f.get('rating')),again:f.get('again'),comment:f.get('comment'),reminderDate:form.elements.reminder.checked?f.get('reminderDate'):''})});dlg.close();load();}
       catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
     };
     dlg.showModal();
