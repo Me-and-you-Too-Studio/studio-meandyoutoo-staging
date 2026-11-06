@@ -346,7 +346,7 @@
     'personnalisation.html':'Personnaliser les profils','parametrage.html':'Paramétrer votre campagne','validation.html':'Vérifier et transmettre',
     'mes-campagnes.html':'Où en est ma campagne','campagne-detail.html':'Où en est ma campagne','kit-communication.html':'Utiliser le kit de communication',
     'calendrier.html':'Organiser l’année','cockpit-dei.html':'Piloter avec le Cockpit D&I','bilan-dei.html':'Le Bilan D&I annuel',
-    'acces-equipes.html':'Inviter un collègue','notifications.html':'Suivre vos notifications','account.html':'Gérer votre compte','packs.html':'Commander un pack'
+    'acces-equipes.html':'Créer des dossiers','notifications.html':'Suivre vos notifications','account.html':'Gérer votre compte','packs.html':'Commander un pack'
   };
   function currentPage(){return location.pathname.split('/').pop()||'accueil.html';}
   function pageHelp(page){return PAGE_HELP[page]||(/^theme(-[a-z-]+)?\.html$/.test(page)?PAGE_HELP['bibliotheque.html']:'');}
