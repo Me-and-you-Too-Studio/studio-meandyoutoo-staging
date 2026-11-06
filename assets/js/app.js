@@ -263,6 +263,7 @@
     offer:function(id){
       if(!TOURS[id])return;registeredTour=id;
       document.querySelectorAll('[data-tour-replay]').forEach(function(b){b.hidden=false;});
+      placeTourButton();
       if(guideState())renderGuide();
       // Pendant le parcours guidé, la visite de l'écran est montrée une fois par parcours, même déjà vue.
       if(guideTourDue(TOURS[id]))setTimeout(function(){if(startTour(id,true))guideTourShown(TOURS[id]);},400);
@@ -319,7 +320,7 @@
   }
   // Le bouton se place près du temps moyen de l'étape, sinon dans les actions de l'en-tête, sinon sous le titre.
   function placeTutorial(id){
-    document.querySelectorAll('.studio-tuto-button').forEach(function(b){b.remove();});
+    document.querySelectorAll('.studio-tuto-button:not(.studio-help-button):not(.studio-tour-button)').forEach(function(b){b.remove();});
     var html=tutorialButton(id);if(!html)return;
     var badge=document.querySelector('.step-time-badge'),actions=document.querySelector('.topbar .top-actions'),title=document.querySelector('.topbar .page-title, .page-title');
     if(badge)badge.insertAdjacentHTML('afterend',html);
@@ -353,14 +354,54 @@
   function helpUrl(subject){return 'aide.html?sujet='+encodeURIComponent(subject);}
   // Pour les écrans dont l'en-tête est dessiné après le chargement.
   window.StudioHelp={place:function(){placeHelp();}};
+  // Bouton « Visite guidée » à côté de « Lire le guide », sur chaque écran qui a une visite. Pas en vue équipe : les visites n'y sont pas montrées.
+  function placeTourButton(){
+    if(!registeredTour||isTeamView()||document.querySelector('.studio-tour-button'))return;
+    var html='<button type="button" class="studio-tuto-button studio-tour-button" data-tour-replay><span aria-hidden="true">🧭</span> Visite guidée</button>';
+    var after=document.querySelector('.studio-help-button')||document.querySelector('.studio-tuto-button')||document.querySelector('.step-time-badge'),actions=document.querySelector('.topbar .top-actions, main .top-actions'),title=document.querySelector('.topbar .page-title, .page-title');
+    if(after)after.insertAdjacentHTML('afterend',html);
+    else if(actions)actions.insertAdjacentHTML('afterbegin',html);
+    else if(title)title.insertAdjacentHTML('afterend',html);
+  }
+  // « Lire le guide » s'ouvre dans un volet à droite : l'écran reste visible pour suivre le guide en même temps.
+  function helpNorm(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,"'").toLowerCase().trim();}
+  function closeHelpPanel(){var p=document.getElementById('studio-help-panel');if(p)p.remove();document.body.classList.remove('studio-help-open');document.removeEventListener('keydown',helpPanelKeys);}
+  function helpPanelKeys(e){if(e.key==='Escape')closeHelpPanel();}
+  async function openHelpPanel(subject,fallback){
+    closeHelpPanel();
+    var panel=document.createElement('aside');panel.id='studio-help-panel';panel.className='studio-help-panel';panel.setAttribute('aria-label','Guide');
+    panel.innerHTML='<header class="studio-help-panel-head"><div><p class="eyebrow">Guide</p><h2 data-help-title>Chargement…</h2></div><button type="button" class="studio-modal-close" aria-label="Fermer le guide" data-help-close>×</button></header><div class="studio-help-panel-body private-resource-body" data-help-body></div><footer class="studio-help-panel-foot"><a data-help-full href="'+esc(fallback)+'" target="_blank" rel="noopener">Ouvrir dans l’Aide ↗</a></footer>';
+    document.body.appendChild(panel);document.body.classList.add('studio-help-open');document.addEventListener('keydown',helpPanelKeys);
+    panel.querySelector('[data-help-close]').onclick=closeHelpPanel;
+    try{
+      var data=await window.StudioAPI.request('/api/help'),list=(data&&data.items)||[],q=helpNorm(subject);
+      var found=list.find(function(x){return helpNorm(x.title).indexOf(q)===0;})||list.find(function(x){return helpNorm(x.title).indexOf(q)>=0;});
+      if(!found)throw new Error('introuvable');
+      var res=await window.StudioAPI.request('/api/help/'+encodeURIComponent(found.id)),a=res&&res.item;if(!a)throw new Error('vide');
+      if(!panel.isConnected)return;
+      panel.querySelector('[data-help-title]').textContent=a.title;panel.querySelector('[data-help-body]').innerHTML=a.bodyHtml||'';
+      panel.querySelector('[data-help-full]').setAttribute('href','aide.html?id='+encodeURIComponent(found.id));
+      panel.querySelectorAll('[data-help-body] a[href]').forEach(function(l){var h=l.getAttribute('href')||'';if(h.charAt(0)!=='#'&&!/\/tutos\//.test(h)){l.target='_blank';l.rel='noopener';}});
+    }catch(e){if(panel.isConnected){closeHelpPanel();location.href=fallback;}}
+  }
+  document.addEventListener('click',function(e){
+    var link=e.target.closest&&e.target.closest('a[href^="aide.html?sujet="]');
+    if(link&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&window.StudioAPI){e.preventDefault();var h=link.getAttribute('href');openHelpPanel(decodeURIComponent(h.split('sujet=')[1]),h);return;}
+    var inPanel=e.target.closest&&e.target.closest('#studio-help-panel a');if(!inPanel)return;
+    var href=inPanel.getAttribute('href')||'',m=href.match(/\/tutos\/([a-z-]+)\/index\.html/);
+    if(m){e.preventDefault();openTutorial(m[1]);}
+    else if(href==='#chat'){e.preventDefault();var w=window.HubSpotConversations&&window.HubSpotConversations.widget;if(w&&w.open){w.open();}else location.href='contact-client.html';}
+  });
   function placeHelp(){
+    placeTourButton();
     var subject=pageHelp(currentPage());if(!subject||document.querySelector('.studio-help-button'))return;
     var html='<a class="studio-tuto-button studio-help-button" href="'+esc(helpUrl(subject))+'"><span aria-hidden="true">📖</span> Lire le guide</a>';
-    var tuto=document.querySelector('.studio-tuto-button:not(.studio-help-button)'),badge=document.querySelector('.step-time-badge'),actions=document.querySelector('.topbar .top-actions, main .top-actions'),title=document.querySelector('.topbar .page-title, .page-title');
+    var tuto=document.querySelector('.studio-tuto-button:not(.studio-help-button):not(.studio-tour-button)'),badge=document.querySelector('.step-time-badge'),actions=document.querySelector('.topbar .top-actions, main .top-actions'),title=document.querySelector('.topbar .page-title, .page-title');
     if(tuto)tuto.insertAdjacentHTML('afterend',html);
     else if(badge)badge.insertAdjacentHTML('afterend',html);
     else if(actions)actions.insertAdjacentHTML('afterbegin',html);
     else if(title)title.insertAdjacentHTML('afterend',html);
+    var tourBtn=document.querySelector('.studio-tour-button'),help=document.querySelector('.studio-help-button');if(tourBtn&&help)help.after(tourBtn);
   }
 
   // Parcours guidé « Ma première campagne » : un encart suit le client d'écran en écran, du catalogue à la transmission.
