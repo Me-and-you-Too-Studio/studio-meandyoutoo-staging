@@ -155,7 +155,7 @@
   function kind(k){return (state.data.kinds||{})[k]||{label:k,icon:'•'};}
   // Temps fort à préparer : une seule carte, jusqu'à ce qu'une action soit prévue ou que le client choisisse « Plus tard ».
   function nudgeCard(n,canEdit){
-    var offer=n.offer?'<a class="button button-ghost" href="offres.html?from=cockpit&amp;offer='+encodeURIComponent(n.offer.slug)+'">Voir l’offre : '+esc(n.offer.title)+'</a>':'';
+    var offer=n.offer?'<a class="button button-secondary dr-nudge-offer" href="offres.html?from=cockpit&amp;offer='+encodeURIComponent(n.offer.slug)+'">Voir l’offre : '+esc(n.offer.title)+'</a>':'';
     return '<aside class="dr-nudge" aria-label="Temps fort à préparer"><div><strong>'+esc(n.name)+' dans '+n.daysLeft+' jours</strong>'+
       '<p>Rien n’est encore prévu sur la thématique « '+esc(n.theme)+' » dans votre programme : c’est le bon moment pour préparer une action.</p></div>'+
       '<div class="dr-nudge-actions">'+(canEdit?'<button type="button" class="button button-primary" data-prepare="'+esc(n.date)+'" data-theme="'+esc(n.theme)+'" data-title="'+esc(n.name)+'">Préparer une action</button>':'')+offer+

@@ -39,6 +39,7 @@
 .dr-nudge{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:0 0 20px;padding:14px 16px;border-radius:14px;background:var(--sunny-yellow-soft,#fff6dd);border:1px solid #f2d27a}
 .dr-nudge strong{font-size:1.02rem}
 .dr-nudge p{margin:2px 0 0;font-size:.92rem}
+.dr-nudge-offer{background:#fff;border:1.5px solid var(--green-blue,#007883);color:var(--green-blue-dark,#00636c)}
 .dr-nudge-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .dr-disps{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
 .dr-disp{background:#fff;border:1px solid var(--line,#e2e7f1);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
