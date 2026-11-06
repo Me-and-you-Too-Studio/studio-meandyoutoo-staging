@@ -283,7 +283,7 @@
     return '<article class="dr-disp"><h3>'+esc(x.name)+'</h3>'+(x.objective?'<p class="dr-row-notes"><strong>Objectif :</strong> '+esc(x.objective)+'</p>':'')+(x.theme?'<p class="dr-row-meta">'+esc(x.theme)+'</p>':'')+
       '<p class="dr-disp-count"><strong>'+done+' réalisée'+(done>1?'s':'')+' · '+planned+' prévue'+(planned>1?'s':'')+'</strong>'+(people?' · '+num(people)+' personne'+(people>1?'s':'')+' touchée'+(people>1?'s':''):'')+'</p>'+
       (lines?'<ul class="dr-disp-list">'+lines+'</ul>':'<p class="dr-empty">Rien pour l’instant : ajoutez une action ou rattachez un diagnostic.</p>')+
-      (canEdit?'<div class="dr-row-tools"><button type="button" class="button button-ghost" data-disp-action="'+esc(x.id)+'">＋ Ajouter une action</button><button type="button" class="button button-ghost" data-disp-attach="'+esc(x.id)+'">Rattacher un diagnostic</button><button type="button" class="button button-ghost" data-disp-edit="'+esc(x.id)+'">Modifier</button><button type="button" class="button button-ghost" data-disp-delete="'+esc(x.id)+'">Supprimer</button></div>':'')+'</article>';
+      (canEdit?'<div class="dr-row-tools"><button type="button" class="button button-ghost" data-disp-compose="'+esc(x.id)+'">＋ Composer le dispositif</button><button type="button" class="button button-ghost" data-disp-action="'+esc(x.id)+'">＋ Ajouter une action</button><button type="button" class="button button-ghost" data-disp-attach="'+esc(x.id)+'">Rattacher un diagnostic</button><button type="button" class="button button-ghost" data-disp-edit="'+esc(x.id)+'">Modifier</button><button type="button" class="button button-ghost" data-disp-delete="'+esc(x.id)+'">Supprimer</button></div>':'')+'</article>';
   }
   function dispositifsView(years){
     var d=state.data,canEdit=d.canEdit,list=(d.dispositifs||[]).filter(function(x){return x.inYear;});
@@ -314,6 +314,35 @@
         var r=await StudioAPI.request('/api/dei/dispositifs'+(dispositif?'/'+encodeURIComponent(dispositif.id)+qs():''),{method:dispositif?'PATCH':'POST',body:JSON.stringify(body)});
         dlg.close();if(onSaved)onSaved(r.dispositif);else load();
       }catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
+    };
+    dlg.showModal();
+  }
+  // Composer un dispositif : une action prévue par format coché, à compléter ensuite une par une.
+  function composeDialog(x){
+    var d=state.data,kinds=Object.keys(d.kinds).filter(function(k){return k!=='diagnostic';});
+    var theme=String(x.theme||'').split(',')[0].trim();
+    var dlg=document.createElement('dialog');dlg.className='dr-dialog';
+    dlg.innerHTML='<form><h2>Composer le dispositif</h2><p class="dr-row-meta">Cochez les formats prévus : une action « Prévue » est créée pour chacun, déjà rattachée à « '+esc(x.name)+' ». Vous les compléterez ensuite. Les diagnostics se rattachent à part.</p>'+
+      '<fieldset class="dr-compose"><legend>Formats</legend>'+kinds.map(function(k){return '<label class="dr-check"><input type="checkbox" name="kind" value="'+esc(k)+'"> '+esc(d.kinds[k].icon+' '+d.kinds[k].label)+'</label>';}).join('')+'</fieldset>'+
+      '<label class="dr-field dr-field-date"><span>Date prévue *</span><input type="date" name="actionDate" required value="'+esc(x.year+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-15')+'"></label>'+
+      '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Créer les actions</button></div></form>';
+    document.body.appendChild(dlg);
+    var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
+    dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
+    dlg.addEventListener('close',function(){dlg.remove();});
+    form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
+      if(!form.checkValidity()){form.reportValidity();return;}
+      var picked=new FormData(form).getAll('kind');
+      if(!picked.length){err.textContent='Cochez au moins un format.';err.hidden=false;return;}
+      var button=form.querySelector('[type=submit]'),made=0;button.disabled=true;
+      try{
+        for(var i=0;i<picked.length;i++){
+          var body=withOrg({kind:picked[i],title:d.kinds[picked[i]].label+(theme?' — '+theme:''),actionDate:form.elements.actionDate.value,status:'planned',theme:x.theme||'',dispositifId:x.id});
+          if(x.team_folder_id)body.teamFolderId=x.team_folder_id;
+          await StudioAPI.request('/api/dei/actions',{method:'POST',body:JSON.stringify(body)});made++;
+        }
+        dlg.close();load();
+      }catch(e){button.disabled=false;err.textContent=(made?made+' action'+(made>1?'s':'')+' créée'+(made>1?'s':'')+'. ':'')+(e.message||'Création impossible');err.hidden=false;if(made)load();}
     };
     dlg.showModal();
   }
@@ -638,6 +667,7 @@
     var dlg=document.createElement('dialog');dlg.className='dr-dialog';
     dlg.innerHTML='<form><h2>'+(action?'Modifier l’action':'Nouvelle action')+'</h2>'+
       '<label class="dr-field"><span>Type d’action *</span><select name="kind">'+kinds+'</select></label>'+
+      (action?'':'<p class="dr-row-meta">Une fiche = une action. Pour plusieurs formats, ajoutez une action par format.</p>')+
       '<label class="dr-field"><span>Titre *</span><input name="title" required maxlength="200" value="'+esc(a.title||'')+'" placeholder="Ex. : Conférence sur le sexisme ordinaire"></label>'+
       '<div class="dr-field-row"><label class="dr-field"><span>Date *</span><input type="date" name="actionDate" required value="'+esc(a.action_date||'')+'"></label><label class="dr-field"><span>Date de fin</span><input type="date" name="endDate" value="'+esc(a.end_date||'')+'"></label><label class="dr-field"><span>Statut</span><select name="status">'+statuses+'</select></label></div>'+
       '<div data-postpone hidden><label class="dr-field"><span>Nouvelle date (si vous la connaissez)</span><input type="date" name="postponedTo"></label>'+
@@ -657,7 +687,7 @@
       (isAdmin?'<div class="dr-field-row dr-reco-pick"><label class="dr-field"><span>Diagnostic lié</span><select name="campaignId"><option value="">— Aucun —</option>'+
         ((d.diagnostics||{}).campaigns||[]).map(function(c){return '<option value="'+esc(c.id)+'"'+(String(c.id)===String(a.campaign_id||'')?' selected':'')+'>'+esc(c.name+' ('+String(c.launch_date).slice(0,7).split('-').reverse().join('/')+')')+'</option>';}).join('')+
         '</select></label><label class="dr-check"><input type="checkbox" name="recommended"'+(a.recommended?' checked':'')+'> Recommandée par Me&amp;YouToo à la restitution</label></div>':'')+
-      '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
+      '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button>'+(!action&&a.dispositif_id?'<button type="submit" class="button button-ghost" data-again>Enregistrer et ajouter une autre</button>':'')+'<button type="submit" class="button button-primary">Enregistrer</button></div></form>';
     document.body.appendChild(dlg);
     var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
     dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
@@ -691,7 +721,10 @@
       if(form.elements.teamFolderId)body.teamFolderId=f.get('teamFolderId')||null;
       try{
         await StudioAPI.request('/api/dei/actions'+(action?'/'+encodeURIComponent(action.id):'')+(action?qs():''),{method:action?'PATCH':'POST',body:JSON.stringify(body)});
+        var again=ev.submitter&&ev.submitter.hasAttribute('data-again');
         dlg.close();var y=Number(String(body.postponedTo||body.actionDate).slice(0,4));if(y&&y!==state.year)state.year=y;load();
+        // Suite du dispositif : la fiche se rouvre avec le dispositif, la thématique, le prestataire et la date.
+        if(again)editDialog(null,null,{dispositif_id:f.get('dispositifId'),theme:body.theme,provider_id:body.providerId==='meayt'?null:body.providerId,led_by_meayt:body.providerId==='meayt',action_date:body.actionDate});
       }catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
     };
     dlg.showModal();
@@ -773,6 +806,7 @@
     else if(t.hasAttribute('data-disp-edit'))dispositifDialog((state.data.dispositifs||[]).find(function(x){return String(x.id)===t.getAttribute('data-disp-edit');}));
     else if(t.hasAttribute('data-disp-delete'))removeDispositif(t.getAttribute('data-disp-delete'));
     else if(t.hasAttribute('data-disp-attach'))attachDialog(t.getAttribute('data-disp-attach'));
+    else if(t.hasAttribute('data-disp-compose'))composeDialog((state.data.dispositifs||[]).find(function(x){return String(x.id)===t.getAttribute('data-disp-compose');}));
     else if(t.hasAttribute('data-disp-action')){var dx=(state.data.dispositifs||[]).find(function(x){return String(x.id)===t.getAttribute('data-disp-action');});editDialog(null,null,{dispositif_id:dx.id,theme:dx.theme});}
     else if(t.hasAttribute('data-disp-detach')){var dp=t.getAttribute('data-disp-detach').split(':');StudioAPI.request('/api/dei/dispositifs/'+encodeURIComponent(dp[0])+'/diagnostics/'+encodeURIComponent(dp[1])+qs(),{method:'DELETE',body:JSON.stringify(withOrg({}))}).then(load).catch(function(e){window.StudioModal.alert({title:'Action impossible',message:e.message});});}
     else if(t.hasAttribute('data-provider-add'))providerDialog(null);
