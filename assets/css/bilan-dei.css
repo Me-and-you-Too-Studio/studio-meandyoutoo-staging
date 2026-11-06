@@ -103,3 +103,7 @@ body.is-exporting .bl-page{box-shadow:none;border-radius:0;padding:2mm 2mm 0;mar
 body.is-exporting .bl-cover{min-height:270mm}
 body.is-exporting .bl-footer{padding:4mm 0 0}
 @media print{.bl-page:last-child{break-after:auto}}
+
+.bl-cover-table th small{color:#dbe3f2;font-weight:400}
+.bl-cover-table td{text-align:center}
+.bl-cover-table td:first-child{text-align:left}

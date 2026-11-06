@@ -295,12 +295,12 @@
     var y=String(state.year),list=items().filter(function(it){return String(it.date).slice(0,4)===y&&inProgramme(it);});
     var head=COVER.map(function(k){return '<th scope="col">'+esc(k.label)+'<small>'+esc(k.hint)+'</small></th>';}).join('');
     var rows=coverageRows(list).map(function(r){
-      var cells=COVER.map(function(k){var its=coverItems(r.theme,k.key,list);
+      var gap=false,cells=COVER.map(function(k){var its=coverItems(r.theme,k.key,list);
         if(!its.length){gap=true;return '<td></td>';}
         var done=its.some(function(it){return it.status==='done';});
         var label=its.length+(done?' : réalisé':' : prévu');
         return '<td><button type="button" class="dr-cover-cell '+(done?'is-done':'is-planned')+'" data-cover="'+esc(r.theme+'|'+k.key)+'" aria-label="'+esc(r.theme+', '+k.label+', '+label)+'">'+(done?'✓':'○')+'</button></td>';}).join('');
-      return '<tr'+(r.priority?' class="is-priority"':'')+'><th scope="row">'+(r.priority?'<span aria-label="Priorité de l’année">★ </span>':'')+esc(r.theme)+'</th>'+cells+'</tr>';}).join('');
+      return '<tr'+(r.priority?' class="is-priority"':'')+'><th scope="row">'+(r.priority?'<span aria-label="Priorité de l’année">★ </span>':'')+esc(r.theme)+(r.priority&&gap&&isClient?'<a class="dr-cover-link" href="offres.html?from=cockpit">Voir les solutions</a>':'')+'</th>'+cells+'</tr>';}).join('');
     return '<article class="dp-card dr-png-wrap dr-cover" id="dr-png-couverture"><header><h3>🧭 Couverture de votre programme '+y+'</h3>'+pngButton('dr-png-couverture','couverture')+'</header>'+
       '<p class="dr-row-meta">✓ réalisé · ○ prévu · ★ priorité de l’année. Une case vide n’est pas un manque : ce tableau vous aide à voir où vous en êtes. Cliquez sur une case pour voir le détail.</p>'+
       '<div class="dr-cover-scroll"><table><thead><tr><th scope="col">Thématique</th>'+head+'</tr></thead><tbody>'+rows+'</tbody></table></div></article>';
