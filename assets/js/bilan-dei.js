@@ -37,8 +37,8 @@
   }
   // Une action reportée sans nouvelle date ou annulée ne compte pas dans le bilan.
   function inProgramme(i){return i.status!=='postponed'&&i.status!=='cancelled';}
-  var COVER=[['Mesurer','Diagnostic, baromètre, enquête, quiz',['diagnostic','barometre','enquete','quiz']],['Sensibiliser','Diagnostic, conférence, atelier, vidéo, campagne, événement',['diagnostic','conference','atelier','video','sensibilisation','evenement']],
-    ['Former','Formation, e-learning, micro-learning',['formation','elearning','microlearning']],['Faire vivre','Réseau interne, mentorat',['reseau','mentorat']],['Structurer','Politique RH, accord, charte, recrutement, accessibilité, label, conseil',['politique_rh','recrutement','accessibilite','label','conseil']]];
+  var COVER=[['Sensibilisation','Diagnostic, conférence, atelier, vidéo, campagne de communication',['diagnostic','conference','atelier','video','sensibilisation']],['Formation','Formation, e-learning, micro-learning',['formation','elearning','microlearning']],
+    ['Écoute & mesure','Diagnostic, baromètre, enquête, quiz',['diagnostic','barometre','enquete','quiz']],['Engagement & culture','Événement, réseau interne, mentorat',['evenement','reseau','mentorat']],['Politique & process','Politique RH, accord, charte, recrutement, accessibilité, label, conseil',['politique_rh','recrutement','accessibilite','label','conseil']]];
   function themesOf(v){return String(v||'').split(',').map(function(s){return s.trim();}).filter(Boolean);}
   function themeRoot(t){return String(t).toLowerCase().split(/[ &(]/)[0];}
   function sameTheme(a,b){var x=String(a).toLowerCase(),y=String(b).toLowerCase();return x===y||x.indexOf(themeRoot(y))>=0||y.indexOf(themeRoot(x))>=0;}

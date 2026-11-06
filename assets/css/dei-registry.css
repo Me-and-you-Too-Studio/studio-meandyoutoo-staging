@@ -58,11 +58,11 @@
 .dr-compose{border:1px solid var(--line,#e2e7f1);border-radius:12px;padding:10px 12px;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px;max-height:280px;overflow:auto}
 .dr-compose legend{padding:0 4px;font-size:.85rem;font-weight:700}
 .dr-cover{margin-bottom:24px}
-.dr-cover .c-mesurer{--c:#007883;--soft:#e0f1f2;--on:#fff}
-.dr-cover .c-sensibiliser{--c:#ffc000;--soft:#fff4cf;--on:#273a64}
-.dr-cover .c-former{--c:#273a64;--soft:#e4e8f3;--on:#fff}
-.dr-cover .c-vivre{--c:#5669a9;--soft:#e9ecf7;--on:#fff}
-.dr-cover .c-structurer{--c:#7a5ea8;--soft:#efe9f7;--on:#fff}
+.dr-cover .c-ecoute{--c:#007883;--soft:#e0f1f2;--on:#fff}
+.dr-cover .c-sensibilisation{--c:#ffc000;--soft:#fff4cf;--on:#273a64}
+.dr-cover .c-formation{--c:#273a64;--soft:#e4e8f3;--on:#fff}
+.dr-cover .c-engagement{--c:#5669a9;--soft:#e9ecf7;--on:#fff}
+.dr-cover .c-politique{--c:#7a5ea8;--soft:#efe9f7;--on:#fff}
 .dr-cover-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:2px 0 4px}
 .dr-cover-sum{margin:0;font-size:.95rem;color:var(--muted,#54607e)}
 .dr-cover-sum strong{font-size:1.45rem;color:var(--green-blue,#007883);margin-right:2px}

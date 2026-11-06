@@ -276,11 +276,11 @@
   function showDialog(dlg){var x=document.createElement('button');x.type='button';x.className='dr-dialog-x';x.setAttribute('aria-label','Fermer');x.textContent='×';x.onclick=function(){dlg.close();};dlg.appendChild(x);dlg.showModal();}
   // ── Tableau de couverture : thématiques × familles de formats ──
   var COVER=[
-    {key:'mesurer',icon:'🎯',label:'Mesurer',hint:'Diagnostic, baromètre, enquête, quiz',kinds:['diagnostic','barometre','enquete','quiz']},
-    {key:'sensibiliser',icon:'📣',label:'Sensibiliser',hint:'Diagnostic, conférence, atelier, vidéo, campagne, événement',kinds:['diagnostic','conference','atelier','video','sensibilisation','evenement']},
-    {key:'former',icon:'🎓',label:'Former',hint:'Formation, e-learning, micro-learning',kinds:['formation','elearning','microlearning']},
-    {key:'vivre',icon:'🤝',label:'Faire vivre',hint:'Réseau interne, mentorat',kinds:['reseau','mentorat']},
-    {key:'structurer',icon:'🏛️',label:'Structurer',hint:'Politique RH, accord, charte, recrutement, accessibilité, label, conseil',kinds:['politique_rh','recrutement','accessibilite','label','conseil']}
+    {key:'sensibilisation',icon:'📣',label:'Sensibilisation',hint:'Diagnostic, conférence, atelier, vidéo, campagne de communication',kinds:['diagnostic','conference','atelier','video','sensibilisation']},
+    {key:'formation',icon:'🎓',label:'Formation',hint:'Formation, e-learning, micro-learning',kinds:['formation','elearning','microlearning']},
+    {key:'ecoute',icon:'🎯',label:'Écoute & mesure',hint:'Diagnostic, baromètre, enquête, quiz',kinds:['diagnostic','barometre','enquete','quiz']},
+    {key:'engagement',icon:'🤝',label:'Engagement & culture',hint:'Événement, réseau interne, mentorat',kinds:['evenement','reseau','mentorat']},
+    {key:'politique',icon:'🏛️',label:'Politique & process',hint:'Politique RH, accord, charte, recrutement, accessibilité, label, conseil',kinds:['politique_rh','recrutement','accessibilite','label','conseil']}
   ];
   function themeRoot(t){return String(t).toLowerCase().split(/[ &(]/)[0];}
   function sameTheme(a,b){var x=String(a).toLowerCase(),y=String(b).toLowerCase();return x===y||x.indexOf(themeRoot(y))>=0||y.indexOf(themeRoot(x))>=0;}
@@ -706,7 +706,8 @@
     // Types regroupés par famille ; le diagnostic Studio s'ajoute tout seul via les campagnes, mais reste saisissable.
     var groups=d.groups||{};
     var kinds=Object.keys(groups).map(function(g){
-      var opts=Object.keys(d.kinds).filter(function(k){return d.kinds[k].group===g;}).map(function(k){return '<option value="'+esc(k)+'"'+(k===a.kind?' selected':'')+'>'+esc(d.kinds[k].icon+' '+d.kinds[k].label)+'</option>';}).join('');
+      // Le diagnostic mesure et sensibilise : on le trouve dans les deux familles.
+      var opts=Object.keys(d.kinds).filter(function(k){return d.kinds[k].group===g||(g==='animation'&&k==='diagnostic');}).map(function(k){return '<option value="'+esc(k)+'"'+(k===a.kind?' selected':'')+'>'+esc(d.kinds[k].icon+' '+d.kinds[k].label)+'</option>';}).join('');
       return opts?'<optgroup label="'+esc(groups[g])+'">'+opts+'</optgroup>':'';
     }).join('');
     // « Me&YouToo » en tête : il marque l'action « Animée par Me&YouToo » (présélectionné quand l'admin saisit).
