@@ -15,7 +15,7 @@ function slug(name){return 'famille-'+String(name||'').normalize('NFD').replace(
 function card(a){return '<a class="help-article-card" href="'+esc(a.link)+'"><strong>'+esc(a.title)+'</strong>'+(a.excerpt?'<span>'+esc(a.excerpt)+'</span>':'<span></span>')+'<em>Lire le guide →</em></a>';}
 var items=[];
 function render(){
-  var q=String($('help-search').value||'').trim().toLowerCase(),words=norm(q).split(/s+/).filter(Boolean),list=q?items.filter(function(a){var text=norm(a.searchText);return words.every(function(w){return text.indexOf(w)>=0;});}):items;
+  var q=String($('help-search').value||'').trim().toLowerCase(),words=norm(q).split(/\s+/).filter(Boolean),list=q?items.filter(function(a){var text=norm(a.searchText);return words.every(function(w){return text.indexOf(w)>=0;});}):items;
   $('help-empty').hidden=!(items.length&&!list.length);
   var groups=FAMILIES.map(function(f){return {name:f.name,items:list.filter(function(a){return a.subcategoryId===f.id;})};});
   var known=FAMILIES.map(function(f){return f.id;}),rest=list.filter(function(a){return known.indexOf(a.subcategoryId)<0;});
