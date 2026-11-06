@@ -175,7 +175,7 @@
       '<p>Toutes vos actions diversité &amp; inclusion au même endroit : celles animées par Me&amp;YouToo, vos diagnostics et vos initiatives internes.</p></div>'+
       '<div class="dr-head-actions"><div class="dr-years" role="group" aria-label="Choisir l’année">'+years+'</div><a class="button button-secondary" data-bilan href="bilan-dei.html'+qs({year:state.year})+'">📄 Bilan '+state.year+' (PDF)</a>'+(canEdit?'<button type="button" class="button button-primary" data-add>＋ Ajouter une action</button>':'')+'</div></div>';
     var cards='<div class="dr-kpis">'+
-      kpi(num(ind.actions),'action'+(ind.actions>1?'s':''),ind.done+' réalisée'+(ind.done>1?'s':'')+' · '+ind.planned+' à venir ou en cours'+(ind.postponed?' · '+ind.postponed+' reportée'+(ind.postponed>1?'s':''):'')+(ind.cancelled?' · '+ind.cancelled+' annulée'+(ind.cancelled>1?'s':''):''),null,'actions')+
+      kpi(num(ind.actions),ind.actions>1?'actions et diagnostics':'action ou diagnostic',ind.done+' réalisée'+(ind.done>1?'s':'')+' · '+ind.planned+' à venir ou en cours'+(ind.postponed?' · '+ind.postponed+' reportée'+(ind.postponed>1?'s':''):'')+(ind.cancelled?' · '+ind.cancelled+' annulée'+(ind.cancelled>1?'s':''):''),null,'actions')+
       kpi(num(ind.peopleReached),'personne'+(ind.peopleReached>1?'s':'')+' touchée'+(ind.peopleReached>1?'s':''),'actions réalisées et participations aux diagnostics',null,'people')+
       kpi(num(ind.formats),'format'+(ind.formats>1?'s':'')+' utilisé'+(ind.formats>1?'s':''),'conférences, formations, diagnostics…',null,'formats')+
       kpi(num(ind.themes),'thématique'+(ind.themes>1?'s':'')+' couverte'+(ind.themes>1?'s':''),'sur l’année',null,'themes')+
@@ -404,7 +404,7 @@
     var group=function(title,its,extra){return its.length?'<h3 class="dr-detail-group">'+esc(title)+' <span>'+its.length+'</span></h3><ul class="dr-detail-list">'+its.map(function(it){return line(it,extra&&extra(it));}).join('')+'</ul>':'';};
     var people=function(it){return it.people!=null?num(it.people)+(it.type==='campaign'?' participations':' personnes'):'';};
     var title,intro='',body='';
-    if(key==='actions'){title='Actions de '+y;
+    if(key==='actions'){title='Actions et diagnostics de '+y;
       body=group('Réalisées',list.filter(function(it){return it.status==='done';}),people)+group('À venir ou en cours',list.filter(function(it){return it.status!=='done';}),people)+
         group('Reportées',year.filter(function(it){return it.status==='postponed';}))+group('Annulées',year.filter(function(it){return it.status==='cancelled';}));}
     else if(key==='people'){title='Personnes touchées en '+y;
@@ -491,7 +491,7 @@
         reached=custom?o.done:(o.value!=null&&o.target&&o.value>=o.target);
         figure=custom?(o.done?'Atteint':'À atteindre'):(o.value==null?'Pas encore mesurable':num(o.value)+' / '+num(o.target)+(o.unit==='%'?' %':' '+o.unit));
       }
-      var meta=[strategic&&o.themes&&o.label?'Thématiques : '+o.themes:'',o.audiences?'Publics : '+o.audiences:''].filter(Boolean).map(esc).join(' · ');
+      var meta=[strategic&&o.themes&&o.label?'Thématiques : '+o.themes:'',o.themeProgress&&o.themeProgress.missing.length?'Reste : '+o.themeProgress.missing.join(', '):'',o.audiences?'Publics : '+o.audiences:''].filter(Boolean).map(esc).join(' · ');
       return '<li class="dp-obj'+(reached?' is-reached':'')+(strategic?' is-strategic':'')+'">'+(o.suggestion_key?'<span class="dp-suggested">Proposé par Me&amp;YouToo</span>':'')+'<div class="dp-obj-head"><strong>'+esc(title)+'</strong><span>'+esc(figure)+(reached?' ✓':'')+'</span></div>'+
         (meta?'<p class="dp-obj-meta">'+meta+'</p>':'')+
         '<div class="dp-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i style="width:'+pct+'%"></i></div>'+
@@ -499,7 +499,7 @@
     }).join('');
     var objCard=state.data.perimeter?'':'<article class="dp-card dr-png-wrap" id="dr-png-objectifs"><header><h3>🎯 Objectifs '+state.year+'</h3>'+pngButton('dr-png-objectifs','objectifs')+(canEdit&&p.objectives.length<p.maxObjectives?'<button type="button" class="button button-ghost" data-obj-add>＋ Fixer un objectif</button>':'')+'</header>'+
       (objs?'<ul class="dp-objs">'+objs+'</ul>':'<p class="dr-empty">Fixez 3 à 5 objectifs pour l’année : la progression se calcule toute seule à partir de vos actions et de vos diagnostics.</p>'+
-        (canEdit?'<div class="dp-suggest">'+[['actions_done',12,'12 actions réalisées'],['active_quarters',4,'Une action chaque trimestre'],['themes',5,'Couvrir 5 thématiques'],['people_reached',1000,'1 000 personnes touchées']].map(function(s){return '<button type="button" class="dr-chip-btn" data-obj-suggest="'+s[0]+':'+s[1]+'">＋ '+s[2]+'</button>';}).join('')+'</div>':''))+'</article>';
+        (canEdit?'<div class="dp-suggest">'+[['actions_done',12,'12 actions et diagnostics'],['active_quarters',4,'Une action chaque trimestre'],['themes','','Couvrir vos thématiques prioritaires'],['people_reached',1000,'1 000 personnes touchées']].map(function(s){return '<button type="button" class="dr-chip-btn" data-obj-suggest="'+s[0]+':'+s[1]+'">＋ '+s[2]+'</button>';}).join('')+'</div>':''))+'</article>';
     // Trimestres
     var maxQ=Math.max(1,Math.max.apply(null,p.quarters.map(function(q){return q.done+q.planned+q.late;})));
     var qCard='<article class="dp-card dr-png-wrap" id="dr-png-trimestres"><header><h3>📊 Prévu / réalisé par trimestre</h3>'+pngButton('dr-png-trimestres','trimestres')+'</header><div class="dp-quarters">'+p.quarters.map(function(q){
@@ -572,27 +572,44 @@
     var dlg=document.createElement('dialog');dlg.className='dr-dialog';
     dlg.innerHTML='<form><h2>'+(objective?'Modifier l’objectif':'Nouvel objectif '+state.year)+'</h2>'+
       '<label class="dr-field"><span>Type d’objectif</span><select name="metric">'+opts+'</select></label>'+
-      '<label class="dr-field"><span data-label-text>Précision (facultatif)</span><input name="label" maxlength="240" value="'+esc(o.label||'')+'" placeholder="Ex. : former tous les managers à la prévention des VSS"></label>'+
-      '<div data-when="themes">'+multiField('themes','Thématiques',THEMES,o.themes)+'</div>'+
-      multiField('audiences','Publics visés',AUDIENCES,o.audiences)+
+      '<p class="dr-row-meta" data-help></p>'+
+      '<label class="dr-field"><span data-label-text>Précision (facultatif)</span><input name="label" maxlength="240" value="'+esc(o.label||'')+'"></label>'+
+      '<div data-when="themes">'+multiField('themes','Thématiques visées',THEMES,o.themes)+'</div>'+
+      '<div data-when="audiences">'+multiField('audiences','Publics visés',AUDIENCES,o.audiences)+'</div>'+
       '<label class="dr-field" data-when="target"><span data-target-text>Cible</span><input type="number" min="1" name="target" value="'+esc(o.target??'')+'"></label>'+
       '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
     document.body.appendChild(dlg);
     var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
+    // Chaque type guide sa saisie. Un ancien objectif Thématiques sans case cochée garde son chiffre.
+    var GUIDE={
+      strategic:{help:'Une priorité de l’année : vous la cochez quand elle est atteinte.',label:'Enjeu (facultatif si une thématique est cochée)',example:'Ex. : former tous les managers à la prévention des VSS',target:'Nombre de personnes à toucher (facultatif)',themes:true,audiences:true},
+      actions_done:{help:'Actions réalisées et diagnostics du Studio de l’année.',example:'Ex. : au moins une action par site',target:'Combien d’actions et de diagnostics ? *'},
+      people_reached:{help:'Personnes touchées par les actions réalisées et participations aux diagnostics. Une personne peut compter plusieurs fois.',example:'Ex. : la moitié des effectifs',target:'Combien de personnes ? *'},
+      themes:{help:'Cochez les thématiques que vous voulez travailler cette année : la cible se calcule toute seule.',example:'Ex. : nos priorités issues du diagnostic',themes:true,noTarget:true},
+      active_quarters:{help:'Pour garder une dynamique toute l’année.',example:'Ex. : une action forte par trimestre',target:'Combien de trimestres, de 1 à 4 ? *',max:4},
+      participation:{help:'Moyenne des participations par rapport à l’objectif fixé sur chaque campagne.',example:'Ex. : mobiliser davantage les managers',target:'Pourcentage visé *',max:100},
+      custom:{help:'Un objectif à votre façon : vous le cochez quand il est atteint.',label:'Objectif *',example:'Ex. : obtenir le label diversité',audiences:true,noTarget:true}
+    };
+    var keepsNumber=Boolean(objective&&objective.metric==='themes'&&!objective.themes);
     function sync(){
-      var m=form.elements.metric.value,custom=m==='custom',strategic=m==='strategic';
-      dlg.querySelector('[data-when="target"]').hidden=custom;
-      dlg.querySelector('[data-when="themes"]').hidden=!strategic;
-      dlg.querySelector('[data-target-text]').textContent=strategic?'Nombre de personnes à toucher (facultatif)':'Cible chiffrée *';
-      dlg.querySelector('[data-label-text]').textContent=custom?'Objectif *':strategic?'Enjeu (facultatif si une thématique est cochée)':'Précision (facultatif)';
+      var m=form.elements.metric.value,g=GUIDE[m]||{},legacy=m==='themes'&&keepsNumber;
+      dlg.querySelector('[data-help]').textContent=g.help||'';
+      dlg.querySelector('[data-when="target"]').hidden=Boolean(g.noTarget)&&!legacy;
+      dlg.querySelector('[data-when="themes"]').hidden=!g.themes;
+      dlg.querySelector('[data-when="audiences"]').hidden=!g.audiences;
+      dlg.querySelector('[data-target-text]').textContent=legacy?'Nombre de thématiques (si aucune n’est cochée)':(g.target||'Cible chiffrée *');
+      dlg.querySelector('[data-label-text]').textContent=g.label||'Précision (facultatif)';
+      form.elements.label.placeholder=g.example||'';
+      if(g.max)form.elements.target.max=g.max;else form.elements.target.removeAttribute('max');
     }
     form.elements.metric.onchange=sync;sync();
     dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
     dlg.addEventListener('close',function(){dlg.remove();});
     form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
-      var f=new FormData(form),strategicMetric=f.get('metric')==='strategic';
+      if(!form.checkValidity()){form.reportValidity();return;}
+      var f=new FormData(form),guide=GUIDE[f.get('metric')]||{};
       var body=withOrg({year:state.year,metric:f.get('metric'),target:f.get('target'),label:f.get('label'),done:Boolean(objective&&objective.done),
-        themes:strategicMetric?readMulti(form,'themes'):'',audiences:readMulti(form,'audiences')});
+        themes:guide.themes?readMulti(form,'themes'):'',audiences:guide.audiences?readMulti(form,'audiences'):''});
       try{await StudioAPI.request('/api/dei/objectives'+(objective?'/'+encodeURIComponent(objective.id)+qs():''),{method:objective?'PATCH':'POST',body:JSON.stringify(body)});dlg.close();load();}
       catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
     };
@@ -733,7 +750,7 @@
     else if(t.hasAttribute('data-month')){var m=Number(t.getAttribute('data-month')),my=Number(t.getAttribute('data-month-year'))||state.year;accompany({year:my,month:m+1},'Une action D&I en '+MONTHS_LONG[m]+' '+my);}
     else if(t.hasAttribute('data-accompany')){var a=state.data.actions.find(function(x){return String(x.id)===t.getAttribute('data-accompany');});if(a)accompany({actionId:a.id,kind:a.kind},'Accompagnement : '+a.title);}
     else if(t.hasAttribute('data-obj-add'))objectiveDialog(null);
-    else if(t.hasAttribute('data-obj-suggest')){var sg=t.getAttribute('data-obj-suggest').split(':');objectiveDialog(null,{metric:sg[0],target:Number(sg[1])});}
+    else if(t.hasAttribute('data-obj-suggest')){var sg=t.getAttribute('data-obj-suggest').split(':');objectiveDialog(null,{metric:sg[0],target:sg[1]?Number(sg[1]):undefined});}
     else if(t.hasAttribute('data-obj-edit'))objectiveDialog(findObjective(t.getAttribute('data-obj-edit')));
     else if(t.hasAttribute('data-obj-delete')){var ob=findObjective(t.getAttribute('data-obj-delete'));if(ob)window.StudioModal.confirm({eyebrow:'Objectifs',title:'Retirer cet objectif ?',message:'Il disparaît du tableau de pilotage. Vos actions ne sont pas touchées.',confirmLabel:'Retirer'}).then(function(ok){if(ok)StudioAPI.request('/api/dei/objectives/'+encodeURIComponent(ob.id)+qs(),{method:'DELETE'}).then(load).catch(function(e){window.StudioModal.alert({title:'Action impossible',message:e.message});});});}
     else if(t.hasAttribute('data-prepare')){var pd=t.getAttribute('data-prepare');editDialog(null,Number(pd.slice(5,7))-1,{title:t.getAttribute('data-title'),theme:t.getAttribute('data-theme'),action_date:pd,kind:'evenement'});}

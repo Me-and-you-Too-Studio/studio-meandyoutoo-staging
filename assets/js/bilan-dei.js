@@ -74,14 +74,14 @@
     // 2. L'année en chiffres + comparaison avec l'année précédente
     var pind=prev&&prev.indicators;
     var participation=participationRate(d.campaigns);
-    var kpis=[[ind.done,'action réalisée','actions réalisées',pind&&pind.done],[ind.peopleReached,'personne touchée','personnes touchées',pind&&pind.peopleReached],
+    var kpis=[[ind.done,'action ou diagnostic réalisé','actions et diagnostics réalisés',pind&&pind.done],[ind.peopleReached,'personne touchée','personnes touchées',pind&&pind.peopleReached],
       [ind.formats,'format utilisé','formats utilisés',pind&&pind.formats],[ind.themes,'thématique couverte','thématiques couvertes',pind&&pind.themes],
       [activeQuarters(list),'trimestre actif','trimestres actifs (sur 4)',null]];
     html+='<section class="bl-page"><h2>L’année en chiffres</h2><div class="bl-kpis">'+kpis.map(function(k){
       var delta=pind&&k[3]!=null&&(pind.actions||pind.peopleReached)?deltaText(k[0],k[3]):'';
       return '<div class="bl-kpi"><strong>'+num(k[0])+'</strong><span>'+(Number(k[0])>1?k[2]:k[1])+'</span>'+(delta?'<em>'+delta+'</em>':'')+'</div>';
     }).join('')+(participation!=null?'<div class="bl-kpi"><strong>'+participation+' %</strong><span>participation moyenne aux diagnostics</span></div>':'')+'</div>'+
-      (ind.planned?'<p class="bl-note">'+(ind.planned>1?num(ind.planned)+' autres actions en cours ou prévues':'1 autre action en cours ou prévue')+' sur l’année.</p>':'')+
+      (ind.planned?'<p class="bl-note">'+(ind.planned>1?num(ind.planned)+' autres actions ou diagnostics en cours ou prévus':'1 autre action ou diagnostic en cours ou prévu')+' sur l’année.</p>':'')+
       (pind&&(pind.actions||pind.peopleReached)?'<p class="bl-note">Les variations sont calculées par rapport à votre année '+(year-1)+'.</p>':'')+
       // Le bilan ne reflète que ce qui est saisi : on invite à compléter le Cockpit puis à le télécharger à nouveau.
       '<div class="bl-complete"><strong>📝 Un bilan aussi complet que votre Cockpit</strong><p>Ce bilan reprend les actions enregistrées dans votre Cockpit D&I. Pour qu’il reflète tout ce que vous avez fait, ajoutez-y toutes vos actions de l’année, y compris celles menées en interne ou avec d’autres prestataires (événements, réseaux, enquêtes, formations…), puis téléchargez à nouveau votre bilan : il se met à jour automatiquement.</p></div>'+
