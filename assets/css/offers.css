@@ -12,6 +12,7 @@
 .offer-chip.is-current{background:var(--of-ink);border-color:var(--of-ink);color:#fff}
 .offer-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
 .offer-card{display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid var(--of-line);border-radius:16px;padding:20px;box-shadow:0 6px 18px rgba(39,58,100,.06);border-top:4px solid var(--of-teal)}
+.offer-card.is-target{box-shadow:0 0 0 3px var(--of-teal,#007883)}
 .offer-card.cat-conference,.offer-card.cat-formation{border-top-color:#ffc000}
 .offer-card.cat-atelier,.offer-card.cat-conseil{border-top-color:#273a64}
 .offer-card.cat-elearning,.offer-card.cat-video,.offer-card.cat-microlearning{border-top-color:#8a6fd1}

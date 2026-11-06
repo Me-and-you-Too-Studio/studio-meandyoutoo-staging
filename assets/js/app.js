@@ -509,7 +509,7 @@
   var CLIENT_PREVIEW=window.StudioAPI?.clientPreview?.();
   var IS_ADMIN = Boolean(CURRENT_USER && CURRENT_USER.role === 'admin');
   var INTERFACE_MODE = IS_ADMIN && sessionStorage.getItem('studio_interface_mode') !== 'client' ? 'admin' : 'client';
-  var ADMIN_PAGES = ['admin.html','client.html'];
+  var ADMIN_PAGES = ['admin.html','client.html','temps-forts.html'];
   if(ADMIN_PAGES.indexOf(CURRENT)<0&&!document.getElementById('hs-script-loader')){var hs=document.createElement('script');hs.id='hs-script-loader';hs.async=true;hs.defer=true;hs.src='https://js-eu1.hs-scripts.com/139575435.js';document.body.appendChild(hs);/* Le bouton du chat HubSpot occupe le coin bas droit : la carte Nouveautés passe au-dessus, le bouton Haut de page à sa gauche. */if(!document.getElementById('studio-chat-spacing')){var chatCss=document.createElement('style');chatCss.id='studio-chat-spacing';chatCss.textContent='.studio-news{bottom:var(--studio-chat-offset,100px)}.studio-back-to-top{right:100px}@media(max-width:980px){.studio-back-to-top{right:88px}}';document.head.appendChild(chatCss);/* La bulle d'accueil du chat agrandit son cadre : la carte Nouveautés suit la hauteur réelle du cadre. */var followChat=function(frame){if(!frame||!window.ResizeObserver)return;var place=function(){var box=frame.getBoundingClientRect();document.documentElement.style.setProperty('--studio-chat-offset',Math.max(100,Math.round(window.innerHeight-box.top)+12)+'px');};new ResizeObserver(place).observe(frame);window.addEventListener('resize',place);place();};var chatWatch=new MutationObserver(function(){var frame=document.getElementById('hubspot-messages-iframe-container');if(frame){chatWatch.disconnect();followChat(frame);}});chatWatch.observe(document.body,{childList:true});}}
   var DUAL_MODE_PAGES = ['notifications.html','calendrier.html','cockpit-dei.html'];
   var REQUESTED_NOTIFICATION_AUDIENCE = new URLSearchParams(location.search).get('audience');
@@ -715,6 +715,7 @@
     { href: 'admin.html?tab=accounts', label: 'Comptes & accès', icon: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 3-7 6-7"/><path d="M16 11v6M13 14h6"/>' },
     { href: 'admin.html?tab=library', label: 'Catalogue', icon: '<path d="M5 5h6v14H5zM13 5h6v14h-6z"/><path d="M8 8v8M16 8v8"/>' },
     { href: 'offres.html', label: 'Offres & demandes', icon: '<path d="M20 12v8H4v-8M2 7h20v5H2zM12 20V7"/><path d="M12 7H8a2 2 0 1 1 0-4c3 0 4 4 4 4zM12 7h4a2 2 0 1 0 0-4c-3 0-4 4-4 4z"/>' },
+    { href: 'temps-forts.html', label: 'Temps forts', icon: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M12 13v4M10 15h4"/>' },
     { href: 'admin.html?tab=media', label: 'Médiathèque', icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/>' },
     { href: 'notifications.html', label: 'Notifications', icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>' },
     { href: 'faq-interne.html', label: 'FAQ interne', icon: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/>' }

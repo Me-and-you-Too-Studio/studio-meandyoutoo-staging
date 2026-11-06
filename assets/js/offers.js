@@ -41,7 +41,7 @@
       ?(PUBLIC_FORM_GUID?'<button type="button" class="'+cls('primary')+' offer-ask" data-offer-public="'+esc(o.id)+'">Demander des informations</button>':'<a class="'+cls('primary')+' offer-ask" href="contact.html">Demander des informations</a>')
       :(isClient?'<button type="button" class="button button-primary offer-ask" data-offer-ask="'+esc(o.id)+'">Demander des informations</button>':'');
     var adminTools=isAdmin?'<div class="offer-admin"><span class="offer-status '+(o.published?'is-on':'is-off')+'">'+(o.published?'Publiée':'Masquée')+'</span>'+(o.hubspot_category?'<span class="offer-status is-hs" title="Catégorie de produit HubSpot">HubSpot : '+esc(o.hubspot_category)+'</span>':'')+'<button type="button" class="button button-ghost" data-offer-edit="'+esc(o.id)+'">Modifier</button><button type="button" class="button button-ghost" data-offer-archive="'+esc(o.id)+'">Retirer</button></div>':'';
-    return '<article class="offer-card cat-'+esc(o.category)+(isAdmin&&!o.published?' is-hidden-offer':'')+'">'+
+    return '<article class="offer-card cat-'+esc(o.category)+(isAdmin&&!o.published?' is-hidden-offer':'')+'" data-offer-slug="'+esc(o.slug||'')+'">'+
       '<p class="offer-cat"><span aria-hidden="true">'+esc(cat.icon)+'</span> '+esc(cat.label)+'</p>'+
       '<h3>'+esc(o.title)+'</h3>'+(o.summary?'<p class="offer-summary">'+esc(o.summary)+'</p>':'')+
       (meta?'<p class="offer-meta">'+meta+'</p>':'')+
@@ -66,10 +66,19 @@
       catalogues='<div class="offer-catalogues"><span>📘 Nos catalogues détaillés de conférences et de formations sont réservés à nos clients.</span><a href="login.html">Se connecter à l’espace client →</a></div>';
     }
     var adminBar=isAdmin?'<div class="offer-admin-bar"><button type="button" class="button button-primary" data-offer-new>＋ Ajouter une offre</button><span>Les offres masquées n’apparaissent ni sur le site public ni chez les clients.</span></div>':'';
+    setTimeout(showWantedOffer,0);
     root.innerHTML=adminBar+catalogues+chips+'<div class="offer-grid">'+(list.map(card).join('')||'<p class="offer-empty">Aucune offre dans cette catégorie.</p>')+'</div>'+(isAdmin?'<div id="offer-requests"></div>':'');
     if(isAdmin)loadRequests();
   }
 
+  // Ouverte depuis une carte du Cockpit (?offer=conferences) : on montre l'offre, une seule fois.
+  var wantedOffer=new URLSearchParams(location.search).get('offer');
+  function showWantedOffer(){
+    if(!wantedOffer)return;
+    var target=[].slice.call(root.querySelectorAll('[data-offer-slug]')).find(function(el){return el.getAttribute('data-offer-slug')===wantedOffer;});
+    wantedOffer=null;if(!target)return;
+    target.classList.add('is-target');setTimeout(function(){target.scrollIntoView({block:'center'});},100);
+  }
   function fail(){root.innerHTML='<p class="offer-empty">Nos offres sont momentanément indisponibles. <a href="https://meandyoutoo.app/fr/" target="_blank" rel="noopener">Les découvrir sur meandyoutoo.app ↗</a></p>';}
   function refresh(){return load().then(function(d){state.offers=d.offers||[];state.categories=d.categories||{};state.catalogues=d.catalogues||{};state.hubspotCategories=d.hubspotCategories||[];render();}).catch(fail);}
 

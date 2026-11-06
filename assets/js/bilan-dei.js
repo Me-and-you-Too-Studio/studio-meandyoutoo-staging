@@ -14,7 +14,9 @@
   var MONTHS=['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
   var STATUS={done:'Réalisée',in_progress:'En cours',planned:'Prévue',postponed:'Reportée'};
   // Temps forts de l'année suivante mis en avant dans les perspectives.
-  var EVENTS=[['8 mars','Journée internationale des droits des femmes'],['17 mai','Journée contre l’homophobie, la transphobie et la biphobie'],['Juin','Mois des fiertés'],['Novembre','SEEPH — Semaine européenne pour l’emploi des personnes handicapées'],['25 novembre','Journée pour l’élimination de la violence à l’égard des femmes'],['3 décembre','Journée internationale des personnes handicapées']];
+  var MONTH_NAMES=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  var EVENTS=[];
+  function eventLabel(e){return e.date_kind==='day'?e.day+' '+MONTH_NAMES[e.month-1].toLowerCase():MONTH_NAMES[e.month-1];}
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function num(v){return new Intl.NumberFormat('fr-FR').format(Number(v)||0);}
@@ -41,7 +43,8 @@
   function start(){
     document.getElementById('bl-back').href=cockpitHref();
     if(isAdmin&&!organizationId){doc.innerHTML='<p class="bl-loading">Ouvrez le bilan depuis le Cockpit D&I d’un client.</p>';return;}
-    Promise.all([StudioAPI.request('/api/dei/actions'+qs(year)),load(year-1),load(year+1)]).then(function(r){render(r[0],r[1],r[2]);})
+    Promise.all([StudioAPI.request('/api/dei/actions'+qs(year)),load(year-1),load(year+1),StudioAPI.request('/api/temps-forts').catch(function(){return {events:[]};})]).then(function(r){
+      EVENTS=(r[3].events||[]).filter(function(e){return e.alerts;}).map(function(e){return [eventLabel(e),e.title];});render(r[0],r[1],r[2]);})
       .catch(function(e){doc.innerHTML='<p class="bl-loading">Le bilan est momentanément indisponible. '+esc(e.message||'')+'</p>';});
   }
 
@@ -133,7 +136,7 @@
     if(next&&next.pilotage&&next.pilotage.objectives.length)html+='<h3>Objectifs déjà fixés</h3><ul class="bl-list">'+next.pilotage.objectives.map(function(o){return '<li>'+esc(objectiveTitle(o))+'</li>';}).join('')+'</ul>';
     var notices=(d.pilotage&&d.pilotage.attention&&d.pilotage.attention.notices)||[];
     notices.forEach(function(n){html+='<div class="bl-notice"><strong>'+esc(n.title)+'</strong><p>'+esc(n.text)+'</p></div>';});
-    html+='<h3>Temps forts à ne pas manquer</h3><ul class="bl-list">'+EVENTS.map(function(e){return '<li><span>'+esc(e[0])+'</span> '+esc(e[1])+'</li>';}).join('')+'</ul>'+
+    if(EVENTS.length)html+='<h3>Temps forts à ne pas manquer</h3><ul class="bl-list">'+EVENTS.map(function(e){return '<li><span>'+esc(e[0])+'</span> '+esc(e[1])+'</li>';}).join('')+'</ul>'+
       '<div class="bl-cta"><img src="assets/img/brand/logo-meayt-color.png" alt="Me&amp;YouToo"><div><strong>Construire votre plan '+(year+1)+' avec Me&amp;YouToo</strong>'+
       '<p>Diagnostics comportementaux, conférences, formations, ateliers, vidéos et e-learning : nous vous aidons à bâtir une année D&amp;I continue, au plus près de vos enjeux. Demandez un accompagnement depuis votre Cockpit D&I ou écrivez-nous.</p><p class="bl-cta-link"><a href="mailto:contact@meandyoutoo.app">contact@meandyoutoo.app</a> · <a href="https://meandyoutoo.app/fr/">meandyoutoo.app</a></p></div></div>';
     // Pied de page dans la dernière section : pas de page presque vide en fin de PDF.

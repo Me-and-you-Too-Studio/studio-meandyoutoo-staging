@@ -46,19 +46,14 @@
   const taskOwner=t=>[t.assignee_first_name,t.assignee_last_name].filter(Boolean).join(' ')||[t.creator_first_name,t.creator_last_name].filter(Boolean).join(' ')||'';
   const today=new Date();
 
-  const deiEvents=[
-    {month:1,day:25,title:'Journée nationale contre le sexisme',category:'equality',short:'Sexisme',recommendation:'Compréhension du sexisme'},
-    {month:3,day:8,title:'Journée internationale des droits des femmes',category:'equality',short:'Droits des femmes',recommendation:'Allié·e de la mixité'},
-    {month:3,day:21,title:'Journée internationale pour l’élimination de la discrimination raciale',category:'discrimination',short:'Discriminations raciales',recommendation:'Diversité des origines'},
-    {month:3,day:31,title:'Journée internationale de la visibilité transgenre',category:'lgbt',short:'Visibilité trans',recommendation:'LGBT+'},
-    {month:5,allMonth:true,title:'Mois européen de la diversité',category:'diversity',short:'Mois européen de la diversité',recommendation:'Collègue inclusif'},
-    {month:5,day:17,title:'Journée internationale contre l’homophobie, la transphobie et la biphobie',category:'lgbt',short:'Lutte contre les LGBTphobies',recommendation:'LGBT+'},
-    {month:6,allMonth:true,title:'Mois des fiertés',category:'lgbt',short:'Mois des fiertés',recommendation:'LGBT+'},
-    {month:11,dynamicRange:'seeph',yearHighlight:true,title:'SEEPH — Semaine européenne pour l’emploi des personnes handicapées',category:'disability',short:'SEEPH',recommendation:'Handicap'},
-    {month:11,day:25,title:'Journée internationale pour l’élimination de la violence à l’égard des femmes',category:'equality',short:'Violences faites aux femmes',recommendation:'Compréhension du sexisme'},
-    {month:12,day:3,title:'Journée internationale des personnes handicapées',category:'disability',short:'Handicap',recommendation:'Handicap'},
-    {month:12,day:10,title:'Journée des droits humains',category:'human-rights',short:'Droits humains',recommendation:'Collègue inclusif'}
-  ];
+  // Temps forts : une seule liste, gérée par Me&YouToo (écran Temps forts).
+  let deiEvents=[];
+  async function loadTempsForts(){
+    if(deiEvents.length)return;
+    try{const r=await StudioAPI.request('/api/temps-forts');
+      deiEvents=(r.events||[]).map(e=>({month:e.month,day:e.date_kind==='day'?e.day:undefined,allMonth:e.date_kind==='month',dynamicRange:e.date_kind==='seeph'?'seeph':undefined,yearHighlight:e.highlight,title:e.title,category:e.category,short:e.short_title||e.title,recommendation:e.recommendation}));
+    }catch(e){deiEvents=[];}
+  }
   const deiCategoryLabels={equality:'Égalité femmes-hommes',diversity:'Diversité & inclusion',discrimination:'Diversité & discriminations',lgbt:'LGBT+',disability:'Handicap','human-rights':'Droits humains'};
   function filteredDeiEvents(){
     const filter=$('#calendar-dei-filter')?.value||'all';
@@ -463,6 +458,7 @@
     }catch(e){setAlert(e.message);}
   }
   async function load(){
+    await loadTempsForts();
     setAlert('');const loading=$('#calendar-loading');loading.hidden=false;const monthRoot=$('#calendar-month'),yearRoot=$('#calendar-year'),summary=$('#calendar-month-summary');if(monthRoot)monthRoot.style.visibility='hidden';if(yearRoot)yearRoot.style.visibility='hidden';if(summary)summary.style.visibility='hidden';const r=range(),org=$('#calendar-org-filter')?.value||'';try{const suffix=`?start=${r.start}&end=${r.end}${isAdmin&&org?'&organizationId='+encodeURIComponent(org):''}`;const [cal,tasks,actions]=await Promise.all([StudioAPI.request('/api/calendar'+suffix),StudioAPI.request('/api/tasks'+(isAdmin&&org?'?organizationId='+encodeURIComponent(org):'')),loadDeiActions(r,org)]);state.campaigns=cal.campaigns||[];state.tasks=tasks.tasks||[];state.deiActions=actions;state.missingDates=Number(cal.missingDates||0);populateTaskProjects();render();}catch(e){setAlert(e.message);}finally{loading.hidden=true;if(monthRoot)monthRoot.style.visibility='';if(yearRoot)yearRoot.style.visibility='';if(summary)summary.style.visibility='';}
   }
   function populateTaskProjects(){const select=$('#task-project');const org=$('#task-org')?.value||$('#calendar-org-filter')?.value||'';const rows=state.campaigns.filter(p=>!org||String(p.organization_id)===String(org)).sort((a,b)=>{

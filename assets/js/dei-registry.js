@@ -153,6 +153,14 @@
     return actions.concat(campaigns).sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
   }
   function kind(k){return (state.data.kinds||{})[k]||{label:k,icon:'•'};}
+  // Temps fort à préparer : une seule carte, jusqu'à ce qu'une action soit prévue ou que le client choisisse « Plus tard ».
+  function nudgeCard(n,canEdit){
+    var offer=n.offer?'<a class="button button-ghost" href="offres.html?from=cockpit&amp;offer='+encodeURIComponent(n.offer.slug)+'">Voir l’offre : '+esc(n.offer.title)+'</a>':'';
+    return '<aside class="dr-nudge" aria-label="Temps fort à préparer"><div><strong>'+esc(n.name)+' dans '+n.daysLeft+' jours</strong>'+
+      '<p>Rien n’est encore prévu sur la thématique « '+esc(n.theme)+' » dans votre programme : c’est le bon moment pour préparer une action.</p></div>'+
+      '<div class="dr-nudge-actions">'+(canEdit?'<button type="button" class="button button-primary" data-prepare="'+esc(n.date)+'" data-theme="'+esc(n.theme)+'" data-title="'+esc(n.name)+'">Préparer une action</button>':'')+offer+
+      '<button type="button" class="dr-link" data-nudge-later="'+esc(n.eventId)+'" data-year="'+esc(n.year)+'" data-stage="'+esc(n.stage)+'">Plus tard</button></div></aside>';
+  }
   // Une action reportée sans nouvelle date ou annulée reste dans la liste mais ne compte plus dans le programme.
   function inProgramme(it){return it.status!=='postponed'&&it.status!=='cancelled';}
   var BUDGET_NOTICE='🔒 Me&amp;YouToo ne voit pas ce montant dans le Studio';
@@ -173,6 +181,7 @@
       kpi(num(ind.themes),'thématique'+(ind.themes>1?'s':'')+' couverte'+(ind.themes>1?'s':''),'sur l’année',null,'themes')+
       kpi(num(ind.monthsWithoutAction),'mois sans action',ind.monthsWithoutAction?'sur les mois déjà écoulés':'aucun trou sur les mois écoulés',ind.monthsWithoutAction?'is-alert':'is-ok','months')+
     '</div>'+(d.budget&&d.budget.total?'<p class="dr-budget-total">Budget renseigné pour '+state.year+' : <strong>'+euros(d.budget.total)+'</strong><span class="dr-budget-lock">'+BUDGET_NOTICE+'</span></p>':'');
+    var nudge=isClient&&d.nudge?nudgeCard(d.nudge,canEdit):'';
     var frise=friseView(list,ind,canEdit);
     var rows=list.length?list.map(row).join(''):'<p class="dr-empty">Aucune action enregistrée pour '+state.year+'. '+(canEdit?'Ajoutez votre première action, ou demandez-nous de l’alimenter pour vous.':'')+'</p>';
     renderTabs();
@@ -180,7 +189,7 @@
     if(state.tab==='prestataires'){root.innerHTML=providersView();return;}
     root.innerHTML=state.tab==='actions'
       ?head+'<div class="dr-list">'+rows+'</div>'
-      :head+'<div class="dr-png-wrap" id="dr-png-kpis">'+pngButton('dr-png-kpis','chiffres-cles')+cards+'</div>'+pilotageView()+'<section class="dr-png-wrap dr-tl" id="dr-png-frise"><div class="dr-sub-row"><h3 class="dr-sub">Frise de l’année '+state.year+'</h3><div class="dr-sub-actions">'+pngButton('dr-png-frise','frise')+'<a class="button button-ghost" href="'+calendarHref()+'">Ouvrir dans le calendrier →</a></div></div>'+frise+'</section>';
+      :head+nudge+'<div class="dr-png-wrap" id="dr-png-kpis">'+pngButton('dr-png-kpis','chiffres-cles')+cards+'</div>'+pilotageView()+'<section class="dr-png-wrap dr-tl" id="dr-png-frise"><div class="dr-sub-row"><h3 class="dr-sub">Frise de l’année '+state.year+'</h3><div class="dr-sub-actions">'+pngButton('dr-png-frise','frise')+'<a class="button button-ghost" href="'+calendarHref()+'">Ouvrir dans le calendrier →</a></div></div>'+frise+'</section>';
     // Arrivée depuis le calendrier (?focus=action-12) : on montre l'action une seule fois.
     if(state.focus&&state.tab==='actions'){var target=document.getElementById('dr-'+state.focus);state.focus=null;
       if(target)setTimeout(function(){target.scrollIntoView({block:'center'});target.classList.add('is-focus');setTimeout(function(){target.classList.remove('is-focus');},2000);},200);}
@@ -652,6 +661,7 @@
     else if(t.hasAttribute('data-obj-edit'))objectiveDialog(findObjective(t.getAttribute('data-obj-edit')));
     else if(t.hasAttribute('data-obj-delete')){var ob=findObjective(t.getAttribute('data-obj-delete'));if(ob)window.StudioModal.confirm({eyebrow:'Objectifs',title:'Retirer cet objectif ?',message:'Il disparaît du tableau de pilotage. Vos actions ne sont pas touchées.',confirmLabel:'Retirer'}).then(function(ok){if(ok)StudioAPI.request('/api/dei/objectives/'+encodeURIComponent(ob.id)+qs(),{method:'DELETE'}).then(load).catch(function(e){window.StudioModal.alert({title:'Action impossible',message:e.message});});});}
     else if(t.hasAttribute('data-prepare')){var pd=t.getAttribute('data-prepare');editDialog(null,Number(pd.slice(5,7))-1,{title:t.getAttribute('data-title'),theme:t.getAttribute('data-theme'),action_date:pd,kind:'evenement'});}
+    else if(t.hasAttribute('data-nudge-later')){t.disabled=true;StudioAPI.request('/api/dei/temps-forts/'+encodeURIComponent(t.getAttribute('data-nudge-later'))+'/plus-tard',{method:'POST',body:JSON.stringify({year:Number(t.getAttribute('data-year')),stage:t.getAttribute('data-stage')})}).then(load).catch(function(e){t.disabled=false;window.StudioModal.alert({title:'Action impossible',message:e.message});});}
     else if(t.hasAttribute('data-event-help'))accompany({event:t.getAttribute('data-event-help')},'Préparer : '+t.getAttribute('data-event-help'));
     else if(t.hasAttribute('data-late-edit')){
       // Une action en retard peut dater de l'année précédente : on charge son année avant d'ouvrir la fiche.
