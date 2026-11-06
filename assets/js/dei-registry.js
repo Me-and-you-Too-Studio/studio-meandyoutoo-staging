@@ -148,11 +148,15 @@
   // Actions du registre + campagnes de diagnostic, dans un même format d'affichage.
   function items(){
     var d=state.data,t=today();
-    var actions=d.actions.map(function(a){return {type:'action',id:a.id,kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,notes:a.notes,meayt:a.led_by_meayt,documents:a.documents||[],offerId:a.offer_id,provider:a.provider_name,recommended:a.recommended,campaignId:a.campaign_id,raw:a};});
+    var actions=d.actions.map(function(a){return {type:'action',id:a.id,kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,notes:a.notes,objective:a.objective,results:a.results,postponedFrom:a.postponed_from,budget:a.budget_eur,meayt:a.led_by_meayt,documents:a.documents||[],offerId:a.offer_id,provider:a.provider_name,recommended:a.recommended,campaignId:a.campaign_id,raw:a};});
     var campaigns=d.campaigns.map(function(c){return {type:'campaign',id:c.id,kind:'diagnostic',title:c.name,date:c.year_date||c.launch_date,start:c.launch_date,end:c.close_date,status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':(c.launch_date&&c.launch_date>t)?'scheduled':'in_progress',theme:c.theme_title,people:c.respondents,documents:[]};});
     return actions.concat(campaigns).sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
   }
   function kind(k){return (state.data.kinds||{})[k]||{label:k,icon:'•'};}
+  // Une action reportée sans nouvelle date ou annulée reste dans la liste mais ne compte plus dans le programme.
+  function inProgramme(it){return it.status!=='postponed'&&it.status!=='cancelled';}
+  var BUDGET_NOTICE='🔒 Me&amp;YouToo ne voit pas ce montant dans le Studio';
+  function euros(v){return num(v)+' €';}
 
   function render(){
     var d=state.data,list=items(),ind=d.indicators,canEdit=d.canEdit;
@@ -163,12 +167,12 @@
       '<p>Toutes vos actions diversité &amp; inclusion au même endroit : celles animées par Me&amp;YouToo, vos diagnostics et vos initiatives internes.</p></div>'+
       '<div class="dr-head-actions"><div class="dr-years" role="group" aria-label="Choisir l’année">'+years+'</div><a class="button button-secondary" data-bilan href="bilan-dei.html'+qs({year:state.year})+'">📄 Bilan '+state.year+' (PDF)</a>'+(canEdit?'<button type="button" class="button button-primary" data-add>＋ Ajouter une action</button>':'')+'</div></div>';
     var cards='<div class="dr-kpis">'+
-      kpi(num(ind.actions),'action'+(ind.actions>1?'s':''),ind.done+' réalisée'+(ind.done>1?'s':'')+' · '+ind.planned+' à venir ou en cours',null,'actions')+
+      kpi(num(ind.actions),'action'+(ind.actions>1?'s':''),ind.done+' réalisée'+(ind.done>1?'s':'')+' · '+ind.planned+' à venir ou en cours'+(ind.postponed?' · '+ind.postponed+' reportée'+(ind.postponed>1?'s':''):'')+(ind.cancelled?' · '+ind.cancelled+' annulée'+(ind.cancelled>1?'s':''):''),null,'actions')+
       kpi(num(ind.peopleReached),'personne'+(ind.peopleReached>1?'s':'')+' touchée'+(ind.peopleReached>1?'s':''),'actions réalisées et participations aux diagnostics',null,'people')+
       kpi(num(ind.formats),'format'+(ind.formats>1?'s':'')+' utilisé'+(ind.formats>1?'s':''),'conférences, formations, diagnostics…',null,'formats')+
       kpi(num(ind.themes),'thématique'+(ind.themes>1?'s':'')+' couverte'+(ind.themes>1?'s':''),'sur l’année',null,'themes')+
       kpi(num(ind.monthsWithoutAction),'mois sans action',ind.monthsWithoutAction?'sur les mois déjà écoulés':'aucun trou sur les mois écoulés',ind.monthsWithoutAction?'is-alert':'is-ok','months')+
-    '</div>';
+    '</div>'+(d.budget&&d.budget.total?'<p class="dr-budget-total">Budget renseigné pour '+state.year+' : <strong>'+euros(d.budget.total)+'</strong><span class="dr-budget-lock">'+BUDGET_NOTICE+'</span></p>':'');
     var frise=friseView(list,ind,canEdit);
     var rows=list.length?list.map(row).join(''):'<p class="dr-empty">Aucune action enregistrée pour '+state.year+'. '+(canEdit?'Ajoutez votre première action, ou demandez-nous de l’alimenter pour vous.':'')+'</p>';
     renderTabs();
@@ -199,7 +203,7 @@
       if(width<1.5)return '<button type="button" class="dr-tl-dot st-'+esc(it.status)+'" style="left:'+left.toFixed(2)+'%"'+attrs+'></button>';
       return '<button type="button" class="dr-tl-bar st-'+esc(it.status)+(s<y0?' is-cut-start':'')+(e>y1?' is-cut-end':'')+'" style="left:'+left.toFixed(2)+'%;width:'+width.toFixed(2)+'%"'+attrs+'>'+(label&&width>=12?'<span>'+esc(label)+'</span>':'')+'</button>';
     }
-    var inYear=list.filter(function(it){var s=String(it.start||it.date).slice(0,10),e=String(it.end||s).slice(0,10);return s<y+1+'-01-01'&&e>=y+'-01-01';});
+    var inYear=list.filter(function(it){var s=String(it.start||it.date).slice(0,10),e=String(it.end||s).slice(0,10);return it.status!=='cancelled'&&s<y+1+'-01-01'&&e>=y+'-01-01';});
     function line(label,sub,marks,note,cls){return '<div class="dr-tl-row'+(cls?' '+cls:'')+'"><div class="dr-tl-label"><strong>'+label+'</strong>'+(sub?'<small>'+sub+'</small>':'')+'</div><div class="dr-tl-track">'+todayLine+marks+'</div><span class="dr-tl-note">'+(note||'')+'</span></div>';}
     var rows=inYear.filter(function(it){return it.type==='campaign';}).map(function(c){
       var left=c.end?Math.ceil((ms(c.end)+DAY-nowT)/DAY):null;
@@ -209,7 +213,8 @@
     var groups={},order=[];
     inYear.filter(function(it){return it.type==='action';}).forEach(function(a){if(!groups[a.kind]){groups[a.kind]=[];order.push(a.kind);}groups[a.kind].push(a);});
     order.forEach(function(k){var its=groups[k],kd=kind(k),done=its.filter(function(a){return a.status==='done';}).length;
-      rows.push(line('<span aria-hidden="true">'+esc(kd.icon)+'</span> '+esc(kd.label),its.length+' action'+(its.length>1?'s':'')+(done?' · '+done+' réalisée'+(done>1?'s':''):''),its.map(function(a){return mark(a,a.title);}).join(''),''));});
+      var counted=its.filter(inProgramme).length;
+      rows.push(line('<span aria-hidden="true">'+esc(kd.icon)+'</span> '+esc(kd.label),counted+' action'+(counted>1?'s':'')+(done?' · '+done+' réalisée'+(done>1?'s':''):''),its.map(function(a){return mark(a,a.title);}).join(''),''));});
     var months=(ind.months||[]),nowY=now.getFullYear(),nowM=now.getMonth();
     // Mois passé : on ne peut plus être accompagné, seulement saisir une action oubliée. Mois à venir : être accompagné ou planifier.
     var pastYear=y<nowY;
@@ -224,7 +229,7 @@
     var gapsLabel=pastYear?'<strong>Mois sans action</strong><small>'+(canEdit?'Une action oubliée ? Saisissez-la':'Année terminée')+'</small>'
       :'<strong>Mois à remplir</strong><small>Un mois vide casse la dynamique</small>';
     var axis=MONTHS.map(function(m,i){return '<span'+(y===nowY&&i===nowM?' class="is-current"':'')+'>'+m+'</span>';}).join('');
-    var legend='<ul class="dr-tl-legend"><li class="st-in_progress">En cours / en diffusion</li><li class="st-done">Réalisé</li><li class="st-planned">Prévu / programmée</li></ul>';
+    var legend='<ul class="dr-tl-legend"><li class="st-in_progress">En cours / en diffusion</li><li class="st-done">Réalisé</li><li class="st-planned">Prévu / programmée</li><li class="st-postponed">Reporté</li></ul>';
     var empty=rows.length?'':'<p class="dr-empty">Aucune action ni diagnostic en '+y+'.</p>';
     return legend+'<div class="dr-tl-scroll"><div class="dr-tl-grid">'+line('','',axis,'','dr-tl-axis')+rows.join('')+
       '<div class="dr-tl-row dr-tl-gaps"><div class="dr-tl-label">'+gapsLabel+'</div><div class="dr-tl-months">'+gaps+'</div><span class="dr-tl-note"></span></div></div></div>'+empty;
@@ -312,7 +317,7 @@
   function kpi(value,label,hint,cls,key){return '<button type="button" class="dr-kpi '+(cls||'')+'" data-kpi="'+esc(key)+'" aria-haspopup="dialog"><strong>'+value+'</strong><span>'+label+'</span><small>'+hint+'</small><em class="dr-kpi-more">Voir le détail →</em></button>';}
   // Détail d'une carte : les actions et diagnostics de l'année derrière le chiffre, chacun menant à sa fiche.
   function kpiDetail(key){
-    var y=String(state.year),list=items().filter(function(it){return String(it.date).slice(0,4)===y;});
+    var y=String(state.year),year=items().filter(function(it){return String(it.date).slice(0,4)===y;}),list=year.filter(inProgramme);
     var themesOf=function(it){return String(it.theme||'').split(',').map(function(s){return s.trim();}).filter(Boolean);};
     var line=function(it,extra){var k=kind(it.kind),st=it.type==='campaign'?campaignStatusLabel(it):(state.data.statuses||{})[it.status]||it.status;
       var when=fmtDate(it.start||it.date)+(it.end&&it.end!==it.date?' → '+fmtDate(it.end):'');
@@ -322,7 +327,8 @@
     var people=function(it){return it.people!=null?num(it.people)+(it.type==='campaign'?' participations':' personnes'):'';};
     var title,intro='',body='';
     if(key==='actions'){title='Actions de '+y;
-      body=group('Réalisées',list.filter(function(it){return it.status==='done';}),people)+group('À venir ou en cours',list.filter(function(it){return it.status!=='done';}),people);}
+      body=group('Réalisées',list.filter(function(it){return it.status==='done';}),people)+group('À venir ou en cours',list.filter(function(it){return it.status!=='done';}),people)+
+        group('Reportées',year.filter(function(it){return it.status==='postponed';}))+group('Annulées',year.filter(function(it){return it.status==='cancelled';}));}
     else if(key==='people'){title='Personnes touchées en '+y;
       var counted=list.filter(function(it){return (it.status==='done'||it.type==='campaign')&&Number(it.people)>0;}).sort(function(a,b){return b.people-a.people;});
       intro='Participations aux diagnostics et personnes touchées par les actions réalisées. Une même personne peut avoir participé à plusieurs actions.';
@@ -367,14 +373,18 @@
     var rv=it.type==='action'&&it.status==='done'?reviewRow(it.id):null;
     var by=it.meayt?'<span class="dr-meayt-by">avec '+MEAYT_LOGO+'Me&amp;YouToo</span>':it.provider?esc('avec '+it.provider):'';
     var meta=[it.theme,it.audience,it.people!=null?num(it.people)+(it.type==='campaign'?' participations':' personnes touchées'):''].filter(Boolean).map(esc).concat(by?[by]:[],it.recommended?[esc(recoTip(it.campaignId))]:[]).join(' · ');
+    if(it.postponedFrom&&it.status!=='done')meta+=(meta?' · ':'')+'reportée du '+esc(fmtDate(it.postponedFrom));
+    var budget=it.budget!=null?'<p class="dr-row-meta">Budget : <strong>'+euros(it.budget)+'</strong> <span class="dr-budget-lock is-inline">'+BUDGET_NOTICE+'</span></p>':'';
     var docs=(it.documents||[]).map(function(doc){return '<span class="dr-doc"><button type="button" class="dr-link" data-download="'+esc(it.id)+':'+esc(doc.id)+'" data-filename="'+esc(doc.filename)+'">📎 '+esc(doc.filename)+'</button>'+(canEdit?'<button type="button" class="dr-x" data-doc-delete="'+esc(it.id)+':'+esc(doc.id)+'" aria-label="Retirer '+esc(doc.filename)+'">×</button>':'')+'</span>';}).join('');
     var tools=it.type==='campaign'
       ?'<a class="dr-link" href="campagne-detail.html?projectId='+encodeURIComponent(it.id)+(organizationId?'':'')+'">Voir la campagne →</a>'
       :((canEdit?'<button type="button" class="button button-ghost" data-edit="'+esc(it.id)+'">Modifier</button><label class="button button-ghost dr-upload">Joindre un document<input type="file" accept="application/pdf,image/png,image/jpeg" data-upload="'+esc(it.id)+'" hidden></label><button type="button" class="button button-ghost" data-delete="'+esc(it.id)+'">Supprimer</button>':'')+
-        (isClient&&it.status!=='done'?'<button type="button" class="dr-link" data-accompany="'+esc(it.id)+'">Être accompagné sur cette action →</button>':''));
-    return '<article class="dr-row" id="dr-'+esc(it.type+'-'+it.id)+'"><div class="dr-row-icon" aria-hidden="true">'+esc(k.icon)+'</div><div class="dr-row-main">'+
+        (isClient&&it.status!=='done'&&it.status!=='cancelled'?'<button type="button" class="dr-link" data-accompany="'+esc(it.id)+'">Être accompagné sur cette action →</button>':''));
+    return '<article class="dr-row'+(it.status==='cancelled'?' is-cancelled':'')+'" id="dr-'+esc(it.type+'-'+it.id)+'"><div class="dr-row-icon" aria-hidden="true">'+esc(k.icon)+'</div><div class="dr-row-main">'+
       '<p class="dr-row-kind">'+esc(it.type==='campaign'?'Diagnostic comportemental · Studio':k.label)+(it.meayt?' <span class="dr-badge is-meayt">Animée par Me&amp;YouToo</span>':'')+(it.recommended?' <span class="dr-badge is-reco">Recommandée par Me&amp;YouToo</span>':'')+' <span class="dr-badge st-'+esc(it.status)+'">'+esc(st)+'</span></p>'+
-      '<h4>'+esc(it.title)+'</h4><p class="dr-row-when">'+esc(when)+'</p>'+(meta?'<p class="dr-row-meta">'+meta+'</p>':'')+(it.notes?'<p class="dr-row-notes">'+esc(it.notes)+'</p>':'')+
+      '<h4>'+esc(it.title)+'</h4><p class="dr-row-when">'+esc(when)+'</p>'+(meta?'<p class="dr-row-meta">'+meta+'</p>':'')+
+      (it.objective?'<p class="dr-row-notes"><strong>Objectif :</strong> '+esc(it.objective)+'</p>':'')+(it.notes?'<p class="dr-row-notes">'+esc(it.notes)+'</p>':'')+
+      (it.results&&it.status==='done'?'<p class="dr-row-notes"><strong>Résultats et enseignements :</strong> '+esc(it.results)+'</p>':'')+budget+
       reviewBox(rv,it.id)+
       (docs?'<div class="dr-docs">'+docs+'</div>':'')+'<div class="dr-row-tools">'+tools+'</div></div></article>';
   }
@@ -415,7 +425,7 @@
     var qCard='<article class="dp-card dr-png-wrap" id="dr-png-trimestres"><header><h3>📊 Prévu / réalisé par trimestre</h3>'+pngButton('dr-png-trimestres','trimestres')+'</header><div class="dp-quarters">'+p.quarters.map(function(q){
       var h=function(n){return Math.round(n/maxQ*100);};
       return '<div class="dp-q"><div class="dp-q-bars" aria-hidden="true"><i class="is-done" style="height:'+h(q.done)+'%"></i><i class="is-planned" style="height:'+h(q.planned)+'%"></i><i class="is-late" style="height:'+h(q.late)+'%"></i></div>'+
-        '<strong>T'+q.quarter+'</strong><small>'+q.done+' réalisée'+(q.done>1?'s':'')+(q.planned?' · '+q.planned+' en cours ou prévue'+(q.planned>1?'s':''):'')+(q.late?' · <b>'+q.late+' en retard</b>':'')+'</small></div>';
+        '<strong>T'+q.quarter+'</strong><small>'+q.done+' réalisée'+(q.done>1?'s':'')+(q.planned?' · '+q.planned+' en cours ou prévue'+(q.planned>1?'s':''):'')+(q.late?' · <b>'+q.late+' en retard</b>':'')+(q.postponed?' · '+q.postponed+' reportée'+(q.postponed>1?'s':''):'')+'</small></div>';
     }).join('')+'</div><ul class="dp-legend"><li class="is-done">Réalisées</li><li class="is-planned">En cours ou prévues</li><li class="is-late">En retard</li></ul></article>';
     if(!p.current)return '<section class="dp-grid">'+plansView()+objCard+qCard+'</section>';
     // Échéances
@@ -532,12 +542,18 @@
       '<label class="dr-field"><span>Type d’action *</span><select name="kind">'+kinds+'</select></label>'+
       '<label class="dr-field"><span>Titre *</span><input name="title" required maxlength="200" value="'+esc(a.title||'')+'" placeholder="Ex. : Conférence sur le sexisme ordinaire"></label>'+
       '<div class="dr-field-row"><label class="dr-field"><span>Date *</span><input type="date" name="actionDate" required value="'+esc(a.action_date||'')+'"></label><label class="dr-field"><span>Date de fin</span><input type="date" name="endDate" value="'+esc(a.end_date||'')+'"></label><label class="dr-field"><span>Statut</span><select name="status">'+statuses+'</select></label></div>'+
+      '<div data-postpone hidden><label class="dr-field"><span>Nouvelle date (si vous la connaissez)</span><input type="date" name="postponedTo"></label>'+
+      '<p class="dr-row-meta">Avec une date, l’action se déplace et redevient prévue. Sans date, elle reste reportée et ne compte plus dans votre programme.</p></div>'+
+      '<label class="dr-field"><span>Objectif</span><input name="objective" maxlength="300" value="'+esc(a.objective||'')+'" placeholder="Ex. : faire connaître le dispositif de signalement"></label>'+
       multiField('theme','Thématiques',THEMES,a.theme)+
       '<div class="dr-field-row"><label class="dr-field"><span>Public visé</span><input name="audience" maxlength="200" value="'+esc(a.audience||'')+'" placeholder="Ex. : managers du siège, nouveaux arrivants…"></label><label class="dr-field dr-field-small"><span>Personnes touchées</span><input type="number" min="0" name="peopleReached" value="'+esc(a.people_reached??'')+'"></label></div>'+
       '<div class="dr-field-row dr-provider-pick"><label class="dr-field"><span>Prestataire</span><select name="providerId">'+providerOptions(currentProvider)+'</select></label><button type="button" class="button button-ghost" data-new-provider>＋ Nouveau prestataire</button></div>'+
       // Dossier d’équipe : l’action apparaît dans le Cockpit de l’équipe concernée (obligatoire pour un compte limité).
       ((d.teamFolders||[]).length?'<label class="dr-field"><span>Dossier d’équipe'+(d.perimeter?' *':'')+'</span><select name="teamFolderId"'+(d.perimeter?' required':'')+'>'+(d.perimeter?'':'<option value="">— Toute l’entreprise —</option>')+d.teamFolders.map(function(t){return '<option value="'+esc(t.id)+'"'+(String(t.id)===String(a.team_folder_id||'')?' selected':'')+'>'+esc(t.name)+'</option>';}).join('')+'</select></label>':'')+
       '<label class="dr-field"><span>Notes</span><textarea name="notes" rows="3" maxlength="4000">'+esc(a.notes||'')+'</textarea></label>'+
+      '<label class="dr-field" data-results hidden><span>Résultats et enseignements</span><textarea name="results" rows="3" maxlength="4000" placeholder="Ce que l’action a permis, ce que vous en retenez">'+esc(a.results||'')+'</textarea></label>'+
+      // Budget : réservé au client, le champ n'existe pas pour Me&YouToo ni pour un compte limité.
+      (d.budget?'<label class="dr-field dr-field-small"><span>Budget (€, facultatif)</span><input type="number" min="0" step="1" name="budget" value="'+esc(a.budget_eur??'')+'"></label><p class="dr-budget-lock">'+BUDGET_NOTICE+'</p>':'')+
       // Côté Me&YouToo : rattacher l'action à un diagnostic (restitution, recommandation issue de la restitution).
       (isAdmin?'<div class="dr-field-row dr-reco-pick"><label class="dr-field"><span>Diagnostic lié</span><select name="campaignId"><option value="">— Aucun —</option>'+
         ((d.diagnostics||{}).campaigns||[]).map(function(c){return '<option value="'+esc(c.id)+'"'+(String(c.id)===String(a.campaign_id||'')?' selected':'')+'>'+esc(c.name+' ('+String(c.launch_date).slice(0,7).split('-').reverse().join('/')+')')+'</option>';}).join('')+
@@ -547,6 +563,9 @@
     var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
     dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
     dlg.addEventListener('close',function(){dlg.remove();});
+    // La nouvelle date n'a de sens que pour un report, les résultats que pour une action réalisée.
+    function syncStatus(){var s=form.elements.status.value;dlg.querySelector('[data-postpone]').hidden=s!=='postponed';dlg.querySelector('[data-results]').hidden=s!=='done';form.elements.postponedTo.min=form.elements.actionDate.value;}
+    form.elements.status.addEventListener('change',syncStatus);form.elements.actionDate.addEventListener('change',syncStatus);syncStatus();
     // Création d'un prestataire sans quitter la fiche : la liste est rechargée puis le nouveau est sélectionné.
     dlg.querySelector('[data-new-provider]').onclick=function(){
       providerDialog(null,async function(newId){
@@ -563,12 +582,14 @@
         if(!keep)return;
       }
       var f=new FormData(form),body=withOrg({kind:f.get('kind'),title:f.get('title'),actionDate:f.get('actionDate'),endDate:f.get('endDate'),status:f.get('status'),
-        theme:readMulti(form,'theme'),peopleReached:f.get('peopleReached'),audience:f.get('audience'),notes:f.get('notes'),providerId:f.get('providerId'),offerId:a.offer_id||null});
+        theme:readMulti(form,'theme'),peopleReached:f.get('peopleReached'),audience:f.get('audience'),notes:f.get('notes'),objective:f.get('objective'),results:f.get('results'),providerId:f.get('providerId'),offerId:a.offer_id||null});
+      if(f.get('status')==='postponed'&&f.get('postponedTo'))body.postponedTo=f.get('postponedTo');
+      if(form.elements.budget)body.budget=f.get('budget');
       if(isAdmin){body.campaignId=f.get('campaignId');body.recommended=f.get('recommended')==='on';}
       if(form.elements.teamFolderId)body.teamFolderId=f.get('teamFolderId')||null;
       try{
         await StudioAPI.request('/api/dei/actions'+(action?'/'+encodeURIComponent(action.id):'')+(action?qs():''),{method:action?'PATCH':'POST',body:JSON.stringify(body)});
-        dlg.close();var y=Number(String(body.actionDate).slice(0,4));if(y&&y!==state.year)state.year=y;load();
+        dlg.close();var y=Number(String(body.postponedTo||body.actionDate).slice(0,4));if(y&&y!==state.year)state.year=y;load();
       }catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
     };
     dlg.showModal();

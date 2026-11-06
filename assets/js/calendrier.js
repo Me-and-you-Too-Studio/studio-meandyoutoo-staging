@@ -266,7 +266,7 @@
     try{
       const results=await Promise.all(years.map(y=>StudioAPI.request(`/api/dei/actions?year=${y}${isAdmin?'&organizationId='+encodeURIComponent(org):''}`)));
       state.deiKinds=results[0]?.kinds||{};
-      return results.flatMap(d=>d.actions||[]);
+      return results.flatMap(d=>d.actions||[]).filter(a=>a.status!=='cancelled');
     }catch(e){return[];}
   }
   function filteredDeiActions(){
@@ -278,7 +278,7 @@
   function longAction(a){const s=parseDate(a.action_date),e=parseDate(a.end_date);return Boolean(s&&e&&(e-s)/86400000>7);}
   function actionCovers(a,d){const s=parseDate(a.action_date),e=parseDate(a.end_date)||s;return s&&d>=new Date(s.getFullYear(),s.getMonth(),s.getDate())&&d<=new Date(e.getFullYear(),e.getMonth(),e.getDate());}
   function actionHref(a){const org=$('#calendar-org-filter')?.value||'';return `cockpit-dei.html?${isAdmin&&org?'organizationId='+encodeURIComponent(org)+'&':''}year=${String(a.action_date).slice(0,4)}&focus=action-${encodeURIComponent(a.id)}#actions`;}
-  const actionStatusLabel={planned:'Prévue',in_progress:'En cours',done:'Réalisée'};
+  const actionStatusLabel={planned:'Prévue',in_progress:'En cours',done:'Réalisée',postponed:'Reportée'};
   function filteredTasksForCalendar(){
     if(!$('#calendar-show-tasks').checked)return[];
     const org=$('#calendar-org-filter').value;
@@ -400,7 +400,7 @@
     // Titre, sous-titre et légende décrivent ce que la frise montre vraiment.
     const shown=[rows.length?'les campagnes, du lancement à la clôture':'',tasks.length?'les tâches':'',yearActions.length?'les actions D&I':'',dei.length?'les temps forts D&I':''].filter(Boolean);
     const intro=shown.length?(shown.length>1?shown.slice(0,-1).join(', ')+' et '+shown[shown.length-1]:shown[0])+'. Cliquez sur un élément pour l’ouvrir.':'';
-    const actionStatuses=['planned','in_progress','done'].filter(st=>yearActions.some(a=>(a.status||'planned')===st));
+    const actionStatuses=['planned','in_progress','done','postponed'].filter(st=>yearActions.some(a=>(a.status||'planned')===st));
     const legend=[rows.length?'<li class="is-scheduled">Programmée</li><li class="is-active">En diffusion</li><li class="is-closed">Terminée</li>':'',tasks.length?'<li class="is-task">Tâche</li>':'',actionStatuses.map(st=>`<li class="is-action st-${st}">Action ${esc(actionStatusLabel[st].toLowerCase())}</li>`).join(''),dei.length?'<li class="is-dei">Temps fort D&I</li>':''].join('');
     root.innerHTML=`<header class="cal-tl-head"><div><h3>Votre année ${year}</h3>${intro?`<p>${esc(intro.charAt(0).toUpperCase()+intro.slice(1))}</p>`:''}</div>${legend?`<ul class="cal-tl-legend">${legend}</ul>`:''}</header><div class="cal-tl-grid"><div class="cal-tl-row cal-tl-axis" aria-hidden="true"><span class="cal-tl-label"></span><div class="cal-tl-track">${axis}</div><span class="cal-tl-note"></span></div>${rowHtml}${teamRow}${deiRow}${actionRow}</div>${empty}`;
     bindCampaignPopovers(root);bindDeiPopovers(root);

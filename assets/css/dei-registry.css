@@ -33,6 +33,11 @@
 .dr-row{display:flex;gap:14px;background:#fff;border:1px solid var(--line,#e2e7f1);border-radius:14px;padding:14px 16px;transition:box-shadow .3s}
 .dr-row.is-focus{box-shadow:0 0 0 3px var(--green-blue,#007883)}
 .dr-row-icon{font-size:1.4rem;line-height:1}
+.dr-row.is-cancelled{opacity:.62;background:var(--royal-blue-tint,#f5f7fb)}
+.dr-row.is-cancelled h4{text-decoration:line-through}
+.dr-budget-total{margin:-12px 0 24px;font-size:.95rem}
+.dr-budget-lock{display:block;margin:6px 0 0;padding:8px 12px;border-radius:10px;background:var(--green-blue-soft,#e6f4f5);color:var(--green-blue-dark,#00636c);font-size:.92rem;font-weight:800}
+.dr-budget-lock.is-inline{display:inline-block;margin:0 0 0 6px;padding:2px 8px;font-size:.8rem}
 .dr-meayt-by{display:inline-flex;align-items:center;gap:5px;vertical-align:middle}
 .dr-meayt-logo{height:24px;width:auto;flex:none}
 .dr-provider h4.dr-meayt-by{display:flex;gap:8px}
@@ -47,6 +52,10 @@
 .dr-badge.st-scheduled{background:var(--royal-blue-soft,#eaeef7);color:var(--royal-blue,#273a64)}
 .dr-badge.st-in_progress{background:var(--sunny-yellow-soft,#fff6dd);color:#8a5a00}
 .dr-badge.is-meayt{background:var(--royal-blue,#273a64);color:#fff}
+.dr-badge.st-postponed{background:#fbeee0;color:#8a4b00}
+.dr-badge.st-cancelled{background:#e7ebf2;color:var(--muted,#54607e)}
+.dr-tl-bar.st-postponed,.dr-tl-dot.st-postponed{--tl:#d9a066;opacity:.65}
+.dr-tl-legend .st-postponed::before{background:#d9a066}
 .dr-docs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .dr-doc{display:inline-flex;align-items:center;gap:2px;background:var(--royal-blue-tint,#f5f7fb);border-radius:8px;padding:2px 4px 2px 8px}
 .dr-x{border:0;background:transparent;font-size:1rem;line-height:1;cursor:pointer;color:var(--muted,#54607e);padding:2px 4px}

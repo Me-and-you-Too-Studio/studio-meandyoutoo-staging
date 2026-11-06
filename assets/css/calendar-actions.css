@@ -3,14 +3,17 @@
 .studio-calendar-event.is-dei-action{background:#ede9fe;border-left:3px solid #5b21b6;color:#2e1065;text-decoration:none}
 .studio-calendar-event.is-dei-action.st-done{background:#e6f4f5;border-left-color:#007883;color:#00454b}
 .studio-calendar-event.is-dei-action.st-in_progress{background:#fff6dd;border-left-color:#b07800;color:#4a3400}
+.studio-calendar-event.is-dei-action.st-postponed{background:#fbeee0;border-left-color:#d9a066;color:#6b3a00;opacity:.7}
 .studio-calendar-event.is-dei-action span{background:currentColor}
 .cal-tl-row-actions .cal-tl-label strong{color:#5b21b6}
 .cal-tl-action{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#7c3aed;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);z-index:2}
 .cal-tl-action.st-done{background:#007883}
 .cal-tl-action.st-in_progress{background:#d99a00}
+.cal-tl-action.st-postponed{background:#d9a066;opacity:.65}
 .cal-tl-action.is-band{width:auto;height:20px;margin:-10px 0 0;border-radius:10px;padding:0 8px;display:flex;align-items:center;overflow:visible;background:#ede9fe;border:1px solid #c4b5fd;color:#2e1065;font-size:.72rem;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:none}
 .cal-tl-action.is-band.st-done{background:#e6f4f5;border-color:#9fd3d6;color:#00454b}
 .cal-tl-action.is-band.st-in_progress{background:#fff6dd;border-color:#f2d27a;color:#4a3400}
+.cal-tl-action.is-band.st-postponed{background:#fbeee0;border-color:#e6c49e;color:#6b3a00;opacity:.7}
 .cal-tl-action.is-band span{overflow:hidden;text-overflow:ellipsis}
 .cal-tl-action:hover,.cal-tl-action:focus-visible{outline:2px solid #5b21b6;outline-offset:2px}
 /* Infobulle */
@@ -21,4 +24,5 @@
 .cal-tl-legend li.is-action{--tl-color:#7c3aed}
 .cal-tl-legend li.is-action.st-in_progress{--tl-color:#d99a00}
 .cal-tl-legend li.is-action.st-done{--tl-color:#007883}
+.cal-tl-legend li.is-action.st-postponed{--tl-color:#d9a066}
 .cal-tl-legend li.is-dei::before{background:conic-gradient(#b44fb3 0 25%,#eb6366 0 50%,#f2b824 0 75%,#5669a9 0)}

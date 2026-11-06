@@ -12,7 +12,7 @@
   var organizationId=isAdmin?params.get('organizationId'):null;
   var year=/^\d{4}$/.test(params.get('year')||'')?Number(params.get('year')):new Date().getFullYear();
   var MONTHS=['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
-  var STATUS={done:'Réalisée',in_progress:'En cours',planned:'Prévue'};
+  var STATUS={done:'Réalisée',in_progress:'En cours',planned:'Prévue',postponed:'Reportée'};
   // Temps forts de l'année suivante mis en avant dans les perspectives.
   var EVENTS=[['8 mars','Journée internationale des droits des femmes'],['17 mai','Journée contre l’homophobie, la transphobie et la biphobie'],['Juin','Mois des fiertés'],['Novembre','SEEPH — Semaine européenne pour l’emploi des personnes handicapées'],['25 novembre','Journée pour l’élimination de la violence à l’égard des femmes'],['3 décembre','Journée internationale des personnes handicapées']];
 
@@ -27,12 +27,14 @@
   // Actions du registre + campagnes de diagnostic dans un même format.
   function items(d){
     var t=today();
-    return d.actions.map(function(a){return {kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,provider:a.led_by_meayt?'Me&YouToo':a.provider_name,documents:a.documents||[]};})
+    return d.actions.map(function(a){return {kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,objective:a.objective,results:a.results,provider:a.led_by_meayt?'Me&YouToo':a.provider_name,documents:a.documents||[]};})
       .concat(d.campaigns.map(function(c){return {kind:'diagnostic',title:c.name,date:c.year_date||c.launch_date,start:c.launch_date,end:c.close_date,campaign:true,
         status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':'in_progress',
         theme:c.dei_theme||c.theme_title,people:c.respondents,provider:'Me&YouToo',documents:[]};}))
       .sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
   }
+  // Une action reportée sans nouvelle date ou annulée ne compte pas dans le bilan.
+  function inProgramme(i){return i.status!=='postponed'&&i.status!=='cancelled';}
   function kindOf(d,k){return (d.kinds||{})[k]||{label:k,icon:'•'};}
   function load(y){return StudioAPI.request('/api/dei/actions'+qs(y)).catch(function(){return null;});}
 
@@ -51,7 +53,7 @@
     // Compte limité à certains dossiers d’équipe : « Bilan Handicap », limité à ses dossiers.
     if(d.perimeter)org=(d.perimeter.folders.map(function(f){return f.name;}).join(', ')||'Aucun dossier')+(org?' · '+org:'');
     document.title='Bilan D&I '+year+(org?' — '+org:'')+' — Studio Me&YouToo';
-    var list=items(d),ind=d.indicators,p=d.pilotage||{objectives:[],quarters:[]};
+    var all=items(d),list=all.filter(inProgramme),postponed=all.filter(function(i){return i.status==='postponed';}),ind=d.indicators,p=d.pilotage||{objectives:[],quarters:[]};
     var done=list.filter(function(i){return i.status==='done';});
     var generated=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
     var logo=user&&user.role==='client'?(user.organizationLogoUrl||user.organizationLogoData||''):(organizationId?'/media/organizations/'+encodeURIComponent(organizationId)+'/logo':'');
@@ -117,15 +119,16 @@
         var k=kindOf(d,i.kind);
         var sub=[k.label,i.provider?'par '+i.provider:''].filter(Boolean).join(' · ');
         var docs=i.documents.length?'<span class="bl-docs">📎 '+i.documents.map(function(x){return esc(x.filename);}).join(', ')+'</span>':'';
-        return '<tr><td>'+esc(fmtDate(i.start||i.date))+(i.end&&i.end!==i.date?'<br><small>→ '+esc(fmtDate(i.end))+'</small>':'')+'</td><td><strong>'+esc(i.title)+'</strong><br><small>'+esc(sub)+'</small>'+docs+'</td>'+
+        return '<tr><td>'+esc(fmtDate(i.start||i.date))+(i.end&&i.end!==i.date?'<br><small>→ '+esc(fmtDate(i.end))+'</small>':'')+'</td><td><strong>'+esc(i.title)+'</strong><br><small>'+esc(sub)+'</small>'+(i.objective?'<br><small>Objectif : '+esc(i.objective)+'</small>':'')+(i.results&&i.status==='done'?'<br><small>Résultats : '+esc(i.results)+'</small>':'')+docs+'</td>'+
           '<td>'+esc(i.theme||'—')+(i.audience?'<br><small>'+esc(i.audience)+'</small>':'')+'</td><td>'+(i.people!=null&&i.people!==''?num(i.people):'—')+'</td><td><span class="bl-st st-'+esc(i.status)+'">'+esc(STATUS[i.status]||i.status)+'</span></td></tr>';
       }).join('')+'</tbody></table>';
     });
+    if(postponed.length)html+='<h3>Actions reportées <small>'+plural(postponed.length,'action')+'</small></h3><ul class="bl-list">'+postponed.map(function(i){return '<li><span>'+esc(fmtDate(i.date))+'</span> '+esc(i.title)+'</li>';}).join('')+'</ul>';
     html+='</section>';
 
     // 6. Perspectives
     html+='<section class="bl-page bl-next"><h2>Perspectives '+(year+1)+'</h2>';
-    var nextList=next?items(next):[];
+    var nextList=next?items(next).filter(inProgramme):[];
     if(nextList.length)html+='<h3>Déjà prévu</h3><ul class="bl-list">'+nextList.map(function(i){return '<li><span>'+esc(fmtDate(i.date))+'</span> '+esc(i.title)+'</li>';}).join('')+'</ul>';
     if(next&&next.pilotage&&next.pilotage.objectives.length)html+='<h3>Objectifs déjà fixés</h3><ul class="bl-list">'+next.pilotage.objectives.map(function(o){return '<li>'+esc(objectiveTitle(o))+'</li>';}).join('')+'</ul>';
     var notices=(d.pilotage&&d.pilotage.attention&&d.pilotage.attention.notices)||[];
