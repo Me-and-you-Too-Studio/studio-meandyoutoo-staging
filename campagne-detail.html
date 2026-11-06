@@ -23,7 +23,7 @@
 </div>
 <nav class="bottom-nav" aria-label="Navigation mobile" id="bottom-nav-root"></nav>
 <script src="assets/js/api.js?v=20261103-json-1"></script>
-<script src="assets/js/app.js?v=20261106-compte-1"></script>
+<script src="assets/js/app.js?v=20261106-aide-1"></script>
 <script src="assets/js/content-adjustment.js?v=20260903-nested-adjustment-1"></script>
 <script>
 (function(){
@@ -189,6 +189,9 @@
       '<section class="hero-panel" style="display:flex;justify-content:space-between;gap:24px;align-items:center;flex-wrap:wrap;margin-bottom:24px"><div><h2 class="section-title campaign-section-title"><span class="campaign-section-icon">'+ICONS.results+'</span>Résultats '+window.StudioGlossary.dot('resultats')+'</h2><p class="section-desc">'+(resultsRestricted?'Les résultats détaillés (par profil de répondants) sont réservés aux comptes autorisés. Le nombre de répondants reste visible ci-dessous.':results?'Le lien de résultats renseigné par Me&YouToo est disponible.':'Aucun lien de résultats n\'est encore renseigné pour cette campagne.')+'</p></div>'+resultsHtml+(showRespondents?'<div class="campaign-respondents" id="campaign-respondents" aria-live="polite"><span>Chargement du nombre de répondants…</span></div>':'')+'</section>'+
       '<section class="card" style="padding:26px" aria-labelledby="actions-title"><h2 class="section-title campaign-section-title" id="actions-title"><span class="campaign-section-icon">'+ICONS.actions+'</span>Actions sur la campagne</h2><p class="section-desc" style="margin-bottom:18px">'+(['unpublished','closed','completed','archived'].includes(p.status)?'Pour relancer ce thème, reprogrammez cette campagne : son contenu et ses liens seront conservés.':'Accédez uniquement aux éléments réellement associés à cette campagne.')+'</p>'+actionsHtml+'</section>';
     document.title=name+' — Suivi de campagne — Studio Me&YouToo';
+    // Tuto de la relecture dès la transmission, et fiche d'aide : l'en-tête vient d'être dessiné.
+    if(p.status!=='draft')window.StudioTutorial?.set('relecture');
+    window.StudioHelp?.place();
     campaignStartDate=p.launch_date;if(showRespondents)loadRespondents(p.id);
     if(campaignEnded(p))loadCelebration(p);
   }

@@ -351,10 +351,12 @@
   function currentPage(){return location.pathname.split('/').pop()||'accueil.html';}
   function pageHelp(page){return PAGE_HELP[page]||(/^theme(-[a-z-]+)?\.html$/.test(page)?PAGE_HELP['bibliotheque.html']:'');}
   function helpUrl(subject){return 'aide.html?sujet='+encodeURIComponent(subject);}
+  // Pour les écrans dont l'en-tête est dessiné après le chargement.
+  window.StudioHelp={place:function(){placeHelp();}};
   function placeHelp(){
     var subject=pageHelp(currentPage());if(!subject||document.querySelector('.studio-help-button'))return;
     var html='<a class="studio-tuto-button studio-help-button" href="'+esc(helpUrl(subject))+'"><span aria-hidden="true">📖</span> Lire le guide</a>';
-    var tuto=document.querySelector('.studio-tuto-button:not(.studio-help-button)'),badge=document.querySelector('.step-time-badge'),actions=document.querySelector('.topbar .top-actions'),title=document.querySelector('.topbar .page-title, .page-title');
+    var tuto=document.querySelector('.studio-tuto-button:not(.studio-help-button)'),badge=document.querySelector('.step-time-badge'),actions=document.querySelector('.topbar .top-actions, main .top-actions'),title=document.querySelector('.topbar .page-title, .page-title');
     if(tuto)tuto.insertAdjacentHTML('afterend',html);
     else if(badge)badge.insertAdjacentHTML('afterend',html);
     else if(actions)actions.insertAdjacentHTML('afterbegin',html);
