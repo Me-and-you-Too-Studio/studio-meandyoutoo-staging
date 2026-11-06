@@ -56,3 +56,19 @@ main.cas-stats-mode > :not(.admin-client-page-head):not(.cas-tabs):not(.cas-pane
 .cas-tooltip[hidden]{display:none}
 .cas-section-title{margin-top:14px;padding-top:18px;border-top:2px dashed var(--line,#e2e7f1)}
 .cas-section-title h3{margin:0 0 4px;font-size:1.25rem}.cas-section-title p{margin:0;color:var(--muted,#54607e)}
+
+.cas-obj{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.cas-obj li>div{display:flex;justify-content:space-between;gap:12px;font-size:.92rem}
+.cas-obj li>div span{white-space:nowrap;color:var(--muted,#54607e)}
+.cas-obj small{color:var(--muted,#54607e)}
+.cas-obj-bar{display:block;height:7px;margin-top:4px;border-radius:99px;background:var(--royal-blue-soft,#eaeef7);overflow:hidden}
+.cas-obj-bar b{display:block;height:100%;background:var(--green-blue,#007883)}
+.cas-sub{margin:14px 0 8px;font-size:.92rem}
+.cas-out-status{margin:0 0 10px;font-weight:700}
+.cas-out-figures{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}
+.cas-out-figures div{padding:10px;border-radius:12px;background:var(--royal-blue-tint,#f5f7fb);text-align:center}
+.cas-out-figures b{display:block;font-size:1.3rem}
+.cas-out-figures span{font-size:.8rem;color:var(--muted,#54607e)}
+.cas-ideas{margin:0;display:grid;grid-template-columns:minmax(200px,auto) 1fr;gap:8px 16px}
+.cas-ideas dt{font-weight:700}
+.cas-ideas dd{margin:0}

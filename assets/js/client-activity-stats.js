@@ -104,12 +104,53 @@
     panel.querySelector('[data-cas-refresh]').onclick=load;
   }
 
+  // Objectifs et perspectives du client, pour rebondir et l'accompagner. Le budget du client n'est jamais lu ici.
+  function objectiveLine(o){
+    var custom=o.metric==='custom',strategic=o.metric==='strategic',s=o.strategic||{done:0,planned:0};
+    var title=custom?o.label:strategic?(o.label||('Enjeu : '+o.themes)):(o.metricLabel+(o.label?' — '+o.label:''));
+    var pct=custom||strategic?(o.done?100:0):(o.value==null||!o.target?0:Math.min(100,Math.round(o.value/o.target*100)));
+    var figure=custom?(o.done?'Atteint':'À atteindre'):strategic?(o.done?'Atteint':plural(s.done,'action')+' réalisée'+(s.done>1?'s':'')+(s.planned?' · '+s.planned+' prévue'+(s.planned>1?'s':''):'')):(o.value==null?'Pas encore mesurable':fmt(o.value)+' / '+fmt(o.target)+(o.unit==='%'?' %':' '+o.unit));
+    var missing=o.themeProgress&&o.themeProgress.missing.length?'<small>Reste : '+esc(o.themeProgress.missing.join(', '))+'</small>':'';
+    return '<li><div><strong>'+esc(title)+'</strong><span>'+esc(figure)+'</span></div><i class="cas-obj-bar"><b style="width:'+pct+'%"></b></i>'+missing+'</li>';
+  }
+  function outlookHtml(cur,next,row,year,nextYear){
+    var objectives=(cur.pilotage&&cur.pilotage.objectives)||[],nextObjectives=(next&&next.pilotage&&next.pilotage.objectives)||[];
+    var objList=function(list){return '<ul class="cas-obj">'+list.map(objectiveLine).join('')+'</ul>';};
+    var objBody=(objectives.length?objList(objectives):'<div class="cas-empty-chart">Aucun objectif fixé pour '+year+'.</div>')+(nextObjectives.length?'<h4 class="cas-sub">Déjà fixés pour '+nextYear+'</h4>'+objList(nextObjectives):'');
+    var status={finalized:'Programme finalisé',in_progress:'Programme en cours de préparation',not_started:'Programme pas commencé'}[row&&row.status]||'';
+    var pack=row&&row.pack,planned=((next&&next.actions)||[]).filter(function(a){return a.status!=='postponed'&&a.status!=='cancelled';});
+    var next6=planned.slice(0,6).map(function(a){return '<li><time>'+date(a.action_date)+'</time><div><strong>'+esc(a.title)+'</strong></div></li>';}).join('');
+    var outlook=(status?'<p class="cas-out-status">'+esc(status)+(row.finalizedAt?' le '+date(row.finalizedAt):'')+'</p>':'')+
+      '<div class="cas-out-figures"><div><b>'+fmt(planned.length)+'</b><span>actions prévues</span></div>'+(pack?'<div><b>'+fmt(pack.planned)+'</b><span>passations envisagées</span></div><div><b>'+(pack.unlimited?'—':fmt(pack.toOrder))+'</b><span>pack à prévoir</span></div><div><b>'+fmt(row.requests)+'</b><span>devis demandés</span></div>':'')+'</div>'+
+      (next6?'<ol class="cas-timeline">'+next6+'</ol>':'');
+    var postponed=(cur.actions||[]).filter(function(a){return a.status==='postponed';});
+    var missing=[];objectives.forEach(function(o){if(o.themeProgress)missing=missing.concat(o.themeProgress.missing);if(o.metric==='strategic'&&o.themes&&!o.done&&!(o.strategic||{}).done)missing=missing.concat(o.themes.split(',').map(function(t){return t.trim();}));});
+    missing=missing.filter(function(t,i){return t&&missing.indexOf(t)===i;});
+    var quiet=((cur.pilotage&&cur.pilotage.attention)||{}).uncoveredThemes||[];
+    var ideas=[missing.length?['Priorités sans action',missing.join(', ')]:null,postponed.length?['Actions reportées à reprendre',postponed.map(function(a){return a.title;}).join(', ')]:null,quiet.length?['Thématiques non travaillées depuis 12 mois',quiet.join(', ')]:null].filter(Boolean);
+    var ideasBody=ideas.length?'<dl class="cas-ideas">'+ideas.map(function(x){return '<dt>'+esc(x[0])+'</dt><dd>'+esc(x[1])+'</dd>';}).join('')+'</dl>':'<div class="cas-empty-chart">Rien à signaler pour le moment.</div>';
+    return '<div class="cas-section-title"><h3>🎯 Objectifs et perspectives</h3><p>Ce que le client vise et ce qu’il prépare, pour rebondir et l’accompagner.</p></div><div class="cas-grid-2">'+
+      card('Objectifs '+year,'Fixés par le client',objBody)+card('Perspectives '+nextYear,'Préparation de l’année',outlook)+card('Pistes pour l’accompagner','Tirées de ses objectifs et de son registre',ideasBody,'cas-wide')+'</div>';
+  }
+  async function loadOutlook(){
+    var root=document.querySelector('[data-cas-outlook]');if(!root)return;
+    var q='&organizationId='+encodeURIComponent(orgId),year=new Date().getFullYear();
+    try{
+      var list=await StudioAPI.request('/api/admin/programmes'),nextYear=list.year;
+      var row=(list.rows||[]).find(function(r){return String(r.id)===String(orgId);});
+      var r=await Promise.all([StudioAPI.request('/api/dei/actions?year='+year+q),nextYear===year?null:StudioAPI.request('/api/dei/actions?year='+nextYear+q)]);
+      root.innerHTML=outlookHtml(r[0],r[1]||r[0],row,year,nextYear);
+    }catch(e){root.innerHTML='<div class="cas-notice">Objectifs et perspectives indisponibles : '+esc(e.message||'')+'</div>';}
+  }
+
   // Section « Actions DEI » : registre des actions du Cockpit DEI du client.
   function deiBlock(d){
     var title='<div class="cas-section-title"><h3>🧭 Actions D&I du Cockpit</h3><p>Registre des actions diversité &amp; inclusion saisies dans le Cockpit D&I du client. On mesure l\'activité et la continuité, jamais un niveau d\'inclusion.</p></div>';
     if(!d)return title+'<div class="cas-notice">Le registre des actions n\'est pas disponible sur cet environnement.</div>';
     var t=d.totals;
-    if(!t.actions)return title+'<div class="cas-notice">Aucune action enregistrée dans le Cockpit D&I de ce client pour l\'instant.</div>';
+    setTimeout(loadOutlook,0);
+    var outlookRoot='<div data-cas-outlook></div>';
+    if(!t.actions)return title+'<div class="cas-notice">Aucune action enregistrée dans le Cockpit D&I de ce client pour l\'instant.</div>'+outlookRoot;
     var monthNames=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
     var tiles=[
       [fmt(t.actions),'Actions enregistrées',fmt(t.this_year)+' en '+d.year],
@@ -128,7 +169,7 @@
       card('Types d\'actions les plus utilisés','Toutes années confondues',hbars(d.by_kind))+
       card('Actions par année','Date de début',d.by_year.length?columns(d.by_year,'count',function(y){return y.year;},function(y){return y.year+' : '+y.count+' action'+(y.count>1?'s':'');},'#273a64'):'<div class="cas-empty-chart">Aucune action datée</div>')+
       card('Prochaines actions prévues','À venir',upcoming,'cas-wide')+
-    '</div>';
+    '</div>'+outlookRoot;
   }
 
   if(location.hash==='#stats')show('stats');
