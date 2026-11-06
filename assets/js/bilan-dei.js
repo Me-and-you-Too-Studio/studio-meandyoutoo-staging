@@ -129,7 +129,7 @@
     }
     html+='</section>';
 
-    html+='<section class="bl-page">'+coverageBlock(list,p.objectives||[])+'</section>';
+    var coverage=coverageBlock(list,p.objectives||[]);if(coverage)html+='<section class="bl-page">'+coverage+'</section>';
     // 5. Détail des actions par trimestre
     html+='<section class="bl-page"><h2>Le détail des actions</h2>';
     // Dispositifs : un regroupement, les compteurs de l'année ne changent pas.
