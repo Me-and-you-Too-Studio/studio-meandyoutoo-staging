@@ -110,7 +110,9 @@
     var isDraft=p.status==='draft';
     var isReadOnly=READ_ONLY_STATUSES.has(p.status);
     var lifecycleActions='';
-    if(p.status==='scheduled'&&can('manage_schedule'))lifecycleActions='<a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=extend">📅 Prolonger</a>';
+    // Prolonger n'a de sens qu'une fois la campagne démarrée ; avant, on passe par une demande d'ajustement.
+    var beforeStart=Boolean(p.launch_date)&&String(p.launch_date).slice(0,10)>new Date().toISOString().slice(0,10);
+    if(p.status==='scheduled'&&!beforeStart&&can('manage_schedule'))lifecycleActions='<a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=extend">📅 Prolonger</a>';
     if((p.status==='published'||p.status==='active')&&can('manage_schedule'))lifecycleActions='<a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=extend">📅 Prolonger</a><a class="button button-danger-soft" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=unpublish">⏹ Dépublier</a>';
     if(p.status==='unpublished')lifecycleActions='<a class="button button-primary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=reprogram">🚀 Reprogrammer</a><a class="button button-secondary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=archive">📦 Archiver</a>';
     if(p.status==='closed'||p.status==='completed'||p.status==='archived')lifecycleActions='<a class="button button-primary" href="mes-campagnes.html?projectId='+encodeURIComponent(p.id)+'&action=reprogram">🚀 Reprogrammer avec les mêmes liens</a>';
@@ -138,7 +140,6 @@
         '<div class="action-bar">'+
           '<a class="button button-secondary" href="'+content+'">Modifier le contenu</a>'+
           (can('manage_kit')?'<a class="button button-tonal" href="kit-communication.html'+q+'">Kit de communication</a>':'')+
-          (share?'<a class="button button-secondary" href="'+esc(share)+'" target="_blank" rel="noopener">Ouvrir le lien répondant ↗</a>':'')+
         '</div>';
     }else if(isReadOnly){
       actionsHtml=
@@ -206,7 +207,7 @@
     if(can('manage_schedule')){
       // Mêmes règles que les actions de la campagne : on reprogramme une campagne arrêtée, on prolonge une campagne encore publiée.
       if(['unpublished','closed','completed','archived'].includes(p.status))actions.push({href:lifecycle+'reprogram',label:'Reprogrammer avec les mêmes liens'});
-      else if(['scheduled','published','active'].includes(p.status)&&['scheduled','published','active','closed'].includes(key))actions.push({href:lifecycle+'extend',label:'Prolonger'});
+      else if(['scheduled','published','active'].includes(p.status)&&['scheduled','published','active','closed'].includes(key)&&!(p.launch_date&&String(p.launch_date).slice(0,10)>new Date().toISOString().slice(0,10)))actions.push({href:lifecycle+'extend',label:'Prolonger'});
     }
     var html=window.StudioJourney.html(key,actions);
     return html?'<section class="card studio-journey" aria-labelledby="journey-title"><h2 class="section-title" id="journey-title">Où en est votre campagne ?</h2>'+html+'</section>':'';

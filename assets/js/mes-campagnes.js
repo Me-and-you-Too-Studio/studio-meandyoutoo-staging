@@ -438,7 +438,8 @@
     return {
       share: share,
       results: results,
-      shareText: share ? "disponible" : "en attente Me&YouToo",
+      // Un brouillon n'a pas encore de lien : rien n'est attendu de Me&YouToo tant qu'il n'est pas transmis.
+      shareText: p.status === "draft" ? "après la relecture" : share ? "disponible" : "en attente Me&YouToo",
       resultsText: can("view_results")
         ? results
           ? notStartedYet(p)
@@ -568,10 +569,11 @@
       visible.push(
         '<a class="campaign-btn campaign-btn-kit" href="kit-communication.html' +
           q +
-          '">📣 Kit de com</a>',
+          '">📣 Kit de communication</a>',
       );
     if (
       ["scheduled", "published", "active"].includes(p.status) &&
+      !notStartedYet(p) &&
       can("manage_schedule")
     )
       more.push(
@@ -721,7 +723,7 @@
       themeFilter.innerHTML = '<option value="all">Toutes les thématiques</option>' + themes.map(function (theme) { return '<option value="' + esc(theme) + '" ' + (activeTheme === theme ? "selected" : "") + '>' + esc(theme) + ' · ' + projects.filter(function (p) { return themeLabel(p) === theme; }).length + '</option>'; }).join("");
       themeFilter.onchange = function (event) { activeTheme = event.target.value; renderCards(); };
     }
-    root.innerHTML = '<div class="campaign-folder-heading"><div><strong>Dossiers</strong><span>Votre classement personnel des campagnes</span></div>' + (can("organize_folders") ? '<button class="campaign-folder-create" type="button" data-folder-create>+ Nouveau dossier</button>' : "") + '</div><div class="campaign-folder-list">' + chip("all", "🗂️ Toutes", projects.length) + chip("unclassified", "📄 Non classées", unclassified) + folders.map(function (f) { return '<span class="campaign-folder-group">' + chip(String(f.id), "📁 " + esc(f.name), projects.filter(function (p) { return String(p.folder_id || "") === String(f.id); }).length) + (can("organize_folders") ? '<button type="button" class="campaign-folder-manage" data-folder-manage="' + esc(f.id) + '" aria-label="Gérer le dossier ' + esc(f.name) + '">•••</button>' : "") + '</span>'; }).join("") + '</div>';
+    root.innerHTML = '<div class="campaign-folder-heading"><div><strong>Mes dossiers de rangement</strong><span>Votre classement personnel : il ne change pas qui voit les campagnes</span></div>' + (can("organize_folders") ? '<button class="campaign-folder-create" type="button" data-folder-create>+ Nouveau dossier</button>' : "") + '</div><div class="campaign-folder-list">' + chip("all", "🗂️ Toutes", projects.length) + chip("unclassified", "📄 Non classées", unclassified) + folders.map(function (f) { return '<span class="campaign-folder-group">' + chip(String(f.id), "📁 " + esc(f.name), projects.filter(function (p) { return String(p.folder_id || "") === String(f.id); }).length) + (can("organize_folders") ? '<button type="button" class="campaign-folder-manage" data-folder-manage="' + esc(f.id) + '" aria-label="Gérer le dossier ' + esc(f.name) + '">•••</button>' : "") + '</span>'; }).join("") + '</div>';
     if (teamFolders.length) root.insertAdjacentHTML("afterbegin", (perimeterLimited ? '<p class="ae-perimeter-banner">👥 Vous voyez les campagnes de ' + (teamFolders.length > 1 ? 'vos dossiers' : 'votre dossier') + ' d’équipe : ' + teamFolders.map(function (f) { return esc(f.name); }).join(", ") + '.</p>' : "") + '<div class="campaign-folder-heading"><div><strong>Dossiers d’équipe</strong><span>Communs à l’entreprise : ils décident qui voit quelles campagnes</span></div></div><div class="campaign-folder-list">' + teamFolders.map(function (f) { return chip("team:" + f.id, "👥 " + esc(f.name), projects.filter(function (p) { return String(p.team_folder_id || "") === String(f.id); }).length); }).join("") + '</div>');
     root.querySelectorAll("[data-folder-filter]").forEach(function (b) { b.onclick = function () { activeFolder = b.dataset.folderFilter; renderFolderBar(); renderCards(); }; });
     root.querySelector("[data-folder-create]")?.addEventListener("click", async function () { var name = await askFolderName("Nouveau dossier", ""); if (!name) return; await StudioAPI.request("/api/campaign-folders", { method: "POST", body: JSON.stringify({ name: name }) }); await load(); });

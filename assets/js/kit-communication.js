@@ -33,6 +33,8 @@
   const formatLongDate=v=>{if(!v)return 'date à définir';const d=String(v).slice(0,10);return /^\d{4}-\d{2}-\d{2}$/.test(d)?new Date(d+'T12:00:00').toLocaleDateString('fr-FR'):'date à définir';};
   const addDays=(value,days)=>{if(!value)return null;const d=new Date(String(value).slice(0,10)+'T12:00:00');if(Number.isNaN(d.getTime()))return null;d.setDate(d.getDate()+days);return d;};
   const dateObjFr=d=>d?d.toLocaleDateString('fr-FR'):'—';
+  // Jamais de relance le week-end : le vendredi avant, ou le lundi après pour ce qui suit la clôture.
+  const workingDay=(date,forward)=>{const d=new Date(date);while([0,6].includes(d.getDay()))d.setDate(d.getDate()+(forward?1:-1));return d;};
   function copyText(value){if(!value)return;navigator.clipboard.writeText(value).then(()=>show('Copié dans le presse-papiers.','success')).catch(()=>show('Impossible de copier automatiquement.'));}
   function kitValidated(){return ['ready_to_publish','scheduled','published','active','closed','completed'].includes(project?.status);}
   function diffusionAvailable(){return isAdminDeliveryMode||(kitValidated()&&Boolean(communication.linksUpdatedAt||communication.links_updated_at));}
@@ -69,16 +71,16 @@
     const launch=project?.launch_date,close=project?.close_date,launchObj=addDays(launch,0),closeObj=addDays(close,0);
     $('timeline-description').textContent=launch&&close?`Campagne prévue du ${formatLongDate(launch)} au ${formatLongDate(close)}.`:'Renseignez les dates de campagne pour obtenir le calendrier de relance.';
     if(!launchObj||!closeObj||closeObj<=launchObj){$('campaign-timeline').innerHTML='';return;}
-    const duration=Math.round((closeObj-launchObj)/86400000),rows=[['J',dateObjFr(launchObj),'Lancement','Email de lancement + message sur vos canaux internes (Teams, Slack, intranet).']];
+    const duration=Math.round((closeObj-launchObj)/86400000),rows=[['Début',dateObjFr(launchObj),'Lancement','E-mail de lancement + message sur vos canaux internes (Teams, Slack, intranet).']];
     if(duration===2){
-      rows.push([`J+1`,dateObjFr(addDays(launch,1)),'Relance','Un rappel auprès des collaborateurs pour maintenir la participation.']);
+      rows.push(['En cours',dateObjFr(workingDay(addDays(launch,1),true)),'Relance','Un rappel auprès des collaborateurs pour maintenir la participation.']);
     }else if(duration>=3){
       const firstOffset=Math.max(1,Math.min(14,Math.round(duration/3)));
       const lastOffset=Math.max(firstOffset+1,Math.min(duration-1,Math.round(duration*.75)));
-      rows.push([`J+${firstOffset}`,dateObjFr(addDays(launch,firstOffset)),'Première relance','Un rappel auprès des collaborateurs pour maintenir la participation.']);
-      rows.push([`J-${duration-lastOffset}`,dateObjFr(addDays(launch,lastOffset)),'Dernière chance','Dernière relance avant la clôture de la campagne.']);
+      rows.push(['En cours',dateObjFr(workingDay(addDays(launch,firstOffset),firstOffset<3)),'Première relance','Un rappel auprès des collaborateurs pour maintenir la participation.']);
+      rows.push(['Fin proche',dateObjFr(workingDay(addDays(launch,lastOffset),false)),'Dernière chance','Dernière relance avant la clôture de la campagne.']);
     }
-    rows.push(['Après',dateObjFr(addDays(close,1)),'Restitution','Remerciez les participants et partagez les premiers enseignements.']);
+    rows.push(['Après',dateObjFr(workingDay(addDays(close,1),true)),'Restitution','Remerciez les participants et partagez les premiers enseignements.']);
     $('campaign-timeline').innerHTML=rows.map(r=>`<div class="time-row"><div class="time-day">${r[0]}</div><div><div class="time-txt">${r[2]} <small>· ${r[1]}</small></div><div class="time-sub">${r[3]}</div></div></div>`).join('');
   }
   // Textes français par thématique. Aucune dépendance aux intitulés personnalisés de campagne.
@@ -286,8 +288,8 @@
     const campaign=`Campagne « ${name} »`;
     const email=(subject,paragraphs)=>`Objet : ${subject}\n\nBonjour à toutes et tous,\n\n${paragraphs.join('\n\n')}`;
     return {
-      launch:{title:'Email lancement',meta:'À adresser aux personnes concernées au lancement',body:email(copy.subject,[copy.opening,copy.benefit,copy.invitation,anonymous,`${campaign}\n👉 ${copy.cta} : ${link}`,`Disponible du ${launch} au ${close}.`])},
-      managers:{title:'Email managers',meta:'À adresser aux managers pour préparer et relayer la campagne',body:email(`Votre relais compte — ${name}`,[`La campagne « ${name} », conçue avec Me&YouToo, sera ouverte du ${launch} au ${close}.`,copy.managers,'Pour faciliter la participation, présentez la démarche lors d’un point d’équipe et proposez à chacun de réserver quelques minutes. Invitez les personnes concernées à répondre individuellement, sans leur demander leurs réponses ni leurs résultats personnels.',`L’anonymat des réponses est garanti. Vous pouvez transmettre le message ci-dessous :`,`« ${copy.short}\n\n${anonymous}\n\n👉 ${link}\nDisponible du ${launch} au ${close}. »`,'Merci pour votre relais et pour le temps accordé à cette démarche.'])},
+      launch:{title:'E-mail de lancement',meta:'À adresser aux personnes concernées au lancement',body:email(copy.subject,[copy.opening,copy.benefit,copy.invitation,anonymous,`${campaign}\n👉 ${copy.cta} : ${link}`,`Disponible du ${launch} au ${close}.`])},
+      managers:{title:'E-mail aux managers',meta:'À adresser aux managers pour préparer et relayer la campagne',body:email(`Votre relais compte — ${name}`,[`La campagne « ${name} », conçue avec Me&YouToo, sera ouverte du ${launch} au ${close}.`,copy.managers,'Pour faciliter la participation, présentez la démarche lors d’un point d’équipe et proposez à chacun de réserver quelques minutes. Invitez les personnes concernées à répondre individuellement, sans leur demander leurs réponses ni leurs résultats personnels.',`L’anonymat des réponses est garanti. Vous pouvez transmettre le message ci-dessous :`,`« ${copy.short}\n\n${anonymous}\n\n👉 ${link}\nDisponible du ${launch} au ${close}. »`,'Merci pour votre relais et pour le temps accordé à cette démarche.'])},
       reminder:{title:'Relance',meta:'À envoyer à mi-parcours aux personnes concernées',body:email(copy.reminderSubject,[copy.reminder,anonymous,`${campaign}\n👉 ${copy.cta} : ${link}`,`Vous pouvez participer jusqu’au ${close}. Si vous avez déjà réalisé l’autodiagnostic, merci pour votre participation !`])},
       last:{title:'Dernière chance',meta:'À envoyer dans les derniers jours avant la clôture',body:email(`Derniers jours — ${copy.subject}`,[`La campagne « ${name} » se termine le ${close}.`,copy.last,anonymous,`👉 ${copy.cta} : ${link}`,'Vous avez déjà participé ? Merci d’avoir pris ce temps de réflexion !'])},
       channels:{title:'Teams / Slack',meta:'Message court à partager sur vos canaux internes',body:`${copy.short}\n\n${anonymous}\n\n${campaign}\n👉 ${link}\nDisponible du ${launch} au ${close}.`},
