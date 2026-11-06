@@ -320,10 +320,10 @@
   }
   // Composer un dispositif : une action prévue par format coché, à compléter ensuite une par une.
   function composeDialog(x,justCreated){
-    var d=state.data,kinds=Object.keys(d.kinds).filter(function(k){return k!=='diagnostic';});
+    var d=state.data,kinds=Object.keys(d.kinds).sort(function(a,b){return (b==='diagnostic')-(a==='diagnostic');});
     var theme=String(x.theme||'').split(',')[0].trim();
     var dlg=document.createElement('dialog');dlg.className='dr-dialog';
-    dlg.innerHTML='<form><h2>Ajouter des actions</h2><p class="dr-row-meta">Cochez les formats prévus : une action « Prévue » est créée pour chacun dans « '+esc(x.name)+' ». Vous les compléterez ensuite. Les diagnostics se rattachent à part.</p>'+
+    dlg.innerHTML='<form><h2>Ajouter des actions</h2><p class="dr-row-meta">Cochez les formats prévus, y compris un diagnostic à venir : une action « Prévue » est créée pour chacun dans « '+esc(x.name)+' ». Un diagnostic déjà lancé ou programmé se rattache avec le bouton de la carte.</p>'+
       '<fieldset class="dr-compose"><legend>Formats</legend>'+kinds.map(function(k){return '<label class="dr-check"><input type="checkbox" name="kind" value="'+esc(k)+'"> '+esc(d.kinds[k].icon+' '+d.kinds[k].label)+'</label>';}).join('')+'</fieldset>'+
       '<label class="dr-field dr-field-date"><span>Date prévue *</span><input type="date" name="actionDate" required value="'+esc(x.year+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-15')+'"></label>'+
       '<button type="button" class="dr-link" data-compose-single>Préférez-vous saisir une seule action en détail ?</button>'+
@@ -351,16 +351,21 @@
   }
   function attachDialog(id){
     var free=items().filter(function(it){return it.type==='campaign'&&String(it.dispositifId||'')!==String(id);});
-    if(!free.length){window.StudioModal.alert({title:'Aucun diagnostic disponible',message:'Il n’y a pas d’autre diagnostic sur cette année.'});return;}
+    if(!free.length){window.StudioModal.alert({title:'Aucun diagnostic à rattacher',message:'Aucun diagnostic n’est lancé ou programmé cette année. Pour en prévoir un, cochez « Diagnostic » dans « Ajouter des actions ».'});return;}
+    // Diagnostic prévu dans le dispositif : la vraie campagne le remplace, pour ne pas le compter deux fois.
+    var planned=items().find(function(it){return it.type==='action'&&it.kind==='diagnostic'&&String(it.dispositifId||'')===String(id)&&it.status!=='done'&&it.status!=='cancelled';});
     var dlg=document.createElement('dialog');dlg.className='dr-dialog';
     dlg.innerHTML='<form><h2>Rattacher un diagnostic</h2><label class="dr-field"><span>Diagnostic</span><select name="campaignId">'+free.map(function(it){return '<option value="'+esc(it.id)+'">'+esc(it.title)+(it.dispositifId?' (déjà dans un autre dispositif)':'')+'</option>';}).join('')+'</select></label>'+
+      (planned?'<label class="dr-check"><input type="checkbox" name="replace" checked> Remplacer la ligne prévue « '+esc(planned.title)+' » par ce diagnostic</label>':'')+
       '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Rattacher</button></div></form>';
     document.body.appendChild(dlg);
     var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
     dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
     dlg.addEventListener('close',function(){dlg.remove();});
     form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
-      try{await StudioAPI.request('/api/dei/dispositifs/'+encodeURIComponent(id)+'/diagnostics/'+encodeURIComponent(form.elements.campaignId.value)+qs(),{method:'PUT',body:JSON.stringify(withOrg({}))});dlg.close();load();}
+      try{await StudioAPI.request('/api/dei/dispositifs/'+encodeURIComponent(id)+'/diagnostics/'+encodeURIComponent(form.elements.campaignId.value)+qs(),{method:'PUT',body:JSON.stringify(withOrg({}))});
+        if(planned&&form.elements.replace.checked)await StudioAPI.request('/api/dei/actions/'+encodeURIComponent(planned.id)+qs(),{method:'DELETE'});
+        dlg.close();load();}
       catch(e){err.textContent=e.message||'Rattachement impossible';err.hidden=false;}
     };
     dlg.showModal();
