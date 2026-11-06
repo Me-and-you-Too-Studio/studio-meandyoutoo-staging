@@ -77,7 +77,7 @@
     }else empty(s,'Aucune action enregistrée sur '+data.year+'.');
 
     // 5. Temps forts et dispositifs
-    s=slide('Dispositifs et temps forts');
+    s=slide('Dispositifs et actions marquantes');
     var col=function(x,wd,title,items,none){
       s.addText(title,{x:x,y:1.4,w:wd,h:0.45,fontFace:FONT,fontSize:18,bold:true,color:TEAL,margin:0});
       if(!items.length){s.addText(none,{x:x,y:1.95,w:wd,h:0.5,fontFace:FONT,fontSize:15,color:MUTED,margin:0});return;}
@@ -98,9 +98,10 @@
     var labels=data.quarters.map(function(q){return 'T'+q.quarter;});
     var series=function(name,fn){return {name:name,labels:labels,values:data.quarters.map(fn)};};
     s.addChart(pres.ChartType.bar,[series('Réalisées',function(q){return q.done;}),series('Prévues',function(q){return q.planned+q.late;}),series('Reportées',function(q){return q.postponed||0;})],
-      {x:0.6,y:1.35,w:7.8,h:5.4,barDir:'col',barGrouping:'stacked',chartColors:[TEAL,'5669A9','D9A066'],showLegend:true,legendPos:'b',legendFontFace:FONT,legendFontSize:13,catAxisLabelFontFace:FONT,catAxisLabelFontSize:13,valAxisLabelFontFace:FONT,valAxisLabelFontSize:11,valAxisMinVal:0,valGridLine:{color:LINE,size:0.75}});
+      {x:0.6,y:1.35,w:7.8,h:5.4,barDir:'col',barGrouping:'stacked',chartColors:[TEAL,'5669A9','D9A066'],showLegend:true,legendPos:'b',legendFontFace:FONT,legendFontSize:13,catAxisLabelFontFace:FONT,catAxisLabelFontSize:13,valAxisLabelFontFace:FONT,valAxisLabelFontSize:11,valAxisMinVal:0,valAxisMajorUnit:1,valAxisLabelFormatCode:'0',valGridLine:{color:LINE,size:0.75}});
     var sum=function(fn){return data.quarters.reduce(function(n,q){return n+fn(q);},0);};
-    [[sum(function(q){return q.done;}),'réalisées',TEAL],[sum(function(q){return q.planned+q.late;}),'prévues ou en cours','5669A9'],[sum(function(q){return q.postponed||0;}),'reportées','B87A3D']].forEach(function(k,i){var y=1.5+i*1.45;
+    var word=function(n,one,many){return n>1?many:one;},done=sum(function(q){return q.done;}),planned=sum(function(q){return q.planned+q.late;}),late=sum(function(q){return q.postponed||0;});
+    [[done,word(done,'réalisée','réalisées'),TEAL],[planned,word(planned,'prévue ou en cours','prévues ou en cours'),'5669A9'],[late,word(late,'reportée','reportées'),'B87A3D']].forEach(function(k,i){var y=1.5+i*1.45;
       s.addShape(round,{x:8.8,y:y,w:3.9,h:1.25,fill:{color:TINT},line:{color:TINT},rectRadius:0.08});
       s.addText(num(k[0]),{x:8.95,y:y,w:1.4,h:1.25,fontFace:FONT,fontSize:34,bold:true,color:k[2],align:'center',margin:0});
       s.addText(k[1],{x:10.35,y:y,w:2.25,h:1.25,fontFace:FONT,fontSize:15,color:NAVY,margin:0});});
@@ -113,8 +114,8 @@
       if(items.length)s.addText(items.map(function(t){return {text:t,options:{bullet:true,breakLine:true,paraSpaceAfter:6}};}),{x:x+0.2,y:2.05,w:third-0.4,h:4.5,fontFace:FONT,fontSize:14,color:NAVY,valign:'top',margin:0});
       else s.addText(none,{x:x+0.2,y:2.05,w:third-0.4,h:0.8,fontFace:FONT,fontSize:14,color:MUTED,valign:'top',margin:0});};
     block(0,'Déjà prévu',data.next.actions.slice(0,8).map(function(a){return a.date+' : '+cut(a.title,46);}),'Rien de prévu pour le moment.');
-    block(1,'Objectifs',data.next.objectives.slice(0,6).map(function(t){return cut(t,80);}),'À définir.');
-    block(2,'Temps forts à ne pas manquer',data.next.events.slice(0,8).map(function(e){return e[0]+' : '+cut(e[1],48);}),'—');
+    block(1,'Objectifs',data.next.objectives.slice(0,6).map(function(t){return cut(t,160);}),'À définir.');
+    block(2,'Temps forts à ne pas manquer',data.next.events.slice(0,8).map(function(e){return e[0]+' : '+cut(e[1],90);}),'—');
     s.addText('Réalisé avec le Studio Me&YouToo',{x:9.2,y:7.02,w:3.5,h:0.3,fontFace:FONT,fontSize:10,color:MUTED,align:'right',margin:0});
     return pres;
   }

@@ -69,7 +69,8 @@
   function deckData(d,next,list,org,logo,p){
     var groups=(d.dispositifs||[]).filter(function(x){return x.inYear;}).map(function(x){return {name:x.name,count:list.filter(function(i){return String(i.dispositifId||'')===String(x.id);}).length};}).filter(function(g){return g.count;});
     var highlights=list.filter(function(i){return i.status==='done';}).sort(function(a,b){return (Number(b.people)||0)-(Number(a.people)||0);}).map(function(i){return {title:i.title,people:i.people};});
-    var nextList=next?items(next).filter(inProgramme):[];
+    // Une campagne déjà lancée qui se poursuit n'est pas une perspective.
+    var nextList=next?items(next).filter(inProgramme).filter(function(i){return String(i.start||i.date)>=(year+1)+'-01-01';}):[];
     return {year:year,org:org,logo:logo,ind:d.indicators,participation:participationRate(d.campaigns),activeQuarters:activeQuarters(list),objectives:(p.objectives||[]).map(objectiveResult),quarters:p.quarters||[],
       coverage:{columns:COVER.map(function(k){return k[0];}),rows:coverageData(list,p.objectives||[])},dispositifs:groups,highlights:highlights,
       diagnostics:list.filter(function(i){return i.campaign;}).map(function(i){return {name:i.title,theme:i.theme,period:fmtDate(i.start||i.date)+(i.end?' → '+fmtDate(i.end):''),people:i.people};}),
