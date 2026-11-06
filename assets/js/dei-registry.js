@@ -255,7 +255,7 @@
     tabsEl.hidden=false;
     tabsEl.innerHTML=Object.keys(TABS).map(function(k){return '<button type="button" role="tab" class="dr-tab'+(k===state.tab?' is-current':'')+'" aria-selected="'+(k===state.tab)+'" data-tab="'+k+'"><b aria-hidden="true">'+TAB_ICONS[k]+'</b>'+esc(TABS[k])+(counts[k]!=null?' <span>'+counts[k]+'</span>':'')+'</button>';}).join('');
   }
-  function setTab(tab){state.tab=tab;try{history.replaceState(null,'','#'+tab);}catch(e){}render();window.scrollTo({top:(tabsEl||root).getBoundingClientRect().top+window.scrollY-16,behavior:'smooth'});}
+  function setTab(tab){state.tab=tab;try{history.replaceState(null,'','#'+tab);}catch(e){}render();window.scrollTo({top:Math.max(0,root.getBoundingClientRect().top+window.scrollY-(tabsEl?tabsEl.offsetHeight:0)-24),behavior:'smooth'});}
 
   // ── Annuaire des prestataires ──
   function providerName(p){return [p.company,[p.first_name,p.last_name].filter(Boolean).join(' ')].filter(Boolean).join(' · ');}
@@ -394,7 +394,7 @@
       if(strategic){
         // Enjeu stratégique : coché à la main quand il est atteint ; jauge sur les personnes touchées si un chiffre est fixé.
         var s=o.strategic||{done:0,planned:0,people:0};
-        reached=o.done;pct=o.done?100:(o.target?Math.min(100,Math.round(s.people/o.target*100)):(s.done?50:(s.planned?20:0)));
+        reached=o.done;pct=o.done?100:(o.target?Math.min(100,Math.round(s.people/o.target*100)):(s.done?50:0));
         figure=(o.done?'Atteint':s.done+' action'+(s.done>1?'s':'')+' réalisée'+(s.done>1?'s':'')+(s.planned?' · '+s.planned+' prévue'+(s.planned>1?'s':''):''))+(o.target?' · '+num(s.people)+' / '+num(o.target)+' pers.':'');
       }else{
         pct=custom?(o.done?100:0):(o.value==null||!o.target?0:Math.min(100,Math.round(o.value/o.target*100)));
@@ -442,7 +442,7 @@
         :(canEdit?'<button type="button" class="dr-link" data-restitution-add="'+esc(c.id)+'">Saisir la restitution</button>':'');
       alerts.unshift('<li class="is-restitution"><span class="dp-ico" aria-hidden="true">🎤</span><div><strong>Diagnostic « '+esc(c.name)+' » terminé'+(c.closeDate?' le '+esc(shortDate(c.closeDate)):'')+'</strong><small>Conférence de restitution : notre experte inclusion & diversité et en statistiques analyse vos résultats, les situe par rapport à un benchmark anonyme d’autres entreprises et vous recommande des actions ciblées.</small></div>'+btn+'</li>');
     });
-    if((a.uncoveredThemes||[]).length)alerts.push('<li><span class="dp-ico" aria-hidden="true">🧭</span><div><strong>Thématiques non travaillées depuis 12 mois</strong><small>'+esc(a.uncoveredThemes.join(', '))+'</small></div><a class="dr-link" href="'+(isAdmin?'offres.html':'offres.html')+'">Voir nos offres</a></li>');
+    if((a.uncoveredThemes||[]).length)alerts.push('<li><span class="dp-ico" aria-hidden="true">🧭</span><div><strong>Thématiques non travaillées depuis 12 mois</strong><small>'+esc(a.uncoveredThemes.join(', '))+'</small></div><a class="dr-link" href="'+(isAdmin?'offres.html':'offres.html')+'">Voir nos solutions</a></li>');
     var attCard='<article class="dp-card"><header><h3>🔎 Points d’attention</h3></header>'+(alerts.length?'<ul class="dp-list">'+alerts.join('')+'</ul>':'<p class="dr-empty">Rien à signaler, belle dynamique 👍</p>')+'</article>';
     return '<section class="dp-grid">'+plansView()+objCard+qCard+upCard+attCard+'</section>';
   }
