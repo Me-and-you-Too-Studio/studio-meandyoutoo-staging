@@ -351,7 +351,7 @@
   }
   function attachDialog(id){
     var free=items().filter(function(it){return it.type==='campaign'&&String(it.dispositifId||'')!==String(id);});
-    if(!free.length){window.StudioModal.alert({title:'Aucun diagnostic à rattacher',message:'Aucun diagnostic n’est lancé ou programmé cette année. Pour en prévoir un, cochez « Diagnostic » dans « Ajouter des actions ».'});return;}
+    if(!free.length){window.StudioModal.alert({title:'Aucun diagnostic à rattacher',message:'Aucun autre diagnostic n’est lancé ou programmé cette année. Pour en prévoir un, cochez « Diagnostic » dans « Ajouter des actions ».'});return;}
     // Diagnostic prévu dans le dispositif : la vraie campagne le remplace, pour ne pas le compter deux fois.
     var planned=items().find(function(it){return it.type==='action'&&it.kind==='diagnostic'&&String(it.dispositifId||'')===String(id)&&it.status!=='done'&&it.status!=='cancelled';});
     var dlg=document.createElement('dialog');dlg.className='dr-dialog';
