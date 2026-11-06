@@ -48,13 +48,16 @@
     if(data.org)text(s,data.org,0.8,3.95,7.6,0.7,{fontSize:30,color:WHITE});
     text(s,'Présentation à la direction',0.8,4.62,7.6,0.4,{fontSize:16,color:'C9D3E6'});
     var logo=await asDataUrl(data.logo);
-    if(logo){box(s,9.55,1.15,3,2.1,WHITE,0.12);try{s.addImage({data:logo,x:9.75,y:1.33,w:2.6,h:1.74,sizing:{type:'contain',w:2.6,h:1.74}});}catch(e){}}
+    if(logo){box(s,9.55,1.15,3,2.1,WHITE,0.12);
+      var size=await new Promise(function(resolve){var im=new Image();im.onload=function(){resolve([im.naturalWidth||3,im.naturalHeight||2]);};im.onerror=function(){resolve([3,2]);};im.src=logo;});
+      var k=Math.min(2.6/size[0],1.74/size[1]),lw=size[0]*k,lh=size[1]*k;
+      try{s.addImage({data:logo,x:9.75+(2.6-lw)/2,y:1.33+(1.74-lh)/2,w:lw,h:lh});}catch(e){}}
     text(s,'Réalisé avec le Studio Me&YouToo',0.8,6.75,6,0.3,{fontSize:12,color:'C9D3E6'});
 
     // 2. L'année en chiffres
     var ind=data.ind;
     s=slide('L’année en chiffres',num(ind.done)+' '+s_(ind.done,'action ou diagnostic réalisé','actions et diagnostics réalisés')+', '+num(ind.peopleReached)+' personnes touchées');
-    var kpis=[[num(ind.done),s_(ind.done,'action ou diagnostic réalisé','actions et diagnostics réalisés'),TEAL,WHITE],[num(ind.peopleReached),'personnes touchées',NAVY,WHITE],[num(ind.themes),s_(ind.themes,'thématique couverte','thématiques couvertes'),YELLOW,NAVY],[data.activeQuarters+' / 4','trimestres actifs',VIOLET,WHITE]];
+    var kpis=[[num(ind.done),s_(ind.done,'action ou diagnostic réalisé','actions et diagnostics réalisés'),TEAL,WHITE],[num(ind.peopleReached),'personnes touchées',NAVY,WHITE],[num(ind.themes),s_(ind.themes,'thématique au programme','thématiques au programme'),YELLOW,NAVY],[data.activeQuarters+' / 4','trimestres actifs',VIOLET,WHITE]];
     if(data.participation!=null)kpis[3]=[data.participation+' %','participation moyenne aux diagnostics',VIOLET,WHITE];
     var kw=(12.1-0.2*3)/4;
     kpis.forEach(function(k,i){var x=0.6+i*(kw+0.2);box(s,x,1.5,kw,1.75,k[2]);
@@ -85,8 +88,8 @@
     }else none(s,'Aucun objectif n’a été fixé pour '+data.year+'.');
 
     // 4. Couverture du programme : mosaïque de formes, comme dans le Cockpit
-    var rowsC=data.coverage.rows.slice(0,10),worked=data.coverage.rows.filter(function(r){return r.cells.some(Boolean);}).length;
-    s=slide('Couverture du programme',num(worked)+' '+s_(worked,'thématique travaillée','thématiques travaillées')+' sur l’année');
+    var rowsC=data.coverage.rows.slice(0,10),worked=data.coverage.rows.filter(function(r){return r.cells.indexOf('✓')>=0;}).length,planned0=data.coverage.rows.length;
+    s=slide('Couverture du programme',num(worked)+' '+s_(worked,'thématique travaillée','thématiques travaillées')+' sur '+num(planned0)+' au programme');
     if(rowsC.length){
       var cw=1.86,gx=0.09,x0=3.15,hy=1.45;
       data.coverage.columns.forEach(function(c,i){var x=x0+i*(cw+gx),f=FAMILY[i];box(s,x,hy,cw,0.55,f[1],0.05);box(s,x,hy,cw,0.07,f[0],0);text(s,c,x+0.05,hy+0.08,cw-0.1,0.47,{fontSize:13,bold:true,align:'center',valign:'middle'});});
@@ -122,12 +125,12 @@
     s=slide('Diagnostics comportementaux',data.diagnostics.length?num(data.diagnostics.length)+' '+s_(data.diagnostics.length,'diagnostic','diagnostics')+(total?', '+num(total)+' participations':''):'Pas de diagnostic comportemental cette année');
     if(data.diagnostics.length){
       var dn=Math.min(6,data.diagnostics.length),dw=dn>3?5.95:(12.1-0.2*(dn-1))/dn;
-      data.diagnostics.slice(0,6).forEach(function(c,i){var col=dn>3?i%2:i,line=dn>3?Math.floor(i/2):0,h=dn>3?1.6:3,x=0.6+col*(dw+0.2),y=1.55+line*(h+0.15);
+      data.diagnostics.slice(0,6).forEach(function(c,i){var col=dn>3?i%2:i,line=dn>3?Math.floor(i/2):0,big=dn<=3,h=big?5:1.6,x=0.6+col*(dw+0.2),y=1.55+line*(h+0.15);
         box(s,x,y,dw,h,TINT);box(s,x,y,dw,0.09,TEAL,0);
         text(s,cut(c.name,46),x+0.25,y+0.2,dw-0.5,0.5,{fontSize:15,bold:true,valign:'top',fit:'shrink'});
         text(s,[c.theme,c.period].filter(Boolean).join('  ·  '),x+0.25,y+0.7,dw-0.5,0.3,{fontSize:12,color:MUTED,fit:'shrink'});
-        text(s,c.people==null?'—':num(c.people),x+0.25,y+h-0.72,dw-0.5,0.62,{fontSize:30,bold:true,color:TEAL,valign:'bottom'});
-        if(c.people!=null)text(s,'participations',x+0.25,y+h-0.72,dw-0.5,0.6,{fontSize:12,color:MUTED,align:'right',valign:'bottom'});});
+        text(s,c.people==null?'—':num(c.people),x+0.25,big?y+1.75:y+h-0.72,dw-0.5,big?1.2:0.62,{fontSize:big?66:30,bold:true,color:TEAL,valign:big?'middle':'bottom'});
+        if(c.people!=null)text(s,'participations',x+0.25,big?y+2.95:y+h-0.72,dw-0.5,big?0.4:0.6,{fontSize:big?16:12,color:MUTED,align:big?'left':'right',valign:big?'top':'bottom'});});
     }else none(s,'Le diagnostic comportemental sensibilise et mesure : une piste pour l’année à venir.');
 
     // 7. Avancement
