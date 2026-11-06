@@ -9,10 +9,23 @@
     if(window.PptxGenJS)return Promise.resolve();
     return library=library||new Promise(function(resolve,reject){var s=document.createElement('script');s.src='assets/js/vendor/pptxgen-4.0.1.bundle.js';s.onload=resolve;s.onerror=function(){library=null;reject(new Error('Bibliothèque PowerPoint indisponible'));};document.head.appendChild(s);});
   }
-  async function asDataUrl(url){
-    if(!url)return '';
-    if(String(url).indexOf('data:')===0)return url;
-    try{var blob=await (await fetch(url)).blob();return await new Promise(function(resolve){var r=new FileReader();r.onload=function(){resolve(r.result);};r.onerror=function(){resolve('');};r.readAsDataURL(blob);});}catch(e){return '';}
+  // Les logos du Studio sont souvent en WebP, que PowerPoint ne lit pas : on les convertit en PNG.
+  async function asPng(url){
+    if(!url)return null;
+    try{
+      var src=String(url);
+      if(src.indexOf('data:')!==0){
+        var response=await fetch(url);if(!response.ok)return null;
+        var blob=await response.blob();if(blob.type.indexOf('image/')!==0)return null;
+        src=URL.createObjectURL(blob);
+      }
+      var im=await new Promise(function(resolve,reject){var i=new Image();i.onload=function(){resolve(i);};i.onerror=reject;i.src=src;});
+      var scale=Math.min(1,800/Math.max(im.naturalWidth,im.naturalHeight)),canvas=document.createElement('canvas');
+      canvas.width=Math.max(1,Math.round(im.naturalWidth*scale));canvas.height=Math.max(1,Math.round(im.naturalHeight*scale));
+      canvas.getContext('2d').drawImage(im,0,0,canvas.width,canvas.height);
+      if(src.indexOf('blob:')===0)URL.revokeObjectURL(src);
+      return {data:canvas.toDataURL('image/png'),w:canvas.width,h:canvas.height};
+    }catch(e){return null;}
   }
   function num(v){return new Intl.NumberFormat('fr-FR').format(Number(v)||0).replace(/ /g,' ');}
   function cut(v,n){v=String(v||'');return v.length>n?v.slice(0,n-1)+'…':v;}
@@ -47,11 +60,10 @@
     text(s,String(data.year),0.8,2.15,7.6,1.75,{fontSize:115,bold:true,color:WHITE});
     if(data.org)text(s,data.org,0.8,3.95,7.6,0.7,{fontSize:30,color:WHITE});
     text(s,'Présentation à la direction',0.8,4.62,7.6,0.4,{fontSize:16,color:'C9D3E6'});
-    var logo=await asDataUrl(data.logo)||await asDataUrl('assets/img/brand/logo-studio-blue.png');
+    var logo=await asPng(data.logo)||await asPng('assets/img/brand/logo-studio-blue.png');
     if(logo){box(s,9.55,1.15,3,2.1,WHITE,0.12);
-      var size=await new Promise(function(resolve){var im=new Image();im.onload=function(){resolve([im.naturalWidth||3,im.naturalHeight||2]);};im.onerror=function(){resolve([3,2]);};im.src=logo;});
-      var k=Math.min(2.6/size[0],1.74/size[1]),lw=size[0]*k,lh=size[1]*k;
-      try{s.addImage({data:logo,x:9.75+(2.6-lw)/2,y:1.33+(1.74-lh)/2,w:lw,h:lh});}catch(e){}}
+      var k=Math.min(2.6/logo.w,1.74/logo.h),lw=logo.w*k,lh=logo.h*k;
+      s.addImage({data:logo.data,x:9.75+(2.6-lw)/2,y:1.33+(1.74-lh)/2,w:lw,h:lh});}
     text(s,'Réalisé avec le Studio Me&YouToo',0.8,6.75,6,0.3,{fontSize:12,color:'C9D3E6'});
 
     // 2. L'année en chiffres
