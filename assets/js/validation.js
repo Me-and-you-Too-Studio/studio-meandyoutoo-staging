@@ -45,10 +45,16 @@
   const statusLabel=status=>status&&status!=='draft'?window.StudioStatus.label(status):'Configuration verrouillée';
   const isoDate=value=>String(value||'').slice(0,10);
   let lastQuotaRefresh=0;
+  // Ce qui manque encore, vu par l'API : la liste est affichée avant le clic, avec un lien vers le bon champ.
+  let submitMissing=[];
+  function missingHref(field){const q=`theme=${encodeURIComponent(theme)}&projectId=${encodeURIComponent(projectId)}`;return field==='composer'?`composer.html?${q}`:`parametrage.html?${q}&focus=${encodeURIComponent(field)}`;}
+  function renderSubmitMissing(){const box=$('validation-missing'),button=$('submit-project');if(!box||!button)return;box.hidden=!submitMissing.length;box.innerHTML=submitMissing.length?`<h2 class="section-title">Reste à compléter avant de transmettre</h2><ul>${submitMissing.map(item=>`<li><a href="${esc(missingHref(item.field))}">${esc(item.label)} →</a></li>`).join('')}</ul>`:'';button.classList.toggle('is-disabled',submitMissing.length>0);button.setAttribute('aria-disabled',String(submitMissing.length>0));}
+  async function refreshSubmitCheck(){if(!project||project.status!=='draft')return;try{const result=await api(`/api/projects/${projectId}/submit-check`);submitMissing=result.missing||[];}catch(e){submitMissing=[];}renderSubmitMissing();}
   function showValidationError(message){const box=$('validation-alert');box.hidden=false;box.dataset.tone='';box.textContent=message;box.scrollIntoView({behavior:'smooth',block:'center'});}
   function renderValidationQuota(quota){
     const need=Number(project?.estimated_respondents)||0,remaining=quota?Number(quota.passations_remaining)||0:0;
     $('validation-credit-needed').textContent=need?need.toLocaleString('fr-FR'):'—';
+    $('validation-credit-needed').closest('.validation-credit-item')?.classList.toggle('is-empty',!need);
     $('validation-credit-remaining').textContent=quota?remaining.toLocaleString('fr-FR'):'À confirmer';
     $('validation-credit-status').textContent=!quota?'À confirmer par Me&YouToo':(!need?'Volume facultatif non renseigné':(remaining>=need?'Solde suffisant':'Solde insuffisant'));
     $('validation-credit-status').style.color=quota&&need&&remaining<need?'var(--danger)':'';
@@ -440,6 +446,7 @@
         if(reviewCard&&journeyCard)reviewCard.before(journeyCard);
       }else{
         await api(`/api/projects/${projectId}/progress`,{method:'PATCH',body:JSON.stringify({currentStep:'validation'})});
+        await refreshSubmitCheck();
         const processCard=document.querySelector('.studio-process-card');if(processCard)processCard.hidden=false;
         // Visite seulement avant la transmission : après, la page devient le suivi de relecture.
         window.StudioTour?.offer('validation');
@@ -449,9 +456,10 @@
   window.addEventListener('focus',refreshValidationQuota);
   window.addEventListener('pageshow',refreshValidationQuota);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshValidationQuota();});
-  $('save-validation-settings').onclick=()=>saveValidationSettings();
+  $('save-validation-settings').onclick=()=>saveValidationSettings().then(refreshSubmitCheck);
   $('submit-project').onclick=async()=>{
     if(!project||project.status!=='draft'){lockSubmittedState();return;}
+    if(submitMissing.length){$('validation-missing').scrollIntoView({behavior:'smooth',block:'center'});return;}
     const checks=[...document.querySelectorAll('[data-validation-check]')];if(checks.some(c=>!c.checked)){$('validation-alert').hidden=false;$('validation-alert').textContent='Confirmez les trois points avant de transmettre.';return;}
     if(!await saveValidationSettings({silent:true}))return;
     const button=$('submit-project');button.disabled=true;button.textContent='Transmission…';

@@ -751,7 +751,7 @@
     // Même priorité que l’aperçu répondant : aucun type déduit du nombre de réponses.
     const kind=s.response_kind||s.legacy_payload?.responseKind||s.legacy_payload?.kind;
     if(kind==='rating')return {label:'Rating · Échelle',help:'Les réponses forment une échelle et sont présentées dans leur ordre.'};
-    if(kind==='choice')return {label:'Choice · Réponses proposées',help:'Les réponses sont présentées dans un ordre aléatoire dans l’aperçu répondant.'};
+    if(kind==='choice')return {label:'Choix · Réponses proposées',help:'Les réponses sont présentées dans un ordre aléatoire dans l’aperçu répondant.'};
     return {label:'Format non renseigné',help:'Aucun format explicite n’est enregistré. L’aperçu répondant utilise sa règle de compatibilité pour déterminer la présentation.'};
   }
 
@@ -1331,7 +1331,7 @@
         if(copy)copy.textContent='Consultez le socle méthodologique « Stéréotypes de genre ». Son contenu est conservé à l’identique dans votre diagnostic comportemental.';
       }else{
         if(strong)strong.textContent='Objectif de cette étape';
-        if(copy)copy.textContent='Choisissez les situations de cette partie et adaptez uniquement celles qui nécessitent une contextualisation à votre organisation.';
+        if(copy)copy.textContent='Relisez les situations de cette partie et adaptez uniquement celles qui nécessitent une contextualisation à votre organisation.';
       }
     }
     $('chapter-kicker').textContent=`Chapitre ${state.active+1} · Questions`;
@@ -1342,7 +1342,7 @@
       const clientFranceFrenchOnly=!isAdmin&&countries.length===1&&['FR','250'].includes(countries[0])&&locales.length===1&&locales[0]==='fr';
       titleTranslationButton.hidden=clientFranceFrenchOnly;
       const readOnlyTitles=!isAdmin&&(isLegacyClientCampaign()||state.project?.can_edit===false);
-      titleTranslationButton.textContent=readOnlyTitles?'🌐 Voir les titres du chapitre dans toutes les langues':'🌐 Vérifier ou corriger les titres traduits du chapitre';
+      titleTranslationButton.textContent=readOnlyTitles?'🌐 Voir les titres du chapitre dans toutes les langues':'🌐 Vérifier les versions linguistiques';
       const info=titleTranslationButton.closest('.chapter-title-translation-entry')?.querySelector('.chapter-title-translation-info');
       if(info)info.textContent=readOnlyTitles?'Consultez les titres dans les langues de votre campagne. Les corrections sont réservées à Me&YouToo.':'Le titre de référence est réservé à Me&YouToo. Les traductions peuvent être corrigées pour cette campagne.';
       titleTranslationButton.onclick=()=>openChapterTitleTranslations(ch);

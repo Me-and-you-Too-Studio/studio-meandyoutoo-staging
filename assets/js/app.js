@@ -40,7 +40,7 @@
     resultats:{title:'Résultats',text:'Les résultats anonymes et agrégés de votre campagne, accessibles par le lien que Me&YouToo renseigne. Ils montrent comment vos collaborateurs réagissent aux situations, pour orienter vos prochaines actions.'},
     chapitre:{title:'Chapitre',text:'Un ensemble de situations sur un même sujet. Votre diagnostic comportemental est composé d’un ou plusieurs chapitres.'},
     situation:{title:'Situation',text:'Une scène de la vie au travail, avec plusieurs réponses possibles. Le collaborateur choisit celle qui lui ressemble le plus.'},
-    profil:{title:'Profil de restitution',text:'Le texte que chaque répondant découvre à la fin de son autodiagnostic : il l’aide à comprendre ses réponses et lui propose des pistes de progression.'}
+    profil:{title:'Profil de restitution',text:'Le texte que chaque répondant découvre à la fin de chaque chapitre : il l’aide à comprendre ses réponses et lui propose des pistes de progression.'}
   };
   function dot(title,text){
     return '<button type="button" class="admin-info-dot" data-info-title="'+esc(title)+'" data-info="'+esc(text)+'" aria-label="Comprendre : '+esc(title)+'">i</button>';
@@ -170,7 +170,7 @@
       {target:'.creation-sticky-actions',title:'Passer à l’étape suivante',text:'Quand votre sélection vous convient, continuez vers la personnalisation des profils.'}
     ]},
     'personnalisation':{key:'creation-personnalisation',auto:true,steps:[
-      {target:'nav.steps',title:'Étape 3 : personnaliser',text:'Les profils sont les textes que chaque répondant découvre à la fin de son autodiagnostic, avec des pistes pour progresser.'},
+      {target:'nav.steps',title:'Étape 3 : personnaliser',text:'Les profils sont les textes que chaque répondant découvre à la fin de chaque chapitre, avec des pistes pour progresser.'},
       {target:'.composer-main',title:'Adapter les profils',text:'Relisez le titre, le résumé et la description de chaque profil. Vous pouvez adapter le ton à vos collaborateurs en gardant le sens pédagogique ; les seuils restent définis par Me&YouToo.'}
     ]},
     'parametrage':{key:'creation-parametrage',auto:true,steps:[
@@ -367,8 +367,8 @@
   var GUIDE_STAGES=[
     {page:/^bibliotheque\.html$/,href:'bibliotheque.html',title:'Choisir une thématique',text:'Parcourez le catalogue et ouvrez la thématique qui vous intéresse : sexisme, handicap, management inclusif… Rien n’est créé tant que vous ne commencez pas.'},
     {page:/^theme(-[a-z-]+)?\.html$/,title:'Découvrir et commencer',text:'Lisez les chapitres, puis cliquez sur « Choisir ce thème et commencer ». Vous choisirez alors les pays et les langues de votre campagne.'},
-    {page:/^composer\.html$/,title:'Composer',text:'Ouvrez chaque chapitre et choisissez les situations à garder. Tout est enregistré au fur et à mesure : vous pouvez vous arrêter et reprendre plus tard.'},
-    {page:/^personnalisation\.html$/,title:'Personnaliser les profils',text:'Relisez les textes que chaque répondant découvre à la fin de son autodiagnostic. Adaptez le ton si vous le souhaitez, ou gardez-les tels quels.'},
+    {page:/^composer\.html$/,title:'Composer',text:'Ouvrez chaque chapitre. Selon le chapitre, les situations sont imposées, ou vous pouvez en remplacer, en retirer ou en ajouter dans la limite indiquée. Tout est enregistré au fur et à mesure : vous pouvez vous arrêter et reprendre plus tard.'},
+    {page:/^personnalisation\.html$/,title:'Personnaliser les profils',text:'Relisez les textes que chaque répondant découvre à la fin de chaque chapitre. Adaptez le ton si vous le souhaitez, ou gardez-les tels quels.'},
     {page:/^parametrage\.html$/,title:'Paramétrer',text:'Nom et adresse de la campagne, introduction, dates, puis les données d’analyse. Le niveau de vigilance vous aide à protéger l’anonymat.'},
     {page:/^validation\.html$/,title:'Vérifier et transmettre',text:'Relisez le récapitulatif, cochez les vérifications, puis transmettez. Me&YouToo relit votre campagne avant la mise en ligne.'},
     {page:/^(mes-campagnes|campagne-detail|kit-communication)\.html$/,href:'mes-campagnes.html',title:'Et ensuite ?',text:'Me&YouToo relit votre campagne et vous prévient par notification et par e-mail. En attendant, préparez votre communication avec le kit.',last:true}

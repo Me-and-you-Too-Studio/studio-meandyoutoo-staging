@@ -15038,9 +15038,6 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 
 /* Paramétrage DSD — navigation multilingue persistante */
 #socio-dsd-context{
-  position:sticky;
-  top:12px;
-  z-index:30;
   background:rgba(255,255,255,.97);
   box-shadow:0 8px 24px rgba(18,55,88,.10);
   border:1px solid rgba(15,137,145,.18);
@@ -17335,3 +17332,10 @@ body.sidebar-collapsed .help-card-team { display: none; }
 .version-hint{color:var(--muted,#5b6b7c);padding:4px 0}
 .version-check.is-only{cursor:default}
 .version-check.is-only input{display:none}
+
+.validation-credit-item.is-empty:nth-child(2){background:#f5f7f9;border-color:#e3e8ee}
+.validation-credit-item.is-empty:nth-child(2) span,.validation-credit-item.is-empty:nth-child(2) strong{color:var(--muted,#5b6b7c)}
+.validation-missing{padding:20px 24px;margin:24px 0;border-color:#f2d27a;background:#fff9e8}
+.validation-missing h2{margin:0 0 10px}
+.validation-missing ul{margin:0;padding-left:20px;display:grid;gap:6px}
+.validation-missing a{font-weight:600}
