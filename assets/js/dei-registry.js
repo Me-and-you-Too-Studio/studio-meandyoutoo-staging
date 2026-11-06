@@ -553,7 +553,7 @@
       '<label class="dr-field"><span>Notes</span><textarea name="notes" rows="3" maxlength="4000">'+esc(a.notes||'')+'</textarea></label>'+
       '<label class="dr-field" data-results hidden><span>Résultats et enseignements</span><textarea name="results" rows="3" maxlength="4000" placeholder="Ce que l’action a permis, ce que vous en retenez">'+esc(a.results||'')+'</textarea></label>'+
       // Budget : réservé au client, le champ n'existe pas pour Me&YouToo ni pour un compte limité.
-      (d.budget?'<label class="dr-field dr-field-small"><span>Budget (€, facultatif)</span><input type="number" min="0" step="1" name="budget" value="'+esc(a.budget_eur??'')+'"></label><p class="dr-budget-lock">'+BUDGET_NOTICE+'</p>':'')+
+      (d.budget?'<label class="dr-field"><span>Budget (€, facultatif)</span><input type="number" min="0" step="1" name="budget" value="'+esc(a.budget_eur??'')+'"></label><p class="dr-budget-lock">'+BUDGET_NOTICE+'</p>':'')+
       // Côté Me&YouToo : rattacher l'action à un diagnostic (restitution, recommandation issue de la restitution).
       (isAdmin?'<div class="dr-field-row dr-reco-pick"><label class="dr-field"><span>Diagnostic lié</span><select name="campaignId"><option value="">— Aucun —</option>'+
         ((d.diagnostics||{}).campaigns||[]).map(function(c){return '<option value="'+esc(c.id)+'"'+(String(c.id)===String(a.campaign_id||'')?' selected':'')+'>'+esc(c.name+' ('+String(c.launch_date).slice(0,7).split('-').reverse().join('/')+')')+'</option>';}).join('')+
