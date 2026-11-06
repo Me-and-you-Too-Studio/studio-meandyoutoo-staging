@@ -64,14 +64,18 @@
     var custom=o.metric==='custom',strategic=o.metric==='strategic',s=o.strategic||{done:0,planned:0};
     var reached=custom||strategic?o.done:(o.value!=null&&o.target&&o.value>=o.target);
     var figure=custom?(o.done?'Atteint':'En cours'):strategic?((o.done?'Atteint · ':'')+plural(s.done,'action')+' réalisée'+(s.done>1?'s':'')):(o.value==null?'Pas encore mesurable':num(o.value)+' / '+num(o.target)+(o.unit==='%'?' %':' '+o.unit));
-    return {title:objectiveTitle(o),figure:figure,reached:Boolean(reached),missing:o.themeProgress&&o.themeProgress.missing.length?o.themeProgress.missing.join(', '):''};
+    var percent=reached?100:custom?0:strategic?(o.target?Math.min(100,Math.round((s.people||0)/o.target*100)):(s.done?50:0)):(o.value==null||!o.target?0:Math.min(100,Math.round(o.value/o.target*100)));
+    return {title:objectiveTitle(o),figure:figure,reached:Boolean(reached),percent:percent,missing:o.themeProgress&&o.themeProgress.missing.length?o.themeProgress.missing.join(', '):''};
   }
   function deckData(d,next,list,org,logo,p){
-    var groups=(d.dispositifs||[]).filter(function(x){return x.inYear;}).map(function(x){return {name:x.name,count:list.filter(function(i){return String(i.dispositifId||'')===String(x.id);}).length};}).filter(function(g){return g.count;});
+    var groups=(d.dispositifs||[]).filter(function(x){return x.inYear;}).map(function(x){return {name:x.name,objective:x.objective,count:list.filter(function(i){return String(i.dispositifId||'')===String(x.id);}).length};}).filter(function(g){return g.count;});
     var highlights=list.filter(function(i){return i.status==='done';}).sort(function(a,b){return (Number(b.people)||0)-(Number(a.people)||0);}).map(function(i){return {title:i.title,people:i.people};});
     // Une campagne déjà lancée qui se poursuit n'est pas une perspective.
     var nextList=next?items(next).filter(inProgramme).filter(function(i){return String(i.start||i.date)>=(year+1)+'-01-01';}):[];
-    return {year:year,org:org,logo:logo,ind:d.indicators,participation:participationRate(d.campaigns),activeQuarters:activeQuarters(list),objectives:(p.objectives||[]).map(objectiveResult),quarters:p.quarters||[],
+    var themeCount={},themeLabel={};list.forEach(function(i){themesOf(i.theme).forEach(function(t){var k=t.toLowerCase();themeCount[k]=(themeCount[k]||0)+1;themeLabel[k]=themeLabel[k]||t;});});
+    var byTheme=Object.keys(themeCount).map(function(k){return [themeLabel[k],themeCount[k]];}).sort(function(a,b){return b[1]-a[1];});
+    var byFamily=COVER.map(function(k){return [k[0],list.filter(function(i){return k[2].indexOf(i.kind)>=0;}).length];}).filter(function(r){return r[1];}).sort(function(a,b){return b[1]-a[1];});
+    return {year:year,org:org,logo:logo,ind:d.indicators,byTheme:byTheme,byFamily:byFamily,participation:participationRate(d.campaigns),activeQuarters:activeQuarters(list),objectives:(p.objectives||[]).map(objectiveResult),quarters:p.quarters||[],
       coverage:{columns:COVER.map(function(k){return k[0];}),rows:coverageData(list,p.objectives||[])},dispositifs:groups,highlights:highlights,
       diagnostics:list.filter(function(i){return i.campaign;}).map(function(i){return {name:i.title,theme:i.theme,period:fmtDate(i.start||i.date)+(i.end?' → '+fmtDate(i.end):''),people:i.people};}),
       next:{actions:nextList.map(function(i){return {date:fmtDate(i.date),title:i.title};}),objectives:(next&&next.pilotage?next.pilotage.objectives:[]).map(objectiveTitle),events:EVENTS}};
