@@ -12,6 +12,7 @@
   var organizationId=isAdmin?params.get('organizationId'):null;
   var year=/^\d{4}$/.test(params.get('year')||'')?Number(params.get('year')):new Date().getFullYear();
   var MONTHS=['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
+  var deck=null;
   var STATUS={done:'Réalisée',in_progress:'En cours',planned:'Prévue',postponed:'Reportée'};
   // Temps forts de l'année suivante mis en avant dans les perspectives.
   var MONTH_NAMES=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -43,16 +44,36 @@
   function themeRoot(t){return String(t).toLowerCase().split(/[ &(]/)[0];}
   function sameTheme(a,b){var x=String(a).toLowerCase(),y=String(b).toLowerCase();return x===y||x.indexOf(themeRoot(y))>=0||y.indexOf(themeRoot(x))>=0;}
   // Couverture de l'année : seules les thématiques travaillées ou prioritaires, pour rester sur une page.
-  function coverageBlock(list,objectives){
+  function coverageData(list,objectives){
     var names=[];list.forEach(function(i){themesOf(i.theme).forEach(function(t){if(!names.some(function(n){return sameTheme(n,t);}))names.push(t);});});
     var wanted=[];objectives.forEach(function(o){wanted=wanted.concat(themesOf(o.themes));});
     wanted.forEach(function(t){if(!names.some(function(n){return sameTheme(n,t);}))names.push(t);});
-    if(!names.length)return '';
     var isPriority=function(t){return wanted.some(function(w){return sameTheme(w,t);});};
     names.sort(function(a,b){return isPriority(b)-isPriority(a);});
+    return names.map(function(t){return {theme:t,priority:isPriority(t),cells:COVER.map(function(k){var its=list.filter(function(i){return k[2].indexOf(i.kind)>=0&&themesOf(i.theme).some(function(x){return sameTheme(t,x);});});
+      return !its.length?'':its.some(function(i){return i.status==='done';})?'✓':'○';})};});
+  }
+  function coverageBlock(list,objectives){
+    var rows=coverageData(list,objectives);
+    if(!rows.length)return '';
     return '<h3>La couverture du programme</h3><table class="bl-table bl-cover-table"><thead><tr><th>Thématique</th>'+COVER.map(function(k){return '<th>'+esc(k[0])+'<br><small>'+esc(k[1])+'</small></th>';}).join('')+'</tr></thead><tbody>'+
-      names.map(function(t){return '<tr><td>'+(isPriority(t)?'★ ':'')+esc(t)+'</td>'+COVER.map(function(k){var its=list.filter(function(i){return k[2].indexOf(i.kind)>=0&&themesOf(i.theme).some(function(x){return sameTheme(t,x);});});
-        return '<td>'+(!its.length?'':its.some(function(i){return i.status==='done';})?'✓':'○')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table><p class="bl-note">✓ réalisé · ○ prévu · ★ priorité de l’année</p>';
+      rows.map(function(r){return '<tr><td>'+(r.priority?'★ ':'')+esc(r.theme)+'</td>'+r.cells.map(function(c){return '<td>'+c+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table><p class="bl-note">✓ réalisé · ○ prévu · ★ priorité de l’année</p>';
+  }
+  // Données du PowerPoint COMEX : les mêmes que le Bilan, jamais le budget.
+  function objectiveResult(o){
+    var custom=o.metric==='custom',strategic=o.metric==='strategic',s=o.strategic||{done:0,planned:0};
+    var reached=custom||strategic?o.done:(o.value!=null&&o.target&&o.value>=o.target);
+    var figure=custom?(o.done?'Atteint':'En cours'):strategic?((o.done?'Atteint · ':'')+plural(s.done,'action')+' réalisée'+(s.done>1?'s':'')):(o.value==null?'Pas encore mesurable':num(o.value)+' / '+num(o.target)+(o.unit==='%'?' %':' '+o.unit));
+    return {title:objectiveTitle(o),figure:figure,reached:Boolean(reached),missing:o.themeProgress&&o.themeProgress.missing.length?o.themeProgress.missing.join(', '):''};
+  }
+  function deckData(d,next,list,org,logo,p){
+    var groups=(d.dispositifs||[]).filter(function(x){return x.inYear;}).map(function(x){return {name:x.name,count:list.filter(function(i){return String(i.dispositifId||'')===String(x.id);}).length};}).filter(function(g){return g.count;});
+    var highlights=list.filter(function(i){return i.status==='done';}).sort(function(a,b){return (Number(b.people)||0)-(Number(a.people)||0);}).map(function(i){return {title:i.title,people:i.people};});
+    var nextList=next?items(next).filter(inProgramme):[];
+    return {year:year,org:org,logo:logo,ind:d.indicators,participation:participationRate(d.campaigns),activeQuarters:activeQuarters(list),objectives:(p.objectives||[]).map(objectiveResult),quarters:p.quarters||[],
+      coverage:{columns:COVER.map(function(k){return k[0];}),rows:coverageData(list,p.objectives||[])},dispositifs:groups,highlights:highlights,
+      diagnostics:list.filter(function(i){return i.campaign;}).map(function(i){return {name:i.title,theme:i.theme,period:fmtDate(i.start||i.date)+(i.end?' → '+fmtDate(i.end):''),people:i.people};}),
+      next:{actions:nextList.map(function(i){return {date:fmtDate(i.date),title:i.title};}),objectives:(next&&next.pilotage?next.pilotage.objectives:[]).map(objectiveTitle),events:EVENTS}};
   }
   function kindOf(d,k){return (d.kinds||{})[k]||{label:k,icon:'•'};}
   function load(y){return StudioAPI.request('/api/dei/actions'+qs(y)).catch(function(){return null;});}
@@ -170,6 +191,8 @@
     var img=doc.querySelector('.bl-client-logo');
     (img?inlineImage(img.getAttribute('data-src')).then(function(src){img.src=src;},function(){img.parentNode.remove();}):Promise.resolve())
       .then(function(){document.getElementById('bl-print').disabled=false;});
+    deck=deckData(d,next,list,org,logo,p);
+    if(window.StudioBilanPptx)document.getElementById('bl-pptx').disabled=false;
   }
 
   function deltaText(value,before){
@@ -262,6 +285,12 @@
     window.scrollTo(0,scrolled);
     return pdf;
   }
+  document.getElementById('bl-pptx').addEventListener('click',async function(){
+    var button=this,label=button.textContent;button.disabled=true;button.textContent='Préparation…';
+    try{await window.StudioBilanPptx.download(deck);}
+    catch(e){if(window.StudioModal)window.StudioModal.alert({title:'PowerPoint indisponible',message:e.message});}
+    button.disabled=false;button.textContent=label;
+  });
   document.getElementById('bl-print').addEventListener('click',async function(){
     var btn=this;
     if(!window.html2canvas||!window.jspdf){window.print();return;}
