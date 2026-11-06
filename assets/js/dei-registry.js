@@ -283,7 +283,8 @@
     return '<article class="dr-disp"><h3>'+esc(x.name)+'</h3>'+(x.objective?'<p class="dr-row-notes"><strong>Objectif :</strong> '+esc(x.objective)+'</p>':'')+(x.theme?'<p class="dr-row-meta">'+esc(x.theme)+'</p>':'')+
       '<p class="dr-disp-count"><strong>'+done+' réalisée'+(done>1?'s':'')+' · '+planned+' prévue'+(planned>1?'s':'')+'</strong>'+(people?' · '+num(people)+' personne'+(people>1?'s':'')+' touchée'+(people>1?'s':''):'')+'</p>'+
       (lines?'<ul class="dr-disp-list">'+lines+'</ul>':'<p class="dr-empty">Rien pour l’instant : ajoutez une action ou rattachez un diagnostic.</p>')+
-      (canEdit?'<div class="dr-row-tools"><button type="button" class="button button-ghost" data-disp-compose="'+esc(x.id)+'">＋ Composer le dispositif</button><button type="button" class="button button-ghost" data-disp-action="'+esc(x.id)+'">＋ Ajouter une action</button><button type="button" class="button button-ghost" data-disp-attach="'+esc(x.id)+'">Rattacher un diagnostic</button><button type="button" class="button button-ghost" data-disp-edit="'+esc(x.id)+'">Modifier</button><button type="button" class="button button-ghost" data-disp-delete="'+esc(x.id)+'">Supprimer</button></div>':'')+'</article>';
+      (canEdit?'<div class="dr-disp-tools"><div class="dr-disp-main"><button type="button" class="button button-secondary" data-disp-compose="'+esc(x.id)+'">＋ Ajouter des actions</button><button type="button" class="button button-secondary" data-disp-attach="'+esc(x.id)+'">＋ Rattacher un diagnostic</button></div>'+
+        '<div class="dr-disp-more"><button type="button" class="dr-link" data-disp-edit="'+esc(x.id)+'">Modifier le dispositif</button><button type="button" class="dr-link" data-disp-delete="'+esc(x.id)+'">Supprimer</button></div></div>':'')+'</article>';
   }
   function dispositifsView(years){
     var d=state.data,canEdit=d.canEdit,list=(d.dispositifs||[]).filter(function(x){return x.inYear;});
@@ -322,14 +323,16 @@
     var d=state.data,kinds=Object.keys(d.kinds).filter(function(k){return k!=='diagnostic';});
     var theme=String(x.theme||'').split(',')[0].trim();
     var dlg=document.createElement('dialog');dlg.className='dr-dialog';
-    dlg.innerHTML='<form><h2>Composer le dispositif</h2><p class="dr-row-meta">Cochez les formats prévus : une action « Prévue » est créée pour chacun, déjà rattachée à « '+esc(x.name)+' ». Vous les compléterez ensuite. Les diagnostics se rattachent à part.</p>'+
+    dlg.innerHTML='<form><h2>Ajouter des actions</h2><p class="dr-row-meta">Cochez les formats prévus : une action « Prévue » est créée pour chacun dans « '+esc(x.name)+' ». Vous les compléterez ensuite. Les diagnostics se rattachent à part.</p>'+
       '<fieldset class="dr-compose"><legend>Formats</legend>'+kinds.map(function(k){return '<label class="dr-check"><input type="checkbox" name="kind" value="'+esc(k)+'"> '+esc(d.kinds[k].icon+' '+d.kinds[k].label)+'</label>';}).join('')+'</fieldset>'+
       '<label class="dr-field dr-field-date"><span>Date prévue *</span><input type="date" name="actionDate" required value="'+esc(x.year+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-15')+'"></label>'+
+      '<button type="button" class="dr-link" data-compose-single>Préférez-vous saisir une seule action en détail ?</button>'+
       '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>'+(justCreated?'Plus tard':'Annuler')+'</button><button type="submit" class="button button-primary">Créer les actions</button></div></form>';
     document.body.appendChild(dlg);
     var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
     dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
     dlg.addEventListener('close',function(){dlg.remove();});
+    dlg.querySelector('[data-compose-single]').onclick=function(){dlg.close();editDialog(null,null,{dispositif_id:x.id,theme:x.theme});};
     form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
       if(!form.checkValidity()){form.reportValidity();return;}
       var picked=new FormData(form).getAll('kind');
@@ -807,7 +810,6 @@
     else if(t.hasAttribute('data-disp-delete'))removeDispositif(t.getAttribute('data-disp-delete'));
     else if(t.hasAttribute('data-disp-attach'))attachDialog(t.getAttribute('data-disp-attach'));
     else if(t.hasAttribute('data-disp-compose'))composeDialog((state.data.dispositifs||[]).find(function(x){return String(x.id)===t.getAttribute('data-disp-compose');}));
-    else if(t.hasAttribute('data-disp-action')){var dx=(state.data.dispositifs||[]).find(function(x){return String(x.id)===t.getAttribute('data-disp-action');});editDialog(null,null,{dispositif_id:dx.id,theme:dx.theme});}
     else if(t.hasAttribute('data-disp-detach')){var dp=t.getAttribute('data-disp-detach').split(':');StudioAPI.request('/api/dei/dispositifs/'+encodeURIComponent(dp[0])+'/diagnostics/'+encodeURIComponent(dp[1])+qs(),{method:'DELETE',body:JSON.stringify(withOrg({}))}).then(load).catch(function(e){window.StudioModal.alert({title:'Action impossible',message:e.message});});}
     else if(t.hasAttribute('data-provider-add'))providerDialog(null);
     else if(t.hasAttribute('data-provider-edit'))providerDialog((state.data.providers||[]).find(function(p){return String(p.id)===t.getAttribute('data-provider-edit');}));
