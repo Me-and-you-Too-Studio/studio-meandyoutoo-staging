@@ -278,7 +278,7 @@
     {key:'sensibiliser',label:'Sensibiliser',hint:'Conférence, atelier, vidéo, campagne, événement',kinds:['conference','atelier','video','sensibilisation','evenement']},
     {key:'former',label:'Former',hint:'Formation, e-learning, micro-learning',kinds:['formation','elearning','microlearning']},
     {key:'vivre',label:'Faire vivre',hint:'Réseau interne, mentorat',kinds:['reseau','mentorat']},
-    {key:'organisation',label:'Organisation',hint:'Politique RH, recrutement, accessibilité, label, conseil',kinds:['politique_rh','recrutement','accessibilite','label','conseil']}
+    {key:'organisation',label:'Organisation',hint:'Politique RH, accord, charte, recrutement, accessibilité, label, conseil',kinds:['politique_rh','recrutement','accessibilite','label','conseil']}
   ];
   function themeRoot(t){return String(t).toLowerCase().split(/[ &(]/)[0];}
   function sameTheme(a,b){var x=String(a).toLowerCase(),y=String(b).toLowerCase();return x===y||x.indexOf(themeRoot(y))>=0||y.indexOf(themeRoot(x))>=0;}
