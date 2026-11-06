@@ -296,7 +296,7 @@
     var head=COVER.map(function(k){return '<th scope="col">'+esc(k.label)+'<small>'+esc(k.hint)+'</small></th>';}).join('');
     var rows=coverageRows(list).map(function(r){
       var cells=COVER.map(function(k){var its=coverItems(r.theme,k.key,list);
-        if(!its.length)return '<td>'+(r.priority&&isClient?'<a class="dr-cover-link" href="offres.html?from=cockpit">Voir les solutions</a>':'')+'</td>';
+        if(!its.length){gap=true;return '<td></td>';}
         var done=its.some(function(it){return it.status==='done';});
         var label=its.length+(done?' : réalisé':' : prévu');
         return '<td><button type="button" class="dr-cover-cell '+(done?'is-done':'is-planned')+'" data-cover="'+esc(r.theme+'|'+k.key)+'" aria-label="'+esc(r.theme+', '+k.label+', '+label)+'">'+(done?'✓':'○')+'</button></td>';}).join('');
