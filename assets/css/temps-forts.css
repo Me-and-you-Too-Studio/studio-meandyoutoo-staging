@@ -1,0 +1,28 @@
+/* Temps forts D&I : écran admin, page de désabonnement. */
+.tf-state{margin:0 0 20px;padding:12px 14px;border-radius:12px;background:var(--sunny-yellow-soft,#fff6dd);color:#5c4300;font-weight:700}
+.tf-state.is-on{background:var(--green-blue-soft,#e6f4f5);color:var(--green-blue-dark,#00636c)}
+.tf-title{margin:24px 0 12px;font-size:1.15rem}
+.tf-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tf-upcoming{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.tf-card{background:#fff;border:1px solid var(--line,#e2e7f1);border-radius:14px;padding:14px 16px}
+.tf-card h3{margin:2px 0;font-size:1.02rem}
+.tf-card p{margin:4px 0}
+.tf-card ul{margin:6px 0 0;padding-left:18px}
+.tf-when{color:var(--green-blue,#007883);font-size:.82rem;font-weight:700}
+.tf-theme{color:var(--muted,#54607e);font-size:.9rem}
+.tf-table-wrap{overflow-x:auto;background:#fff;border:1px solid var(--line,#e2e7f1);border-radius:14px}
+.tf-table{width:100%;border-collapse:collapse;font-size:.92rem}
+.tf-table th,.tf-table td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line,#e2e7f1)}
+.tf-table tr:last-child td{border-bottom:0}
+.tf-table small{color:var(--muted,#54607e)}
+.tf-table tr.is-off{opacity:.6}
+.tf-tools{display:flex;flex-wrap:wrap;gap:4px}
+.tf-pill{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--royal-blue-soft,#eaeef7);font-size:.78rem;font-weight:700;white-space:nowrap}
+.tf-pill.is-on{background:var(--green-blue-soft,#e6f4f5);color:var(--green-blue-dark,#00636c)}
+.tf-empty{color:var(--muted,#54607e)}
+.tf-offers{border:1px solid var(--line,#e2e7f1);border-radius:12px;padding:10px 12px;margin:0;display:grid;gap:4px;max-height:220px;overflow:auto}
+.tf-offers legend{padding:0 4px;font-size:.85rem;font-weight:700}
+.unsub-page{min-height:100vh;display:grid;place-items:center;padding:24px;background:#f3f6f8}
+.unsub-card{max-width:460px;background:#fff;border-radius:16px;padding:28px;box-shadow:0 10px 30px rgba(27,42,73,.08)}
+.unsub-card img{height:48px;margin-bottom:12px}
+.unsub-card h1{margin:0 0 8px;font-size:1.3rem}

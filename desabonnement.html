@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rappels de temps forts — Studio Me&YouToo</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="assets/img/brand/favicon.png">
+<link rel="stylesheet" href="assets/css/style.css?v=20261106-creation-1">
+<link rel="stylesheet" href="assets/css/temps-forts.css?v=20261106-temps-forts-1">
+</head>
+<body class="unsub-page">
+<main class="unsub-card">
+  <img src="assets/img/brand/logo-studio-blue.png" alt="Le Studio Me&amp;YouToo">
+  <h1 id="unsub-title">Ne plus recevoir les rappels de temps forts ?</h1>
+  <p id="unsub-text">Vous ne recevrez plus ces e-mails. Les autres messages du Studio, comme ceux de vos campagnes, continuent. Vous pourrez changer d’avis dans Mon compte.</p>
+  <button type="button" class="button button-primary" id="unsub-confirm">Me désabonner</button>
+</main>
+<script src="assets/js/api.js?v=20261103-json-1"></script>
+<script>
+(function(){
+  var token=new URLSearchParams(location.search).get('token')||'',button=document.getElementById('unsub-confirm');
+  var title=document.getElementById('unsub-title'),text=document.getElementById('unsub-text');
+  function show(t,m){title.textContent=t;text.textContent=m;button.hidden=true;}
+  if(!token){show('Lien incomplet','Utilisez le lien reçu dans l’e-mail, ou le réglage de Mon compte.');return;}
+  button.onclick=async function(){
+    button.disabled=true;
+    try{
+      var r=await fetch(StudioAPI.base()+'/api/public/rappels-temps-forts/desabonnement',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:token})});
+      if(r.ok)show('C’est noté','Vous ne recevrez plus les rappels de temps forts.');
+      else show('Lien non valide','Ce lien ne fonctionne pas. Vous pouvez vous désabonner dans Mon compte.');
+    }catch(e){button.disabled=false;text.textContent='Le désabonnement n’a pas abouti. Réessayez dans un instant.';}
+  };
+})();
+</script>
+</body>
+</html>
