@@ -159,7 +159,7 @@
     return '<aside class="dr-nudge" aria-label="Temps fort à préparer"><div><strong>'+esc(n.name)+' dans '+n.daysLeft+' jours</strong>'+
       '<p>Rien n’est encore prévu sur la thématique « '+esc(n.theme)+' » dans votre programme : c’est le bon moment pour préparer une action.</p></div>'+
       '<div class="dr-nudge-actions">'+(canEdit?'<button type="button" class="button button-primary" data-prepare="'+esc(n.date)+'" data-theme="'+esc(n.theme)+'" data-title="'+esc(n.name)+'">Préparer une action</button>':'')+offer+
-      '<button type="button" class="dr-link" data-nudge-later="'+esc(n.eventId)+'" data-year="'+esc(n.year)+'" data-stage="'+esc(n.stage)+'">Plus tard</button></div></aside>';
+      '<button type="button" class="dr-link" data-nudge-later="'+esc(n.eventId)+'" data-nudge-year="'+esc(n.year)+'" data-stage="'+esc(n.stage)+'">Plus tard</button></div></aside>';
   }
   // Une action reportée sans nouvelle date ou annulée reste dans la liste mais ne compte plus dans le programme.
   function inProgramme(it){return it.status!=='postponed'&&it.status!=='cancelled';}
@@ -661,7 +661,7 @@
     else if(t.hasAttribute('data-obj-edit'))objectiveDialog(findObjective(t.getAttribute('data-obj-edit')));
     else if(t.hasAttribute('data-obj-delete')){var ob=findObjective(t.getAttribute('data-obj-delete'));if(ob)window.StudioModal.confirm({eyebrow:'Objectifs',title:'Retirer cet objectif ?',message:'Il disparaît du tableau de pilotage. Vos actions ne sont pas touchées.',confirmLabel:'Retirer'}).then(function(ok){if(ok)StudioAPI.request('/api/dei/objectives/'+encodeURIComponent(ob.id)+qs(),{method:'DELETE'}).then(load).catch(function(e){window.StudioModal.alert({title:'Action impossible',message:e.message});});});}
     else if(t.hasAttribute('data-prepare')){var pd=t.getAttribute('data-prepare');editDialog(null,Number(pd.slice(5,7))-1,{title:t.getAttribute('data-title'),theme:t.getAttribute('data-theme'),action_date:pd,kind:'evenement'});}
-    else if(t.hasAttribute('data-nudge-later')){t.disabled=true;StudioAPI.request('/api/dei/temps-forts/'+encodeURIComponent(t.getAttribute('data-nudge-later'))+'/plus-tard',{method:'POST',body:JSON.stringify({year:Number(t.getAttribute('data-year')),stage:t.getAttribute('data-stage')})}).then(load).catch(function(e){t.disabled=false;window.StudioModal.alert({title:'Action impossible',message:e.message});});}
+    else if(t.hasAttribute('data-nudge-later')){t.disabled=true;StudioAPI.request('/api/dei/temps-forts/'+encodeURIComponent(t.getAttribute('data-nudge-later'))+'/plus-tard',{method:'POST',body:JSON.stringify({year:Number(t.getAttribute('data-nudge-year')),stage:t.getAttribute('data-stage')})}).then(load).catch(function(e){t.disabled=false;window.StudioModal.alert({title:'Action impossible',message:e.message});});}
     else if(t.hasAttribute('data-event-help'))accompany({event:t.getAttribute('data-event-help')},'Préparer : '+t.getAttribute('data-event-help'));
     else if(t.hasAttribute('data-late-edit')){
       // Une action en retard peut dater de l'année précédente : on charge son année avant d'ouvrir la fiche.
