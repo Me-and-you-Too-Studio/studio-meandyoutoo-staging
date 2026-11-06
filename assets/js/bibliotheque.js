@@ -207,10 +207,13 @@
     }
   }
 
+  // « International » existe comme zone et comme pays technique : une seule entrée dans le filtre.
+  const WORLDWIDE_SCOPES=['worldwide','international','global'];
+  const isWorldwide=t=>scopes(t).some(x=>WORLDWIDE_SCOPES.includes(norm(x)))||countries(t).includes('WORLDWIDE');
   function fillFilters(){
     const allScopes=uniq([
-      ...themes.flatMap(t=>scopes(t).map(x=>'scope:'+x)),
-      ...themes.flatMap(t=>countries(t).map(x=>'country:'+x))
+      ...themes.flatMap(t=>scopes(t).map(x=>WORLDWIDE_SCOPES.includes(norm(x))?'scope:worldwide':'scope:'+x)),
+      ...themes.flatMap(t=>countries(t).map(x=>x==='WORLDWIDE'?'scope:worldwide':'country:'+x))
     ]);
     scopeFilter.innerHTML='<option value="">Tous les périmètres</option>';
     const broad=allScopes.filter(x=>x.startsWith('scope:')||x==='country:EU').sort((a,b)=>{
@@ -274,13 +277,13 @@
   function render(){
     const q=norm(search?.value),sf=scopeFilter?.value||'',lf=norm(localeFilter?.value);
     const filtered=themes.filter(t=>{
-      const scopeOk=!sf||(sf.startsWith('scope:')?scopes(t).includes(sf.slice(6)):countries(t).includes(sf.slice(8)));
+      const scopeOk=!sf||(sf==='scope:worldwide'?isWorldwide(t):sf.startsWith('scope:')?scopes(t).includes(sf.slice(6)):countries(t).includes(sf.slice(8)));
       const langOk=!lf||locales(t).includes(lf);
       const hay=[displayTitle(t),t.title,description(t),t.slug,...themeTags(t),...scopes(t).map(scopeLabel),...countries(t).map(countryLabel),...locales(t).flatMap(x=>[x,localeLabel(x)])].join(' ').toLowerCase();
       return scopeOk&&langOk&&(!q||hay.includes(q));
     });
     if(reset)reset.hidden=!(q||sf||lf);
-    root.innerHTML=filtered.map(themeMarkup).join('')||'<article class="card library-no-result"><h3>Aucune thématique disponible</h3><p>Aucune thématique ne correspond à ces critères. Modifiez le périmètre ou la langue.</p></article>';
+    root.innerHTML=filtered.map(themeMarkup).join('')||'<article class="card library-no-result"><h3>Aucune thématique trouvée</h3><p>'+(q?'Aucune thématique ne correspond à « '+esc(search.value.trim())+' ». Vérifiez l’orthographe ou essayez un autre mot'+(sf||lf?', ou retirez les filtres':'')+'.':'Aucune thématique pour ce choix. Modifiez le périmètre ou la langue.')+'</p></article>';
 
     root.querySelectorAll('details.topic-card-accordion').forEach(details=>{
       details.addEventListener('toggle',()=>{

@@ -204,7 +204,7 @@
         var choiceBadge=hasChoice?'<span class="theme-choice-badge">'+(chapter.is_default_choice?'Présélectionné':'Alternative')+'</span>':'';
         var description=String(chapter.client_description||'').trim()||'Consultez le contenu de ce chapitre pour choisir l’approche la plus adaptée à votre objectif.';
         var usage=chapter.locked?(chapter.lock_reason||'Obligatoire · non modifiable'):(hasChoice?'Chapitre au choix':'Catalogue Me&YouToo');
-        bodyHtml+='<tr class="'+(hasChoice?'is-choice-chapter':'')+'"><td><div class="theme-chapter-title"><strong>'+esc(chapter.title)+'</strong>'+choiceBadge+'</div><p class="theme-chapter-description">'+esc(description)+'</p></td><td>'+count+'</td><td>'+esc(usage)+'</td><td><button class="button button-secondary" type="button" data-preview-chapter="'+index+'">Voir le catalogue</button></td></tr>';
+        bodyHtml+='<tr class="'+(hasChoice?'is-choice-chapter':'')+'"><td><div class="theme-chapter-title"><strong>'+esc(chapter.title)+'</strong>'+choiceBadge+'</div><p class="theme-chapter-description">'+esc(description)+'</p></td><td>'+count+'</td><td>'+esc(usage)+'</td><td><button class="button button-secondary" type="button" data-preview-chapter="'+index+'">Voir les situations</button></td></tr>';
       });
       table.querySelector('tbody').innerHTML=bodyHtml;
 
