@@ -33,6 +33,8 @@
     return StudioAPI.request(isAdmin?'/api/admin/offers':'/api/offers');
   }
 
+  // Illustration d'une offre, dans le Studio seulement.
+  var OFFER_IMAGES={'affiches-illustrees':{src:'assets/img/offres/affiche-compliment.jpg',alt:'Dessin de Gilles Rapaport : en réunion, un homme dit « Et voilà ! Je lui fais un compliment sur sa tenue, et elle se vexe ! » devant une collègue qui présente des graphiques.'}};
   function card(o){
     var cat=state.categories[o.category]||{label:o.category,icon:'•'};
     var meta=[o.format,o.duration].filter(Boolean).map(esc).join(' · ');
@@ -43,6 +45,7 @@
     var adminTools=isAdmin?'<div class="offer-admin"><span class="offer-status '+(o.published?'is-on':'is-off')+'">'+(o.published?'Publiée':'Masquée')+'</span>'+(o.hubspot_category?'<span class="offer-status is-hs" title="Catégorie de produit HubSpot">HubSpot : '+esc(o.hubspot_category)+'</span>':'')+'<button type="button" class="button button-ghost" data-offer-edit="'+esc(o.id)+'">Modifier</button><button type="button" class="button button-ghost" data-offer-archive="'+esc(o.id)+'">Retirer</button></div>':'';
     return '<article class="offer-card cat-'+esc(o.category)+(isAdmin&&!o.published?' is-hidden-offer':'')+'" data-offer-slug="'+esc(o.slug||'')+'">'+
       '<p class="offer-cat"><span aria-hidden="true">'+esc(cat.icon)+'</span> '+esc(cat.label)+'</p>'+
+      (mode==='studio'&&OFFER_IMAGES[o.slug]?'<img class="offer-image" src="'+esc(OFFER_IMAGES[o.slug].src)+'" alt="'+esc(OFFER_IMAGES[o.slug].alt)+'" loading="lazy">':'')+
       '<h3>'+esc(o.title)+'</h3>'+(o.summary?'<p class="offer-summary">'+esc(o.summary)+'</p>':'')+
       (meta?'<p class="offer-meta">'+meta+'</p>':'')+
       '<div class="offer-actions">'+ask+

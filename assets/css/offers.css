@@ -57,3 +57,6 @@
 .offer-hs-notice{margin:0 0 12px;padding:10px 14px;border-radius:10px;background:#fff1e6;color:#a4471a;font-size:.9rem}
 @media (max-width:600px){.offer-grid{grid-template-columns:1fr}.offer-card{padding:16px}}
 .offers-back-cockpit{margin-bottom:14px}
+
+.offer-card.cat-affiche{border-top-color:#8a6fd1}
+.offer-image{display:block;width:100%;height:auto;border-radius:10px;border:1px solid var(--of-line)}
