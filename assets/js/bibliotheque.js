@@ -240,7 +240,6 @@
     const cat=Number.isFinite(Number(rawCat))&&rawCat!==null?Number(rawCat):null;
     const lib=Number.isFinite(Number(rawLib))&&rawLib!==null?Number(rawLib):null;
     const catLabel=cat===null?'Selon périmètre':String(cat);
-    const libLabel=lib===null?'Selon périmètre':String(lib);
     const fullTitle=String(t.title||'').trim();
     const short=displayTitle(t);
     const perimeterItems=[...sc.map(x=>({type:'scope',value:x})),...co.filter(x=>!(x==='WORLDWIDE'&&sc.some(v=>['worldwide','international','global'].includes(norm(v))))).map(x=>({type:'country',value:x}))];
