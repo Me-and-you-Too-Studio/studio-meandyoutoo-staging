@@ -29,10 +29,10 @@
   // Actions du registre + campagnes de diagnostic dans un même format.
   function items(d){
     var t=today();
-    return d.actions.map(function(a){return {kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,objective:a.objective,results:a.results,provider:a.led_by_meayt?'Me&YouToo':a.provider_name,documents:a.documents||[]};})
+    return d.actions.map(function(a){return {kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,objective:a.objective,results:a.results,dispositifId:a.dispositif_id,provider:a.led_by_meayt?'Me&YouToo':a.provider_name,documents:a.documents||[]};})
       .concat(d.campaigns.map(function(c){return {kind:'diagnostic',title:c.name,date:c.year_date||c.launch_date,start:c.launch_date,end:c.close_date,campaign:true,
         status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':'in_progress',
-        theme:c.dei_theme||c.theme_title,people:c.respondents,provider:'Me&YouToo',documents:[]};}))
+        theme:c.dei_theme||c.theme_title,people:c.respondents,dispositifId:c.dispositif_id,provider:'Me&YouToo',documents:[]};}))
       .sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
   }
   // Une action reportée sans nouvelle date ou annulée ne compte pas dans le bilan.
@@ -114,6 +114,12 @@
 
     // 5. Détail des actions par trimestre
     html+='<section class="bl-page"><h2>Le détail des actions</h2>';
+    // Dispositifs : un regroupement, les compteurs de l'année ne changent pas.
+    var groups=(d.dispositifs||[]).filter(function(x){return x.inYear;}).map(function(x){return {x:x,its:list.filter(function(i){return String(i.dispositifId||'')===String(x.id);})};}).filter(function(g){return g.its.length;});
+    if(groups.length){
+      var grouped=groups.reduce(function(s,g){return s+g.its.length;},0);
+      html+='<h3>Les dispositifs <small>'+plural(groups.length,'dispositif')+' représentant '+plural(grouped,'action')+'</small></h3><ul class="bl-list">'+groups.map(function(g){return '<li><span>'+esc(g.x.name)+'</span> '+esc(g.its.map(function(i){return i.title;}).join(' · '))+'</li>';}).join('')+'</ul>';
+    }
     [1,2,3,4].forEach(function(q){
       var inQ=list.filter(function(i){return Math.floor((Number(String(i.date).slice(5,7))-1)/3)+1===q;});
       html+='<h3>'+q+(q===1?'er':'e')+' trimestre <small>'+plural(inQ.length,'action')+'</small></h3>';

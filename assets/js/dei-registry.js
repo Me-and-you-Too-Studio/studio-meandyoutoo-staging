@@ -27,8 +27,8 @@
     var picked=[].slice.call(form.querySelectorAll('input[name="'+name+'"]:checked')).map(function(i){return i.value;});
     return picked.concat(splitValues(form.elements[name+'__other']&&form.elements[name+'__other'].value)).join(', ');
   }
-  // Onglets du cockpit (mémorisés dans l'adresse : #apercu, #actions, #prestataires).
-  var TABS={apercu:'Vue d’ensemble',actions:'Actions',prestataires:'Prestataires'},TAB_ICONS={apercu:'🧭',actions:'🎯',prestataires:'🤝'};
+  // Onglets du cockpit (mémorisés dans l'adresse : #apercu, #actions, #dispositifs, #prestataires).
+  var TABS={apercu:'Vue d’ensemble',actions:'Actions',dispositifs:'Dispositifs',prestataires:'Prestataires'},TAB_ICONS={apercu:'🧭',actions:'🎯',dispositifs:'🧩',prestataires:'🤝'};
   var tabsEl=document.getElementById('dei-tabs'),yearEl=document.getElementById('dei-year');
   var state={year:Number(params.get('year'))||new Date().getFullYear(),data:null,tab:TABS[location.hash.slice(1)]?location.hash.slice(1):'apercu',focus:/^action-\d+$/.test(params.get('focus')||'')?params.get('focus'):null};
 
@@ -148,8 +148,8 @@
   // Actions du registre + campagnes de diagnostic, dans un même format d'affichage.
   function items(){
     var d=state.data,t=today();
-    var actions=d.actions.map(function(a){return {type:'action',id:a.id,kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,notes:a.notes,objective:a.objective,results:a.results,postponedFrom:a.postponed_from,budget:a.budget_eur,meayt:a.led_by_meayt,documents:a.documents||[],offerId:a.offer_id,provider:a.provider_name,recommended:a.recommended,campaignId:a.campaign_id,raw:a};});
-    var campaigns=d.campaigns.map(function(c){return {type:'campaign',id:c.id,kind:'diagnostic',title:c.name,date:c.year_date||c.launch_date,start:c.launch_date,end:c.close_date,status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':(c.launch_date&&c.launch_date>t)?'scheduled':'in_progress',theme:c.theme_title,people:c.respondents,documents:[]};});
+    var actions=d.actions.map(function(a){return {type:'action',id:a.id,kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,notes:a.notes,dispositifId:a.dispositif_id,objective:a.objective,results:a.results,postponedFrom:a.postponed_from,budget:a.budget_eur,meayt:a.led_by_meayt,documents:a.documents||[],offerId:a.offer_id,provider:a.provider_name,recommended:a.recommended,campaignId:a.campaign_id,raw:a};});
+    var campaigns=d.campaigns.map(function(c){return {type:'campaign',id:c.id,kind:'diagnostic',title:c.name,date:c.year_date||c.launch_date,start:c.launch_date,end:c.close_date,status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':(c.launch_date&&c.launch_date>t)?'scheduled':'in_progress',theme:c.theme_title,people:c.respondents,dispositifId:c.dispositif_id,documents:[]};});
     return actions.concat(campaigns).sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
   }
   function kind(k){return (state.data.kinds||{})[k]||{label:k,icon:'•'};}
@@ -187,6 +187,7 @@
     renderTabs();
     if(yearEl)yearEl.classList.toggle('is-tab-hidden',state.tab!=='apercu');
     if(state.tab==='prestataires'){root.innerHTML=providersView();return;}
+    if(state.tab==='dispositifs'){root.innerHTML=dispositifsView(years);return;}
     root.innerHTML=state.tab==='actions'
       ?head+'<div class="dr-list">'+rows+'</div>'
       :head+nudge+'<div class="dr-png-wrap" id="dr-png-kpis">'+pngButton('dr-png-kpis','chiffres-cles')+cards+'</div>'+pilotageView()+'<section class="dr-png-wrap dr-tl" id="dr-png-frise"><div class="dr-sub-row"><h3 class="dr-sub">Frise de l’année '+state.year+'</h3><div class="dr-sub-actions">'+pngButton('dr-png-frise','frise')+'<a class="button button-ghost" href="'+calendarHref()+'">Ouvrir dans le calendrier →</a></div></div>'+frise+'</section>';
@@ -265,11 +266,79 @@
   }
   function renderTabs(){
     if(!tabsEl)return;
-    var counts={actions:items().length,prestataires:(state.data.providers||[]).length};
+    var counts={actions:items().length,dispositifs:(state.data.dispositifs||[]).filter(function(x){return x.inYear;}).length,prestataires:(state.data.providers||[]).length};
     tabsEl.hidden=false;
     tabsEl.innerHTML=Object.keys(TABS).map(function(k){return '<button type="button" role="tab" class="dr-tab'+(k===state.tab?' is-current':'')+'" aria-selected="'+(k===state.tab)+'" data-tab="'+k+'"><b aria-hidden="true">'+TAB_ICONS[k]+'</b>'+esc(TABS[k])+(counts[k]!=null?' <span>'+counts[k]+'</span>':'')+'</button>';}).join('');
   }
   function setTab(tab){state.tab=tab;try{history.replaceState(null,'','#'+tab);}catch(e){}render();window.scrollTo({top:Math.max(0,root.getBoundingClientRect().top+window.scrollY-(tabsEl?tabsEl.offsetHeight:0)-24),behavior:'smooth'});}
+
+  // ── Dispositifs : plusieurs actions et diagnostics réunis sous un nom ──
+  function dispositifItems(id){return items().filter(function(it){return String(it.dispositifId||'')===String(id);});}
+  function dispositifCard(x,canEdit){
+    var its=dispositifItems(x.id),live=its.filter(inProgramme),done=live.filter(function(it){return it.status==='done';}).length,planned=live.length-done;
+    var people=live.filter(function(it){return it.status==='done'||it.type==='campaign';}).reduce(function(s,it){return s+(Number(it.people)||0);},0);
+    var lines=its.map(function(it){var k=kind(it.kind),st=it.type==='campaign'?campaignStatusLabel(it):(state.data.statuses||{})[it.status]||it.status;
+      return '<li><span aria-hidden="true">'+esc(k.icon)+'</span><span class="dr-disp-line"><strong>'+esc(it.title)+'</strong><small>'+esc(fmtDate(it.start||it.date))+'</small></span><span class="dr-badge st-'+esc(it.status)+'">'+esc(st)+'</span>'+
+        (canEdit&&it.type==='campaign'?'<button type="button" class="dr-x" data-disp-detach="'+esc(x.id)+':'+esc(it.id)+'" aria-label="Retirer '+esc(it.title)+' du dispositif">×</button>':'')+'</li>';}).join('');
+    return '<article class="dr-disp"><h3>'+esc(x.name)+'</h3>'+(x.objective?'<p class="dr-row-notes"><strong>Objectif :</strong> '+esc(x.objective)+'</p>':'')+(x.theme?'<p class="dr-row-meta">'+esc(x.theme)+'</p>':'')+
+      '<p class="dr-disp-count"><strong>'+done+' réalisée'+(done>1?'s':'')+' · '+planned+' prévue'+(planned>1?'s':'')+'</strong>'+(people?' · '+num(people)+' personne'+(people>1?'s':'')+' touchée'+(people>1?'s':''):'')+'</p>'+
+      (lines?'<ul class="dr-disp-list">'+lines+'</ul>':'<p class="dr-empty">Rien pour l’instant : ajoutez une action ou rattachez un diagnostic.</p>')+
+      (canEdit?'<div class="dr-row-tools"><button type="button" class="button button-ghost" data-disp-action="'+esc(x.id)+'">＋ Ajouter une action</button><button type="button" class="button button-ghost" data-disp-attach="'+esc(x.id)+'">Rattacher un diagnostic</button><button type="button" class="button button-ghost" data-disp-edit="'+esc(x.id)+'">Modifier</button><button type="button" class="button button-ghost" data-disp-delete="'+esc(x.id)+'">Supprimer</button></div>':'')+'</article>';
+  }
+  function dispositifsView(years){
+    var d=state.data,canEdit=d.canEdit,list=(d.dispositifs||[]).filter(function(x){return x.inYear;});
+    return '<div class="dr-head"><div><p class="eyebrow">Vos dispositifs</p><h2>Dispositifs '+state.year+'</h2>'+
+      '<p>Un dispositif réunit plusieurs actions autour d’un même objectif : par exemple une conférence, un diagnostic et une formation pour la SEEPH. Il ne change pas vos chiffres, chaque action compte une seule fois.</p></div>'+
+      '<div class="dr-head-actions"><div class="dr-years" role="group" aria-label="Choisir l’année">'+years+'</div>'+(canEdit?'<button type="button" class="button button-primary" data-disp-add>＋ Créer un dispositif</button>':'')+'</div></div>'+
+      (list.length?'<div class="dr-disps">'+list.map(function(x){return dispositifCard(x,canEdit);}).join('')+'</div>':'<p class="dr-empty">Aucun dispositif en '+state.year+'.</p>');
+  }
+  function dispositifDialog(dispositif,onSaved){
+    var x=dispositif||{year:state.year},d=state.data;
+    var dlg=document.createElement('dialog');dlg.className='dr-dialog';
+    dlg.innerHTML='<form><h2>'+(dispositif?'Modifier le dispositif':'Nouveau dispositif')+'</h2>'+
+      '<label class="dr-field"><span>Nom *</span><input name="name" required maxlength="160" value="'+esc(x.name||'')+'" placeholder="Ex. : SEEPH 2027 — Dispositif Handicap"></label>'+
+      '<label class="dr-field"><span>Objectif</span><input name="objective" maxlength="300" value="'+esc(x.objective||'')+'" placeholder="Ex. : faire évoluer le regard sur le handicap"></label>'+
+      multiField('theme','Thématiques',THEMES,x.theme)+
+      '<label class="dr-field dr-field-year"><span>Année *</span><input type="number" name="year" required min="2000" max="2100" value="'+esc(x.year)+'"></label>'+
+      ((d.teamFolders||[]).length?'<label class="dr-field"><span>Dossier d’équipe'+(d.perimeter?' *':'')+'</span><select name="teamFolderId"'+(d.perimeter?' required':'')+'>'+(d.perimeter?'':'<option value="">— Toute l’entreprise —</option>')+d.teamFolders.map(function(t){return '<option value="'+esc(t.id)+'"'+(String(t.id)===String(x.team_folder_id||'')?' selected':'')+'>'+esc(t.name)+'</option>';}).join('')+'</select></label>':'')+
+      '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
+    document.body.appendChild(dlg);
+    var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
+    dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
+    dlg.addEventListener('close',function(){dlg.remove();});
+    form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
+      if(!form.checkValidity()){form.reportValidity();return;}
+      var f=new FormData(form),body=withOrg({name:f.get('name'),objective:f.get('objective'),theme:readMulti(form,'theme'),year:Number(f.get('year'))});
+      if(form.elements.teamFolderId)body.teamFolderId=f.get('teamFolderId')||null;
+      try{
+        var r=await StudioAPI.request('/api/dei/dispositifs'+(dispositif?'/'+encodeURIComponent(dispositif.id)+qs():''),{method:dispositif?'PATCH':'POST',body:JSON.stringify(body)});
+        dlg.close();if(onSaved)onSaved(r.dispositif);else load();
+      }catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
+    };
+    dlg.showModal();
+  }
+  function attachDialog(id){
+    var free=items().filter(function(it){return it.type==='campaign'&&String(it.dispositifId||'')!==String(id);});
+    if(!free.length){window.StudioModal.alert({title:'Aucun diagnostic disponible',message:'Il n’y a pas d’autre diagnostic sur cette année.'});return;}
+    var dlg=document.createElement('dialog');dlg.className='dr-dialog';
+    dlg.innerHTML='<form><h2>Rattacher un diagnostic</h2><label class="dr-field"><span>Diagnostic</span><select name="campaignId">'+free.map(function(it){return '<option value="'+esc(it.id)+'">'+esc(it.title)+(it.dispositifId?' (déjà dans un autre dispositif)':'')+'</option>';}).join('')+'</select></label>'+
+      '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Rattacher</button></div></form>';
+    document.body.appendChild(dlg);
+    var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
+    dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
+    dlg.addEventListener('close',function(){dlg.remove();});
+    form.onsubmit=async function(ev){ev.preventDefault();err.hidden=true;
+      try{await StudioAPI.request('/api/dei/dispositifs/'+encodeURIComponent(id)+'/diagnostics/'+encodeURIComponent(form.elements.campaignId.value)+qs(),{method:'PUT',body:JSON.stringify(withOrg({}))});dlg.close();load();}
+      catch(e){err.textContent=e.message||'Rattachement impossible';err.hidden=false;}
+    };
+    dlg.showModal();
+  }
+  async function removeDispositif(id){
+    var x=(state.data.dispositifs||[]).find(function(y){return String(y.id)===String(id);});if(!x)return;
+    var ok=await window.StudioModal.confirm({eyebrow:'Dispositifs',title:'Supprimer « '+x.name+' » ?',message:'Les actions et diagnostics restent dans votre registre : seul le regroupement disparaît.',confirmLabel:'Supprimer'});
+    if(!ok)return;
+    try{await StudioAPI.request('/api/dei/dispositifs/'+encodeURIComponent(id)+qs(),{method:'DELETE'});load();}catch(e){window.StudioModal.alert({title:'Suppression impossible',message:e.message});}
+  }
 
   // ── Annuaire des prestataires ──
   function providerName(p){return [p.company,[p.first_name,p.last_name].filter(Boolean).join(' ')].filter(Boolean).join(' · ');}
@@ -382,6 +451,8 @@
     var rv=it.type==='action'&&it.status==='done'?reviewRow(it.id):null;
     var by=it.meayt?'<span class="dr-meayt-by">avec '+MEAYT_LOGO+'Me&amp;YouToo</span>':it.provider?esc('avec '+it.provider):'';
     var meta=[it.theme,it.audience,it.people!=null?num(it.people)+(it.type==='campaign'?' participations':' personnes touchées'):''].filter(Boolean).map(esc).concat(by?[by]:[],it.recommended?[esc(recoTip(it.campaignId))]:[]).join(' · ');
+    var dispositif=it.dispositifId&&(state.data.dispositifs||[]).find(function(x){return String(x.id)===String(it.dispositifId);});
+    if(dispositif)meta+=(meta?' · ':'')+'dispositif « '+esc(dispositif.name)+' »';
     if(it.postponedFrom&&it.status!=='done')meta+=(meta?' · ':'')+'reportée du '+esc(fmtDate(it.postponedFrom));
     var budget=it.budget!=null?'<p class="dr-row-meta">Budget : <strong>'+euros(it.budget)+'</strong> <span class="dr-budget-lock is-inline">'+BUDGET_NOTICE+'</span></p>':'';
     var docs=(it.documents||[]).map(function(doc){return '<span class="dr-doc"><button type="button" class="dr-link" data-download="'+esc(it.id)+':'+esc(doc.id)+'" data-filename="'+esc(doc.filename)+'">📎 '+esc(doc.filename)+'</button>'+(canEdit?'<button type="button" class="dr-x" data-doc-delete="'+esc(it.id)+':'+esc(doc.id)+'" aria-label="Retirer '+esc(doc.filename)+'">×</button>':'')+'</span>';}).join('');
@@ -545,6 +616,7 @@
     var providerOptions=function(selected){return '<option value="">— Aucun —</option><option value="meayt"'+(selected==='meayt'?' selected':'')+'>Me&amp;YouToo</option>'+
       ((d.providers||[]).length?'<optgroup label="Vos prestataires">'+d.providers.map(function(p){return '<option value="'+esc(p.id)+'"'+(String(p.id)===String(selected||'')?' selected':'')+'>'+esc(providerName(p))+'</option>';}).join('')+'</optgroup>':'');};
     var currentProvider=a.led_by_meayt?'meayt':a.provider_id;
+    var dispositifOptions=function(selected){return '<option value="">— Aucun —</option>'+(d.dispositifs||[]).map(function(x){return '<option value="'+esc(x.id)+'"'+(String(x.id)===String(selected||'')?' selected':'')+'>'+esc(x.name)+'</option>';}).join('');};
     var statuses=Object.keys(d.statuses).map(function(s){return '<option value="'+s+'"'+(s===a.status?' selected':'')+'>'+esc(d.statuses[s])+'</option>';}).join('');
     var dlg=document.createElement('dialog');dlg.className='dr-dialog';
     dlg.innerHTML='<form><h2>'+(action?'Modifier l’action':'Nouvelle action')+'</h2>'+
@@ -554,6 +626,7 @@
       '<div data-postpone hidden><label class="dr-field"><span>Nouvelle date (si vous la connaissez)</span><input type="date" name="postponedTo"></label>'+
       '<p class="dr-row-meta">Avec une date, l’action se déplace et redevient prévue. Sans date, elle reste reportée et ne compte plus dans votre programme.</p></div>'+
       '<label class="dr-field"><span>Objectif</span><input name="objective" maxlength="300" value="'+esc(a.objective||'')+'" placeholder="Ex. : faire connaître le dispositif de signalement"></label>'+
+      '<div class="dr-field-row dr-provider-pick"><label class="dr-field"><span>Dispositif</span><select name="dispositifId">'+dispositifOptions(a.dispositif_id)+'</select></label><button type="button" class="button button-ghost" data-new-dispositif>＋ Nouveau dispositif</button></div>'+
       multiField('theme','Thématiques',THEMES,a.theme)+
       '<div class="dr-field-row"><label class="dr-field"><span>Public visé</span><input name="audience" maxlength="200" value="'+esc(a.audience||'')+'" placeholder="Ex. : managers du siège, nouveaux arrivants…"></label><label class="dr-field dr-field-small"><span>Personnes touchées</span><input type="number" min="0" name="peopleReached" value="'+esc(a.people_reached??'')+'"></label></div>'+
       '<div class="dr-field-row dr-provider-pick"><label class="dr-field"><span>Prestataire</span><select name="providerId">'+providerOptions(currentProvider)+'</select></label><button type="button" class="button button-ghost" data-new-provider>＋ Nouveau prestataire</button></div>'+
@@ -575,6 +648,9 @@
     // La nouvelle date n'a de sens que pour un report, les résultats que pour une action réalisée.
     function syncStatus(){var s=form.elements.status.value;dlg.querySelector('[data-postpone]').hidden=s!=='postponed';dlg.querySelector('[data-results]').hidden=s!=='done';form.elements.postponedTo.min=form.elements.actionDate.value;}
     form.elements.status.addEventListener('change',syncStatus);form.elements.actionDate.addEventListener('change',syncStatus);syncStatus();
+    dlg.querySelector('[data-new-dispositif]').onclick=function(){
+      dispositifDialog(null,function(x){state.data.dispositifs=(state.data.dispositifs||[]).concat([Object.assign({inYear:x.year===state.year},x)]);form.elements.dispositifId.innerHTML=dispositifOptions(x.id);});
+    };
     // Création d'un prestataire sans quitter la fiche : la liste est rechargée puis le nouveau est sélectionné.
     dlg.querySelector('[data-new-provider]').onclick=function(){
       providerDialog(null,async function(newId){
@@ -591,7 +667,7 @@
         if(!keep)return;
       }
       var f=new FormData(form),body=withOrg({kind:f.get('kind'),title:f.get('title'),actionDate:f.get('actionDate'),endDate:f.get('endDate'),status:f.get('status'),
-        theme:readMulti(form,'theme'),peopleReached:f.get('peopleReached'),audience:f.get('audience'),notes:f.get('notes'),objective:f.get('objective'),results:f.get('results'),providerId:f.get('providerId'),offerId:a.offer_id||null});
+        theme:readMulti(form,'theme'),peopleReached:f.get('peopleReached'),audience:f.get('audience'),notes:f.get('notes'),dispositifId:f.get('dispositifId'),objective:f.get('objective'),results:f.get('results'),providerId:f.get('providerId'),offerId:a.offer_id||null});
       if(f.get('status')==='postponed'&&f.get('postponedTo'))body.postponedTo=f.get('postponedTo');
       if(form.elements.budget)body.budget=f.get('budget');
       if(isAdmin){body.campaignId=f.get('campaignId');body.recommended=f.get('recommended')==='on';}
@@ -676,6 +752,12 @@
     }
     else if(t.hasAttribute('data-reco-add')){var cid=t.getAttribute('data-reco-add');editDialog(null,null,{campaign_id:cid,recommended:true,led_by_meayt:false,action_date:today()});}
     else if(t.hasAttribute('data-reco-help'))accompany({actionId:t.getAttribute('data-reco-help'),recommended:true},'Accompagnement : '+t.getAttribute('data-title'));
+    else if(t.hasAttribute('data-disp-add'))dispositifDialog(null);
+    else if(t.hasAttribute('data-disp-edit'))dispositifDialog((state.data.dispositifs||[]).find(function(x){return String(x.id)===t.getAttribute('data-disp-edit');}));
+    else if(t.hasAttribute('data-disp-delete'))removeDispositif(t.getAttribute('data-disp-delete'));
+    else if(t.hasAttribute('data-disp-attach'))attachDialog(t.getAttribute('data-disp-attach'));
+    else if(t.hasAttribute('data-disp-action')){var dx=(state.data.dispositifs||[]).find(function(x){return String(x.id)===t.getAttribute('data-disp-action');});editDialog(null,null,{dispositif_id:dx.id,theme:dx.theme});}
+    else if(t.hasAttribute('data-disp-detach')){var dp=t.getAttribute('data-disp-detach').split(':');StudioAPI.request('/api/dei/dispositifs/'+encodeURIComponent(dp[0])+'/diagnostics/'+encodeURIComponent(dp[1])+qs(),{method:'DELETE',body:JSON.stringify(withOrg({}))}).then(load).catch(function(e){window.StudioModal.alert({title:'Action impossible',message:e.message});});}
     else if(t.hasAttribute('data-provider-add'))providerDialog(null);
     else if(t.hasAttribute('data-provider-edit'))providerDialog((state.data.providers||[]).find(function(p){return String(p.id)===t.getAttribute('data-provider-edit');}));
     else if(t.hasAttribute('data-provider-delete'))removeProvider(t.getAttribute('data-provider-delete'));

@@ -127,7 +127,7 @@
       {target:'.nav-section-aide',title:'Aide et visite guidée',text:'Retrouvez ici l’aide pas à pas, cette visite et les nouveautés du Studio. Pour nous joindre, le bloc « Besoin d’aide ? » en bas du menu.'}
     ]},
     'cockpit':{key:'cockpit-dei',auto:true,steps:[
-      {target:'#dei-tabs',title:'Votre Cockpit D&I',text:'Pilotez et archivez toutes vos actions diversité & inclusion, année après année. Trois rubriques : la vue d’ensemble, le détail des actions et vos prestataires.'},
+      {target:'#dei-tabs',title:'Votre Cockpit D&I',text:'Pilotez et archivez toutes vos actions diversité & inclusion, année après année. Quatre rubriques : la vue d’ensemble, le détail des actions et vos prestataires.'},
       {target:'.dr-kpis',title:'Votre année en chiffres',text:'Actions menées, personnes touchées, formats et thématiques, mois sans action : tout se calcule à partir de vos actions et de vos campagnes de diagnostic.'},
       {target:'.dp-grid .dp-card',title:'Vos objectifs',text:'Fixez jusqu’à 5 objectifs : un enjeu stratégique (thématiques et publics visés) ou un objectif chiffré. Les objectifs « Proposé par Me&YouToo » vous aident à anticiper, comme la loi VSS.'},
       {target:'.dp-grid .dp-card:nth-child(3)',title:'Les prochaines échéances',text:'Les 60 prochains jours : actions prévues, campagnes, tâches et temps forts D&I. « Préparer » crée l’action en un clic.'},
