@@ -393,7 +393,7 @@
         esc(minimum) +
         '" value="' +
         esc(suggested) +
-        '" required></label><div class="campaign-lifecycle-note"><strong>Vous n’avez rien à reconstruire.</strong><span>Le contenu, l’URL de passation et l’URL de résultats sont conservés.</span></div><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" id="confirm-extension" type="button">Confirmer la prolongation</button></div></form>';
+        '" required></label><div class="campaign-lifecycle-note"><strong>Vous n’avez rien à reconstruire.</strong><span>Le contenu, le lien de la campagne et le lien des résultats sont conservés.</span></div><div class="top-actions"><button class="button button-ghost" value="cancel">Annuler</button><button class="button button-primary" id="confirm-extension" type="button">Confirmer la prolongation</button></div></form>';
       document.body.append(dialog);
       var settled = false,
         finish = function (value) {
@@ -972,7 +972,7 @@
         eyebrow: "Réutiliser une campagne existante",
         title: "Reprogrammer cette campagne ?",
         message:
-          "Vous n’avez pas besoin de reconstruire une campagne sur le même thème. Le contenu, l’URL de passation et l’URL de résultats seront conservés ; vous choisirez seulement de nouvelles dates.",
+          "Vous n’avez pas besoin de reconstruire une campagne sur le même thème. Le contenu, le lien de la campagne et le lien des résultats seront conservés ; vous choisirez seulement de nouvelles dates.",
         confirmLabel: "Reprogrammer avec les mêmes liens",
       });
       if (!ok3) return;
