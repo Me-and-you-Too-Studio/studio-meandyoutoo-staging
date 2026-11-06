@@ -181,7 +181,7 @@
       kpi(num(ind.themes),'thématique'+(ind.themes>1?'s':'')+' couverte'+(ind.themes>1?'s':''),'sur l’année',null,'themes')+
       kpi(num(ind.monthsWithoutAction),'mois sans action',ind.monthsWithoutAction?'sur les mois déjà écoulés':'aucun trou sur les mois écoulés',ind.monthsWithoutAction?'is-alert':'is-ok','months')+
     '</div>'+(d.budget&&d.budget.total?'<p class="dr-budget-total">Budget renseigné pour '+state.year+' : <strong>'+euros(d.budget.total)+'</strong><span class="dr-budget-lock">'+BUDGET_NOTICE+'</span></p>':'');
-    var nudge=isClient&&d.nudge?nudgeCard(d.nudge,canEdit):'';
+    var nudge=(isClient&&d.nudge?nudgeCard(d.nudge,canEdit):'')+(isClient&&canEdit&&d.programme?programmeCard(d.programme):'');
     var frise=friseView(list,ind,canEdit);
     var rows=list.length?list.map(row).join(''):'<p class="dr-empty">Aucune action enregistrée pour '+state.year+'. '+(canEdit?'Ajoutez votre première action, ou demandez-nous de l’alimenter pour vous.':'')+'</p>';
     renderTabs();
@@ -274,6 +274,71 @@
 
   // Fenêtre avec une croix toujours visible : pas besoin de descendre jusqu'au bouton du bas.
   function showDialog(dlg){var x=document.createElement('button');x.type='button';x.className='dr-dialog-x';x.setAttribute('aria-label','Fermer');x.textContent='×';x.onclick=function(){dlg.close();};dlg.appendChild(x);dlg.showModal();}
+  // ── Préparer le programme de l'année suivante ──
+  function programmeCard(p){
+    var done=p.status==='finalized',started=Boolean(p.status);
+    return '<aside class="dr-prog-card"><div><strong>'+(done?'Votre programme '+p.year+' est finalisé':'Préparez votre programme '+p.year)+'</strong>'+
+      '<p>'+(done?'Vous pouvez le compléter à tout moment.':'Reprenez ce qui reste à faire, choisissez vos temps forts et estimez les passations à prévoir.')+'</p></div>'+
+      '<button type="button" class="button button-primary" data-programme>'+(done?'Revoir mon programme':started?'Reprendre':'Préparer mon programme '+p.year)+'</button></aside>';
+  }
+  async function programmeDialog(step){
+    var p;
+    try{p=await StudioAPI.request('/api/dei/programme'+qs());}catch(e){window.StudioModal.alert({title:'Programme indisponible',message:e.message});return;}
+    var kinds=state.data.kinds,prop=p.proposals,rows=[];
+    var add=function(group,list){list.forEach(function(x){rows.push(Object.assign({group:group},x));});};
+    add('Actions reportées à reprendre',prop.postponed);add('Priorités non travaillées',prop.priorities);add('Diagnostics à refaire pour mesurer l’évolution',prop.diagnostics);add('Temps forts '+p.year,prop.events);
+    var kindOptions=Object.keys(kinds).map(function(k){return '<option value="'+esc(k)+'"'+(k==='conference'?' selected':'')+'>'+esc(kinds[k].label)+'</option>';}).join('');
+    var dlg=document.createElement('dialog');dlg.className='dr-dialog dr-detail dr-prog';
+    function chooseView(){
+      var groups=[],html='';rows.forEach(function(r,i){if(groups.indexOf(r.group)<0){groups.push(r.group);html+='<h3 class="dr-detail-group">'+esc(r.group)+'</h3>';}
+        html+='<div class="dr-prog-line"><label class="dr-check"><input type="checkbox" data-i="'+i+'"> <span><strong>'+esc(r.title||r.theme)+'</strong>'+(r.title&&r.theme?'<small>'+esc(r.theme)+'</small>':'')+'</span></label>'+
+          (r.kind?'':'<select data-kind="'+i+'" aria-label="Format">'+kindOptions+'</select>')+
+          '<input type="date" data-date="'+i+'" min="'+p.year+'-01-01" max="'+p.year+'-12-31" value="'+esc(r.date||(p.year+'-06-15'))+'" aria-label="Date"></div>';});
+      return '<form><h2>Préparer mon programme '+p.year+'</h2><p class="dr-row-meta">Étape 1 sur 2 : cochez ce que vous voulez reprendre. Chaque ligne devient une action prévue en '+p.year+', à compléter ensuite.</p>'+
+        (rows.length?html:'<p class="dr-empty">Rien à reprendre pour l’instant : vous pouvez passer à l’estimation, ou ajouter vos actions dans l’onglet Actions.</p>')+
+        '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-next>Passer cette étape</button><button type="submit" class="button button-primary">Ajouter et continuer</button></div></form>';
+    }
+    function packText(k){
+      if(k.unlimited)return '<p class="dr-prog-result">Votre pack est illimité : aucune passation à prévoir.</p>';
+      return '<div class="dr-prog-figures"><div><strong>'+num(k.planned)+'</strong><span>passations envisagées</span></div><div><strong>'+num(k.valid)+'</strong><span>solde encore valable</span></div><div class="is-main"><strong>'+num(k.toOrder)+'</strong><span>pack à prévoir</span></div></div>'+
+        (k.expired?'<p class="dr-row-meta">Votre solde de '+num(k.remaining)+' passations expire le '+esc(fmtDate(k.expiresAt))+', avant '+p.year+' : il n’est pas compté.</p>':'');
+    }
+    function figuresView(){
+      var list=p.diagnostics.map(function(x){return '<div class="dr-prog-line"><span><strong>'+esc(x.title)+'</strong><small>'+esc(fmtDate(x.date))+'</small></span><label class="dr-field dr-prog-number"><span>Participations visées</span><input type="number" min="0" data-passations="'+esc(x.id)+'" value="'+esc(x.passations??'')+'"></label></div>';}).join('');
+      return '<form><h2>Estimer mon programme '+p.year+'</h2><p class="dr-row-meta">Étape 2 sur 2 : indiquez les participations visées pour chaque diagnostic. C’est une estimation, pas une commande.</p>'+
+        (list||'<p class="dr-empty">Aucun diagnostic prévu en '+p.year+' pour l’instant.</p>')+'<div data-pack>'+packText(p.pack)+'</div>'+
+        '<div class="dr-prog-next"><a class="button button-secondary" href="packs.html">Commander des passations</a><button type="button" class="button button-secondary" data-quote>Demander un devis</button></div>'+
+        '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-back>Revenir aux propositions</button><button type="submit" class="button button-primary">Finaliser mon programme</button></div></form>';
+    }
+    function fail(e){var err=dlg.querySelector('.dr-error');err.textContent=e.message||'Action impossible';err.hidden=false;}
+    function show(view){
+      var old=dlg.querySelector('form');if(old)old.remove();
+      dlg.insertAdjacentHTML('afterbegin',view==='figures'?figuresView():chooseView());
+      var form=dlg.querySelector('form');
+      if(view==='figures'){
+        form.querySelectorAll('[data-passations]').forEach(function(input){input.onchange=async function(){
+          try{var r=await StudioAPI.request('/api/dei/programme/diagnostics/'+encodeURIComponent(input.getAttribute('data-passations'))+qs(),{method:'PATCH',body:JSON.stringify({passations:input.value})});p.pack=r.pack;dlg.querySelector('[data-pack]').innerHTML=packText(r.pack);}catch(e){fail(e);}};});
+        form.querySelector('[data-back]').onclick=function(){dlg.close();programmeDialog('choose');};
+        form.querySelector('[data-quote]').onclick=async function(ev){var b=ev.currentTarget;b.disabled=true;
+          try{await StudioAPI.request('/api/offer-requests',{method:'POST',body:JSON.stringify({source:'programme',message:'Demande de devis pour le programme '+p.year,context:{year:p.year}})});b.textContent='Demande envoyée';}catch(e){b.disabled=false;fail(e);}};
+        form.onsubmit=async function(ev){ev.preventDefault();
+          try{await StudioAPI.request('/api/dei/programme/finaliser'+qs(),{method:'POST',body:JSON.stringify({})});dlg.close();state.year=p.year;load();}catch(e){fail(e);}};
+      }else{
+        form.querySelector('[data-next]').onclick=function(){show('figures');};
+        form.onsubmit=async function(ev){ev.preventDefault();
+          var items=[].slice.call(form.querySelectorAll('[data-i]:checked')).map(function(box){var i=box.getAttribute('data-i'),r=rows[i],kindEl=form.querySelector('[data-kind="'+i+'"]'),date=form.querySelector('[data-date="'+i+'"]').value;
+            if(r.actionId)return {actionId:r.actionId,date:date};
+            var kind=r.kind||kindEl.value;return {kind:kind,theme:r.theme,date:date,title:r.title||(kinds[kind].label.replace(' (Studio)','')+' — '+r.theme)};});
+          if(!items.length){show('figures');return;}
+          try{await StudioAPI.request('/api/dei/programme/actions'+qs(),{method:'POST',body:JSON.stringify({items:items})});dlg.close();programmeDialog('figures');load();}catch(e){fail(e);}};
+      }
+    }
+    document.body.appendChild(dlg);
+    dlg.addEventListener('close',function(){dlg.remove();});
+    show(step||(rows.length?'choose':'figures'));
+    showDialog(dlg);
+  }
+
   // ── Tableau de couverture : thématiques × familles de formats ──
   var COVER=[
     {key:'sensibilisation',icon:'📣',label:'Sensibilisation',hint:'Diagnostic, conférence, atelier, vidéo, campagne de communication',kinds:['diagnostic','conference','atelier','video','sensibilisation']},
@@ -854,6 +919,7 @@
     }
     else if(t.hasAttribute('data-reco-add')){var cid=t.getAttribute('data-reco-add');editDialog(null,null,{campaign_id:cid,recommended:true,led_by_meayt:false,action_date:today()});}
     else if(t.hasAttribute('data-reco-help'))accompany({actionId:t.getAttribute('data-reco-help'),recommended:true},'Accompagnement : '+t.getAttribute('data-title'));
+    else if(t.hasAttribute('data-programme'))programmeDialog();
     else if(t.hasAttribute('data-cover'))kpiDetail('cover|'+t.getAttribute('data-cover'));
     else if(t.hasAttribute('data-disp-add'))dispositifDialog(null);
     else if(t.hasAttribute('data-disp-edit'))dispositifDialog((state.data.dispositifs||[]).find(function(x){return String(x.id)===t.getAttribute('data-disp-edit');}));
