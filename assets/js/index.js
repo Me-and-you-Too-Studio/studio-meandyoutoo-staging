@@ -80,7 +80,7 @@
     var intro='<div class="topic-cta hero-cta"><div><strong>Découvrir plus de sujets</strong><span>Chaque campagne est composée à partir de situations conçues par nos experts.</span></div><a class="button button-primary" href="bibliotheque.html">Explorer</a></div>';
     var cards=themes.slice(0,3).map(function(theme){
       var slug=String(theme.slug||'').replace(/[^a-z0-9-]/g,'');
-      return '<a class="topic-mini" href="'+themePage(slug)+'"><div class="topic-icon"><img src="assets/img/illustrations/theme-'+esc(slug)+'.png" alt="" onerror="this.closest(\'.topic-icon\').style.display=\'none\'"></div><strong>'+esc(theme.title)+'</strong><span>'+number(theme.chapter_count)+' chapitre'+(Number(theme.chapter_count)>1?'s':'')+'</span></a>';
+      return '<a class="topic-mini" href="'+themePage(slug)+'"><div class="topic-icon"><img src="assets/img/illustrations/theme-'+esc(slug)+'.png" alt="" onerror="this.closest(\'.topic-icon\').style.display=\'none\'"></div><strong>'+esc(theme.title)+'</strong><span>Découvrir la thématique</span></a>';
     }).join('');
     var more='<a class="topic-cta" href="bibliotheque.html"><strong>Voir tous les sujets</strong><span>Explorer la bibliothèque Me&YouToo.</span><span aria-hidden="true">→</span></a>';
     topicsRoot.innerHTML=intro+cards+more;
