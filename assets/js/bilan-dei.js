@@ -68,13 +68,13 @@
     return {title:objectiveTitle(o),figure:figure,reached:Boolean(reached),percent:percent,missing:o.themeProgress&&o.themeProgress.missing.length?o.themeProgress.missing.join(', '):''};
   }
   function deckData(d,next,list,org,logo,p){
-    var groups=(d.dispositifs||[]).filter(function(x){return x.inYear;}).map(function(x){return {name:x.name,objective:x.objective,count:list.filter(function(i){return String(i.dispositifId||'')===String(x.id);}).length};}).filter(function(g){return g.count;});
+    var groups=(d.dispositifs||[]).filter(function(x){return x.inYear;}).map(function(x){var its=list.filter(function(i){return String(i.dispositifId||'')===String(x.id);});return {name:x.name,objective:x.objective,count:its.length,items:its.map(function(i){return i.title;})};}).filter(function(g){return g.count;});
     var highlights=list.filter(function(i){return i.status==='done';}).sort(function(a,b){return (Number(b.people)||0)-(Number(a.people)||0);}).map(function(i){return {title:i.title,people:i.people};});
     // Une campagne déjà lancée qui se poursuit n'est pas une perspective.
     var nextList=next?items(next).filter(inProgramme).filter(function(i){return String(i.start||i.date)>=(year+1)+'-01-01';}):[];
-    var themeCount={},themeLabel={};list.forEach(function(i){themesOf(i.theme).forEach(function(t){var k=t.toLowerCase();themeCount[k]=(themeCount[k]||0)+1;themeLabel[k]=themeLabel[k]||t;});});
+    var realised=list.filter(function(i){return i.status==='done';}),themeCount={},themeLabel={};realised.forEach(function(i){themesOf(i.theme).forEach(function(t){var k=t.toLowerCase();themeCount[k]=(themeCount[k]||0)+1;themeLabel[k]=themeLabel[k]||t;});});
     var byTheme=Object.keys(themeCount).map(function(k){return [themeLabel[k],themeCount[k]];}).sort(function(a,b){return b[1]-a[1];});
-    var byFamily=COVER.map(function(k){return [k[0],list.filter(function(i){return k[2].indexOf(i.kind)>=0;}).length];}).filter(function(r){return r[1];}).sort(function(a,b){return b[1]-a[1];});
+    var byFamily=COVER.map(function(k){return [k[0],realised.filter(function(i){return k[2].indexOf(i.kind)>=0;}).length];}).filter(function(r){return r[1];}).sort(function(a,b){return b[1]-a[1];});
     return {year:year,org:org,logo:logo,ind:d.indicators,byTheme:byTheme,byFamily:byFamily,participation:participationRate(d.campaigns),activeQuarters:activeQuarters(list),objectives:(p.objectives||[]).map(objectiveResult),quarters:p.quarters||[],
       coverage:{columns:COVER.map(function(k){return k[0];}),rows:coverageData(list,p.objectives||[])},dispositifs:groups,highlights:highlights,
       diagnostics:list.filter(function(i){return i.campaign;}).map(function(i){return {name:i.title,theme:i.theme,period:fmtDate(i.start||i.date)+(i.end?' → '+fmtDate(i.end):''),people:i.people};}),

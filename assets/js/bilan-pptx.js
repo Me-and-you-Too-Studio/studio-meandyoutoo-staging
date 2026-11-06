@@ -67,20 +67,21 @@
       s.addChart(pres.ChartType.bar,[{name:'Actions',labels:list.map(function(r){return cut(r[0],26);}),values:list.map(function(r){return r[1];})}],
         {x:x,y:3.78,w:w,h:3.2,barDir:'bar',chartColors:[color],showLegend:false,showValue:true,dataLabelFontFace:FONT,dataLabelFontSize:12,dataLabelColor:NAVY,dataLabelFormatCode:'0',catAxisLabelFontFace:FONT,catAxisLabelFontSize:12,catAxisLabelColor:NAVY,valAxisHidden:true,valGridLine:{style:'none'},catGridLine:{style:'none'},barGapWidthPct:45});
     };
-    chart('Par thématique',data.byTheme,0.6,5.9,TEAL);chart('Par famille d’actions',data.byFamily,6.8,5.9,NAVY);
+    chart('Réalisé, par thématique',data.byTheme,0.6,5.9,TEAL);chart('Réalisé, par famille d’actions',data.byFamily,6.8,5.9,NAVY);
+    if(data.diagnostics.length)text(s,'un diagnostic compte dans 2 familles',9.7,3.48,3,0.3,{fontSize:11,color:MUTED,align:'right'});
 
     // 3. Priorités et objectifs
     var reachedCount=data.objectives.filter(function(o){return o.reached;}).length;
     s=slide('Priorités et objectifs',data.objectives.length?num(reachedCount)+' '+s_(data.objectives.length,'objectif atteint','objectifs atteints')+' sur '+num(data.objectives.length):'Des objectifs à fixer pour piloter l’année');
     if(data.objectives.length){
-      var rowH=Math.min(1,5.2/Math.min(5,data.objectives.length));
+      var rowH=Math.min(1.25,5.3/Math.min(5,data.objectives.length));
       data.objectives.slice(0,5).forEach(function(o,i){var y=1.55+i*(rowH+0.06);
         box(s,0.6,y,12.1,rowH-0.04,TINT);
-        text(s,cut(o.title,95),0.85,y+0.08,7.2,rowH-0.24,{fontSize:15,bold:true,valign:'middle'});
-        if(o.missing)text(s,'Reste : '+cut(o.missing,70),0.85,y+rowH-0.34,7.2,0.24,{fontSize:11,color:MUTED});
-        box(s,8.3,y+rowH/2-0.13,2.5,0.2,LINE,0.04);
-        if(o.percent>0)box(s,8.3,y+rowH/2-0.13,Math.max(0.1,2.5*o.percent/100),0.2,o.reached?TEAL:YELLOW,0.04);
-        text(s,o.figure,10.95,y,1.65,rowH-0.04,{fontSize:13,bold:true,color:o.reached?TEAL:NAVY,align:'right',valign:'middle',fit:'shrink'});});
+        text(s,cut(o.title,95),0.85,y+0.08,6.3,rowH-0.24,{fontSize:16,bold:true,valign:'middle',fit:'shrink'});
+        if(o.missing)text(s,'Reste : '+cut(o.missing,70),0.85,y+rowH-0.34,6.3,0.24,{fontSize:11,color:MUTED});
+        box(s,7.3,y+rowH/2-0.12,2.4,0.2,LINE,0.04);
+        if(o.percent>0)box(s,7.3,y+rowH/2-0.12,Math.max(0.1,2.4*o.percent/100),0.2,o.reached?TEAL:YELLOW,0.04);
+        text(s,o.figure,9.85,y,2.7,rowH-0.04,{fontSize:13,bold:true,color:o.reached?TEAL:NAVY,align:'right',valign:'middle',fit:'shrink'});});
     }else none(s,'Aucun objectif n’a été fixé pour '+data.year+'.');
 
     // 4. Couverture du programme : mosaïque de formes, comme dans le Cockpit
@@ -89,7 +90,7 @@
     if(rowsC.length){
       var cw=1.86,gx=0.09,x0=3.15,hy=1.45;
       data.coverage.columns.forEach(function(c,i){var x=x0+i*(cw+gx),f=FAMILY[i];box(s,x,hy,cw,0.55,f[1],0.05);box(s,x,hy,cw,0.07,f[0],0);text(s,c,x+0.05,hy+0.08,cw-0.1,0.47,{fontSize:13,bold:true,align:'center',valign:'middle'});});
-      var th=Math.min(0.44,(6.55-2.1)/rowsC.length-0.06);
+      var th=Math.min(0.78,(6.55-2.1)/rowsC.length-0.06);
       rowsC.forEach(function(r,j){var y=2.1+j*(th+0.06);
         text(s,(r.priority?'★ ':'')+cut(r.theme,28),0.6,y,2.5,th,{fontSize:13,bold:true,color:r.priority?TEAL:NAVY,valign:'middle'});
         r.cells.forEach(function(v,i){var x=x0+i*(cw+gx),f=FAMILY[i];
@@ -103,7 +104,9 @@
     s=slide('Temps forts de l’année',data.dispositifs.length?num(data.dispositifs.length)+' '+s_(data.dispositifs.length,'dispositif déployé','dispositifs déployés')+' et des actions marquantes':'Les actions marquantes de l’année');
     var full=!data.dispositifs.length,hx=full?0.6:6.8,hw=full?12.1:5.9;
     if(!full){text(s,'Dispositifs',0.6,1.45,5.9,0.35,{fontSize:15,bold:true,color:TEAL});
-      data.dispositifs.slice(0,4).forEach(function(g,i){var y=1.9+i*1.2;box(s,0.6,y,5.9,1.08,TINT);box(s,0.6,y,0.09,1.08,TEAL,0);
+      var dn2=Math.min(4,data.dispositifs.length),dh=(4.7-(dn2-1)*0.12)/dn2;
+      data.dispositifs.slice(0,4).forEach(function(g,i){var y=1.9+i*(dh+0.12);box(s,0.6,y,5.9,dh,TINT);box(s,0.6,y,0.09,dh,TEAL,0);
+        if(dh>=1.6&&g.items&&g.items.length)text(s,g.items.slice(0,Math.floor((dh-1.15)/0.32)).map(function(t){return {text:cut(t,60),options:{bullet:{characterCode:'25CF',indent:13},breakLine:true,paraSpaceAfter:5}};}),0.85,y+1.05,5.4,dh-1.15,{fontSize:13,valign:'top'});
         text(s,cut(g.name,48),0.85,y+0.1,4.3,0.5,{fontSize:15,bold:true,valign:'middle',fit:'shrink'});
         if(g.objective)text(s,cut(g.objective,62),0.85,y+0.6,4.3,0.38,{fontSize:12,color:MUTED,valign:'top'});
         text(s,num(g.count),5.15,y+0.1,1.2,0.6,{fontSize:26,bold:true,color:TEAL,align:'right',valign:'middle'});
