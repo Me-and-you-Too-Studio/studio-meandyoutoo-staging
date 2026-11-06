@@ -16,6 +16,7 @@
     const start=parseDate(p.launch_date),end=parseDate(p.close_date),now=new Date();
     if(['published','active','scheduled'].includes(s)&&end&&end<now)return 'closed';
     if(['published','scheduled'].includes(s)&&start&&start<=now)return 'active';
+    if(s==='published'&&start)return 'scheduled';
     return s;
   }
   const campaignStatusLabel=p=>statusLabel(displayStatus(p));
@@ -248,7 +249,7 @@
     const period=range(),periodStart=parseDate(period.start),periodEnd=parseDate(period.end);
     const matchesStatus=p=>{
       if(!status)return true;
-      if(status!=='active')return p.status===status;
+      if(status!=='active')return p.status===status||displayStatus(p)===status;
       const start=parseDate(p.launch_date),end=parseDate(p.close_date);
       if(!start&&!end)return p.status==='active';
       const a=start||end,b=end||start;

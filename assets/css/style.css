@@ -13965,7 +13965,7 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 /* 2026-09-21 — Mes campagnes : pilotage inspiré du cockpit clients */
 .campaign-pilot-kpis{
   display:grid;
-  grid-template-columns:repeat(5,minmax(0,1fr));
+  grid-template-columns:repeat(6,minmax(0,1fr));
   gap:14px;
   margin:20px 0 22px;
 }
@@ -13995,6 +13995,7 @@ body.admin-is-loading .admin-cockpit-page{visibility:hidden}
 .campaign-pilot-kpi.tone-all{background:#eef8f5;border-color:#d2ebe3}
 .campaign-pilot-kpi.tone-draft{background:#fff6ed;border-color:#f1dfcc}
 .campaign-pilot-kpi.tone-review{background:#eef8fa;border-color:#d3e9ed}
+.campaign-pilot-kpi.tone-scheduled{background:#eef0fb;border-color:#d9ddf3}
 .campaign-pilot-kpi.tone-active{background:#eef5ff;border-color:#d7e3f5}
 .campaign-pilot-kpi.tone-finished{background:#f6f1fb;border-color:#e4d9f1}
 
@@ -17323,3 +17324,6 @@ body.sidebar-collapsed .help-card-team { display: none; }
 .admin-home-dismiss { flex: 0 0 auto; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #8a96ad; font-size: 1.2rem; line-height: 1; cursor: pointer; }
 .admin-home-dismiss:hover, .admin-home-dismiss:focus-visible { background: #edf2f6; color: var(--royal-blue); }
 .admin-home-todos.is-dismissed { margin-top: 6px; opacity: .75; }
+
+/* La bulle de chat occupe le coin bas droit : le bouton de l'étape suivante reste entièrement visible. */
+@media(min-width:1181px){.creation-sticky-actions{padding-right:88px}}

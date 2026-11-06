@@ -121,7 +121,8 @@
       collaborateur: "Collaborateur inclusif",
       "collaborateur-inclusif": "Collaborateur inclusif",
     };
-    return labels[slug] || raw;
+    // Le nom du catalogue fait référence ; les libellés courts ne servent que sans titre enregistré.
+    return p.theme_title ? raw : labels[slug] || raw;
   }
 
   var regionNames = null;
@@ -1142,6 +1143,7 @@
       "kpi-total-count": projects.length,
       "kpi-draft-count": projects.filter(function (p) { return p.status === "draft"; }).length,
       "kpi-review-count": projects.filter(function (p) { return isReviewStatus(p.status); }).length,
+      "kpi-scheduled-count": countForFilter("scheduled"),
       "kpi-active-count": projects.filter(function (p) { return isOngoingStatus(statusKey(p)); }).length,
       "kpi-finished-count": projects.filter(function (p) { return isFinishedStatus(statusKey(p)); }).length
     };

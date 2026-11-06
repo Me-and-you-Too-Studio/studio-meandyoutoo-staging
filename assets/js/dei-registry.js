@@ -143,11 +143,13 @@
     return n?reviewSummary(rows)+'<button type="button" class="dr-link" '+attrs+'>Voir les avis et commentaires →</button>':reviewCta(attrs);
   }
 
+  // Une campagne garde le statut de Mes campagnes : Programmée jusqu'à sa date de début, En diffusion ensuite.
+  function campaignStatusLabel(it){return it.status==='done'?'Terminé':it.status==='scheduled'?'Programmée':'En diffusion';}
   // Actions du registre + campagnes de diagnostic, dans un même format d'affichage.
   function items(){
     var d=state.data,t=today();
     var actions=d.actions.map(function(a){return {type:'action',id:a.id,kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,notes:a.notes,meayt:a.led_by_meayt,documents:a.documents||[],offerId:a.offer_id,provider:a.provider_name,recommended:a.recommended,campaignId:a.campaign_id,raw:a};});
-    var campaigns=d.campaigns.map(function(c){return {type:'campaign',id:c.id,kind:'diagnostic',title:c.name,date:c.year_date||c.launch_date,start:c.launch_date,end:c.close_date,status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':'in_progress',theme:c.theme_title,people:c.respondents,documents:[]};});
+    var campaigns=d.campaigns.map(function(c){return {type:'campaign',id:c.id,kind:'diagnostic',title:c.name,date:c.year_date||c.launch_date,start:c.launch_date,end:c.close_date,status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':(c.launch_date&&c.launch_date>t)?'scheduled':'in_progress',theme:c.theme_title,people:c.respondents,documents:[]};});
     return actions.concat(campaigns).sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
   }
   function kind(k){return (state.data.kinds||{})[k]||{label:k,icon:'•'};}
@@ -192,7 +194,7 @@
     var statuses=state.data.statuses||{};
     function mark(it,label){
       var s=ms(it.start||it.date),e=(it.end?ms(it.end):s)+DAY,left=pct(s),width=pct(e)-left;
-      var st=it.type==='campaign'?(it.status==='done'?'Terminé':'En diffusion'):(statuses[it.status]||it.status);
+      var st=it.type==='campaign'?campaignStatusLabel(it):(statuses[it.status]||it.status);
       var tip=it.title+' · '+range(it)+' · '+st,attrs=' data-focus="'+esc(it.type+'-'+it.id)+'" data-tip="'+esc(tip)+'" aria-label="'+esc(tip)+'"';
       if(width<1.5)return '<button type="button" class="dr-tl-dot st-'+esc(it.status)+'" style="left:'+left.toFixed(2)+'%"'+attrs+'></button>';
       return '<button type="button" class="dr-tl-bar st-'+esc(it.status)+(s<y0?' is-cut-start':'')+(e>y1?' is-cut-end':'')+'" style="left:'+left.toFixed(2)+'%;width:'+width.toFixed(2)+'%"'+attrs+'>'+(label&&width>=12?'<span>'+esc(label)+'</span>':'')+'</button>';
@@ -201,8 +203,8 @@
     function line(label,sub,marks,note,cls){return '<div class="dr-tl-row'+(cls?' '+cls:'')+'"><div class="dr-tl-label"><strong>'+label+'</strong>'+(sub?'<small>'+sub+'</small>':'')+'</div><div class="dr-tl-track">'+todayLine+marks+'</div><span class="dr-tl-note">'+(note||'')+'</span></div>';}
     var rows=inYear.filter(function(it){return it.type==='campaign';}).map(function(c){
       var left=c.end?Math.ceil((ms(c.end)+DAY-nowT)/DAY):null;
-      var note=c.status==='done'?'Terminé':left!=null&&left<=15?'Clôture dans '+left+' j':left!=null?'Encore '+left+' jours':'En diffusion';
-      return line('<span aria-hidden="true">'+esc(kind('diagnostic').icon)+'</span> '+esc(c.title),esc(range(c))+(c.people?' · '+num(c.people)+' participation'+(c.people>1?'s':''):''),mark(c,c.status==='done'?'Terminé':'En diffusion'),esc(note),'is-campaign');
+      var note=c.status==='done'?'Terminé':c.status==='scheduled'?'Démarre le '+fmtDate(c.start||c.date):left!=null&&left<=15?'Clôture dans '+left+' j':left!=null?'Encore '+left+' jours':'En diffusion';
+      return line('<span aria-hidden="true">'+esc(kind('diagnostic').icon)+'</span> '+esc(c.title),esc(range(c))+(c.people?' · '+num(c.people)+' participation'+(c.people>1?'s':''):''),mark(c,campaignStatusLabel(c)),esc(note),'is-campaign');
     });
     var groups={},order=[];
     inYear.filter(function(it){return it.type==='action';}).forEach(function(a){if(!groups[a.kind]){groups[a.kind]=[];order.push(a.kind);}groups[a.kind].push(a);});
@@ -222,7 +224,7 @@
     var gapsLabel=pastYear?'<strong>Mois sans action</strong><small>'+(canEdit?'Une action oubliée ? Saisissez-la':'Année terminée')+'</small>'
       :'<strong>Mois à remplir</strong><small>Un mois vide casse la dynamique</small>';
     var axis=MONTHS.map(function(m,i){return '<span'+(y===nowY&&i===nowM?' class="is-current"':'')+'>'+m+'</span>';}).join('');
-    var legend='<ul class="dr-tl-legend"><li class="st-in_progress">En cours / en diffusion</li><li class="st-done">Réalisé</li><li class="st-planned">Prévu</li></ul>';
+    var legend='<ul class="dr-tl-legend"><li class="st-in_progress">En cours / en diffusion</li><li class="st-done">Réalisé</li><li class="st-planned">Prévu / programmée</li></ul>';
     var empty=rows.length?'':'<p class="dr-empty">Aucune action ni diagnostic en '+y+'.</p>';
     return legend+'<div class="dr-tl-scroll"><div class="dr-tl-grid">'+line('','',axis,'','dr-tl-axis')+rows.join('')+
       '<div class="dr-tl-row dr-tl-gaps"><div class="dr-tl-label">'+gapsLabel+'</div><div class="dr-tl-months">'+gaps+'</div><span class="dr-tl-note"></span></div></div></div>'+empty;
@@ -312,7 +314,7 @@
   function kpiDetail(key){
     var y=String(state.year),list=items().filter(function(it){return String(it.date).slice(0,4)===y;});
     var themesOf=function(it){return String(it.theme||'').split(',').map(function(s){return s.trim();}).filter(Boolean);};
-    var line=function(it,extra){var k=kind(it.kind),st=(state.data.statuses||{})[it.status]||it.status;
+    var line=function(it,extra){var k=kind(it.kind),st=it.type==='campaign'?campaignStatusLabel(it):(state.data.statuses||{})[it.status]||it.status;
       var when=fmtDate(it.start||it.date)+(it.end&&it.end!==it.date?' → '+fmtDate(it.end):'');
       return '<li><button type="button" class="dr-detail-line" data-go="'+esc(it.type+'-'+it.id)+'"><span class="dr-detail-ico" aria-hidden="true">'+esc(k.icon)+'</span><span class="dr-detail-main"><strong>'+esc(it.title)+'</strong><small>'+
         esc([it.type==='campaign'?'Diagnostic comportemental':k.label,when].concat(extra||[]).filter(Boolean).join(' · '))+'</small></span><span class="dr-badge st-'+esc(it.status)+'">'+esc(st)+'</span></button></li>';};
@@ -360,7 +362,7 @@
   var MEAYT_LOGO='<img class="dr-meayt-logo" src="assets/img/brand/logo-meayt-small.png" alt="">';
   function recoTip(id){var n=campaignName(id);return 'Recommandée lors de la restitution'+(n?' du diagnostic « '+n+' »':' de votre diagnostic');}
   function row(it){
-    var k=kind(it.kind),st=(state.data.statuses||{})[it.status]||it.status,canEdit=state.data.canEdit&&it.type==='action';
+    var k=kind(it.kind),st=it.type==='campaign'?campaignStatusLabel(it):(state.data.statuses||{})[it.status]||it.status,canEdit=state.data.canEdit&&it.type==='action';
     var when=fmtDate(it.start||it.date)+(it.end&&it.end!==it.date?' → '+fmtDate(it.end):'');
     var rv=it.type==='action'&&it.status==='done'?reviewRow(it.id):null;
     var by=it.meayt?'<span class="dr-meayt-by">avec '+MEAYT_LOGO+'Me&amp;YouToo</span>':it.provider?esc('avec '+it.provider):'';

@@ -7,7 +7,7 @@
 <meta name="description" content="Suivez votre campagne Me&YouToo et accédez à ses liens réels.">
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="assets/img/brand/favicon.png">
-<link rel="stylesheet" href="assets/css/style.css?v=20261104-tuto-13">
+<link rel="stylesheet" href="assets/css/style.css?v=20261106-parcours-1">
 </head>
 <body>
 <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -69,7 +69,7 @@
     var raw=String(p.theme_title||p.theme_slug||'').trim();
     var slug=String(p.theme_slug||raw).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-');
     var labels={'sexisme':'Sexisme','management':'Management inclusif','management-inclusif':'Management inclusif','manager-inclusif':'Management inclusif','handicap':'Handicap','lgbt':'LGBT+','lgbt-plus':'LGBT+','origines':'Diversité des origines','diversite-des-origines':'Diversité des origines','religion':'Diversité religieuse','diversite-religieuse':'Diversité religieuse','intergenerationnel':'Intergénérationnel','collaborateur':'Collaborateur inclusif','collaborateur-inclusif':'Collaborateur inclusif'};
-    return labels[slug]||raw||(p.legacy_history?'Base catalogue non reliée':'Thématique indisponible');
+    return (p.theme_title?raw:labels[slug]||raw)||(p.legacy_history?'Base catalogue non reliée':'Thématique indisponible');
   }
   function projectQuery(p){
     // Campagnes historiques : elles peuvent ne pas être reliées à une base catalogue.
@@ -128,7 +128,7 @@
     var scheduleNote='';
     if(p.status==='scheduled'){
       scheduleNote='<div class="campaign-schedule-note">'+ICONS.clock+
-        '<p>Cette campagne est programmée. Elle deviendra publiée automatiquement le <strong>'+dateFr(p.launch_date)+'</strong> et sera dépubliée le <strong>'+dateFrPlusOneDay(p.close_date)+'</strong>.</p>'+
+        '<p>Cette campagne est programmée. Elle s’ouvrira automatiquement le <strong>'+dateFr(p.launch_date)+'</strong> et restera ouverte jusqu’au <strong>'+dateFr(p.close_date)+'</strong> inclus.</p>'+
       '</div>';
     }
 
