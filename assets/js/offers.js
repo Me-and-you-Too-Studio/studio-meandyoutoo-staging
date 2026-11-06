@@ -35,10 +35,12 @@
 
   // Illustration d'une offre, dans le Studio seulement.
   var OFFER_IMAGES={'affiches-illustrees':{src:'assets/img/offres/affiche-compliment.jpg',alt:'Dessin de Gilles Rapaport : en réunion, un homme dit « Et voilà ! Je lui fais un compliment sur sa tenue, et elle se vexe ! » devant une collègue qui présente des graphiques.'}};
+  // Vue client du Studio : on ne renvoie pas vers l'extérieur ce que le Studio propose déjà.
+  var inStudio=mode==='studio'&&!isAdmin,HIDDEN_IN_STUDIO=['autodiagnostics'],STUDIO_LINKS={'diagnostic-vss':{href:'theme-sexisme.html',label:'Voir la thématique Sexisme'}};
   function card(o){
     var cat=state.categories[o.category]||{label:o.category,icon:'•'};
     var meta=[o.format,o.duration].filter(Boolean).map(esc).join(' · ');
-    var url=safeUrl(o.url),catalogue=safeUrl(o.catalogue_url);
+    var studioLink=inStudio&&STUDIO_LINKS[o.slug],url=studioLink?'':safeUrl(o.url),catalogue=studioLink?'':safeUrl(o.catalogue_url);
     var ask=mode==='public'
       ?(PUBLIC_FORM_GUID?'<button type="button" class="'+cls('primary')+' offer-ask" data-offer-public="'+esc(o.id)+'">Demander des informations</button>':'<a class="'+cls('primary')+' offer-ask" href="contact.html">Demander des informations</a>')
       :(isClient?'<button type="button" class="button button-primary offer-ask" data-offer-ask="'+esc(o.id)+'">Demander des informations</button>':'');
@@ -48,7 +50,7 @@
       (mode==='studio'&&OFFER_IMAGES[o.slug]?'<img class="offer-image" src="'+esc(OFFER_IMAGES[o.slug].src)+'" alt="'+esc(OFFER_IMAGES[o.slug].alt)+'" loading="lazy">':'')+
       '<h3>'+esc(o.title)+'</h3>'+(o.summary?'<p class="offer-summary">'+esc(o.summary)+'</p>':'')+
       (meta?'<p class="offer-meta">'+meta+'</p>':'')+
-      '<div class="offer-actions">'+ask+
+      '<div class="offer-actions">'+(studioLink?'<a class="button button-primary offer-ask" href="'+esc(studioLink.href)+'">'+esc(studioLink.label)+'</a>':ask)+
         (catalogue?'<a class="'+cls('secondary')+'" href="'+esc(catalogue)+'" target="_blank" rel="noopener">Voir le catalogue ↗</a>':'')+
         (url?'<a class="offer-link" href="'+esc(url)+'" target="_blank" rel="noopener">En savoir plus ↗</a>':'')+
       '</div>'+adminTools+'</article>';
@@ -83,7 +85,7 @@
     target.classList.add('is-target');setTimeout(function(){target.scrollIntoView({block:'center'});},100);
   }
   function fail(){root.innerHTML='<p class="offer-empty">Nos offres sont momentanément indisponibles. <a href="https://meandyoutoo.app/fr/" target="_blank" rel="noopener">Les découvrir sur meandyoutoo.app ↗</a></p>';}
-  function refresh(){return load().then(function(d){state.offers=d.offers||[];state.categories=d.categories||{};state.catalogues=d.catalogues||{};state.hubspotCategories=d.hubspotCategories||[];render();}).catch(fail);}
+  function refresh(){return load().then(function(d){state.offers=(d.offers||[]).filter(function(o){return !inStudio||HIDDEN_IN_STUDIO.indexOf(o.slug)<0;});state.categories=d.categories||{};state.catalogues=d.catalogues||{};state.hubspotCategories=d.hubspotCategories||[];render();}).catch(fail);}
 
   async function ask(id){
     var o=state.offers.find(function(x){return String(x.id)===String(id);});if(!o)return;
