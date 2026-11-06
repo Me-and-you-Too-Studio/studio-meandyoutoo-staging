@@ -376,7 +376,7 @@
   function guideKey(){var u=tourUser();return 'studio_guide_v1:'+(u&&u.id||'anonyme');}
   function guideState(){try{var s=JSON.parse(localStorage.getItem(guideKey())||'null');return s&&s.on?s:null;}catch(e){return null;}}
   function saveGuide(s){try{if(s)localStorage.setItem(guideKey(),JSON.stringify(s));else localStorage.removeItem(guideKey());}catch(e){}}
-  function guideStage(){var page=currentPage();for(var i=0;i<GUIDE_STAGES.length;i++)if(GUIDE_STAGES[i].page.test(page))return i;return -1;}
+  function guideStage(){var page=currentPage(),s=guideState();for(var i=0;i<GUIDE_STAGES.length;i++)if(GUIDE_STAGES[i].page.test(page))return GUIDE_STAGES[i].last&&!(s&&s.sent)?-1:i;return -1;}
   function guideTourDue(tour){var s=guideState();return Boolean(s&&tour&&guideStage()>=0&&(s.tours||[]).indexOf(tour.key)<0);}
   function guideTourShown(tour){var s=guideState();if(!s)return;s.tours=(s.tours||[]).concat(tour.key);saveGuide(s);}
   function startGuide(){saveGuide({on:true,tours:[],at:new Date().toISOString()});location.href=GUIDE_STAGES[0].href;}
@@ -386,7 +386,7 @@
     // Hors du parcours (aide, compte…), l'encart se réduit à un rappel qui ramène au dernier écran du parcours.
     if(index<0){
       var back=s.lastUrl||GUIDE_STAGES[0].href;
-      document.body.insertAdjacentHTML('beforeend','<aside class="studio-guide is-collapsed" aria-label="Parcours guidé"><a class="studio-guide-pill" href="'+esc(back)+'"><span aria-hidden="true">🧭</span> Reprendre ma première campagne</a></aside>');
+      document.body.insertAdjacentHTML('beforeend','<aside class="studio-guide is-collapsed" aria-label="Parcours guidé"><a class="studio-guide-pill" href="'+esc(back)+'" aria-label="Reprendre ma première campagne" title="Reprendre ma première campagne"><span aria-hidden="true">🧭</span><span class="studio-guide-pill-label"> Reprendre ma première campagne</span></a></aside>');
       return;
     }
     s.lastUrl=page+location.search;s.stage=index;saveGuide(s);
@@ -401,7 +401,7 @@
       '<button type="button" class="studio-guide-quit" data-guide-quit>'+(stage.last?'Terminer le parcours':'Quitter le parcours')+'</button></div>';
     document.body.appendChild(el);
   }
-  window.StudioGuide={start:startGuide,active:function(){return Boolean(guideState());}};
+  window.StudioGuide={start:startGuide,active:function(){return Boolean(guideState());},sent:function(){var s=guideState();if(s){s.sent=true;saveGuide(s);}}};
   document.addEventListener('click',function(e){
     var t=e.target.closest&&e.target.closest('[data-guide-start],[data-guide-toggle],[data-guide-quit]');if(!t)return;
     e.preventDefault();
@@ -417,10 +417,11 @@
   // et le bouton « Nouveautés » du bloc d'aide garde l'historique. Ajouter une entrée en tête de liste suffit
   // (id unique, jamais réutilisé) ; une fois la bulle fermée, toutes les nouveautés affichées sont marquées vues.
   var NEWS=[
+    {id:'2026-11-cockpit-aide',date:'2026-11-06',title:'Cockpit D&I, avis et Glossaire',text:'Pilotez vos actions et vos prestataires dans le Cockpit D&I, donnez votre avis sur une action réalisée, et retrouvez le sens des mots du Studio dans le Glossaire de la page Aide. Les écrans principaux ont aussi leur tuto vidéo.',href:'cockpit-dei.html?audience=client',cta:'Ouvrir le Cockpit D&I'},
     {id:'2026-11-guide-premiere-campagne',date:'2026-11-03',title:'Laissez-vous guider pour votre première campagne',text:'Un parcours pas à pas vous accompagne du catalogue jusqu’à la transmission, écran par écran. Chaque écran a aussi son bouton « Lire le guide » vers la fiche d’aide correspondante.',href:'accueil.html',cta:'Lancer le parcours depuis l’accueil'},
     {id:'2026-10-relancer',date:'2026-10-30',title:'Relancez une campagne terminée',text:'Depuis la page d’une campagne terminée, reprogrammez-la avec les mêmes liens ou lancez une nouvelle thématique. Une campagne en cours peut aussi être prolongée.',href:'mes-campagnes.html',cta:'Voir mes campagnes'},
     {id:'2026-10-frise',date:'2026-10-30',title:'Où en est votre campagne ?',text:'Chaque campagne affiche maintenant ses 5 phases, de la création aux résultats, et indique qui doit agir : vous, Me&YouToo ou personne.',href:'mes-campagnes.html',cta:'Voir mes campagnes'},
-    {id:'2026-10-visites',date:'2026-10-30',title:'Des visites guidées à chaque étape',text:'Une courte visite vous présente chaque écran la première fois. Pour la revoir, cliquez sur « Revoir la visite de cette page » dans le bloc d’aide.'},
+    {id:'2026-10-visites',date:'2026-10-30',title:'Des visites guidées à chaque étape',text:'Une courte visite vous présente chaque écran la première fois. Pour la revoir, cliquez sur « Revoir la visite » dans le menu.'},
     {id:'2026-10-lexique',date:'2026-10-30',title:'Un point « i » pour chaque terme',text:'Passation, thématique, relecture… Cliquez sur les points « i » pour obtenir une définition simple, là où vous en avez besoin.'}
   ];
   var newsBubble=null;

@@ -267,10 +267,6 @@
           <div class="topic-detail-block"><strong>Périmètres disponibles</strong><div class="topic-chip-list">${chips(perimeterItems,perimeterFormatter,4)}</div></div>
           <div class="topic-detail-block"><strong>Langues disponibles</strong><div class="topic-chip-list">${chips(loc,localeLabel,6)}</div></div>
         </div>
-        <div class="topic-content-split">
-          <div class="topic-content-count is-catalog"><span>Catalogue</span><strong>${esc(catLabel)}</strong><small>${cat===null?'volume adapté au périmètre':'situations de référence'}</small></div>
-          <div class="topic-content-count is-library"><span>Bibliothèque</span><strong>${esc(libLabel)}</strong><small>${lib===null?'volume adapté au périmètre':'situations complémentaires'}</small></div>
-        </div>
         <div class="topic-expanded-actions"><a class="button button-secondary" href="${href(t)}">Découvrir la thématique</a></div>
       </div>
     </details>`;

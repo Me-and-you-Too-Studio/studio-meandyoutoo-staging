@@ -17327,3 +17327,11 @@ body.sidebar-collapsed .help-card-team { display: none; }
 
 /* La bulle de chat occupe le coin bas droit : le bouton de l'étape suivante reste entièrement visible. */
 @media(min-width:1181px){.creation-sticky-actions{padding-right:88px}}
+
+.studio-guide.is-collapsed .studio-guide-pill-label{display:none}
+.studio-guide.is-collapsed a.studio-guide-pill:hover .studio-guide-pill-label,.studio-guide.is-collapsed a.studio-guide-pill:focus-visible .studio-guide-pill-label{display:inline}
+.qs-steps{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:760px){.qs-steps{grid-template-columns:1fr}}
+.version-hint{color:var(--muted,#5b6b7c);padding:4px 0}
+.version-check.is-only{cursor:default}
+.version-check.is-only input{display:none}
