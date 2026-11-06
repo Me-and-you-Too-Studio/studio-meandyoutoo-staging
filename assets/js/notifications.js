@@ -4,6 +4,7 @@
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const currentUser=StudioAPI.user()||{},isAdmin=currentUser.role==='admin',requestedAudience=new URLSearchParams(location.search).get('audience');
   const audience=isAdmin&&requestedAudience!=='client'?'admin':'client',clientView=audience==='client';
+  if(clientView&&document.getElementById('notification-search'))document.getElementById('notification-search').placeholder='Rechercher une campagne, une notification…';
   let items=[],filter='all',hasMore=false;
   // « À publier » : seulement les campagnes encore en attente de publication (statut actuel renvoyé par l'API).
   const awaitingPublication=['configuration_submitted','review_pending','in_review','client_validation_required','ready_to_publish'];
