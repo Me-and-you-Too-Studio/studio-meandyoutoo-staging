@@ -149,7 +149,7 @@
   function items(){
     var d=state.data,t=today();
     var actions=d.actions.map(function(a){return {type:'action',id:a.id,kind:a.kind,title:a.title,date:a.action_date,end:a.end_date,status:a.status,theme:a.theme,audience:a.audience,people:a.people_reached,notes:a.notes,dispositifId:a.dispositif_id,objective:a.objective,results:a.results,postponedFrom:a.postponed_from,budget:a.budget_eur,meayt:a.led_by_meayt,documents:a.documents||[],offerId:a.offer_id,provider:a.provider_name,recommended:a.recommended,campaignId:a.campaign_id,raw:a};});
-    var campaigns=d.campaigns.map(function(c){return {type:'campaign',id:c.id,kind:'diagnostic',title:c.name,date:c.year_date||c.launch_date,start:c.launch_date,end:c.close_date,status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':(c.launch_date&&c.launch_date>t)?'scheduled':'in_progress',theme:c.theme_title,people:c.respondents,dispositifId:c.dispositif_id,documents:[]};});
+    var campaigns=d.campaigns.map(function(c){return {type:'campaign',id:c.id,kind:'diagnostic',title:c.name,date:c.year_date||c.launch_date,start:c.launch_date,end:c.close_date,status:(['closed','completed','unpublished'].indexOf(c.status)>=0||(c.close_date&&c.close_date<t))?'done':(c.launch_date&&c.launch_date>t)?'scheduled':'in_progress',theme:c.theme_title,coverTheme:c.dei_theme||c.theme_title,people:c.respondents,dispositifId:c.dispositif_id,documents:[]};});
     return actions.concat(campaigns).sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
   }
   function kind(k){return (state.data.kinds||{})[k]||{label:k,icon:'•'};}
@@ -190,7 +190,7 @@
     if(state.tab==='dispositifs'){root.innerHTML=dispositifsView(years);return;}
     root.innerHTML=state.tab==='actions'
       ?head+'<div class="dr-list">'+rows+'</div>'
-      :head+nudge+'<div class="dr-png-wrap" id="dr-png-kpis">'+pngButton('dr-png-kpis','chiffres-cles')+cards+'</div>'+pilotageView()+'<section class="dr-png-wrap dr-tl" id="dr-png-frise"><div class="dr-sub-row"><h3 class="dr-sub">Frise de l’année '+state.year+'</h3><div class="dr-sub-actions">'+pngButton('dr-png-frise','frise')+'<a class="button button-ghost" href="'+calendarHref()+'">Ouvrir dans le calendrier →</a></div></div>'+frise+'</section>';
+      :head+nudge+'<div class="dr-png-wrap" id="dr-png-kpis">'+pngButton('dr-png-kpis','chiffres-cles')+cards+'</div>'+pilotageView()+coverageView()+'<section class="dr-png-wrap dr-tl" id="dr-png-frise"><div class="dr-sub-row"><h3 class="dr-sub">Frise de l’année '+state.year+'</h3><div class="dr-sub-actions">'+pngButton('dr-png-frise','frise')+'<a class="button button-ghost" href="'+calendarHref()+'">Ouvrir dans le calendrier →</a></div></div>'+frise+'</section>';
     // Arrivée depuis le calendrier (?focus=action-12) : on montre l'action une seule fois.
     if(state.focus&&state.tab==='actions'){var target=document.getElementById('dr-'+state.focus);state.focus=null;
       if(target)setTimeout(function(){target.scrollIntoView({block:'center'});target.classList.add('is-focus');setTimeout(function(){target.classList.remove('is-focus');},2000);},200);}
@@ -271,6 +271,40 @@
     tabsEl.innerHTML=Object.keys(TABS).map(function(k){return '<button type="button" role="tab" class="dr-tab'+(k===state.tab?' is-current':'')+'" aria-selected="'+(k===state.tab)+'" data-tab="'+k+'"><b aria-hidden="true">'+TAB_ICONS[k]+'</b>'+esc(TABS[k])+(counts[k]!=null?' <span>'+counts[k]+'</span>':'')+'</button>';}).join('');
   }
   function setTab(tab){state.tab=tab;try{history.replaceState(null,'','#'+tab);}catch(e){}render();window.scrollTo({top:Math.max(0,root.getBoundingClientRect().top+window.scrollY-(tabsEl?tabsEl.offsetHeight:0)-24),behavior:'smooth'});}
+
+  // ── Tableau de couverture : thématiques × familles de formats ──
+  var COVER=[
+    {key:'mesurer',label:'Mesurer',hint:'Diagnostic, baromètre, enquête, quiz',kinds:['diagnostic','barometre','enquete','quiz']},
+    {key:'sensibiliser',label:'Sensibiliser',hint:'Conférence, atelier, vidéo, campagne, événement',kinds:['conference','atelier','video','sensibilisation','evenement']},
+    {key:'former',label:'Former',hint:'Formation, e-learning, micro-learning',kinds:['formation','elearning','microlearning']},
+    {key:'vivre',label:'Faire vivre',hint:'Réseau interne, mentorat',kinds:['reseau','mentorat']},
+    {key:'organisation',label:'Organisation',hint:'Politique RH, recrutement, accessibilité, label, conseil',kinds:['politique_rh','recrutement','accessibilite','label','conseil']}
+  ];
+  function themeRoot(t){return String(t).toLowerCase().split(/[ &(]/)[0];}
+  function sameTheme(a,b){var x=String(a).toLowerCase(),y=String(b).toLowerCase();return x===y||x.indexOf(themeRoot(y))>=0||y.indexOf(themeRoot(x))>=0;}
+  function itemThemes(it){return splitValues(it.coverTheme||it.theme);}
+  function coverItems(theme,col,list){var kinds=COVER.filter(function(k){return k.key===col;})[0].kinds;
+    return list.filter(function(it){return kinds.indexOf(it.kind)>=0&&itemThemes(it).some(function(t){return sameTheme(theme,t);});});}
+  function coverageRows(list){
+    var free=[];list.forEach(function(it){itemThemes(it).forEach(function(t){if(!THEMES.concat(free).some(function(k){return sameTheme(k,t);}))free.push(t);});});
+    var wanted=[];((state.data.pilotage||{}).objectives||[]).forEach(function(o){wanted=wanted.concat(splitValues(o.themes));});
+    var isPriority=function(t){return wanted.some(function(w){return sameTheme(w,t);});};
+    return THEMES.concat(free).map(function(t){return {theme:t,priority:isPriority(t)};}).sort(function(a,b){return b.priority-a.priority;});
+  }
+  function coverageView(){
+    var y=String(state.year),list=items().filter(function(it){return String(it.date).slice(0,4)===y&&inProgramme(it);});
+    var head=COVER.map(function(k){return '<th scope="col">'+esc(k.label)+'<small>'+esc(k.hint)+'</small></th>';}).join('');
+    var rows=coverageRows(list).map(function(r){
+      var cells=COVER.map(function(k){var its=coverItems(r.theme,k.key,list);
+        if(!its.length)return '<td>'+(r.priority&&isClient?'<a class="dr-cover-link" href="offres.html?from=cockpit">Voir les solutions</a>':'')+'</td>';
+        var done=its.some(function(it){return it.status==='done';});
+        var label=its.length+(done?' : réalisé':' : prévu');
+        return '<td><button type="button" class="dr-cover-cell '+(done?'is-done':'is-planned')+'" data-cover="'+esc(r.theme+'|'+k.key)+'" aria-label="'+esc(r.theme+', '+k.label+', '+label)+'">'+(done?'✓':'○')+'</button></td>';}).join('');
+      return '<tr'+(r.priority?' class="is-priority"':'')+'><th scope="row">'+(r.priority?'<span aria-label="Priorité de l’année">★ </span>':'')+esc(r.theme)+'</th>'+cells+'</tr>';}).join('');
+    return '<article class="dp-card dr-png-wrap dr-cover" id="dr-png-couverture"><header><h3>🧭 Couverture de votre programme '+y+'</h3>'+pngButton('dr-png-couverture','couverture')+'</header>'+
+      '<p class="dr-row-meta">✓ réalisé · ○ prévu · ★ priorité de l’année. Une case vide n’est pas un manque : ce tableau vous aide à voir où vous en êtes. Cliquez sur une case pour voir le détail.</p>'+
+      '<div class="dr-cover-scroll"><table><thead><tr><th scope="col">Thématique</th>'+head+'</tr></thead><tbody>'+rows+'</tbody></table></div></article>';
+  }
 
   // ── Dispositifs : plusieurs actions et diagnostics réunis sous un nom ──
   function dispositifItems(id){return items().filter(function(it){return String(it.dispositifId||'')===String(id);});}
@@ -454,6 +488,8 @@
     else if(key==='themes'){title='Thématiques couvertes en '+y;
       var byTheme={},none=[];list.forEach(function(it){var th=themesOf(it);if(!th.length)none.push(it);th.forEach(function(t){(byTheme[t]=byTheme[t]||[]).push(it);});});
       body=Object.keys(byTheme).sort(function(a,b){return a.localeCompare(b,'fr');}).map(function(t){return group(t,byTheme[t]);}).join('')+group('Sans thématique renseignée',none);}
+    else if(key.indexOf('cover|')===0){var cv=key.split('|'),col=COVER.filter(function(k){return k.key===cv[2];})[0];title=cv[1]+' · '+col.label;intro=col.hint;
+      var cover=coverItems(cv[1],cv[2],list);body=group('Réalisées',cover.filter(function(it){return it.status==='done';}))+group('Prévues ou en cours',cover.filter(function(it){return it.status!=='done';}));}
     else if(key==='months'){title='Mois sans action en '+y;
       var gaps=(state.data.indicators.months||[]).map(function(c,m){return c?null:m;}).filter(function(m){return m!==null;});
       var nowY=new Date().getFullYear(),elapsed=state.year<nowY?12:state.year>nowY?0:new Date().getMonth()+1;
@@ -810,6 +846,7 @@
     }
     else if(t.hasAttribute('data-reco-add')){var cid=t.getAttribute('data-reco-add');editDialog(null,null,{campaign_id:cid,recommended:true,led_by_meayt:false,action_date:today()});}
     else if(t.hasAttribute('data-reco-help'))accompany({actionId:t.getAttribute('data-reco-help'),recommended:true},'Accompagnement : '+t.getAttribute('data-title'));
+    else if(t.hasAttribute('data-cover'))kpiDetail('cover|'+t.getAttribute('data-cover'));
     else if(t.hasAttribute('data-disp-add'))dispositifDialog(null);
     else if(t.hasAttribute('data-disp-edit'))dispositifDialog((state.data.dispositifs||[]).find(function(x){return String(x.id)===t.getAttribute('data-disp-edit');}));
     else if(t.hasAttribute('data-disp-delete'))removeDispositif(t.getAttribute('data-disp-delete'));

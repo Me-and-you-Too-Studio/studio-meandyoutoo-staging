@@ -37,6 +37,23 @@
   }
   // Une action reportée sans nouvelle date ou annulée ne compte pas dans le bilan.
   function inProgramme(i){return i.status!=='postponed'&&i.status!=='cancelled';}
+  var COVER=[['Mesurer','Diagnostic, baromètre, enquête, quiz',['diagnostic','barometre','enquete','quiz']],['Sensibiliser','Conférence, atelier, vidéo, campagne, événement',['conference','atelier','video','sensibilisation','evenement']],
+    ['Former','Formation, e-learning, micro-learning',['formation','elearning','microlearning']],['Faire vivre','Réseau interne, mentorat',['reseau','mentorat']],['Organisation','Politique RH, recrutement, accessibilité, label, conseil',['politique_rh','recrutement','accessibilite','label','conseil']]];
+  function themesOf(v){return String(v||'').split(',').map(function(s){return s.trim();}).filter(Boolean);}
+  function themeRoot(t){return String(t).toLowerCase().split(/[ &(]/)[0];}
+  function sameTheme(a,b){var x=String(a).toLowerCase(),y=String(b).toLowerCase();return x===y||x.indexOf(themeRoot(y))>=0||y.indexOf(themeRoot(x))>=0;}
+  // Couverture de l'année : seules les thématiques travaillées ou prioritaires, pour rester sur une page.
+  function coverageBlock(list,objectives){
+    var names=[];list.forEach(function(i){themesOf(i.theme).forEach(function(t){if(!names.some(function(n){return sameTheme(n,t);}))names.push(t);});});
+    var wanted=[];objectives.forEach(function(o){wanted=wanted.concat(themesOf(o.themes));});
+    wanted.forEach(function(t){if(!names.some(function(n){return sameTheme(n,t);}))names.push(t);});
+    if(!names.length)return '';
+    var isPriority=function(t){return wanted.some(function(w){return sameTheme(w,t);});};
+    names.sort(function(a,b){return isPriority(b)-isPriority(a);});
+    return '<h3>La couverture du programme</h3><table class="bl-table bl-cover-table"><thead><tr><th>Thématique</th>'+COVER.map(function(k){return '<th>'+esc(k[0])+'<br><small>'+esc(k[1])+'</small></th>';}).join('')+'</tr></thead><tbody>'+
+      names.map(function(t){return '<tr><td>'+(isPriority(t)?'★ ':'')+esc(t)+'</td>'+COVER.map(function(k){var its=list.filter(function(i){return k[2].indexOf(i.kind)>=0&&themesOf(i.theme).some(function(x){return sameTheme(t,x);});});
+        return '<td>'+(!its.length?'':its.some(function(i){return i.status==='done';})?'✓':'○')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table><p class="bl-note">✓ réalisé · ○ prévu · ★ priorité de l’année</p>';
+  }
   function kindOf(d,k){return (d.kinds||{})[k]||{label:k,icon:'•'};}
   function load(y){return StudioAPI.request('/api/dei/actions'+qs(y)).catch(function(){return null;});}
 
@@ -112,6 +129,7 @@
     }
     html+='</section>';
 
+    html+='<section class="bl-page">'+coverageBlock(list,p.objectives||[])+'</section>';
     // 5. Détail des actions par trimestre
     html+='<section class="bl-page"><h2>Le détail des actions</h2>';
     // Dispositifs : un regroupement, les compteurs de l'année ne changent pas.
