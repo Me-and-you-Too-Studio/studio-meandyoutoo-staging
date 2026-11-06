@@ -17351,3 +17351,4 @@ body.sidebar-collapsed .help-card-team { display: none; }
 .studio-help-panel-body h2 { font-size: 1.05rem; }
 .studio-help-panel-foot { padding: 10px 20px; border-top: 1px solid rgba(15, 35, 60, .1); font-weight: 600; }
 @media (min-width: 1100px) { body.studio-help-open { padding-right: 480px; } }
+@media (min-width: 1100px) and (max-width: 1599px) { .studio-help-panel { width: 400px; } body.studio-help-open { padding-right: 400px; } }

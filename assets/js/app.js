@@ -365,13 +365,16 @@
   }
   // « Lire le guide » s'ouvre dans un volet à droite : l'écran reste visible pour suivre le guide en même temps.
   function helpNorm(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,"'").toLowerCase().trim();}
-  function closeHelpPanel(){var p=document.getElementById('studio-help-panel');if(p)p.remove();document.body.classList.remove('studio-help-open');document.removeEventListener('keydown',helpPanelKeys);}
+  function closeHelpPanel(){var p=document.getElementById('studio-help-panel');if(p){if(p.dataset.menuFolded)document.body.classList.remove('sidebar-collapsed');p.remove();}document.body.classList.remove('studio-help-open');document.removeEventListener('keydown',helpPanelKeys);}
   function helpPanelKeys(e){if(e.key==='Escape')closeHelpPanel();}
   async function openHelpPanel(subject,fallback){
     closeHelpPanel();
     var panel=document.createElement('aside');panel.id='studio-help-panel';panel.className='studio-help-panel';panel.setAttribute('aria-label','Guide');
     panel.innerHTML='<header class="studio-help-panel-head"><div><p class="eyebrow">Guide</p><h2 data-help-title>Chargement…</h2></div><button type="button" class="studio-modal-close" aria-label="Fermer le guide" data-help-close>×</button></header><div class="studio-help-panel-body private-resource-body" data-help-body></div><footer class="studio-help-panel-foot"><a data-help-full href="'+esc(fallback)+'" target="_blank" rel="noopener">Ouvrir dans l’Aide ↗</a></footer>';
-    document.body.appendChild(panel);document.body.classList.add('studio-help-open');document.addEventListener('keydown',helpPanelKeys);
+    document.body.appendChild(panel);document.body.classList.add('studio-help-open');
+    // Sur un écran d'ordinateur portable, le menu se replie le temps du volet pour garder la page lisible.
+    if(window.innerWidth>=1100&&window.innerWidth<1600&&!document.body.classList.contains('sidebar-collapsed')){document.body.classList.add('sidebar-collapsed');panel.dataset.menuFolded='1';}
+    document.addEventListener('keydown',helpPanelKeys);
     panel.querySelector('[data-help-close]').onclick=closeHelpPanel;
     try{
       var data=await window.StudioAPI.request('/api/help'),list=(data&&data.items)||[],q=helpNorm(subject);
