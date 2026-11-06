@@ -261,7 +261,7 @@ button.dr-kpi:hover,button.dr-kpi:focus-visible{border-color:var(--green-blue,#0
 .dr-tl-gap:hover{border-style:solid;border-color:var(--green-blue,#007883)}
 /* Téléchargement des graphiques en PNG */
 .dr-png-wrap{position:relative}
-#dr-png-kpis>.dr-png{position:absolute;top:-30px;right:0}
+#dr-png-kpis>.dr-png{position:absolute;top:8px;right:8px;z-index:1}
 .dr-png{border:1px solid var(--line,#e2e7f1);background:#fff;border-radius:99px;padding:4px 10px;font:inherit;font-size:.74rem;font-weight:800;color:var(--green-blue,#007883);cursor:pointer;white-space:nowrap}
 .dr-png:hover{border-color:var(--green-blue,#007883)}
 /* Mois passé sans action : constat neutre (plus d'accompagnement possible), saisie après coup seulement. */

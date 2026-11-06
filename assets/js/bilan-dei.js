@@ -158,7 +158,7 @@
     return Math.round(m.reduce(function(s,c){return s+Number(c.respondents)/Number(c.objective)*100;},0)/m.length);
   }
   function activeQuarters(list){
-    var q={};list.forEach(function(i){if(i.status!=='planned'&&String(i.date).slice(0,4)===String(year))q[Math.floor((Number(String(i.date).slice(5,7))-1)/3)]=1;});
+    var q={};list.forEach(function(i){if(i.status==='done'&&String(i.date).slice(0,4)===String(year))q[Math.floor((Number(String(i.date).slice(5,7))-1)/3)]=1;});
     return Object.keys(q).length;
   }
   function formatsBlock(d,list){
@@ -176,7 +176,8 @@
   }
   function frise(d,list){
     var byMonth=MONTHS.map(function(){return [];});
-    list.forEach(function(i){if(String(i.date).slice(0,4)===String(year))byMonth[Number(String(i.date).slice(5,7))-1].push(i);});
+    // Une action sur plusieurs mois apparaît dans chacun d'eux.
+    list.forEach(function(i){var s=String(i.start||i.date).slice(0,7),e=String(i.end||s).slice(0,7);MONTHS.forEach(function(_,m){var key=year+'-'+String(m+1).padStart(2,'0');if(key>=s&&key<=e)byMonth[m].push(i);});});
     return '<div class="bl-frise">'+byMonth.map(function(its,m){
       return '<div class="bl-month"><b>'+MONTHS[m]+'</b>'+(its.length?its.map(function(i){return '<span class="bl-pill st-'+esc(i.status)+'">'+esc(kindOf(d,i.kind).icon)+' '+esc(i.title)+'</span>';}).join(''):'<span class="bl-empty">—</span>')+'</div>';
     }).join('')+'</div>';
@@ -188,7 +189,7 @@
     var strategic=o.metric==='strategic',custom=o.metric==='custom',figure,pct,reached;
     if(strategic){
       var s=o.strategic||{done:0,planned:0,people:0};
-      reached=o.done;pct=o.done?100:(o.target?Math.min(100,Math.round(s.people/o.target*100)):(s.done?50:(s.planned?20:0)));
+      reached=o.done;pct=o.done?100:(o.target?Math.min(100,Math.round(s.people/o.target*100)):(s.done?50:0));
       figure=(o.done?'Atteint · ':'')+plural(s.done,'action')+' réalisée'+(s.done>1?'s':'')+(s.planned?' · '+s.planned+' prévue'+(s.planned>1?'s':''):'')+' · '+plural(s.people,'personne')+' touchée'+(s.people>1?'s':'')+(o.target?' sur '+num(o.target)+' visées':'');
     }else{
       pct=custom?(o.done?100:0):(o.value==null||!o.target?0:Math.min(100,Math.round(o.value/o.target*100)));
