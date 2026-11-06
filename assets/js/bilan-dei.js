@@ -118,7 +118,7 @@
     var groups=(d.dispositifs||[]).filter(function(x){return x.inYear;}).map(function(x){return {x:x,its:list.filter(function(i){return String(i.dispositifId||'')===String(x.id);})};}).filter(function(g){return g.its.length;});
     if(groups.length){
       var grouped=groups.reduce(function(s,g){return s+g.its.length;},0);
-      html+='<h3>Les dispositifs <small>'+plural(groups.length,'dispositif')+' représentant '+plural(grouped,'action')+'</small></h3><ul class="bl-list">'+groups.map(function(g){return '<li><span>'+esc(g.x.name)+'</span> '+esc(g.its.map(function(i){return i.title;}).join(' · '))+'</li>';}).join('')+'</ul>';
+      html+='<h3>Les dispositifs <small>'+plural(groups.length,'dispositif')+' représentant '+plural(grouped,'élément')+'</small></h3><ul class="bl-list">'+groups.map(function(g){return '<li><span>'+esc(g.x.name)+'</span> '+esc(g.its.map(function(i){return i.title;}).join(' · '))+'</li>';}).join('')+'</ul>';
     }
     [1,2,3,4].forEach(function(q){
       var inQ=list.filter(function(i){return Math.floor((Number(String(i.date).slice(5,7))-1)/3)+1===q;});
