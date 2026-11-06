@@ -120,7 +120,7 @@
       try{await StudioAPI.request(url,{method:'PUT',body:JSON.stringify({rating:Number(f.get('rating')),again:f.get('again'),comment:f.get('comment'),reminderDate:form.elements.reminder.checked?f.get('reminderDate'):''})});dlg.close();load();}
       catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
     };
-    dlg.showModal();
+    showDialog(dlg);
   }
   // Détail d'une fiche : les actions réalisées avec ce prestataire et leurs avis.
   function reviewsDialog(key,name){
@@ -133,7 +133,7 @@
     document.body.appendChild(dlg);
     dlg.addEventListener('close',function(){dlg.remove();});
     dlg.addEventListener('click',function(ev){var t=ev.target.closest('[data-review]');if(t){var id=t.getAttribute('data-review');dlg.close();reviewDialog(id);}});
-    dlg.showModal();
+    showDialog(dlg);
   }
   function reviewsFooter(key,name){
     var rows=providerRows(key);if(!rows.length)return '';
@@ -272,6 +272,8 @@
   }
   function setTab(tab){state.tab=tab;try{history.replaceState(null,'','#'+tab);}catch(e){}render();window.scrollTo({top:Math.max(0,root.getBoundingClientRect().top+window.scrollY-(tabsEl?tabsEl.offsetHeight:0)-24),behavior:'smooth'});}
 
+  // Fenêtre avec une croix toujours visible : pas besoin de descendre jusqu'au bouton du bas.
+  function showDialog(dlg){var x=document.createElement('button');x.type='button';x.className='dr-dialog-x';x.setAttribute('aria-label','Fermer');x.textContent='×';x.onclick=function(){dlg.close();};dlg.appendChild(x);dlg.showModal();}
   // ── Tableau de couverture : thématiques × familles de formats ──
   var COVER=[
     {key:'mesurer',icon:'🎯',label:'Mesurer',hint:'Diagnostic, baromètre, enquête, quiz',kinds:['diagnostic','barometre','enquete','quiz']},
@@ -355,7 +357,7 @@
         dlg.close();if(onSaved)onSaved(r.dispositif);else{load();if(!dispositif)composeDialog(r.dispositif,true);}
       }catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
     };
-    dlg.showModal();
+    showDialog(dlg);
   }
   // Composer un dispositif : une action prévue par format coché, à compléter ensuite une par une.
   function composeDialog(x,justCreated){
@@ -386,7 +388,7 @@
         dlg.close();load();
       }catch(e){button.disabled=false;err.textContent=(made?made+' action'+(made>1?'s':'')+' créée'+(made>1?'s':'')+'. ':'')+(e.message||'Création impossible');err.hidden=false;if(made)load();}
     };
-    dlg.showModal();
+    showDialog(dlg);
   }
   function attachDialog(id){
     var free=items().filter(function(it){return it.type==='campaign'&&String(it.dispositifId||'')!==String(id);});
@@ -407,7 +409,7 @@
         dlg.close();load();}
       catch(e){err.textContent=e.message||'Rattachement impossible';err.hidden=false;}
     };
-    dlg.showModal();
+    showDialog(dlg);
   }
   async function removeDispositif(id){
     var x=(state.data.dispositifs||[]).find(function(y){return String(y.id)===String(id);});if(!x)return;
@@ -459,7 +461,7 @@
         dlg.close();if(onSaved)onSaved(provider?provider.id:r.provider&&r.provider.id);else load();
       }catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
     };
-    dlg.showModal();
+    showDialog(dlg);
   }
   async function removeProvider(id){
     var p=(state.data.providers||[]).find(function(x){return String(x.id)===String(id);});if(!p)return;
@@ -514,7 +516,7 @@
         if(/^campaign-/.test(go))location.href='campagne-detail.html?projectId='+encodeURIComponent(go.slice(9));else focusItem(go);}
       else{var sel=b.hasAttribute('data-go-month')?'[data-month="'+b.getAttribute('data-go-month')+'"]':'[data-add-month="'+b.getAttribute('data-go-add-month')+'"]';var target=root.querySelector(sel);if(target)target.click();}
     });
-    dlg.showModal();
+    showDialog(dlg);
   }
   // Montre une action (ou un diagnostic) dans l'onglet Actions.
   function focusItem(focus){setTab('actions');
@@ -691,7 +693,7 @@
       try{await StudioAPI.request('/api/dei/objectives'+(objective?'/'+encodeURIComponent(objective.id)+qs():''),{method:objective?'PATCH':'POST',body:JSON.stringify(body)});dlg.close();load();}
       catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
     };
-    dlg.showModal();
+    showDialog(dlg);
   }
   async function saveObjective(o,changes){
     try{await StudioAPI.request('/api/dei/objectives/'+encodeURIComponent(o.id)+qs(),{method:'PATCH',body:JSON.stringify(withOrg(Object.assign({metric:o.metric,target:o.target,label:o.label,done:o.done,themes:o.themes,audiences:o.audiences},changes)))});load();}
@@ -776,7 +778,7 @@
         if(again)editDialog(null,null,{dispositif_id:f.get('dispositifId'),theme:body.theme,provider_id:body.providerId==='meayt'?null:body.providerId,led_by_meayt:body.providerId==='meayt',action_date:body.actionDate});
       }catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
     };
-    dlg.showModal();
+    showDialog(dlg);
   }
   async function remove(id){
     var a=state.data.actions.find(function(x){return String(x.id)===String(id);});if(!a)return;

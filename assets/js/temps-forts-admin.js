@@ -24,6 +24,8 @@
       '<td>'+(e.active?(e.alerts?'<span class="tf-pill is-on">Alerte active</span>':'<span class="tf-pill">Sans alerte</span>'):'<span class="tf-pill">Masqué</span>')+'</td>'+
       '<td class="tf-tools"><button type="button" class="button button-ghost" data-edit="'+esc(e.id)+'">Modifier</button><button type="button" class="button button-ghost" data-test="'+esc(e.id)+'">Recevoir l’e-mail d’essai</button></td></tr>';
   }
+  // Fenêtre avec une croix toujours visible : pas besoin de descendre jusqu'au bouton du bas.
+  function showDialog(dlg){var x=document.createElement('button');x.type='button';x.className='dr-dialog-x';x.setAttribute('aria-label','Fermer');x.textContent='×';x.onclick=function(){dlg.close();};dlg.appendChild(x);dlg.showModal();}
   function render(){
     root.innerHTML='<p class="tf-state '+(state.sendingEnabled?'is-on':'')+'">'+(state.sendingEnabled?'✅ Les alertes partent aux clients : e-mail à 90 jours, carte et cloche à 60 jours.':'⏸️ Aucune alerte n’est envoyée aux clients pour le moment. La carte du Cockpit reste visible.')+'</p>'+
       '<h2 class="tf-title">Les 90 prochains jours</h2>'+upcomingView()+
@@ -68,7 +70,7 @@
       try{await StudioAPI.request('/api/admin/temps-forts'+(event?'/'+encodeURIComponent(e.id):''),{method:event?'PATCH':'POST',body:JSON.stringify(body)});dlg.close();load();}
       catch(x){err.textContent=x.message||'Enregistrement impossible';err.hidden=false;}
     };
-    dlg.showModal();
+    showDialog(dlg);
   }
   async function sendTest(id,button){
     button.disabled=true;
