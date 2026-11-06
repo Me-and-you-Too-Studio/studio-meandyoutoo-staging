@@ -340,7 +340,7 @@
       var button=form.querySelector('[type=submit]'),made=0;button.disabled=true;
       try{
         for(var i=0;i<picked.length;i++){
-          var body=withOrg({kind:picked[i],title:d.kinds[picked[i]].label+(theme?' — '+theme:''),actionDate:form.elements.actionDate.value,status:'planned',theme:x.theme||'',dispositifId:x.id});
+          var body=withOrg({kind:picked[i],title:d.kinds[picked[i]].label.replace(' (Studio)','')+(theme?' — '+theme:''),actionDate:form.elements.actionDate.value,status:'planned',theme:x.theme||'',dispositifId:x.id});
           if(x.team_folder_id)body.teamFolderId=x.team_folder_id;
           await StudioAPI.request('/api/dei/actions',{method:'POST',body:JSON.stringify(body)});made++;
         }
