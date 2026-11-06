@@ -47,7 +47,7 @@
     text(s,String(data.year),0.8,2.15,7.6,1.75,{fontSize:115,bold:true,color:WHITE});
     if(data.org)text(s,data.org,0.8,3.95,7.6,0.7,{fontSize:30,color:WHITE});
     text(s,'Présentation à la direction',0.8,4.62,7.6,0.4,{fontSize:16,color:'C9D3E6'});
-    var logo=await asDataUrl(data.logo);
+    var logo=await asDataUrl(data.logo)||await asDataUrl('assets/img/brand/logo-studio-blue.png');
     if(logo){box(s,9.55,1.15,3,2.1,WHITE,0.12);
       var size=await new Promise(function(resolve){var im=new Image();im.onload=function(){resolve([im.naturalWidth||3,im.naturalHeight||2]);};im.onerror=function(){resolve([3,2]);};im.src=logo;});
       var k=Math.min(2.6/size[0],1.74/size[1]),lw=size[0]*k,lh=size[1]*k;
