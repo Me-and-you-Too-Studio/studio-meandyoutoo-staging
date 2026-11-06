@@ -275,7 +275,7 @@
   // ── Tableau de couverture : thématiques × familles de formats ──
   var COVER=[
     {key:'mesurer',label:'Mesurer',hint:'Diagnostic, baromètre, enquête, quiz',kinds:['diagnostic','barometre','enquete','quiz']},
-    {key:'sensibiliser',label:'Sensibiliser',hint:'Conférence, atelier, vidéo, campagne, événement',kinds:['conference','atelier','video','sensibilisation','evenement']},
+    {key:'sensibiliser',label:'Sensibiliser',hint:'Diagnostic, conférence, atelier, vidéo, campagne, événement',kinds:['diagnostic','conference','atelier','video','sensibilisation','evenement']},
     {key:'former',label:'Former',hint:'Formation, e-learning, micro-learning',kinds:['formation','elearning','microlearning']},
     {key:'vivre',label:'Faire vivre',hint:'Réseau interne, mentorat',kinds:['reseau','mentorat']},
     {key:'structurer',label:'Structurer',hint:'Politique RH, accord, charte, recrutement, accessibilité, label, conseil',kinds:['politique_rh','recrutement','accessibilite','label','conseil']}
