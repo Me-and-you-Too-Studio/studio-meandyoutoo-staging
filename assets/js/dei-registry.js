@@ -274,11 +274,11 @@
 
   // ── Tableau de couverture : thématiques × familles de formats ──
   var COVER=[
-    {key:'mesurer',label:'Mesurer',hint:'Diagnostic, baromètre, enquête, quiz',kinds:['diagnostic','barometre','enquete','quiz']},
-    {key:'sensibiliser',label:'Sensibiliser',hint:'Diagnostic, conférence, atelier, vidéo, campagne, événement',kinds:['diagnostic','conference','atelier','video','sensibilisation','evenement']},
-    {key:'former',label:'Former',hint:'Formation, e-learning, micro-learning',kinds:['formation','elearning','microlearning']},
-    {key:'vivre',label:'Faire vivre',hint:'Réseau interne, mentorat',kinds:['reseau','mentorat']},
-    {key:'structurer',label:'Structurer',hint:'Politique RH, accord, charte, recrutement, accessibilité, label, conseil',kinds:['politique_rh','recrutement','accessibilite','label','conseil']}
+    {key:'mesurer',icon:'🎯',label:'Mesurer',hint:'Diagnostic, baromètre, enquête, quiz',kinds:['diagnostic','barometre','enquete','quiz']},
+    {key:'sensibiliser',icon:'📣',label:'Sensibiliser',hint:'Diagnostic, conférence, atelier, vidéo, campagne, événement',kinds:['diagnostic','conference','atelier','video','sensibilisation','evenement']},
+    {key:'former',icon:'🎓',label:'Former',hint:'Formation, e-learning, micro-learning',kinds:['formation','elearning','microlearning']},
+    {key:'vivre',icon:'🤝',label:'Faire vivre',hint:'Réseau interne, mentorat',kinds:['reseau','mentorat']},
+    {key:'structurer',icon:'🏛️',label:'Structurer',hint:'Politique RH, accord, charte, recrutement, accessibilité, label, conseil',kinds:['politique_rh','recrutement','accessibilite','label','conseil']}
   ];
   function themeRoot(t){return String(t).toLowerCase().split(/[ &(]/)[0];}
   function sameTheme(a,b){var x=String(a).toLowerCase(),y=String(b).toLowerCase();return x===y||x.indexOf(themeRoot(y))>=0||y.indexOf(themeRoot(x))>=0;}
@@ -293,16 +293,21 @@
   }
   function coverageView(){
     var y=String(state.year),list=items().filter(function(it){return String(it.date).slice(0,4)===y&&inProgramme(it);});
-    var head=COVER.map(function(k){return '<th scope="col">'+esc(k.label)+'<small>'+esc(k.hint)+'</small></th>';}).join('');
+    var head=COVER.map(function(k){return '<th scope="col" class="c-'+k.key+'"><span class="dr-cover-head"><b aria-hidden="true">'+k.icon+'</b>'+esc(k.label)+'</span><small>'+esc(k.hint)+'</small></th>';}).join('');
+    var worked=0,families={};
     var rows=coverageRows(list).map(function(r){
-      var gap=false,cells=COVER.map(function(k){var its=coverItems(r.theme,k.key,list);
-        if(!its.length){gap=true;return '<td></td>';}
+      var gap=false,used=false,cells=COVER.map(function(k){var its=coverItems(r.theme,k.key,list);
+        if(!its.length){gap=true;return '<td class="c-'+k.key+'"><span class="dr-cover-tile is-empty"></span></td>';}
+        used=true;families[k.key]=1;
         var done=its.some(function(it){return it.status==='done';});
         var label=its.length+(done?' : réalisé':' : prévu');
-        return '<td><button type="button" class="dr-cover-cell '+(done?'is-done':'is-planned')+'" data-cover="'+esc(r.theme+'|'+k.key)+'" aria-label="'+esc(r.theme+', '+k.label+', '+label)+'">'+(done?'✓':'○')+'</button></td>';}).join('');
-      return '<tr'+(r.priority?' class="is-priority"':'')+'><th scope="row">'+(r.priority?'<span aria-label="Priorité de l’année">★ </span>':'')+esc(r.theme)+(r.priority&&gap&&isClient?'<a class="dr-cover-link" href="offres.html?from=cockpit">Voir les solutions</a>':'')+'</th>'+cells+'</tr>';}).join('');
+        return '<td class="c-'+k.key+'"><button type="button" class="dr-cover-tile '+(done?'is-done':'is-planned')+'" data-cover="'+esc(r.theme+'|'+k.key)+'" aria-label="'+esc(r.theme+', '+k.label+', '+label)+'">'+(done?'✓':'○')+(its.length>1?'<small>'+its.length+'</small>':'')+'</button></td>';}).join('');
+      if(used)worked++;
+      return '<tr class="'+(r.priority?'is-priority ':'')+(used?'':'is-quiet')+'"><th scope="row">'+(r.priority?'<span aria-label="Priorité de l’année">★ </span>':'')+esc(r.theme)+(r.priority&&gap&&isClient?'<a class="dr-cover-link" href="offres.html?from=cockpit">Voir les solutions</a>':'')+'</th>'+cells+'</tr>';}).join('');
     return '<article class="dp-card dr-png-wrap dr-cover" id="dr-png-couverture"><header><h3>🧭 Couverture de votre programme '+y+'</h3>'+pngButton('dr-png-couverture','couverture')+'</header>'+
-      '<p class="dr-row-meta">✓ réalisé · ○ prévu · ★ priorité de l’année. Une case vide n’est pas un manque : ce tableau vous aide à voir où vous en êtes. Cliquez sur une case pour voir le détail.</p>'+
+      '<div class="dr-cover-top"><p class="dr-cover-sum"><strong>'+worked+'</strong> thématique'+(worked>1?'s':'')+' travaillée'+(worked>1?'s':'')+' <span>·</span> <strong>'+Object.keys(families).length+'</strong> famille'+(Object.keys(families).length>1?'s':'')+' d’actions</p>'+
+      '<ul class="dr-cover-legend"><li><i class="is-done">✓</i>Réalisé</li><li><i class="is-planned">○</i>Prévu</li><li><b>★</b>Priorité de l’année</li></ul></div>'+
+      '<p class="dr-row-meta">Une case vide n’est pas un manque : ce tableau vous aide à voir où vous en êtes. Cliquez sur une case pour voir le détail.</p>'+
       '<div class="dr-cover-scroll"><table><thead><tr><th scope="col">Thématique</th>'+head+'</tr></thead><tbody>'+rows+'</tbody></table></div></article>';
   }
 

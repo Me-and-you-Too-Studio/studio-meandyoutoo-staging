@@ -58,16 +58,40 @@
 .dr-compose{border:1px solid var(--line,#e2e7f1);border-radius:12px;padding:10px 12px;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px;max-height:280px;overflow:auto}
 .dr-compose legend{padding:0 4px;font-size:.85rem;font-weight:700}
 .dr-cover{margin-bottom:24px}
-.dr-cover-scroll{overflow-x:auto;margin-top:8px}
-.dr-cover table{width:100%;border-collapse:collapse;font-size:.9rem}
-.dr-cover th,.dr-cover td{padding:7px 8px;border-bottom:1px solid var(--line,#e2e7f1);text-align:center;vertical-align:middle}
-.dr-cover thead th{vertical-align:bottom;font-weight:700;min-width:118px}
-.dr-cover thead th small{display:block;font-weight:400;color:var(--muted,#54607e);font-size:.74rem;line-height:1.25;margin-top:2px}
-.dr-cover th:first-child{text-align:left;min-width:170px;font-weight:600}
+.dr-cover .c-mesurer{--c:#007883;--soft:#e0f1f2;--on:#fff}
+.dr-cover .c-sensibiliser{--c:#ffc000;--soft:#fff4cf;--on:#273a64}
+.dr-cover .c-former{--c:#273a64;--soft:#e4e8f3;--on:#fff}
+.dr-cover .c-vivre{--c:#5669a9;--soft:#e9ecf7;--on:#fff}
+.dr-cover .c-structurer{--c:#7a5ea8;--soft:#efe9f7;--on:#fff}
+.dr-cover-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:2px 0 4px}
+.dr-cover-sum{margin:0;font-size:.95rem;color:var(--muted,#54607e)}
+.dr-cover-sum strong{font-size:1.45rem;color:var(--green-blue,#007883);margin-right:2px}
+.dr-cover-sum span{margin:0 6px}
+.dr-cover-legend{list-style:none;display:flex;gap:14px;margin:0;padding:0;font-size:.8rem;color:var(--muted,#54607e)}
+.dr-cover-legend li{display:inline-flex;align-items:center;gap:5px}
+.dr-cover-legend i{width:20px;height:20px;border-radius:6px;display:inline-grid;place-items:center;font-style:normal;font-weight:800;font-size:.72rem}
+.dr-cover-legend i.is-done{background:var(--green-blue,#007883);color:#fff}
+.dr-cover-legend i.is-planned{background:#e0f1f2;color:#00636c;box-shadow:inset 0 0 0 1.5px #007883}
+.dr-cover-legend b{color:#d99a00}
+.dr-cover-scroll{overflow-x:auto;margin-top:10px}
+.dr-cover table{width:100%;border-collapse:separate;border-spacing:6px;font-size:.9rem;table-layout:fixed;min-width:760px}
+.dr-cover th,.dr-cover td{padding:0;border:0;text-align:center;vertical-align:middle}
+.dr-cover thead th{vertical-align:top;padding:10px 6px 8px;border-radius:12px 12px 0 0;border-top:4px solid var(--c,transparent);background:var(--soft,transparent)}
+.dr-cover thead th:first-child{background:none;border-top:0;vertical-align:bottom;text-align:left;font-size:.8rem;color:var(--muted,#54607e);width:22%}
+.dr-cover-head{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:800;color:var(--ink,#273a64);font-size:.95rem}
+.dr-cover-head b{font-weight:400}
+.dr-cover thead small{display:block;font-weight:400;color:var(--muted,#54607e);font-size:.72rem;line-height:1.3;margin-top:4px}
+.dr-cover tbody th{text-align:left;font-weight:700;padding-right:6px;color:var(--ink,#273a64)}
+.dr-cover tr.is-quiet th{color:#9aa4bb;font-weight:500}
 .dr-cover tr.is-priority th{color:var(--green-blue-dark,#00636c);font-weight:800}
-.dr-cover-cell{width:30px;height:30px;border:0;border-radius:50%;font:inherit;font-weight:800;cursor:pointer}
-.dr-cover-cell.is-done{background:var(--green-blue-soft,#e6f4f5);color:var(--green-blue-dark,#00636c)}
-.dr-cover-cell.is-planned{background:var(--royal-blue-soft,#eaeef7);color:var(--ink,#273a64)}
+.dr-cover tr.is-priority th span{color:#d99a00}
+.dr-cover-tile{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;height:38px;border:0;border-radius:10px;font:inherit;font-weight:800;font-size:1rem;box-sizing:border-box}
+.dr-cover-tile small{font-size:.74rem;font-weight:700;opacity:.85}
+.dr-cover-tile.is-empty{background:#f4f6fa}
+.dr-cover-tile.is-done{background:var(--c);color:var(--on);cursor:pointer;transition:transform .15s,box-shadow .15s}
+.dr-cover-tile.is-planned{background:var(--soft);color:var(--ink,#273a64);box-shadow:inset 0 0 0 2px var(--c);cursor:pointer;transition:transform .15s}
+.dr-cover-tile.is-done:hover,.dr-cover-tile.is-planned:hover{transform:translateY(-2px)}
+.dr-cover-tile.is-done:hover{box-shadow:0 6px 14px rgba(39,58,100,.18)}
 .dr-cover-link{display:block;font-size:.76rem;font-weight:400;color:var(--green-blue,#007883);text-decoration:none}
 .dr-cover-link:hover{text-decoration:underline}
 .dr-budget-total{margin:-12px 0 24px;font-size:.95rem}
