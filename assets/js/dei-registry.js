@@ -301,7 +301,7 @@
       multiField('theme','Thématiques',THEMES,x.theme)+
       '<label class="dr-field dr-field-year"><span>Année *</span><input type="number" name="year" required min="2000" max="2100" value="'+esc(x.year)+'"></label>'+
       ((d.teamFolders||[]).length?'<label class="dr-field"><span>Dossier d’équipe'+(d.perimeter?' *':'')+'</span><select name="teamFolderId"'+(d.perimeter?' required':'')+'>'+(d.perimeter?'':'<option value="">— Toute l’entreprise —</option>')+d.teamFolders.map(function(t){return '<option value="'+esc(t.id)+'"'+(String(t.id)===String(x.team_folder_id||'')?' selected':'')+'>'+esc(t.name)+'</option>';}).join('')+'</select></label>':'')+
-      '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Enregistrer</button></div></form>';
+      '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">'+(dispositif||onSaved?'Enregistrer':'Continuer : choisir les formats')+'</button></div></form>';
     document.body.appendChild(dlg);
     var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
     dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
@@ -312,20 +312,20 @@
       if(form.elements.teamFolderId)body.teamFolderId=f.get('teamFolderId')||null;
       try{
         var r=await StudioAPI.request('/api/dei/dispositifs'+(dispositif?'/'+encodeURIComponent(dispositif.id)+qs():''),{method:dispositif?'PATCH':'POST',body:JSON.stringify(body)});
-        dlg.close();if(onSaved)onSaved(r.dispositif);else load();
+        dlg.close();if(onSaved)onSaved(r.dispositif);else{load();if(!dispositif)composeDialog(r.dispositif,true);}
       }catch(e){err.textContent=e.message||'Enregistrement impossible';err.hidden=false;}
     };
     dlg.showModal();
   }
   // Composer un dispositif : une action prévue par format coché, à compléter ensuite une par une.
-  function composeDialog(x){
+  function composeDialog(x,justCreated){
     var d=state.data,kinds=Object.keys(d.kinds).filter(function(k){return k!=='diagnostic';});
     var theme=String(x.theme||'').split(',')[0].trim();
     var dlg=document.createElement('dialog');dlg.className='dr-dialog';
     dlg.innerHTML='<form><h2>Composer le dispositif</h2><p class="dr-row-meta">Cochez les formats prévus : une action « Prévue » est créée pour chacun, déjà rattachée à « '+esc(x.name)+' ». Vous les compléterez ensuite. Les diagnostics se rattachent à part.</p>'+
       '<fieldset class="dr-compose"><legend>Formats</legend>'+kinds.map(function(k){return '<label class="dr-check"><input type="checkbox" name="kind" value="'+esc(k)+'"> '+esc(d.kinds[k].icon+' '+d.kinds[k].label)+'</label>';}).join('')+'</fieldset>'+
       '<label class="dr-field dr-field-date"><span>Date prévue *</span><input type="date" name="actionDate" required value="'+esc(x.year+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-15')+'"></label>'+
-      '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>Annuler</button><button type="submit" class="button button-primary">Créer les actions</button></div></form>';
+      '<p class="dr-error" hidden></p><div class="dr-dialog-actions"><button type="button" class="button button-ghost" data-close>'+(justCreated?'Plus tard':'Annuler')+'</button><button type="submit" class="button button-primary">Créer les actions</button></div></form>';
     document.body.appendChild(dlg);
     var form=dlg.querySelector('form'),err=dlg.querySelector('.dr-error');
     dlg.querySelector('[data-close]').onclick=function(){dlg.close();};
