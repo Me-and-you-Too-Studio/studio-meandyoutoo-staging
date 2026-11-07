@@ -17341,7 +17341,7 @@ body.sidebar-collapsed .help-card-team { display: none; }
 .validation-missing a{font-weight:600}
 
 /* Volet « Lire le guide » : l'écran reste visible à côté. */
-.studio-help-panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 950; display: flex; flex-direction: column; width: min(480px, 100vw); background: var(--surface, #fff); box-shadow: -12px 0 32px rgba(15, 35, 60, .16); }
+.studio-help-panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 950; display: flex; flex-direction: column; width: min(640px, 100vw); background: var(--surface, #fff); box-shadow: -12px 0 32px rgba(15, 35, 60, .16); }
 .studio-help-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 18px 20px 12px; border-bottom: 1px solid rgba(15, 35, 60, .1); }
 .studio-help-panel-head .eyebrow { margin: 0 0 4px; }
 .studio-help-panel-head h2 { margin: 0; font-size: 1.1rem; line-height: 1.3; }
@@ -17350,5 +17350,5 @@ body.sidebar-collapsed .help-card-team { display: none; }
 .studio-help-panel-body img { max-width: 100%; height: auto; }
 .studio-help-panel-body h2 { font-size: 1.05rem; }
 .studio-help-panel-foot { padding: 10px 20px; border-top: 1px solid rgba(15, 35, 60, .1); font-weight: 600; }
-@media (min-width: 1100px) { body.studio-help-open { padding-right: 480px; } }
+@media (min-width: 1100px) { body.studio-help-open { padding-right: 640px; } }
 @media (min-width: 1100px) and (max-width: 1599px) { .studio-help-panel { width: 400px; } body.studio-help-open { padding-right: 400px; } }
