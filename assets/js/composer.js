@@ -646,6 +646,9 @@
   }
 
   const normalizeLocale=loc=>String(loc||'').trim().toLowerCase().replaceAll('_','-');
+  // Repère discret de la langue de lecture, seulement quand elle n'est pas le français.
+  const readingBadge=loc=>{const code=normalizeLocale(loc);return code&&code!=='fr'?`<span class="composer-reading-locale" title="Pas de version française : texte affiché en ${esc(localeLabel(code))}">${esc(code.toUpperCase())}</span>`:'';};
+  const sameText=(a,b)=>String(a||'').trim()===String(b||'').trim();
   function translationViewForSituation(s){
     const ctx=state.translationContexts.get(`${s?.id}:${state.country||''}`);
     if(!ctx)return null;
@@ -773,6 +776,12 @@
     const legacyClientImport=isLegacyClientCampaign();
     const translationView=translationViewForSituation(s);
     const directTranslationEdit=Boolean(translationView&&state.project?.can_edit!==false&&!locked);
+    // Texte de lecture du client (français, sinon anglais, sinon espagnol), indépendant des langues de diffusion.
+    const reading=legacyClientImport?null:(s.reading||null);
+    const editedText=directTranslationEdit?translationView.target.content:s.content;
+    const readingDiffers=Boolean(reading&&!locked&&!sameText(reading.content,editedText));
+    const readingBlock=readingDiffers?`<div class="composer-inline-help composer-context-help"><strong>Texte de référence ${readingBadge(reading.locale)}</strong><span>${esc(reading.content)}</span></div>`:'';
+    const sameReadingBadge=reading&&!readingDiffers?readingBadge(reading.locale):'';
     // Une traduction du catalogue Me&YouToo n'est jamais une personnalisation.
     // Le tag « Personnalisée » repose uniquement sur une vraie contextualisation enregistrée.
     const customized=!legacyClientImport&&Boolean(s.has_customization);
@@ -780,23 +789,24 @@
     const responseFormat=situationResponseFormat(s);
     const hasLibrary=chapterHasLibrary(ch);
     const situationText=locked
-      ?`<h3>${esc(s.content)}</h3>`
+      ?`<h3>${esc(reading?.content||s.content)}${sameReadingBadge}</h3>`
       :directTranslationEdit
         ?`<div class="composer-inline-field">
-          ${legacyClientImport?`<div class="composer-inline-help composer-context-help"><strong>Texte de référence</strong><span>${esc(translationView.reference.content||s.content||'')}</span></div>`:''}
-          <div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Traduction ${esc(localeLabel(translationView.targetLocale))}</label><span class="composer-context-tag">Version linguistique</span></div>
+          ${legacyClientImport?`<div class="composer-inline-help composer-context-help"><strong>Texte de référence</strong><span>${esc(translationView.reference.content||s.content||'')}</span></div>`:readingBlock}
+          <div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Traduction ${esc(localeLabel(translationView.targetLocale))}${sameReadingBadge}</label><span class="composer-context-tag">Version linguistique</span></div>
           <textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation" data-situation-input="${esc(s.id)}" data-original-situation="${esc(translationView.reference.content||'')}" rows="3" placeholder="Traduction ${esc(localeLabel(translationView.targetLocale))} à compléter">${esc(translationView.target.content||'')}</textarea>
           <small class="composer-field-guidance">Vous modifiez uniquement la version ${esc(localeLabel(translationView.targetLocale))}. La version ${esc(localeLabel(translationView.referenceLocale))} reste inchangée.</small>
         </div>`
         :`<div class="composer-inline-field">
-          <div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Texte de la mise en situation</label><span class="composer-context-tag">Contextualisation uniquement</span></div>
+          ${readingBlock}
+          <div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Texte de la mise en situation${sameReadingBadge}</label><span class="composer-context-tag">Contextualisation uniquement</span></div>
           <textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation ${String(originalText)!==String(s.content||'')?'is-customized':''}" data-situation-input="${esc(s.id)}" data-original-situation="${esc(originalText)}" rows="3">${esc(s.content)}</textarea>
           <div data-live-situation-diff>${reviewDiff(originalText,submitted?.content,s.content,'la situation Me&YouToo')}</div>
           <small class="composer-field-guidance">${hasLibrary?'Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel. Si le sens ne convient pas, utilisez « Remplacer » et choisissez une autre situation dans la bibliothèque.':'Adaptez un prénom, un métier, votre terminologie ou le contexte professionnel sans changer le sens de la situation.'}</small>
         </div>`;
     const answerRows=directTranslationEdit
-      ?(s.answers||[]).map(a=>{const ta=translationView.targetAnswers.find(item=>String(item.id)===String(a.id))||{id:a.id,referenceContent:a.content||'',content:''};return translationAnswerHtml(a,ta,legacyClientImport?translationView.referenceLocale:'');}).join('')
-      :(s.answers||[]).map(a=>{const original=(s.original_answers||[]).find(o=>String(o.id)===String(a.id)),sent=(submitted?.answers||[]).find(o=>String(o.id)===String(a.id));return answerHtml(a,!locked,original?.content||a.content,sent?.content??null);}).join('');
+      ?(s.answers||[]).map(a=>{const ta=translationView.targetAnswers.find(item=>String(item.id)===String(a.id))||{id:a.id,referenceContent:a.content||'',content:''};return translationAnswerHtml(a,ta,legacyClientImport?translationView.referenceLocale:(readingDiffers?reading.locale:''));}).join('')
+      :(s.answers||[]).map(a=>{const original=(s.original_answers||[]).find(o=>String(o.id)===String(a.id)),sent=(submitted?.answers||[]).find(o=>String(o.id)===String(a.id));const shown=locked&&reading?{...a,content:(reading.answers||[]).find(o=>String(o.id)===String(a.id))?.content??a.content}:a;return answerHtml(shown,!locked,original?.content||a.content,sent?.content??null);}).join('');
     const tone=situationTone(s,index,ch);
     return `<article class="composer-situation ${tone} ${locked?'is-locked':''} ${customized?'has-customization':''} ${state.libraryFocusId===String(s.id)?'review-direct-target':''}" data-situation-card="${esc(s.id)}">
       <div class="composer-situation-head">
@@ -948,12 +958,14 @@
       return [locale,situation];
     }));
     const byLocale=new Map(versions),reference=byLocale.get(referenceLocale);
+    const reading=findSituation(id)?.reading;
     if(!reference)throw new Error('La situation transmise n’est pas disponible pour ce périmètre.');
     const answers=(reference.answers||[]).map(answer=>({id:answer.id,content:answer.content||''}));
     const translations=Object.fromEntries(versions.map(([locale,situation])=>[locale,{
       content:situation?.content||'',status:String(situation?.content||'').trim()?'submitted':'missing',
       answers:answers.map(answer=>{const translated=situation?.answers?.find(row=>String(row.id)===String(answer.id));return {id:answer.id,content:translated?.content||'',status:String(translated?.content||'').trim()?'submitted':'missing'};})
     }]));
+    if(reading?.content)return {referenceLocale:'fr',locales,reference:reading,translations,sourceCustomized:false,worldwide:false,readOnly:true};
     return {referenceLocale,locales,reference:{content:reference.content||'',answers},translations,sourceCustomized:false,worldwide:false,readOnly:true};
   }
   async function getTranslationContext(id,refresh=false){const key=`${id}:${state.country||''}`;if(!refresh&&state.translationContexts.has(key))return state.translationContexts.get(key);const countryParam=state.country?`?countryCode=${encodeURIComponent(state.country)}`:'';const ctx=!isAdmin&&state.project?.can_edit===false&&!isLegacyClientCampaign(state.project)?await getReadOnlyTranslationContext(id):await api(`/api/projects/${projectId}/situations/${id}/translations${countryParam}`);state.translationContexts.set(key,ctx);return ctx;}
@@ -978,7 +990,7 @@
       ?translatedReferenceAnswers:(sourceIsReference?rawReferenceAnswers:[]);
     const referenceUnavailable=!displayedReferenceContent
       ||displayedReferenceAnswers.length!==rawReferenceAnswers.length;
-    function draw(){const loc=select.value,t=ctx.translations?.[loc]||{answers:[]};const answerStates=(reference.answers||[]).map(a=>(t.answers||[]).find(x=>String(x.id)===String(a.id))||{status:'missing'});const incomplete=!String(t.content||'').trim()||t.status==='missing'||answerStates.some(a=>!String(a.content||'').trim()||a.status==='missing');const stale=Boolean(ctx.sourceCustomized);const overall=incomplete?'Traduction incomplète':ctx.readOnly?'Version transmise':t.status==='client_version'||answerStates.some(a=>a.status==='client_version')?'Personnalisée':'Traduction Me&YouToo';referencePane.innerHTML=`<h3>Texte de référence</h3>${campaignCountries(state.project).length>1?`<p class="translation-local-note">Vous comparez les versions utilisées pour ${esc(countryLabel(state.country))}.</p>`:''}${referenceUnavailable?'<p class="translation-sync-warning">La version de référence pour ce périmètre est incomplète. Vérifiez les traductions historiques.</p>':''}<div class="translation-reference-text">${esc(displayedReferenceContent)}</div><h4>Réponses</h4>${displayedReferenceAnswers.map((a,i)=>`<div class="translation-answer"><strong>Réponse ${i+1}</strong><div class="translation-reference-text">${esc(a.content)}</div></div>`).join('')}`;target.innerHTML=`<h3>${esc(localeLabel(loc))}<span class="translation-status ${incomplete?'is-incomplete':''}">${stale?'À vérifier':overall}</span></h3>${stale&&!isLegacyClientCampaign()?`<div class="translation-sync-warning">⚠️ Le texte de référence a été modifié. Vérifiez cette traduction et son adaptation locale éventuelle.</div>`:''}<div class="translation-local-note">${legacyReadOnly?'Version historique importée en lecture seule.':translationReadOnly?'Vous consultez la dernière version transmise à Me&YouToo, en lecture seule.':'Cette modification concerne uniquement la langue affichée. Une correction de traduction peut rester locale. Si vous changez le sens ou ajoutez une information, pensez à adapter les autres langues de diffusion. Les autres versions ne sont pas actualisées automatiquement.'}</div><div class="translation-field-head"><strong>Situation</strong><span class="translation-status">${statusLabel(t.status||'missing')}</span></div><textarea rows="4" data-target-content placeholder="Traduction / adaptation à compléter" ${translationReadOnly?'readonly':''}>${esc(t.content||'')}</textarea><h4>Réponses</h4>${(reference.answers||[]).map((a,i)=>{const ta=answerStates[i];return `<div class="translation-answer"><div class="translation-field-head"><strong>Réponse ${i+1}</strong><span class="translation-status">${statusLabel(ta.status||'missing')}</span></div><textarea rows="2" data-target-answer="${esc(a.id)}" placeholder="Traduction / adaptation à compléter" ${translationReadOnly?'readonly':''}>${esc(ta.content||'')}</textarea></div>`}).join('')}`;const delegation=overlay.querySelector('[data-delegate-situation]');
+    function draw(){const loc=select.value,t=ctx.translations?.[loc]||{answers:[]};const answerStates=(reference.answers||[]).map(a=>(t.answers||[]).find(x=>String(x.id)===String(a.id))||{status:'missing'});const incomplete=!String(t.content||'').trim()||t.status==='missing'||answerStates.some(a=>!String(a.content||'').trim()||a.status==='missing');const stale=Boolean(ctx.sourceCustomized);const overall=incomplete?'Traduction incomplète':ctx.readOnly?'Version transmise':t.status==='client_version'||answerStates.some(a=>a.status==='client_version')?'Personnalisée':'Traduction Me&YouToo';referencePane.innerHTML=`<h3>Texte de référence ${isLegacyClientCampaign()?'':readingBadge(ctx.reference?.locale)}</h3>${campaignCountries(state.project).length>1?`<p class="translation-local-note">Vous comparez les versions utilisées pour ${esc(countryLabel(state.country))}.</p>`:''}${referenceUnavailable?'<p class="translation-sync-warning">La version de référence pour ce périmètre est incomplète. Vérifiez les traductions historiques.</p>':''}<div class="translation-reference-text">${esc(displayedReferenceContent)}</div><h4>Réponses</h4>${displayedReferenceAnswers.map((a,i)=>`<div class="translation-answer"><strong>Réponse ${i+1}</strong><div class="translation-reference-text">${esc(a.content)}</div></div>`).join('')}`;target.innerHTML=`<h3>${esc(localeLabel(loc))}<span class="translation-status ${incomplete?'is-incomplete':''}">${stale?'À vérifier':overall}</span></h3>${stale&&!isLegacyClientCampaign()?`<div class="translation-sync-warning">⚠️ Le texte de référence a été modifié. Vérifiez cette traduction et son adaptation locale éventuelle.</div>`:''}<div class="translation-local-note">${legacyReadOnly?'Version historique importée en lecture seule.':translationReadOnly?'Vous consultez la dernière version transmise à Me&YouToo, en lecture seule.':'Cette modification concerne uniquement la langue affichée. Une correction de traduction peut rester locale. Si vous changez le sens ou ajoutez une information, pensez à adapter les autres langues de diffusion. Les autres versions ne sont pas actualisées automatiquement.'}</div><div class="translation-field-head"><strong>Situation</strong><span class="translation-status">${statusLabel(t.status||'missing')}</span></div><textarea rows="4" data-target-content placeholder="Traduction / adaptation à compléter" ${translationReadOnly?'readonly':''}>${esc(t.content||'')}</textarea><h4>Réponses</h4>${(reference.answers||[]).map((a,i)=>{const ta=answerStates[i];return `<div class="translation-answer"><div class="translation-field-head"><strong>Réponse ${i+1}</strong><span class="translation-status">${statusLabel(ta.status||'missing')}</span></div><textarea rows="2" data-target-answer="${esc(a.id)}" placeholder="Traduction / adaptation à compléter" ${translationReadOnly?'readonly':''}>${esc(ta.content||'')}</textarea></div>`}).join('')}`;const delegation=overlay.querySelector('[data-delegate-situation]');
       if(delegation){
         const pending=situationTranslationDelegated(ctx,loc),note=overlay.querySelector('[data-situation-delegation-note]');
         note.hidden=!incomplete&&!pending;delegation.disabled=pending;
