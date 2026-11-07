@@ -382,13 +382,20 @@
     const deiRow=dei.length?`<div class="cal-tl-row cal-tl-row-dei"><div class="cal-tl-label"><strong>Temps forts D&I</strong><small>Le bon moment pour lancer une thématique</small></div><div class="cal-tl-track">${todayLine}${deiMarks}</div><span class="cal-tl-note"></span></div>`:'';
     // Ligne « Actions D&I » : une barre par action (point si elle tient sur une journée), reliée au Cockpit.
     const yearActions=filteredDeiActions().filter(a=>String(a.action_date).slice(0,4)===String(year)||String(a.end_date||'').slice(0,4)===String(year));
+    // Plusieurs actions le même jour : une seule pastille avec leur nombre, qui ouvre le mois, sinon seule celle du dessus serait cliquable.
+    const actionDays=new Map();
     const actionMarks=yearActions.map(a=>{
       const s=parseDate(a.action_date),e=parseDate(a.end_date),k=state.deiKinds[a.kind]||{};
       const label=`${k.icon?k.icon+' ':''}${a.title} · ${dayLabel(s)}${e&&!sameDay(s,e)?' → '+dayLabel(e):''} · ${actionStatusLabel[a.status]||''}`;
       // Une action de quelques jours reste un point plein : une barre aussi étroite passerait pour un emplacement vide.
       const to=e&&!sameDay(s,e)?new Date(e.getFullYear(),e.getMonth(),e.getDate()+1):null,bandWidth=to?pct(to)-pct(s):0;
       if(bandWidth>=3)return `<a class="cal-tl-action is-band st-${esc(a.status)}" href="${esc(actionHref(a))}" style="left:${pct(s).toFixed(2)}%;width:${bandWidth.toFixed(2)}%" data-tip="${esc(label)}" aria-label="${esc(label)}"><span>${esc(a.title)}</span></a>`;
-      return `<a class="cal-tl-action st-${esc(a.status)}" href="${esc(actionHref(a))}" style="left:${pct(s).toFixed(2)}%" data-tip="${esc(label)}" aria-label="${esc(label)}"></a>`;
+      const day=iso(s);if(!actionDays.has(day))actionDays.set(day,[]);actionDays.get(day).push({a,s,label});return '';
+    }).join('')+[...actionDays.values()].map(list=>{
+      const {a,s,label}=list[0];
+      if(list.length===1)return `<a class="cal-tl-action st-${esc(a.status)}" href="${esc(actionHref(a))}" style="left:${pct(s).toFixed(2)}%" data-tip="${esc(label)}" aria-label="${esc(label)}"></a>`;
+      const tip=`${list.length} actions le ${dayLabel(s)}`;
+      return `<button type="button" class="cal-tl-action is-group" style="left:${pct(s).toFixed(2)}%" data-tl-month="${s.getFullYear()}-${s.getMonth()}" data-tip="${esc(tip)}" aria-label="${esc(tip)} : voir le mois">${list.length}</button>`;
     }).join('');
     const actionRow=yearActions.length?`<div class="cal-tl-row cal-tl-row-actions"><a class="cal-tl-label" href="${esc(isAdmin&&selectedOrg?'cockpit-dei.html?organizationId='+encodeURIComponent(selectedOrg)+'#actions':'cockpit-dei.html#actions')}"><strong>Actions D&amp;I</strong><small>${yearActions.length} action${yearActions.length>1?'s':''} du Cockpit D&I</small></a><div class="cal-tl-track">${todayLine}${actionMarks}</div><span class="cal-tl-note"></span></div>`:'';
     const empty=rows.length?'':`<div class="cal-tl-empty"><strong>Aucune campagne datée en ${year}.</strong> <a href="bibliotheque.html">Choisir une thématique →</a></div>`;
@@ -486,6 +493,7 @@
   $('#task-form').addEventListener('submit',async e=>{e.preventDefault();const payload={title:$('#task-title').value,dueDate:$('#task-due-date').value||null,priority:$('#task-priority').value,projectId:$('#task-project').value||null,notes:$('#task-notes').value};if(isAdmin)payload.organizationId=$('#task-org').value||null;else payload.visibility=$('#task-visibility').value;try{await StudioAPI.request('/api/tasks',{method:'POST',body:JSON.stringify(payload)});closeTaskDialog();await load();switchTab('tasks');}catch(err){setAlert(err.message);}});
   $$('[data-calendar-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.calendarTab));
   $$('[data-calendar-view]').forEach(b=>b.onclick=()=>{setView(b.dataset.calendarView);load();});
+  document.addEventListener('click',e=>{const group=e.target.closest?.('[data-tl-month]');if(!group)return;const [year,month]=group.dataset.tlMonth.split('-').map(Number);openMonth(year,month);});
   $('#calendar-prev').onclick=()=>{state.cursor=state.view==='year'?new Date(state.cursor.getFullYear()-1,0,1):new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);load();};
   $('#calendar-next').onclick=()=>{state.cursor=state.view==='year'?new Date(state.cursor.getFullYear()+1,0,1):new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);load();};
   $('#calendar-today').onclick=()=>{state.cursor=new Date();load();};

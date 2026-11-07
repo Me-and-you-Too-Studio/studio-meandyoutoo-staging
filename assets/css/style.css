@@ -17358,3 +17358,5 @@ body.sidebar-collapsed .help-card-team { display: none; }
 .composer-situation-excerpt{margin:8px 0 0;overflow:hidden;color:var(--muted,#5b6b7c);font-size:14px;white-space:nowrap;text-overflow:ellipsis}
 .composer-situation:has(> .composer-situation-body:not([hidden])) .composer-situation-excerpt{display:none}
 @media(max-width:768px){html,body{overflow-x:clip}}
+
+body:has(.studio-guide){padding-bottom:140px}

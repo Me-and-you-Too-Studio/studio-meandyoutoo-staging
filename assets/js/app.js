@@ -428,8 +428,10 @@
   function guideTourDue(tour){var s=guideState();return Boolean(s&&tour&&guideStage()>=0&&(s.tours||[]).indexOf(tour.key)<0);}
   function guideTourShown(tour){var s=guideState();if(!s)return;s.tours=(s.tours||[]).concat(tour.key);saveGuide(s);}
   function startGuide(){saveGuide({on:true,tours:[],at:new Date().toISOString()});location.href=GUIDE_STAGES[0].href;}
+  // L'encart ouvert se replie dès que l'on fait défiler la page : il ne reste pas sur les boutons de l'écran.
+  var guideFold=null;
   function renderGuide(){
-    var s=guideState(),old=document.querySelector('.studio-guide');if(old)old.remove();if(!s)return;
+    var s=guideState(),old=document.querySelector('.studio-guide');if(old)old.remove();if(guideFold){window.removeEventListener('scroll',guideFold);guideFold=null;}if(!s)return;
     var index=guideStage(),page=currentPage();
     // Hors du parcours (aide, compte…), l'encart se réduit à un rappel qui ramène au dernier écran du parcours.
     if(index<0){
@@ -441,13 +443,14 @@
     var stage=GUIDE_STAGES[index],subject=pageHelp(page),tuto=document.querySelector('.studio-tuto-button:not(.studio-help-button)');
     var dots=GUIDE_STAGES.map(function(g,i){return '<li class="'+(i<index?'is-done':i===index?'is-current':'')+'" title="'+esc(g.title)+'"></li>';}).join('');
     var el=document.createElement('aside');el.className='studio-guide'+(s.collapsed?' is-collapsed':'');el.setAttribute('aria-label','Parcours guidé : ma première campagne');
-    el.innerHTML='<button type="button" class="studio-guide-pill" data-guide-toggle aria-expanded="'+(!s.collapsed)+'"><span aria-hidden="true">🧭</span> Ma première campagne · étape '+(index+1)+' sur '+GUIDE_STAGES.length+'</button>'+
+    el.innerHTML='<button type="button" class="studio-guide-pill" data-guide-toggle aria-expanded="'+(!s.collapsed)+'"><span aria-hidden="true">🧭</span> '+(s.collapsed?'Étape ':'Ma première campagne · étape ')+(index+1)+' sur '+GUIDE_STAGES.length+'</button>'+
       '<div class="studio-guide-body"><ol class="studio-guide-dots" aria-hidden="true">'+dots+'</ol><h2>'+esc(stage.title)+'</h2><p>'+esc(stage.text)+'</p>'+
       '<div class="studio-guide-actions">'+(registeredTour?'<button type="button" class="button button-primary" data-tour-replay>Me montrer sur l’écran</button>':'')+
       (subject?'<a class="button button-secondary" href="'+esc(helpUrl(subject))+'">📖 Lire le guide</a>':'')+
       (tuto?'<button type="button" class="button button-secondary" data-tutorial="'+esc(tuto.dataset.tutorial)+'">▶ Voir le tuto</button>':'')+'</div>'+
       '<button type="button" class="studio-guide-quit" data-guide-quit>'+(stage.last?'Terminer le parcours':'Quitter le parcours')+'</button></div>';
     document.body.appendChild(el);
+    if(!s.collapsed){guideFold=function(){if(window.scrollY<80)return;var current=guideState();if(current&&!current.collapsed){current.collapsed=true;saveGuide(current);}renderGuide();};window.addEventListener('scroll',guideFold,{passive:true});}
   }
   window.StudioGuide={start:startGuide,active:function(){return Boolean(guideState());},sent:function(){var s=guideState();if(s){s.sent=true;saveGuide(s);}}};
   document.addEventListener('click',function(e){

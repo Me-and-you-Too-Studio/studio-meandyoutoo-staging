@@ -26,3 +26,5 @@
 .cal-tl-legend li.is-action.st-done{--tl-color:#007883}
 .cal-tl-legend li.is-action.st-postponed{--tl-color:#d9a066}
 .cal-tl-legend li.is-dei::before{background:conic-gradient(#b44fb3 0 25%,#eb6366 0 50%,#f2b824 0 75%,#5669a9 0)}
+
+.cal-tl-action.is-group{width:20px;height:20px;margin:-10px 0 0 -10px;padding:0;color:#fff;font:700 .7rem/16px inherit;text-align:center;cursor:pointer;z-index:3}

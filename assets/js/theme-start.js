@@ -178,14 +178,17 @@
       // Le serveur inclut les contenus communs pour la création ; la consultation
       // par pays ne conserve que les rattachements explicites (ou du chapitre).
       if(countryCode&&!data.theme?.content_scope_policy)chapters=chapters.map(function(ch){return {...ch,situations:(ch.situations||[]).filter(function(si){var own=si.country_codes||[],codes=own.length?own:(ch.country_codes||[]);return countryCode==='WORLDWIDE'?(!codes.length&&ch.country_scope==='worldwide')||codes.includes('WORLDWIDE'):codes.includes(countryCode);})};});
+      // Contenu par pays, tous périmètres affichés : un total additionnerait des pays différents, comme au catalogue on ne donne pas de nombre.
+      var scopedCountries=new Set();chapters.forEach(function(ch){(ch.situations||[]).forEach(function(si){(si.country_codes||[]).forEach(function(code){scopedCountries.add(code);});});});
+      var acrossCountries=!countryCode&&scopedCountries.size>1;
       var counter=document.querySelector('[data-catalog-filter-count]');
-      if(counter){var total=chapters.reduce(function(n,ch){return n+(ch.situations||[]).length;},0);counter.textContent=total+' situation'+(total>1?'s':'');}
+      if(counter){var total=chapters.reduce(function(n,ch){return n+(ch.situations||[]).length;},0);counter.textContent=acrossCountries?'Choisissez un pays pour voir ses situations':total+' situation'+(total>1?'s':'');}
 
       // Même règle que le catalogue : un diagnostic = les chapitres par défaut, et le nom du catalogue fait référence.
       var defaultChapters=chapters.filter(function(ch){return !ch.choice_group||ch.is_default_choice;});
       var heroMeta=document.querySelectorAll('.hero-panel .meta-row .meta');
-      if(heroMeta.length>=2){var situationsTotal=defaultChapters.reduce(function(n,ch){return n+(ch.situations||[]).length;},0);heroMeta[0].textContent=situationsTotal+' situation'+(situationsTotal>1?'s':'');heroMeta[1].textContent=defaultChapters.length+' chapitre'+(defaultChapters.length>1?'s':'');}
-      if(data.theme&&data.theme.title){var heading=document.querySelector('h1.page-title');if(heading)heading.textContent=data.theme.title;var trail=document.querySelector('.eyebrow a[href="bibliotheque.html"]');if(trail&&trail.nextSibling)trail.nextSibling.textContent=' · '+data.theme.title;document.title=data.theme.title+' — Catalogue Me&YouToo';}
+      if(heroMeta.length>=2){var situationsTotal=defaultChapters.reduce(function(n,ch){return n+(ch.situations||[]).length;},0);heroMeta[0].textContent=acrossCountries?'Contenu adapté au périmètre':situationsTotal+' situation'+(situationsTotal>1?'s':'');heroMeta[1].textContent=defaultChapters.length+' chapitre'+(defaultChapters.length>1?'s':'');}
+      if(data.theme&&data.theme.title){var heading=document.querySelector('h1.page-title');if(heading)heading.textContent=data.theme.title;var eyebrowTitle=document.getElementById('dynamic-theme-eyebrow'),trail=document.querySelector('.eyebrow a[href="bibliotheque.html"]');if(eyebrowTitle)eyebrowTitle.textContent=data.theme.title;else if(trail&&trail.nextSibling)trail.nextSibling.textContent=' · '+data.theme.title;document.title=data.theme.title+' — Catalogue Me&YouToo';}
 
       table.querySelector('thead').innerHTML='<tr><th>Chapitre du catalogue</th><th>Situations de référence</th><th>Usage</th><th>Action</th></tr>';
       var groupCounts={};
