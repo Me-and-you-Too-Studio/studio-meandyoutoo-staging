@@ -372,6 +372,8 @@
     var panel=document.createElement('aside');panel.id='studio-help-panel';panel.className='studio-help-panel';panel.setAttribute('aria-label','Guide');
     panel.innerHTML='<header class="studio-help-panel-head"><div><p class="eyebrow">Guide</p><h2 data-help-title>Chargement…</h2></div><button type="button" class="studio-modal-close" aria-label="Fermer le guide" data-help-close>×</button></header><div class="studio-help-panel-body private-resource-body" data-help-body></div><footer class="studio-help-panel-foot"><a data-help-full href="'+esc(fallback)+'" target="_blank" rel="noopener">Ouvrir dans l’Aide ↗</a></footer>';
     document.body.appendChild(panel);document.body.classList.add('studio-help-open');
+    // Sur les écrans de création, le volet s'arrête au-dessus de la barre du bas pour laisser le bouton d'étape suivante visible.
+    var stickyBar=document.querySelector('.creation-sticky-actions');if(stickyBar&&stickyBar.offsetHeight){panel.style.bottom=Math.max(0,Math.round(window.innerHeight-stickyBar.getBoundingClientRect().top+8))+'px';}
     // Sur un écran d'ordinateur portable, le menu se replie le temps du volet pour garder la page lisible.
     if(window.innerWidth>=1100&&window.innerWidth<1600&&!document.body.classList.contains('sidebar-collapsed')){document.body.classList.add('sidebar-collapsed');panel.dataset.menuFolded='1';}
     document.addEventListener('keydown',helpPanelKeys);
