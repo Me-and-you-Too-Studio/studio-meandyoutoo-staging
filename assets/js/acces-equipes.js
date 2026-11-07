@@ -178,7 +178,7 @@
         '<span role="cell">'+(data.canEdit?'<button class="button button-ghost" type="button" data-reset="'+esc(u.id)+'">Annuler le refus</button>':'')+'</span></div>';
       // A quitté l'entreprise (vue admin uniquement : le client ne la voit plus).
       if(u.status==='left')return '<div class="ae-who-row" role="row"><span role="cell"><strong>'+nameHtml(u)+'</strong> <span class="badge badge-muted">A quitté l’entreprise'+(u.leftAt?' le '+new Date(u.leftAt).toLocaleDateString('fr-FR'):'')+'</span><small>'+esc(u.jobTitle||'')+'</small></span><span role="cell"></span><span role="cell"></span><span role="cell"></span></div>';
-      var editable=data.canEdit&&u.accessLevel!=='owner',removable=data.canEdit&&u.id!==String(me.id);
+      var editable=data.canEdit&&u.accessLevel!=='owner',removable=data.canEdit&&u.id!==String(me.id)&&u.accessLevel!=='owner';
       return '<div class="ae-who-row'+(u.seesNothing?' is-warning':'')+'" role="row"><span role="cell"><strong>'+nameHtml(u)+'</strong>'+statusBadge(u)+'<small>'+esc(u.jobTitle||'')+'</small></span>'+
         '<span role="cell">'+esc(LEVELS[u.accessLevel]||u.accessLevel)+'<small><button type="button" class="ae-link" data-rights-of="'+esc(u.id)+'">'+rightsCount(u.permissions)+'</button></small></span><span role="cell">'+scopeBadge(u)+'</span>'+
         '<span role="cell">'+(editable?'<button class="button button-secondary" type="button" data-edit="'+esc(u.id)+'">Modifier</button>':u.accessLevel==='owner'?'<small class="ae-muted">Voit toujours tout</small>':'')+

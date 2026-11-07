@@ -179,6 +179,11 @@ function contextSelectionState(){
     ready:Boolean(previewCountry&&previewLocale&&!contextLoading&&!contextError)
   };
 }
+// Un seul pays : il est sélectionné d'office, il ne reste que la langue à choisir.
+function selectOnlyCountry(){
+  previewCountry=previewCountries.length===1?previewCountries[0]:'';
+  availablePreviewLocales=previewCountry?(previewCountryLocales[previewCountry]||[]):[];
+}
 function contextChooser(){
   const state=contextSelectionState();
   const countryOptions=previewCountries.map(code=>`<option value="${esc(code)}" ${code===previewCountry?'selected':''}>${esc(countryLabel(code))}</option>`).join('');
@@ -437,7 +442,7 @@ function done(){
   chapterResults=d.chapters.map((c,i)=>({avg:chapterAverage(i),profile:profileForScore(c.profiles,chapterAverage(i))}));
   root.innerHTML=head('Récapitulatif des résultats')+`<section class="rp-card rp-final"><div class="rp-kicker">Vos résultats</div><h1>Récapitulatif de vos profils</h1><p class="rp-help">Voici la restitution que verra le répondant. La comparaison avec les collègues est fictive dans cet aperçu et aucune donnée n’est enregistrée.</p>${radarSvg()}<div class="rp-final-list">${d.chapters.map((c,i)=>{const r=chapterResults[i],p=r.profile,t=profileTone(p);return`<article class="rp-final-profile ${t}"><div class="rp-final-profile-head"><span>Partie ${i+1}</span><strong>${esc(c.title)}</strong></div><h2>${esc(p?.title||'Profil indisponible')}</h2>${p?.summary?`<p>${esc(p.summary)}</p>`:''}${colleaguesHtml(c,r,i)}</article>`}).join('')}</div><div class="rp-final-tools">${reportDownloadHtml()}${resourcesHtml()}</div><div class="rp-actions"><button id="again" class="button button-secondary">Recommencer l’aperçu</button></div></section>`;
   bindFinalInteractions();
-  $('#again').onclick=()=>{step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[];norm.lastShuffleSeed=Date.now();if(mode==='project'){contextConfirmed=false;previewCountry='';previewLocale='';availablePreviewLocales=[];}render()}
+  $('#again').onclick=()=>{step=-1;ci=qi=0;socioChoices={};answers={};chapterResults=[];norm.lastShuffleSeed=Date.now();if(mode==='project'){contextConfirmed=false;previewLocale='';selectOnlyCountry();}render()}
 }
 function render(){
   // La langue du contenu gouverne la lecture du texte, sans inverser les contrôles numériques.
@@ -450,9 +455,8 @@ async function loadPreviewData(preserveStep=false){try{
     const context=projectPreviewContext(base);
     previewCountries=context.countries;
     previewCountryLocales=context.byCountry;
-    previewCountry='';
     previewLocale='';
-    availablePreviewLocales=[];
+    selectOnlyCountry();
     contextConfirmed=false;
     contextLoading=false;
     contextError='';
@@ -464,7 +468,7 @@ async function loadPreviewData(preserveStep=false){try{
     previewCountryLocales={};
     variants.forEach(x=>{const cc=normalizeCountryCode(x.countryCode);if(cc)previewCountryLocales[cc]=[...new Set((x.locales||[]).map(normalizeLocaleCode).filter(Boolean))];});
     if(!previewCountries.length){const fallback=normalizeCountryCode((v?.countryCodes||[])[0]||'FR');previewCountries=[fallback];previewCountryLocales[fallback]=(v?.availableLocales||['fr']).map(normalizeLocaleCode).filter(Boolean);}
-    previewCountry=isWorldwideOnlyPreview()?previewCountries[0]:'';previewLocale='';availablePreviewLocales=[];contextConfirmed=false;contextLoading=false;contextError='';
+    previewLocale='';selectOnlyCountry();if(isWorldwideOnlyPreview()){previewCountry=previewCountries[0];availablePreviewLocales=[];}contextConfirmed=false;contextLoading=false;contextError='';
     norm(await api(`/api/catalog/themes/${encodeURIComponent(theme)}/template?countryCode=${encodeURIComponent(previewCountries[0])}&locale=${encodeURIComponent((previewCountryLocales[previewCountries[0]]||['fr'])[0]||'fr')}`));
   }
   if(!preserveStep)resetPreviewProgress();

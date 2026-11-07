@@ -89,7 +89,7 @@
       subject:'Une blague, un compliment, une remarque… où commence le sexisme ?',
       opening:'« C’était pour rire. » « Tu prends ça trop au sérieux. » Au travail, certaines paroles semblent anodines… mais le sont-elles pour tout le monde ?\n\nFace à une remarque, une plaisanterie ou une différence de traitement, que remarquez-vous ? Comment réagissez-vous ?',
       benefit:'Avec l’autodiagnostic Me&YouToo, confrontez vos réflexes à des situations concrètes et découvrez des repères pour reconnaître le sexisme et agir au quotidien.',
-      invitation:'Prenez quelques minutes pour faire le point : vous pourriez être surpris de ce que vous découvrirez.',
+      invitation:'Prenez quelques minutes pour faire le point : ce que vous découvrirez pourrait vous surprendre.',
       cta:'Je fais l’autodiagnostic',
       reminderSubject:'Une remarque sexiste pendant une réunion : que feriez-vous ?',
       reminder:'Une plaisanterie vous met mal à l’aise, mais personne ne réagit. Vous hésitez à intervenir…\n\nReconnaître une situation est une première étape. Savoir comment se positionner en est une autre. L’autodiagnostic vous invite à explorer vos réflexes et à découvrir des repères pour agir.',
