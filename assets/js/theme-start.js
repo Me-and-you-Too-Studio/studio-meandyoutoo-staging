@@ -182,12 +182,12 @@
       var scopedCountries=new Set();chapters.forEach(function(ch){(ch.situations||[]).forEach(function(si){(si.country_codes||[]).forEach(function(code){scopedCountries.add(code);});});});
       var acrossCountries=!countryCode&&scopedCountries.size>1;
       var counter=document.querySelector('[data-catalog-filter-count]');
-      if(counter){var total=chapters.reduce(function(n,ch){return n+(ch.situations||[]).length;},0);counter.textContent=acrossCountries?'Choisissez un pays pour voir ses situations':total+' situation'+(total>1?'s':'');}
+      if(counter){var total=chapters.reduce(function(n,ch){return n+(ch.situations||[]).length;},0);var parcours=(data.chapters||[]).filter(function(ch){return !ch.choice_group||ch.is_default_choice;}).reduce(function(n,ch){return n+(ch.situations||[]).length;},0);counter.textContent=acrossCountries?'Choisissez un pays pour voir ses situations':parcours+' situation'+(parcours>1?'s':'');}
 
       // Même règle que le catalogue : un diagnostic = les chapitres par défaut, et le nom du catalogue fait référence.
       var defaultChapters=chapters.filter(function(ch){return !ch.choice_group||ch.is_default_choice;});
       var heroMeta=document.querySelectorAll('.hero-panel .meta-row .meta');
-      if(heroMeta.length>=2){var situationsTotal=defaultChapters.reduce(function(n,ch){return n+(ch.situations||[]).length;},0);heroMeta[0].textContent=acrossCountries?'Contenu adapté au périmètre':situationsTotal+' situation'+(situationsTotal>1?'s':'');heroMeta[1].textContent=defaultChapters.length+' chapitre'+(defaultChapters.length>1?'s':'');}
+      if(heroMeta.length>=2){var situationsTotal=(data.chapters||[]).filter(function(ch){return !ch.choice_group||ch.is_default_choice;}).reduce(function(n,ch){return n+(ch.situations||[]).length;},0);heroMeta[0].textContent=acrossCountries?'Contenu adapté au périmètre':situationsTotal+' situation'+(situationsTotal>1?'s':'');heroMeta[1].textContent=defaultChapters.length+' chapitre'+(defaultChapters.length>1?'s':'');}
       if(data.theme&&data.theme.title){var heading=document.querySelector('h1.page-title');if(heading)heading.textContent=data.theme.title;var eyebrowTitle=document.getElementById('dynamic-theme-eyebrow'),trail=document.querySelector('.eyebrow a[href="bibliotheque.html"]');if(eyebrowTitle)eyebrowTitle.textContent=data.theme.title;else if(trail&&trail.nextSibling)trail.nextSibling.textContent=' · '+data.theme.title;document.title=data.theme.title+' — Catalogue Me&YouToo';}
 
       table.querySelector('thead').innerHTML='<tr><th>Chapitre du catalogue</th><th>Situations de référence</th><th>Usage</th><th>Action</th></tr>';
