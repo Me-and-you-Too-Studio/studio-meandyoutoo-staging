@@ -795,7 +795,7 @@
           ${legacyClientImport?`<div class="composer-inline-help composer-context-help"><strong>Texte de référence</strong><span>${esc(translationView.reference.content||s.content||'')}</span></div>`:readingBlock}
           <div class="composer-editor-label-row"><label for="situation-text-${esc(s.id)}">Traduction ${esc(localeLabel(translationView.targetLocale))}${sameReadingBadge}</label><span class="composer-context-tag">Version linguistique</span></div>
           <textarea id="situation-text-${esc(s.id)}" class="composer-inline-situation" data-situation-input="${esc(s.id)}" data-original-situation="${esc(translationView.reference.content||'')}" rows="3" placeholder="Traduction ${esc(localeLabel(translationView.targetLocale))} à compléter">${esc(translationView.target.content||'')}</textarea>
-          <small class="composer-field-guidance">Vous modifiez uniquement la version ${esc(localeLabel(translationView.targetLocale))}. La version ${esc(localeLabel(translationView.referenceLocale))} reste inchangée.</small>
+          <small class="composer-field-guidance">Vous modifiez uniquement la version ${esc(localeLabel(translationView.targetLocale))}. La version de référence reste inchangée.</small>
         </div>`
         :`<div class="composer-inline-field">
           ${readingBlock}
